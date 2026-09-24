@@ -1,5 +1,5 @@
-import { SectionPlaceholder } from "@/app/section-placeholder";
+import { TireDirectionList } from "@/admin/tires/TireDirectionList";
 
 export default function TireDirectionsPage() {
-  return <SectionPlaceholder title="Направления шин" />;
+  return <TireDirectionList />;
 }
