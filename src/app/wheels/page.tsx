@@ -1,5 +1,5 @@
-import { SectionPlaceholder } from "@/app/section-placeholder";
+import { WheelModelList } from "@/admin/wheels/WheelModelList";
 
 export default function WheelsPage() {
-  return <SectionPlaceholder title="Диски" />;
+  return <WheelModelList />;
 }
