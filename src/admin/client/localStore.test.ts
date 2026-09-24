@@ -177,4 +177,89 @@ describe("createLocalAdminClient", () => {
     expect(await client.storageNotice()).toBe("Хранилище повреждено, восстановлены стартовые данные");
     expect(await client.storageNotice()).toBeNull();
   });
+
+  it("blocks tire publish on duplicate size", async () => {
+    const client = createLocalAdminClient(memory());
+    const created = await client.createTireModel({ name: "DupSize", directionId: "dir-long-haul" });
+    const ready = publishable(created.draft);
+    ready.sizes = [
+      { id: "size-1", size: "315/80R22.5", priceOnRequest: true, available: true },
+      { id: "size-2", size: "315/80R22.5", priceOnRequest: true, available: true },
+    ];
+    await client.saveTireModel(created.id, ready);
+    await expect(client.publishTireModel(created.id)).rejects.toMatchObject({ code: "publish_blocked" });
+  });
+
+  it("frees the slug after deleting a never-published tire model", async () => {
+    const client = createLocalAdminClient(memory());
+    const draft = await client.createTireModel({ name: "Reusable", directionId: "dir-long-haul" });
+    await client.deleteTireModel(draft.id);
+    const again = await client.createTireModel({ name: "Reusable", directionId: "dir-long-haul" });
+    expect(again.draft.slug).toBe("reusable");
+  });
+
+  it("publishes a tire model with an empty sku", async () => {
+    const client = createLocalAdminClient(memory());
+    const created = await client.createTireModel({ name: "NoSku", directionId: "dir-long-haul" });
+    const ready = publishable(created.draft);
+    ready.sizes = [{ id: "size-1", size: "315/80R22.5", priceOnRequest: true, available: true, sku: "" }];
+    await client.saveTireModel(created.id, ready);
+    const published = await client.publishTireModel(created.id);
+    expect(published.publishedSnapshot?.sizes[0]?.sku).toBe("");
+  });
+
+  it("blocks shop publish when a variant has no price choice", async () => {
+    const client = createLocalAdminClient(memory());
+    const category = await client.createShopCategory({ name: "Аксессуары" });
+    const asset = await client.createAsset({ name: "p.png", mimeType: "image/png", dataUrl: "data:image/png,x" });
+    await client.saveShopCategory(category.id, {
+      ...category.draft,
+      mainImage: {
+        assetId: asset.id,
+        alt: "",
+        focalX: 0.5,
+        focalY: 0.5,
+        crop: { x: 0, y: 0, width: 1, height: 1 },
+      },
+    });
+    await client.publishShopCategory(category.id);
+    const product = await client.createShopProduct({ name: "Колпак", categoryId: category.id });
+    await client.saveShopProduct(product.id, {
+      ...product.draft,
+      mainImage: {
+        assetId: asset.id,
+        alt: "",
+        focalX: 0.5,
+        focalY: 0.5,
+        crop: { x: 0, y: 0, width: 1, height: 1 },
+      },
+      variants: [
+        {
+          id: "v1",
+          color: "чёрный",
+          size: "22.5",
+          sku: "",
+          priceOnRequest: false,
+          available: true,
+        },
+      ],
+    });
+    await expect(client.publishShopProduct(product.id)).rejects.toMatchObject({ code: "publish_blocked" });
+  });
+
+  it("rejects saving a second wheel type with the same slug", async () => {
+    const client = createLocalAdminClient(memory());
+    const first = await client.createWheelType({ name: "Кованые" });
+    await client.saveWheelType(first.id, first.draft);
+    const second = await client.createWheelType({ name: "Литые другие" });
+    await expect(client.saveWheelType(second.id, { ...second.draft, slug: first.draft.slug })).rejects.toMatchObject({
+      code: "slug_taken",
+    });
+  });
+
+  it("keeps the seeded direction unlocked until publish", async () => {
+    const client = createLocalAdminClient(memory());
+    const direction = await client.getTireDirection("dir-long-haul");
+    expect(direction.slugLocked).toBe(false);
+  });
 });

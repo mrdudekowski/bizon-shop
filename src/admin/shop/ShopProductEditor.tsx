@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
@@ -33,6 +34,7 @@ const BLOCKER_TEXT: Record<string, string> = {
   mainImage: "Добавьте главное фото",
   size: "Укажите размер варианта",
   price: "Укажите цену или «по запросу»",
+  duplicateSize: "Размер повторяется",
 };
 
 function optionalNumber(raw: string): number | undefined {
@@ -53,6 +55,7 @@ function emptyVariant(): ShopVariantDraft {
 }
 
 export function ShopProductEditor({ id }: { id: string }) {
+  const router = useRouter();
   const [record, setRecord] = useState<EntityRecord<ShopProductDraft> | null>(null);
   const [draft, setDraft] = useState<ShopProductDraft | null>(null);
   const [categories, setCategories] = useState<EntityRecord<ShopCategoryDraft>[]>([]);
@@ -208,6 +211,7 @@ export function ShopProductEditor({ id }: { id: string }) {
               SKU
               <input value={variant.sku} onChange={(event) => patchVariant(index, { sku: event.target.value })} />
             </label>
+            {!variant.sku.trim() ? <span>SKU не заполнен</span> : null}
             <label className={styles.field}>
               Цена
               <input
@@ -304,18 +308,32 @@ export function ShopProductEditor({ id }: { id: string }) {
         {savedBlockers.map((code) => (
           <p key={code}>{BLOCKER_TEXT[code] ?? code}</p>
         ))}
-        {blockers.length > 0 && dirty ? <p>Есть несохранённые правки</p> : null}
+        {dirty ? <p>Есть несохранённые правки</p> : null}
         <button type="button" disabled={saving} onClick={() => void onSave()}>
           {saving ? "Сохраняем…" : "Сохранить"}
         </button>
         {role === "admin" ? (
-          <button
-            type="button"
-            disabled={dirty || publishing || savedBlockers.length > 0}
-            onClick={() => void onPublish()}
-          >
-            {publishing ? "Публикуем…" : "Опубликовать"}
-          </button>
+          <>
+            <button
+              type="button"
+              disabled={dirty || publishing || savedBlockers.length > 0}
+              onClick={() => void onPublish()}
+            >
+              {publishing ? "Публикуем…" : "Опубликовать"}
+            </button>
+            {record.publishedSnapshot != null ? (
+              <button type="button" onClick={() => void browserAdminClient().hideShopProduct(id).then(setRecord)}>
+                Скрыть с сайта
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void browserAdminClient().deleteShopProduct(id).then(() => router.push("/shop"))}
+              >
+                Удалить
+              </button>
+            )}
+          </>
         ) : null}
       </div>
     </main>

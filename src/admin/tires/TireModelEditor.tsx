@@ -334,6 +334,7 @@ export function TireModelEditor({ id }: { id: string }) {
               value={size.sku ?? ""}
               onChange={(event) => patchSize(index, { sku: event.target.value })}
             />
+            {!(size.sku ?? "").trim() ? <span>SKU не заполнен</span> : null}
             {SIZE_TEXT_FIELDS.map((field) => (
               <label key={field.key}>
                 {field.label}
@@ -477,7 +478,7 @@ export function TireModelEditor({ id }: { id: string }) {
         {savedBlockers.map((code) => (
           <p key={code}>{BLOCKER_TEXT[code] ?? code}</p>
         ))}
-        {blockers.length > 0 && dirty ? <p>Есть несохранённые правки</p> : null}
+        {dirty ? <p>Есть несохранённые правки</p> : null}
         <button type="button" disabled={saving} onClick={() => void onSave()}>
           {saving ? "Сохраняем…" : "Сохранить"}
         </button>
@@ -490,14 +491,15 @@ export function TireModelEditor({ id }: { id: string }) {
             >
               {publishing ? "Публикуем…" : "Опубликовать"}
             </button>
-            <button type="button" onClick={() => void onHide()}>
-              Скрыть с сайта
-            </button>
-            {record.publishedSnapshot == null ? (
+            {record.publishedSnapshot != null ? (
+              <button type="button" onClick={() => void onHide()}>
+                Скрыть с сайта
+              </button>
+            ) : (
               <button type="button" onClick={() => void onDelete()}>
                 Удалить
               </button>
-            ) : null}
+            )}
           </>
         ) : null}
       </div>

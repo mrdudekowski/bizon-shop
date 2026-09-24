@@ -8,11 +8,23 @@ import type { ArticleDraft, DocumentStatus } from "@/admin/domain/types";
 
 import styles from "./MaterialList.module.css";
 
+const STATUS_LABEL: Record<DocumentStatus, string> = {
+  draft: "черновик",
+  on_site: "на сайте",
+  hidden: "скрыто",
+};
+
 export function MaterialList() {
   const router = useRouter();
-  const [items, setItems] = useState<{ id: string; title: string; kind: ArticleDraft["kind"]; status: DocumentStatus }[]>(
-    [],
-  );
+  const [items, setItems] = useState<
+    {
+      id: string;
+      title: string;
+      kind: ArticleDraft["kind"];
+      status: DocumentStatus;
+      hasUnpublishedDraft: boolean;
+    }[]
+  >([]);
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState<ArticleDraft["kind"]>("article");
 
@@ -53,7 +65,8 @@ export function MaterialList() {
           <li key={item.id}>
             <a href={`/materials/${item.id}`}>{item.title}</a>
             <span>{item.kind === "story" ? "История" : "Tire IQ"}</span>
-            <span>{item.status}</span>
+            <span>{STATUS_LABEL[item.status]}</span>
+            {item.hasUnpublishedDraft ? <span>есть черновик</span> : null}
           </li>
         ))}
       </ul>

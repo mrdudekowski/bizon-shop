@@ -186,7 +186,7 @@ function emptyDirectionDraft(id: string, name: string, slug: string): TireDirect
   };
 }
 
-function wrapDirection(flat: TireDirection): EntityRecord<TireDirectionDraft> {
+function wrapDirection(flat: { id: string; name: string; slug: string }): EntityRecord<TireDirectionDraft> {
   const draft = emptyDirectionDraft(flat.id, flat.name, flat.slug);
   return {
     id: flat.id,
@@ -194,7 +194,7 @@ function wrapDirection(flat: TireDirection): EntityRecord<TireDirectionDraft> {
     savedDraft: draft,
     publishedSnapshot: null,
     hidden: false,
-    slugLocked: true,
+    slugLocked: false,
     lastSavedBy: null,
     lastPublishedBy: null,
   };
@@ -240,6 +240,17 @@ function listStatus(record: { hidden: boolean; publishedSnapshot: unknown }): Do
   return "on_site";
 }
 
+function hasUnpublishedDraft(record: {
+  publishedSnapshot: unknown;
+  savedDraft: unknown;
+}): boolean {
+  return (
+    record.publishedSnapshot != null &&
+    record.savedDraft != null &&
+    !sameJson(record.savedDraft, record.publishedSnapshot)
+  );
+}
+
 function requireNamed<T extends { id: string }>(records: EntityRecord<T>[], id: string): EntityRecord<T> {
   const record = records.find((item) => item.id === id);
   if (record == null) throw new Error("not_found");
@@ -282,15 +293,48 @@ function saveNamed<T extends { id: string; slug: string }>(
   draft: T,
 ): EntityRecord<T> {
   const state = load();
-  const record = requireNamed(pick(state), id);
+  const records = pick(state);
+  const record = requireNamed(records, id);
   if (record.slugLocked && draft.slug !== record.draft.slug) throw new AdminClientError("invalid_slug");
   if (!isValidSlug(draft.slug)) throw new AdminClientError("invalid_slug");
+  const taken = records.some(
+    (item) => item.id !== id && (item.draft.slug === draft.slug || item.savedDraft?.slug === draft.slug),
+  );
+  if (taken) throw new AdminClientError("slug_taken");
   const next = clampDeep({ ...draft, id });
   record.draft = next;
   record.savedDraft = next;
   record.lastSavedBy = state.session.login;
   save(state);
   return record;
+}
+
+function hideNamed<T extends { id: string }>(
+  load: () => StoreState,
+  save: (state: StoreState) => void,
+  pick: (state: StoreState) => EntityRecord<T>[],
+  id: string,
+): EntityRecord<T> {
+  const state = load();
+  const record = requireNamed(pick(state), id);
+  if (record.publishedSnapshot == null) throw new AdminClientError("publish_blocked");
+  record.hidden = true;
+  save(state);
+  return record;
+}
+
+function deleteNamed<T extends { id: string }>(
+  load: () => StoreState,
+  save: (state: StoreState) => void,
+  pick: (state: StoreState) => EntityRecord<T>[],
+  remove: (state: StoreState, id: string) => void,
+  id: string,
+): void {
+  const state = load();
+  const record = requireNamed(pick(state), id);
+  if (record.publishedSnapshot != null) throw new AdminClientError("publish_blocked");
+  remove(state, id);
+  save(state);
 }
 
 function publishNamed<T extends { id: string; slug: string }>(
@@ -497,6 +541,8 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         id: record.id,
         name: record.draft.name,
         slug: record.draft.slug,
+        status: listStatus(record),
+        hasUnpublishedDraft: hasUnpublishedDraft(record),
       }));
     },
 
@@ -518,6 +564,22 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       return publishNamed(load, save, (state) => state.directions, id, tireDirectionPublishBlockers);
     },
 
+    async hideTireDirection(id) {
+      return hideNamed(load, save, (state) => state.directions, id);
+    },
+
+    async deleteTireDirection(id) {
+      deleteNamed(
+        load,
+        save,
+        (state) => state.directions,
+        (state, directionId) => {
+          state.directions = state.directions.filter((item) => item.id !== directionId);
+        },
+        id,
+      );
+    },
+
     async createAsset(file) {
       const state = load();
       const id = crypto.randomUUID();
@@ -536,10 +598,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
           directionName: direction?.draft.name ?? "",
           sizeCount: record.draft.sizes.length,
           status: listStatus(record),
-          hasUnpublishedDraft:
-            record.publishedSnapshot != null &&
-            record.savedDraft != null &&
-            !sameJson(record.savedDraft, record.publishedSnapshot),
+          hasUnpublishedDraft: hasUnpublishedDraft(record),
           imageAssetId: record.draft.mainImage?.assetId ?? null,
         };
       });
@@ -612,6 +671,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     async hideTireModel(id) {
       const state = load();
       const record = requireModel(state, id);
+      if (record.publishedSnapshot == null) throw new AdminClientError("publish_blocked");
       record.hidden = true;
       save(state);
       return record;
@@ -627,6 +687,10 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async listWheelTypes() {
       return load().wheelTypes;
+    },
+
+    async getWheelType(id: string) {
+      return requireNamed(load().wheelTypes, id);
     },
 
     async createWheelType(input: { name: string }) {
@@ -648,6 +712,22 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       return publishNamed(load, save, (state) => state.wheelTypes, id, wheelTypePublishBlockers);
     },
 
+    async hideWheelType(id: string) {
+      return hideNamed(load, save, (state) => state.wheelTypes, id);
+    },
+
+    async deleteWheelType(id: string) {
+      deleteNamed(
+        load,
+        save,
+        (state) => state.wheelTypes,
+        (state, typeId) => {
+          state.wheelTypes = state.wheelTypes.filter((item) => item.id !== typeId);
+        },
+        id,
+      );
+    },
+
     async listWheelModels() {
       const state = load();
       return state.wheelModels.map((record) => ({
@@ -655,6 +735,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         name: record.draft.name,
         typeName: state.wheelTypes.find((item) => item.id === record.draft.wheelTypeId)?.draft.name ?? "",
         status: listStatus(record),
+        hasUnpublishedDraft: hasUnpublishedDraft(record),
       }));
     },
 
@@ -690,8 +771,28 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       return publishNamed(load, save, (state) => state.wheelModels, id, wheelModelPublishBlockers);
     },
 
+    async hideWheelModel(id: string) {
+      return hideNamed(load, save, (state) => state.wheelModels, id);
+    },
+
+    async deleteWheelModel(id: string) {
+      deleteNamed(
+        load,
+        save,
+        (state) => state.wheelModels,
+        (state, modelId) => {
+          state.wheelModels = state.wheelModels.filter((item) => item.id !== modelId);
+        },
+        id,
+      );
+    },
+
     async listShopCategories() {
       return load().shopCategories;
+    },
+
+    async getShopCategory(id: string) {
+      return requireNamed(load().shopCategories, id);
     },
 
     async createShopCategory(input: { name: string }) {
@@ -713,6 +814,22 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       return publishNamed(load, save, (state) => state.shopCategories, id, wheelTypePublishBlockers);
     },
 
+    async hideShopCategory(id: string) {
+      return hideNamed(load, save, (state) => state.shopCategories, id);
+    },
+
+    async deleteShopCategory(id: string) {
+      deleteNamed(
+        load,
+        save,
+        (state) => state.shopCategories,
+        (state, categoryId) => {
+          state.shopCategories = state.shopCategories.filter((item) => item.id !== categoryId);
+        },
+        id,
+      );
+    },
+
     async listShopProducts() {
       const state = load();
       return state.shopProducts.map((record) => ({
@@ -720,6 +837,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         name: record.draft.name,
         categoryName: state.shopCategories.find((item) => item.id === record.draft.categoryId)?.draft.name ?? "",
         status: listStatus(record),
+        hasUnpublishedDraft: hasUnpublishedDraft(record),
       }));
     },
 
@@ -747,6 +865,22 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async publishShopProduct(id: string) {
       return publishNamed(load, save, (state) => state.shopProducts, id, shopProductPublishBlockers);
+    },
+
+    async hideShopProduct(id: string) {
+      return hideNamed(load, save, (state) => state.shopProducts, id);
+    },
+
+    async deleteShopProduct(id: string) {
+      deleteNamed(
+        load,
+        save,
+        (state) => state.shopProducts,
+        (state, productId) => {
+          state.shopProducts = state.shopProducts.filter((item) => item.id !== productId);
+        },
+        id,
+      );
     },
 
     async listPages() {
@@ -794,6 +928,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         title: record.draft.title,
         kind: record.draft.kind,
         status: listStatus(record),
+        hasUnpublishedDraft: hasUnpublishedDraft(record),
       }));
     },
 
@@ -826,19 +961,19 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async hideMaterial(id: string) {
-      const state = load();
-      const record = requireNamed(state.materials, id);
-      record.hidden = true;
-      save(state);
-      return record;
+      return hideNamed(load, save, (state) => state.materials, id);
     },
 
     async deleteMaterial(id: string) {
-      const state = load();
-      const record = requireNamed(state.materials, id);
-      if (record.publishedSnapshot != null) throw new AdminClientError("publish_blocked");
-      state.materials = state.materials.filter((item) => item.id !== id);
-      save(state);
+      deleteNamed(
+        load,
+        save,
+        (state) => state.materials,
+        (state, materialId) => {
+          state.materials = state.materials.filter((item) => item.id !== materialId);
+        },
+        id,
+      );
     },
 
     async listAssets() {

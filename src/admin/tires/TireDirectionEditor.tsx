@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
@@ -31,6 +32,7 @@ const BLOCKER_TEXT: Record<string, string> = {
 };
 
 export function TireDirectionEditor({ id }: { id: string }) {
+  const router = useRouter();
   const [record, setRecord] = useState<EntityRecord<TireDirectionDraft> | null>(null);
   const [draft, setDraft] = useState<TireDirectionDraft | null>(null);
   const [role, setRole] = useState<AdminRole>("admin");
@@ -87,6 +89,16 @@ export function TireDirectionEditor({ id }: { id: string }) {
     } finally {
       setPublishing(false);
     }
+  }
+
+  async function onHide() {
+    const hidden = await browserAdminClient().hideTireDirection(id);
+    setRecord(hidden);
+  }
+
+  async function onDelete() {
+    await browserAdminClient().deleteTireDirection(id);
+    router.push("/tires/directions");
   }
 
   return (
@@ -176,18 +188,29 @@ export function TireDirectionEditor({ id }: { id: string }) {
         {savedBlockers.map((code) => (
           <p key={code}>{BLOCKER_TEXT[code] ?? code}</p>
         ))}
-        {blockers.length > 0 && dirty ? <p>Есть несохранённые правки</p> : null}
+        {dirty ? <p>Есть несохранённые правки</p> : null}
         <button type="button" disabled={saving} onClick={() => void onSave()}>
           {saving ? "Сохраняем…" : "Сохранить"}
         </button>
         {role === "admin" ? (
-          <button
-            type="button"
-            disabled={dirty || publishing || savedBlockers.length > 0}
-            onClick={() => void onPublish()}
-          >
-            {publishing ? "Публикуем…" : "Опубликовать"}
-          </button>
+          <>
+            <button
+              type="button"
+              disabled={dirty || publishing || savedBlockers.length > 0}
+              onClick={() => void onPublish()}
+            >
+              {publishing ? "Публикуем…" : "Опубликовать"}
+            </button>
+            {record.publishedSnapshot != null ? (
+              <button type="button" onClick={() => void onHide()}>
+                Скрыть с сайта
+              </button>
+            ) : (
+              <button type="button" onClick={() => void onDelete()}>
+                Удалить
+              </button>
+            )}
+          </>
         ) : null}
       </div>
     </main>

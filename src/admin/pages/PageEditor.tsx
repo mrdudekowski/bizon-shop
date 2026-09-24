@@ -20,6 +20,16 @@ import { PlacementFields } from "@/admin/media/PlacementFields";
 import { PAGE_LABELS } from "./pageLabels";
 import styles from "./PageEditor.module.css";
 
+const ERROR_TEXT: Record<AdminClientError["code"], string> = {
+  slug_taken: "Такой slug уже занят",
+  invalid_slug: "Slug нельзя изменить",
+  publish_blocked: "Публикация закрыта",
+  unsaved: "Сначала сохраните черновик",
+  media_in_use: "Файл ещё используется",
+  cannot_disable_self: "Нельзя отключить себя",
+  last_admin: "Нельзя отключить последнего администратора",
+};
+
 function SectionFields({
   value,
   onChange,
@@ -503,7 +513,7 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
     try {
       setRecord(await browserAdminClient().savePage(pageKey, draft));
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? error.code : "error");
+      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось сохранить");
     } finally {
       setSaving(false);
     }
@@ -515,7 +525,7 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
     try {
       setRecord(await browserAdminClient().publishPage(pageKey));
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? error.code : "error");
+      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось опубликовать");
     } finally {
       setPublishing(false);
     }

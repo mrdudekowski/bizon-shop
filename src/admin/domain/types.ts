@@ -102,6 +102,8 @@ export type TireDirection = {
   id: string;
   name: string;
   slug: string;
+  status: DocumentStatus;
+  hasUnpublishedDraft: boolean;
 };
 
 export type MediaAsset = {

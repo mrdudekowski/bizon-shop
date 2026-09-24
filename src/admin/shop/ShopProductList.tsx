@@ -18,7 +18,13 @@ export function ShopProductList() {
   const router = useRouter();
   const [categories, setCategories] = useState<EntityRecord<ShopCategoryDraft>[]>([]);
   const [products, setProducts] = useState<
-    { id: string; name: string; categoryName: string; status: DocumentStatus }[]
+    {
+      id: string;
+      name: string;
+      categoryName: string;
+      status: DocumentStatus;
+      hasUnpublishedDraft: boolean;
+    }[]
   >([]);
   const [categoryName, setCategoryName] = useState("");
   const [name, setName] = useState("");
@@ -66,7 +72,12 @@ export function ShopProductList() {
         {categories.map((category) => (
           <li key={category.id}>
             <a href={`/shop/categories/${category.id}`}>{category.draft.name}</a>{" "}
-            <span>{category.draft.slug}</span>
+            <span>{category.draft.slug}</span>{" "}
+            <span>
+              {STATUS_LABEL[
+                category.hidden ? "hidden" : category.publishedSnapshot == null ? "draft" : "on_site"
+              ]}
+            </span>
           </li>
         ))}
       </ul>
@@ -110,6 +121,7 @@ export function ShopProductList() {
             <a href={`/shop/${product.id}`}>{product.name}</a>
             <span> {product.categoryName} </span>
             <span>{STATUS_LABEL[product.status]}</span>
+            {product.hasUnpublishedDraft ? <span>есть черновик</span> : null}
           </li>
         ))}
       </ul>

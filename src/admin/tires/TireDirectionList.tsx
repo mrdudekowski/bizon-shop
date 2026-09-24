@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { browserAdminClient } from "@/admin/client/localStore";
-import type { TireDirection } from "@/admin/domain/types";
+import type { DocumentStatus, TireDirection } from "@/admin/domain/types";
+
+const STATUS_LABEL: Record<DocumentStatus, string> = {
+  draft: "черновик",
+  on_site: "на сайте",
+  hidden: "скрыто",
+};
 
 export function TireDirectionList() {
   const router = useRouter();
@@ -46,6 +52,8 @@ export function TireDirectionList() {
           <li key={direction.id}>
             <a href={`/tires/directions/${direction.id}`}>{direction.name}</a>
             <span>{direction.slug}</span>
+            <span>{STATUS_LABEL[direction.status]}</span>
+            {direction.hasUnpublishedDraft ? <span>есть черновик</span> : null}
           </li>
         ))}
       </ul>

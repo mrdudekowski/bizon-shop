@@ -20,16 +20,8 @@ export function tireModelPublishBlockers(model: TireModelDraft): PublishBlocker[
   if (model.sizes.some((size) => size.size.trim().length === 0)) blockers.push("size");
   if (model.sizes.some((size) => !hasPrice(size))) blockers.push("price");
 
-  const seen = new Set<string>();
-  for (const size of model.sizes) {
-    const key = size.size.trim().toLowerCase();
-    if (key.length === 0) continue;
-    if (seen.has(key)) {
-      blockers.push("duplicateSize");
-      break;
-    }
-    seen.add(key);
-  }
+  const duplicate = duplicateSizeBlocker(model.sizes.map((size) => size.size));
+  if (duplicate) blockers.push(duplicate);
   return blockers;
 }
 
@@ -49,6 +41,17 @@ export function tireDirectionPublishBlockers(draft: TireDirectionDraft): Publish
   return identityBlockers(draft);
 }
 
+function duplicateSizeBlocker(keys: string[]): PublishBlocker | null {
+  const seen = new Set<string>();
+  for (const raw of keys) {
+    const key = raw.trim().toLowerCase();
+    if (key.length === 0) continue;
+    if (seen.has(key)) return "duplicateSize";
+    seen.add(key);
+  }
+  return null;
+}
+
 export function wheelModelPublishBlockers(model: WheelModelDraft): PublishBlocker[] {
   const blockers = identityBlockers(model);
   if (model.wheelTypeId.trim().length === 0) blockers.push("direction");
@@ -56,14 +59,20 @@ export function wheelModelPublishBlockers(model: WheelModelDraft): PublishBlocke
   if (model.variants.some((variant) => !variant.priceOnRequest && typeof variant.price !== "number")) {
     blockers.push("price");
   }
+  const duplicate = duplicateSizeBlocker(model.variants.map((variant) => variant.sizeLabel));
+  if (duplicate) blockers.push(duplicate);
   return blockers;
 }
 
 export function shopProductPublishBlockers(product: ShopProductDraft): PublishBlocker[] {
   const blockers = identityBlockers(product);
   if (product.categoryId.trim().length === 0) blockers.push("direction");
-  if (!product.priceOnRequest && typeof product.price !== "number") blockers.push("price");
   if (product.variants.some((variant) => variant.size.trim().length === 0)) blockers.push("size");
+  if (product.variants.some((variant) => !variant.priceOnRequest && typeof variant.price !== "number")) {
+    blockers.push("price");
+  }
+  const duplicate = duplicateSizeBlocker(product.variants.map((variant) => variant.size));
+  if (duplicate) blockers.push(duplicate);
   return blockers;
 }
 

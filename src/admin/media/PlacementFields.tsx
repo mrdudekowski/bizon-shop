@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { browserAdminClient } from "@/admin/client/localStore";
-import type { ImagePlacement } from "@/admin/domain/types";
+import type { ImagePlacement, MediaListItem } from "@/admin/domain/types";
 
 import styles from "./PlacementFields.module.css";
 
@@ -40,6 +40,15 @@ type PlacementFieldsProps = {
 
 export function PlacementFields({ value, onChange, label = "Изображение" }: PlacementFieldsProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [assets, setAssets] = useState<MediaListItem[]>([]);
+
+  async function reloadAssets() {
+    setAssets(await browserAdminClient().listAssets());
+  }
+
+  useEffect(() => {
+    void reloadAssets();
+  }, []);
 
   useEffect(() => {
     if (value == null) {
@@ -49,9 +58,10 @@ export function PlacementFields({ value, onChange, label = "Изображени
     let cancelled = false;
     void browserAdminClient()
       .listAssets()
-      .then((assets) => {
+      .then((next) => {
         if (cancelled) return;
-        setPreviewUrl(assets.find((asset) => asset.id === value.assetId)?.dataUrl ?? null);
+        setAssets(next);
+        setPreviewUrl(next.find((asset) => asset.id === value.assetId)?.dataUrl ?? null);
       });
     return () => {
       cancelled = true;
@@ -66,7 +76,17 @@ export function PlacementFields({ value, onChange, label = "Изображени
       mimeType: file.type,
       dataUrl,
     });
+    await reloadAssets();
     onChange(emptyPlacement(asset.id));
+  }
+
+  function selectAsset(assetId: string) {
+    if (assetId === "") return;
+    if (value != null) {
+      onChange({ ...value, assetId });
+      return;
+    }
+    onChange(emptyPlacement(assetId));
   }
 
   function patch(next: Partial<ImagePlacement>) {
@@ -88,6 +108,21 @@ export function PlacementFields({ value, onChange, label = "Изображени
         accept="image/*"
         onChange={(event) => void onFile(event.target.files?.[0])}
       />
+      <label>
+        Из библиотеки
+        <select
+          aria-label={`${label}: из библиотеки`}
+          value={value?.assetId ?? ""}
+          onChange={(event) => selectAsset(event.target.value)}
+        >
+          <option value="">Выбрать файл</option>
+          {assets.map((asset) => (
+            <option key={asset.id} value={asset.id}>
+              {asset.name}
+            </option>
+          ))}
+        </select>
+      </label>
       {value ? (
         <>
           {previewUrl ? (

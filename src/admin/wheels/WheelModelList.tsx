@@ -17,7 +17,9 @@ const STATUS_LABEL: Record<DocumentStatus, string> = {
 export function WheelModelList() {
   const router = useRouter();
   const [types, setTypes] = useState<EntityRecord<WheelTypeDraft>[]>([]);
-  const [models, setModels] = useState<{ id: string; name: string; typeName: string; status: DocumentStatus }[]>([]);
+  const [models, setModels] = useState<
+    { id: string; name: string; typeName: string; status: DocumentStatus; hasUnpublishedDraft: boolean }[]
+  >([]);
   const [name, setName] = useState("");
   const [wheelTypeId, setWheelTypeId] = useState("");
   const [typeName, setTypeName] = useState("");
@@ -60,7 +62,12 @@ export function WheelModelList() {
       <ul className={styles.section}>
         {types.map((type) => (
           <li key={type.id}>
-            <a href={`/wheels/types/${type.id}`}>{type.draft.name}</a> <span>{type.draft.slug}</span>
+            <a href={`/wheels/types/${type.id}`}>{type.draft.name}</a> <span>{type.draft.slug}</span>{" "}
+            <span>
+              {STATUS_LABEL[
+                type.hidden ? "hidden" : type.publishedSnapshot == null ? "draft" : "on_site"
+              ]}
+            </span>
           </li>
         ))}
       </ul>
@@ -104,6 +111,7 @@ export function WheelModelList() {
             <a href={`/wheels/${model.id}`}>{model.name}</a>
             <span> {model.typeName} </span>
             <span>{STATUS_LABEL[model.status]}</span>
+            {model.hasUnpublishedDraft ? <span>есть черновик</span> : null}
           </li>
         ))}
       </ul>

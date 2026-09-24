@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
@@ -27,6 +28,7 @@ const BLOCKER_TEXT: Record<string, string> = {
 };
 
 export function ShopCategoryEditor({ id }: { id: string }) {
+  const router = useRouter();
   const [record, setRecord] = useState<EntityRecord<ShopCategoryDraft> | null>(null);
   const [draft, setDraft] = useState<ShopCategoryDraft | null>(null);
   const [role, setRole] = useState<AdminRole>("admin");
@@ -37,20 +39,19 @@ export function ShopCategoryEditor({ id }: { id: string }) {
 
   useEffect(() => {
     const client = browserAdminClient();
-    void Promise.all([client.listShopCategories(), client.getSession()]).then(([categories, session]) => {
-      const next = categories.find((item) => item.id === id) ?? null;
-      setRecord(next);
-      setDraft(next?.draft ?? null);
-      setMissing(next == null);
-      setRole(session.role);
-    });
+    void Promise.all([client.getShopCategory(id), client.getSession()])
+      .then(([next, session]) => {
+        setRecord(next);
+        setDraft(next.draft);
+        setRole(session.role);
+      })
+      .catch(() => setMissing(true));
   }, [id]);
 
   if (missing) return <main className={styles.page}>Категория не найдена</main>;
   if (draft == null || record == null) return <main className={styles.page}>Загрузка…</main>;
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(record.savedDraft) || record.savedDraft == null;
-  const blockers = wheelTypePublishBlockers(draft);
   const savedBlockers = record.savedDraft == null ? [] : wheelTypePublishBlockers(record.savedDraft);
 
   function patch(next: Partial<ShopCategoryDraft>) {
@@ -138,18 +139,32 @@ export function ShopCategoryEditor({ id }: { id: string }) {
         {savedBlockers.map((code) => (
           <p key={code}>{BLOCKER_TEXT[code] ?? code}</p>
         ))}
-        {blockers.length > 0 && dirty ? <p>Есть несохранённые правки</p> : null}
+        {dirty ? <p>Есть несохранённые правки</p> : null}
         <button type="button" disabled={saving} onClick={() => void onSave()}>
           {saving ? "Сохраняем…" : "Сохранить"}
         </button>
         {role === "admin" ? (
-          <button
-            type="button"
-            disabled={dirty || publishing || savedBlockers.length > 0}
-            onClick={() => void onPublish()}
-          >
-            {publishing ? "Публикуем…" : "Опубликовать"}
-          </button>
+          <>
+            <button
+              type="button"
+              disabled={dirty || publishing || savedBlockers.length > 0}
+              onClick={() => void onPublish()}
+            >
+              {publishing ? "Публикуем…" : "Опубликовать"}
+            </button>
+            {record.publishedSnapshot != null ? (
+              <button type="button" onClick={() => void browserAdminClient().hideShopCategory(id).then(setRecord)}>
+                Скрыть с сайта
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void browserAdminClient().deleteShopCategory(id).then(() => router.push("/shop"))}
+              >
+                Удалить
+              </button>
+            )}
+          </>
         ) : null}
       </div>
     </main>

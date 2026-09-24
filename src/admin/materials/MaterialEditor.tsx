@@ -11,6 +11,16 @@ import { PlacementFields } from "@/admin/media/PlacementFields";
 
 import styles from "./MaterialEditor.module.css";
 
+const ERROR_TEXT: Record<AdminClientError["code"], string> = {
+  slug_taken: "Такой slug уже занят",
+  invalid_slug: "Slug нельзя изменить",
+  publish_blocked: "Публикация закрыта",
+  unsaved: "Сначала сохраните черновик",
+  media_in_use: "Файл ещё используется",
+  cannot_disable_self: "Нельзя отключить себя",
+  last_admin: "Нельзя отключить последнего администратора",
+};
+
 const BLOCKER_TEXT: Record<string, string> = {
   title: "Укажите название",
   slug: "Укажите slug",
@@ -58,7 +68,7 @@ export function MaterialEditor({ id }: { id: string }) {
     try {
       setRecord(await browserAdminClient().saveMaterial(id, draft));
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? error.code : "error");
+      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось сохранить");
     } finally {
       setSaving(false);
     }
@@ -70,7 +80,7 @@ export function MaterialEditor({ id }: { id: string }) {
     try {
       setRecord(await browserAdminClient().publishMaterial(id));
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? error.code : "error");
+      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось опубликовать");
     } finally {
       setPublishing(false);
     }
@@ -189,17 +199,18 @@ export function MaterialEditor({ id }: { id: string }) {
             >
               {publishing ? "Публикуем…" : "Опубликовать"}
             </button>
-            <button type="button" onClick={() => void browserAdminClient().hideMaterial(id).then(setRecord)}>
-              Скрыть с сайта
-            </button>
-            {record.publishedSnapshot == null ? (
+            {record.publishedSnapshot != null ? (
+              <button type="button" onClick={() => void browserAdminClient().hideMaterial(id).then(setRecord)}>
+                Скрыть с сайта
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={() => void browserAdminClient().deleteMaterial(id).then(() => router.push("/materials"))}
               >
                 Удалить
               </button>
-            ) : null}
+            )}
           </>
         ) : null}
         {blockers.length > 0 && record.savedDraft == null ? <p>Сначала сохраните черновик</p> : null}

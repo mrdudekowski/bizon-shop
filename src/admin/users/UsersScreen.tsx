@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { AdminClientError } from "@/admin/client/errors";
 import { browserAdminClient } from "@/admin/client/localStore";
-import type { AdminRole, AdminUser } from "@/admin/domain/types";
+import type { AdminRole, AdminSession, AdminUser } from "@/admin/domain/types";
 
 import styles from "./UsersScreen.module.css";
 
@@ -16,6 +16,7 @@ const ERROR_TEXT: Partial<Record<string, string>> = {
 };
 
 export function UsersScreen() {
+  const [session, setSession] = useState<AdminSession | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [login, setLogin] = useState("");
   const [role, setRole] = useState<AdminRole>("editor");
@@ -27,8 +28,22 @@ export function UsersScreen() {
   }
 
   useEffect(() => {
-    void reload();
+    void browserAdminClient()
+      .getSession()
+      .then((next) => {
+        setSession(next);
+        if (next.role === "admin") void reload();
+      });
   }, []);
+
+  if (session == null) return <main className={styles.screen}>Загрузка…</main>;
+  if (session.role === "editor") {
+    return (
+      <main className={styles.screen}>
+        <p>Раздел доступен администратору</p>
+      </main>
+    );
+  }
 
   function showError(error: unknown) {
     const code = error instanceof AdminClientError ? error.code : "error";
@@ -80,7 +95,13 @@ export function UsersScreen() {
                 void browserAdminClient()
                   .setUserRole(user.id, event.target.value as AdminRole)
                   .then(reload)
-                  .catch(showError);
+                  .catch((error) => {
+                    if (error instanceof AdminClientError && error.code === "last_admin") {
+                      setMessage("Нельзя снять роль у последнего администратора");
+                      return;
+                    }
+                    showError(error);
+                  });
               }}
             >
               <option value="editor">Редактор</option>

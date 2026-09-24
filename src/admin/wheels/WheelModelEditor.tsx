@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
@@ -34,6 +35,7 @@ const BLOCKER_TEXT: Record<string, string> = {
   mainImage: "Добавьте главное фото",
   size: "Укажите читаемый размер",
   price: "Укажите цену или «по запросу»",
+  duplicateSize: "Размер повторяется",
 };
 
 function optionalNumber(raw: string): number | undefined {
@@ -63,6 +65,7 @@ function readFile(file: File): Promise<string> {
 }
 
 export function WheelModelEditor({ id }: { id: string }) {
+  const router = useRouter();
   const [record, setRecord] = useState<EntityRecord<WheelModelDraft> | null>(null);
   const [draft, setDraft] = useState<WheelModelDraft | null>(null);
   const [types, setTypes] = useState<EntityRecord<WheelTypeDraft>[]>([]);
@@ -388,18 +391,32 @@ export function WheelModelEditor({ id }: { id: string }) {
         {savedBlockers.map((code) => (
           <p key={code}>{BLOCKER_TEXT[code] ?? code}</p>
         ))}
-        {blockers.length > 0 && dirty ? <p>Есть несохранённые правки</p> : null}
+        {dirty ? <p>Есть несохранённые правки</p> : null}
         <button type="button" disabled={saving} onClick={() => void onSave()}>
           {saving ? "Сохраняем…" : "Сохранить"}
         </button>
         {role === "admin" ? (
-          <button
-            type="button"
-            disabled={dirty || publishing || savedBlockers.length > 0}
-            onClick={() => void onPublish()}
-          >
-            {publishing ? "Публикуем…" : "Опубликовать"}
-          </button>
+          <>
+            <button
+              type="button"
+              disabled={dirty || publishing || savedBlockers.length > 0}
+              onClick={() => void onPublish()}
+            >
+              {publishing ? "Публикуем…" : "Опубликовать"}
+            </button>
+            {record.publishedSnapshot != null ? (
+              <button type="button" onClick={() => void browserAdminClient().hideWheelModel(id).then(setRecord)}>
+                Скрыть с сайта
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void browserAdminClient().deleteWheelModel(id).then(() => router.push("/wheels"))}
+              >
+                Удалить
+              </button>
+            )}
+          </>
         ) : null}
       </div>
     </main>
