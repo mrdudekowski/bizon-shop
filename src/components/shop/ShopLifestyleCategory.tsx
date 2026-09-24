@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ShopProductCard } from "@/components/shop/ShopProductCard";
 import type { ShopLifestyleCategory } from "@/constants/shopCategories";
 import { SHOP_LIFESTYLE_CATEGORIES } from "@/constants/shopCategories";
-import type { CmsProduct } from "@/lib/cms/types";
+import type { CmsProduct } from "@/lib/content/types";
 import { ShopResponsiveImage } from "./ShopResponsiveImage";
 import styles from "./ShopLifestyleCategory.module.css";
 

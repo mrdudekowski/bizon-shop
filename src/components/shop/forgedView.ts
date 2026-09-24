@@ -1,4 +1,4 @@
-import type { CmsWheelModel } from "@/lib/cms/types";
+import type { CmsWheelModel } from "@/lib/content/types";
 
 export type ForgedWheelView = {
   id: string;

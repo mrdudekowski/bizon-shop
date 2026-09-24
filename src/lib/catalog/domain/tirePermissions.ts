@@ -1,4 +1,4 @@
-import type { UserRole } from "@/access/roles";
+export type UserRole = "admin" | "content_manager" | "sales_manager" | "viewer";
 
 import type { VerificationStatus } from "./tireCatalog";
 

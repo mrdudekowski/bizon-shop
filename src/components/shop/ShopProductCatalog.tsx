@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { ShopProductCard } from "@/components/shop/ShopProductCard";
-import type { CmsProduct, CmsShopCategory } from "@/lib/cms/types";
+import type { CmsProduct, CmsShopCategory } from "@/lib/content/types";
 import styles from "./ShopProductCatalog.module.css";
 
 export function ShopProductCatalog({

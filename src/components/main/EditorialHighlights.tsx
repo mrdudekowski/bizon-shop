@@ -3,8 +3,8 @@ import Link from "next/link";
 
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { PREMIUM_MEDIA } from "@/constants/images";
-import type { CmsArticle, CmsStory } from "@/lib/cms/types";
-import type { PageShell } from "@/lib/cms/pages/types";
+import type { CmsArticle, CmsStory } from "@/lib/content/types";
+import type { PageShell } from "@/lib/content/pages/types";
 
 import styles from "./MainHome.module.css";
 

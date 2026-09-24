@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { CmsTireModel, CmsTireType } from "@/lib/cms/types";
+import type { CmsTireModel, CmsTireType } from "@/lib/content/types";
 
 import { buildTireCatalogReadModel } from "./tireReadModel";
 

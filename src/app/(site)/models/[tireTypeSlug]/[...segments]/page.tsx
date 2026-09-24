@@ -10,7 +10,7 @@ import {
   getTireModelByTypeAndSlug,
   getTireTypeBySlug,
   getTireVariantsByModelId,
-} from "@/lib/cms";
+} from "@/lib/content";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { createProductStructuredData } from "@/lib/seo/structuredData";
 

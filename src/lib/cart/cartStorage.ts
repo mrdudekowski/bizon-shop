@@ -1,5 +1,4 @@
 import type { RequestItemInput } from "@/types/requestItem";
-import { syncCartToServer } from "./serverCartClient";
 
 export const CART_STORAGE_KEY = "bizon-cart";
 export const CART_COOKIE_NAME = "bizon-cart-v1";
@@ -89,7 +88,6 @@ export function writeCart(items: RequestItemInput[]): void {
   if (typeof window === "undefined") return;
   const compactItems = compactCartForCookie(items);
   writeLocalCart(compactItems);
-  void syncCartToServer(compactItems);
 }
 
 export function replaceCartFromServer(items: RequestItemInput[]): void {

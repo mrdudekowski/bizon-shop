@@ -52,7 +52,7 @@ export function ServicePage({
   children,
 }: ServicePageProps) {
   return (
-    <main data-main-chrome-tone="light">
+    <div data-main-chrome-tone="light">
       <PageHero
         kicker={kicker}
         title={title}
@@ -87,7 +87,7 @@ export function ServicePage({
         </section>
 
         {proof ? (
-          <section className={styles.proof} aria-labelledby="service-proof-heading">
+          <section className={styles.proof} aria-labelledby="service-proof-heading" data-evidence-source="service-proof">
             <div className={styles.proofMedia}>
               <Image src={proof.src} alt={proof.alt} fill sizes="(max-width: 767px) 100vw, 48vw" />
             </div>
@@ -116,6 +116,6 @@ export function ServicePage({
           </section>
         ) : null}
       </div>
-    </main>
+    </div>
   );
 }

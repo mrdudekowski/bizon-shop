@@ -4,8 +4,8 @@ import { CatalogBuyPanel } from "@/components/catalog/CatalogBuyPanel";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { WheelVariantsTable } from "@/components/catalog/WheelVariantsTable";
-import { getWheelConstructionMethodLabel } from "@/lib/cms/wheelConstructionMethod";
-import type { CmsWheelModel, CmsWheelType, CmsWheelVariant } from "@/lib/cms/types";
+import { getWheelConstructionMethodLabel } from "@/lib/content/wheelConstructionMethod";
+import type { CmsWheelModel, CmsWheelType, CmsWheelVariant } from "@/lib/content/types";
 
 import styles from "./TireCatalog.module.css";
 
@@ -30,9 +30,12 @@ export function WheelModelStage({
     (url, index, values): url is string => Boolean(url) && values.indexOf(url) === index,
   );
   const contactHref = `/contact?subject=wheel-selection&model=${encodeURIComponent(model.slug)}`;
+  const evidenceDocuments = (model.documents ?? []).filter(
+    (document) => Boolean(document.url?.trim() && document.title?.trim()),
+  );
 
   return (
-    <main className={styles.modelPage} data-main-chrome-tone="light">
+    <div className={styles.modelPage} data-main-chrome-tone="light">
       <div className={styles.pageInner}>
         <PageHeader
           title={model.name}
@@ -55,15 +58,15 @@ export function WheelModelStage({
               priority
               sizes="(max-width: 899px) 100vw, 58vw"
             />
-            <span className={styles.mediaIndex}>
-              01 / {String(Math.max(gallery.length, 1)).padStart(2, "0")}
-            </span>
           </div>
 
           <div className={styles.productPanel}>
             <p className={styles.eyebrow}>{model.series || wheelType.name}</p>
             <h2 id="wheel-stage-title">Параметры под ваш автомобиль</h2>
-            <p>{model.descriptionLong || model.descriptionShort}</p>
+            <p>
+              {model.descriptionLong || model.descriptionShort} Выберите размер и
+              конфигурацию, затем подтвердите совместимость с автомобилем до заказа.
+            </p>
             <dl className={styles.productFacts}>
               <div>
                 <dt>Конструкция</dt>
@@ -104,18 +107,18 @@ export function WheelModelStage({
 
             <p className={styles.disclaimer}>
               {model.fitmentNotes ||
-                "Совместимость с автомобилем подтверждает специалист BIZON."}
+                "Параметры и документы помогают проверить конфигурацию. Совместимость с автомобилем и финальное предложение подтверждает специалист BIZON."}
             </p>
           </div>
         </section>
 
         <WheelVariantsTable model={model} variants={variants} modelPath={modelPath} />
 
-        {model.documents && model.documents.length > 0 && (
-          <section className={styles.documents} aria-labelledby="wheel-documents-title">
-            <h2 id="wheel-documents-title">Документы</h2>
+        {evidenceDocuments.length > 0 && (
+          <section className={styles.documents} aria-labelledby="wheel-documents-title" data-evidence-source="technical-documents">
+            <h2 id="wheel-documents-title">Технические подтверждения</h2>
             <div>
-              {model.documents.map((document) => (
+              {evidenceDocuments.map((document) => (
                 <a key={document.url} href={document.url} target="_blank" rel="noreferrer">
                   <span>{document.title}</span>
                   <span aria-hidden="true">PDF ↗</span>
@@ -132,7 +135,7 @@ export function WheelModelStage({
           </div>
           <div className={styles.finalCtaActions}>
             <Link className="btn-secondary" href={contactHref}>
-              Связаться со специалистом
+              Запросить наличие и предложение
             </Link>
             <Link className="btn-glass" href={typeBasePath}>
               ← Все модели {wheelType.name}
@@ -140,6 +143,6 @@ export function WheelModelStage({
           </div>
         </section>
       </div>
-    </main>
+    </div>
   );
 }

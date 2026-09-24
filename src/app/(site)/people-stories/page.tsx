@@ -1,5 +1,5 @@
 import { EditorialListing } from "@/components/content/EditorialListing";
-import { getPeopleStories } from "@/lib/cms";
+import { getPeopleStories } from "@/lib/content";
 import { createPageMetadata } from "@/lib/seo/metadata";
 
 export const metadata = createPageMetadata({

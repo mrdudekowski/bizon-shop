@@ -23,8 +23,16 @@ export function formatRequestForTelegram(
   data: NormalizedRequest,
   adminRequestUrl?: string,
 ): string {
+  return formatRequestPlainText(data, adminRequestUrl, { heading: "🦬 Новая заявка BIZON" });
+}
+
+export function formatRequestPlainText(
+  data: NormalizedRequest,
+  adminRequestUrl?: string,
+  options?: { heading?: string },
+): string {
   const blocks = [
-    "🦬 Новая заявка BIZON",
+    options?.heading ?? "Новая заявка BIZON",
     "",
     line("Источник", data.sourceForm),
     line("Страница", data.sourcePage),

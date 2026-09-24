@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { CatalogCard } from "@/components/catalog/CatalogCard";
 import { PREMIUM_MEDIA } from "@/constants/images";
-import type { CmsArticle, CmsStory, CmsTireModel } from "@/lib/cms/types";
+import type { CmsArticle, CmsStory, CmsTireModel } from "@/lib/content/types";
 import { getTireCategoryByValue } from "@/lib/catalog/tireCategories";
 
 type HomeContentSectionsProps = {

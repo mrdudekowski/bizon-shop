@@ -1,6 +1,8 @@
-import { getTireModelsByTypeSlug } from "@/lib/cms/getTireModels";
-import { getTireTypes } from "@/lib/cms/getTireTypes";
-import { getTireVariantsByModelId } from "@/lib/cms/getTireVariants";
+import {
+  getTireModelsByTypeSlug,
+  getTireTypes,
+  getTireVariantsByModelId,
+} from "@/lib/content/staticCatalog";
 
 import {
   buildTireCatalogReadModel,

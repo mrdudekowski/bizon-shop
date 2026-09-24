@@ -10,14 +10,17 @@ export function getScrollBehavior() {
 }
 
 /**
+ * Resolves --header-height (may be calc + safe-area) to CSS pixels.
  * @returns {number}
  */
 export function getHeaderOffset() {
-  const raw = getComputedStyle(document.documentElement).getPropertyValue(
-    "--header-height"
-  );
-  const parsed = parseInt(raw, 10);
-  return Number.isFinite(parsed) ? parsed : HEADER_OFFSET_FALLBACK_PX;
+  const probe = document.createElement("div");
+  probe.style.cssText =
+    "position:absolute;visibility:hidden;pointer-events:none;height:var(--header-height)";
+  document.documentElement.appendChild(probe);
+  const value = probe.offsetHeight;
+  probe.remove();
+  return value > 0 ? value : HEADER_OFFSET_FALLBACK_PX;
 }
 
 /**

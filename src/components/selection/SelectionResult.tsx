@@ -44,7 +44,7 @@ export function SelectionResult({
   return (
     <section className={styles.result} aria-labelledby="selection-result-title">
       <p className={styles.eyebrow}>Результат подбора</p>
-      <h1 id="selection-result-title">Предварительная рекомендация</h1>
+      <h2 id="selection-result-title">Предварительная рекомендация</h2>
 
       {result.kind === "matches" ? (
         <>

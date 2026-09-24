@@ -2,7 +2,7 @@ import {
   ADMIN_GROUPS,
   TIRE_APPLICATION_CATEGORIES,
   WHEEL_CONSTRUCTION_METHODS,
-} from "@/collections/fields/constants";
+} from "@/lib/catalog/catalogFieldConstants";
 
 export type CatalogAxisId = "tires" | "wheels" | "shop";
 
@@ -124,7 +124,7 @@ export const CATALOG_AXES: CatalogAxis[] = [
   {
     id: "shop",
     label: "Bison.Shop",
-    adminGroup: ADMIN_GROUPS.catalog,
+    adminGroup: ADMIN_GROUPS.shopCatalog,
     relationTo: "products",
     storageSegment: CATALOG_RELATION_STORAGE.products,
     targetLabel: "Товар магазина",

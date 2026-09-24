@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import type { HomeResumeContent } from "@/lib/cms/pages/types";
+import type { HomeResumeContent } from "@/lib/content/pages/types";
 
 import styles from "./MainHome.module.css";
 

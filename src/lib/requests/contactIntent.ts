@@ -5,6 +5,7 @@ export type ContactSubject =
   | "supplier"
   | "warranty"
   | "tire-selection"
+  | "procurement"
   | "wheel-selection";
 
 export type ContactIntent = {
@@ -49,6 +50,14 @@ const SUBJECT_MAP: Record<ContactSubject, Omit<ContactIntent, "subject">> = {
     formEyebrow: "Подбор шин",
     formHeading: "Оставьте контакт для проверки",
     summaryLabel: "Подбор шин",
+  },
+  procurement: {
+    sourceForm: "procurement",
+    title: "Отправить спецификацию",
+    description: "Укажите размер и количество — BIZON проверит подходящие модели, наличие и условия поставки.",
+    formEyebrow: "Запрос по спецификации",
+    formHeading: "Получить наличие и предложение",
+    summaryLabel: "Запрос по спецификации",
   },
   "wheel-selection": {
     sourceForm: "wheel_selection",

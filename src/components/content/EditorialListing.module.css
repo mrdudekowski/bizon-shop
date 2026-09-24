@@ -6,6 +6,51 @@
   padding: 0 var(--page-gutter) var(--section-space);
 }
 
+.taxonomy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  margin-bottom: var(--section-space);
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sectionTitle {
+  margin: 0 0 1.25rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: 560;
+  letter-spacing: -0.05em;
+}
+
+.taxonomyLabel {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.taxonomyLink {
+  color: var(--color-link);
+  font-size: 0.9375rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.taxonomyLink:hover {
+  color: var(--color-link-hover);
+}
+
+.taxonomyLinkActive {
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
 .grid {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.9fr);

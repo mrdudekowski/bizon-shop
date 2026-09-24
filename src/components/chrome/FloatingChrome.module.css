@@ -5,11 +5,11 @@
   --chrome-hover-bg: rgba(6, 227, 190, 0.11);
   --chrome-hover-color: var(--bizon-mint-700);
   position: sticky;
-  top: 12px;
+  top: var(--chrome-inset-top, 12px);
   z-index: var(--z-index-header);
   width: min(1440px, calc(100% - 32px));
-  height: 84px;
-  margin: 12px auto 0;
+  height: var(--chrome-bar-height, 84px);
+  margin: var(--chrome-inset-top, 12px) auto 0;
   pointer-events: none;
 }
 
@@ -76,6 +76,7 @@
   min-height: 44px;
   align-items: center;
   border-radius: var(--radius-pill);
+  font-family: var(--font-display);
   font-size: 0.875rem;
   font-weight: 750;
   letter-spacing: 0.12em;
@@ -180,10 +181,7 @@
 
 @media (max-width: 560px) {
   .chrome {
-    top: 8px;
     width: min(100% - 24px, 1440px);
-    height: 76px;
-    margin-top: 8px;
   }
 
   .bar {

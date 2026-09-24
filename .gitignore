@@ -70,6 +70,9 @@ Desktop.ini
 
 # Project documentation (local only, not in repo)
 docs/
+!docs/implementation/
+!docs/implementation/**
+!docs/client-data-blockers-audit.md
 
 # Payload reference monorepo (not used — app uses npm @payloadcms/*)
 payload-bizon/

@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2400 1525" width="2400" height="1525" fill="none">
+  <!-- VIS-05 Construction Truck / Concrete Mixer — constructed vectors from approved raster master.
+       Axle convention: drive-axle-1 is the rearmost drive axle (right); drive-axle-2 is the
+       forward drive of the tandem. Centers measured from
+       out/VIS-05-construction-truck-master.png (2400×1525). -->
+  <g id="vehicle-body">
+    <!-- Mixer drum (tilted rear-up). Constructed barrel, 3 hoop seams. -->
+    <path class="drum" d="M 858 742
+      C 846 678 862 618 928 588
+      C 1060 538 1240 458 1450 400
+      C 1600 368 1735 362 1835 392
+      C 1895 416 1922 470 1928 555
+      C 1934 660 1920 770 1855 838
+      C 1768 910 1548 922 1320 912
+      C 1108 902 960 854 882 804
+      C 848 774 850 756 858 742 Z" fill="#C4C7CB"/>
+    <path class="drum-sheen" d="M 960 596
+      C 1140 538 1330 456 1540 412
+      C 1670 388 1780 390 1840 428
+      C 1810 408 1680 400 1536 432
+      C 1340 472 1155 540 1008 598
+      C 980 610 948 608 960 596 Z" fill="#D5D8DC" opacity="0.5"/>
+    <path d="M 1176 548 C 1148 640 1146 760 1188 868" fill="none" stroke="#B0B4B8" stroke-width="2.4"/>
+    <path d="M 1428 448 C 1394 560 1392 710 1444 888" fill="none" stroke="#B0B4B8" stroke-width="2.4"/>
+    <path d="M 1668 396 C 1634 530 1636 700 1690 852" fill="none" stroke="#B0B4B8" stroke-width="2.4"/>
+    <!-- front drum ring / roller saddle -->
+    <ellipse cx="900" cy="712" rx="48" ry="86" fill="#9AA0A6"/>
+    <ellipse cx="894" cy="712" rx="32" ry="68" fill="#7A8086"/>
+    <rect x="848" y="778" width="118" height="108" rx="4" fill="#32363A"/>
+    <rect x="862" y="798" width="90" height="14" rx="2" fill="#2C2F32"/>
+    <rect x="874" y="826" width="66" height="10" rx="2" fill="#1E2124"/>
+
+    <!-- Rear hopper, blended into drum -->
+    <path class="hopper" d="M 1768 384
+      L 1878 341
+      L 2114 341
+      L 2114 420
+      L 2114 588
+      L 2068 648
+      L 1988 668
+      L 1900 640
+      L 1828 560
+      L 1788 470 Z" fill="#B8BCC0"/>
+    <path class="hopper-mouth" d="M 1892 358 L 2098 358 L 2084 518 L 1916 518 Z" fill="#9AA0A4"/>
+    <path class="hopper-inner" d="M 1924 376 L 2066 376 L 2054 498 L 1942 498 Z" fill="#7A8086"/>
+    <rect class="hopper-rail" x="1878" y="341" width="236" height="10" fill="#8E9296"/>
+
+    <!-- Rear support tower + ladder -->
+    <path class="rear-tower" d="M 1788 620 L 2024 620 L 2024 886 L 1788 886 Z" fill="#8E9296"/>
+    <rect x="1800" y="632" width="212" height="12" fill="#A8ACB0"/>
+    <rect x="1896" y="632" width="8" height="254" fill="#7A8086"/>
+    <rect x="1996" y="632" width="8" height="254" fill="#7A8086"/>
+    <rect x="1896" y="676" width="108" height="5" fill="#A8ACB0"/>
+    <rect x="1896" y="720" width="108" height="5" fill="#A8ACB0"/>
+    <rect x="1896" y="764" width="108" height="5" fill="#A8ACB0"/>
+    <rect x="1896" y="808" width="108" height="5" fill="#A8ACB0"/>
+    <rect x="1896" y="852" width="108" height="5" fill="#A8ACB0"/>
+    <path class="handrail" d="M 1892 620 L 1892 492 L 2014 492 L 2014 620" fill="none" stroke="#C4C8CC" stroke-width="5" stroke-linejoin="round"/>
+
+    <!-- Discharge chute (two-section, rear-down) -->
+    <path class="chute" d="M 1984 624
+      L 2048 624
+      L 2096 728
+      L 2154 852
+      L 2110 876
+      L 2052 756
+      L 1992 668
+      L 1984 648 Z" fill="#A8ACB0"/>
+    <path class="chute-inner" d="M 2000 640 L 2040 640 L 2084 732 L 2136 848 L 2114 860 L 2062 744 L 2012 656 Z" fill="#8A9096"/>
+    <rect class="chute-hinge" x="1982" y="616" width="78" height="18" rx="2" fill="#7A8086"/>
+    <circle cx="2020" cy="625" r="6" fill="#5A6066"/>
+
+    <!-- Cab shell -->
+    <path class="cab" d="M 368 512
+      L 628 508
+      L 640 526
+      L 646 886
+      L 430 886
+      L 312 894
+      L 284 818
+      L 290 742
+      L 308 676
+      L 326 596
+      L 346 536
+      L 364 516 Z" fill="#C8CBD0"/>
+    <path class="cab-roof" d="M 372 512 L 628 508 L 630 528 L 374 532 Z" fill="#8E9296"/>
+    <path class="cab-roof-hi" d="M 372 512 L 628 508 L 629 516 L 373 520 Z" fill="#A8ACB0"/>
+    <path class="cab-sheen" d="M 376 532 L 624 528 L 628 556 L 380 560 Z" fill="#D8DADD" opacity="0.5"/>
+    <path class="windshield" d="M 354 528
+      L 332 564
+      L 316 642
+      L 302 714
+      L 348 722
+      L 362 644
+      L 376 564 Z" fill="#3A4044"/>
+    <path class="windshield-hi" d="M 348 536 L 334 568 L 344 568 L 356 540 Z" fill="#5A6268" opacity="0.45"/>
+    <path class="side-window" d="M 384 556
+      L 528 554
+      L 530 716
+      L 372 718
+      L 378 640
+      L 386 580 Z" fill="#3A4044"/>
+    <path class="window-hi" d="M 392 564 L 430 562 L 426 590 L 394 592 Z" fill="#5A6268" opacity="0.4"/>
+    <rect x="532" y="554" width="10" height="332" fill="#9AA0A4"/>
+    <rect x="548" y="554" width="78" height="332" fill="#B8BCC0"/>
+    <rect x="500" y="776" width="28" height="8" rx="2" fill="#1A1C1E"/>
+    <rect x="360" y="728" width="270" height="5" fill="#8E9296"/>
+    <path class="cab-lower" d="M 296 736 L 640 736 L 644 886 L 318 890 L 288 820 L 294 760 Z" fill="#B4B8BC"/>
+    <rect class="marker-lamp" x="398" y="504" width="18" height="10" rx="2" fill="#C47A22"/>
+    <rect class="marker-lamp" x="356" y="742" width="12" height="8" rx="1.5" fill="#C47A22"/>
+
+    <!-- Bumper / nose -->
+    <path class="bumper" d="M 256 936
+      L 266 916
+      L 316 900
+      L 430 896
+      L 430 1050
+      L 296 1056
+      L 256 1038 Z" fill="#2C2F32"/>
+    <path class="bumper-lip" d="M 256 1008 L 316 1020 L 430 1016 L 430 1050 L 296 1056 L 256 1038 Z" fill="#1E2124"/>
+    <rect class="headlamp" x="262" y="956" width="16" height="28" rx="2" fill="#C8CCCF"/>
+
+    <!-- Mirror -->
+    <rect x="268" y="718" width="14" height="86" rx="3" fill="#1A1C1E"/>
+    <rect x="266" y="718" width="18" height="22" rx="3" fill="#2A2D30"/>
+    <rect x="270" y="812" width="10" height="68" rx="2" fill="#2A2D30"/>
+
+    <!-- Back-of-cab dark pack + exhaust -->
+    <rect x="640" y="668" width="72" height="218" fill="#2A2D30"/>
+    <rect x="648" y="538" width="36" height="348" rx="3" fill="#A8ACB0"/>
+    <rect x="654" y="552" width="24" height="310" rx="2" fill="#8E9296"/>
+    <path class="exhaust-cap" d="M 644 538 Q 666 428 688 538 Z" fill="#C4C8CC"/>
+    <ellipse cx="666" cy="538" rx="22" ry="6" fill="#8E9296"/>
+
+    <!-- Water tank (vertical cylinder) -->
+    <rect x="706" y="438" width="54" height="328" rx="27" fill="#B8BCC0"/>
+    <ellipse cx="733" cy="438" rx="27" ry="13" fill="#D0D3D6"/>
+    <ellipse cx="733" cy="766" rx="27" ry="13" fill="#9AA0A4"/>
+    <rect x="716" y="510" width="34" height="5" fill="#8E9296"/>
+    <rect x="716" y="610" width="34" height="5" fill="#8E9296"/>
+
+    <!-- Graphite chassis rail -->
+    <rect class="chassis-rail" x="300" y="886" width="1728" height="56" fill="#2C2F32"/>
+    <rect class="chassis-shadow" x="300" y="934" width="1728" height="10" fill="#1E2124"/>
+    <!-- under-cab steps / tanks -->
+    <rect x="640" y="942" width="168" height="128" rx="4" fill="#32363A"/>
+    <rect x="652" y="956" width="144" height="12" rx="2" fill="#4A5054"/>
+    <rect x="652" y="992" width="144" height="12" rx="2" fill="#4A5054"/>
+    <rect x="652" y="1028" width="144" height="12" rx="2" fill="#4A5054"/>
+    <!-- rear frame tail -->
+    <rect x="1988" y="886" width="66" height="80" rx="2" fill="#1E2124"/>
+    <rect class="tail-lamp" x="2020" y="948" width="20" height="30" rx="2" fill="#A82828"/>
+
+    <!-- Fuel tank (silver, mid chassis) -->
+    <rect class="fuel-tank" x="848" y="952" width="310" height="122" rx="38" fill="#A8ACB0"/>
+    <rect x="864" y="964" width="278" height="18" rx="4" fill="#C4C8CC" opacity="0.45"/>
+    <rect x="960" y="1008" width="96" height="10" rx="2" fill="#7A8086"/>
+    <rect x="1172" y="958" width="92" height="104" rx="4" fill="#3A3E42"/>
+    <rect x="1182" y="968" width="72" height="8" fill="#2C2F32"/>
+
+    <!-- Side underrun guards -->
+    <rect x="828" y="980" width="10" height="78" rx="1" fill="#2C2F32"/>
+    <rect x="1296" y="980" width="10" height="78" rx="1" fill="#2C2F32"/>
+    <rect class="side-guard" x="816" y="994" width="500" height="13" rx="2" fill="#B4B8BC" stroke="#9AA0A4" stroke-width="1"/>
+    <rect class="side-guard" x="816" y="1038" width="500" height="13" rx="2" fill="#B4B8BC" stroke="#9AA0A4" stroke-width="1"/>
+
+    <rect class="axle-subframe" x="1368" y="886" width="560" height="56" fill="#1E2124"/>
+
+    <path class="fender" d="M 471.13 898.00 A 168 168 0 0 0 656.87 898.00 L 627.28 902.00 A 150 150 0 0 1 500.72 902.00 Z" fill="#2A2D30"/>
+    <path class="fender-edge" d="M 471.13 898.00 A 168 168 0 0 0 656.87 898.00" fill="none" stroke="#C8CCCF" stroke-width="2.2" stroke-linecap="round"/>
+    <path class="fender" d="M 1414.13 898.00 A 168 168 0 0 0 1599.87 898.00 L 1570.28 902.00 A 150 150 0 0 1 1443.72 902.00 Z" fill="#2A2D30"/>
+    <path class="fender-edge" d="M 1414.13 898.00 A 168 168 0 0 0 1599.87 898.00" fill="none" stroke="#C8CCCF" stroke-width="2.2" stroke-linecap="round"/>
+    <path class="fender" d="M 1735.13 898.00 A 168 168 0 0 0 1920.87 898.00 L 1891.28 902.00 A 150 150 0 0 1 1764.72 902.00 Z" fill="#2A2D30"/>
+    <path class="fender-edge" d="M 1735.13 898.00 A 168 168 0 0 0 1920.87 898.00" fill="none" stroke="#C8CCCF" stroke-width="2.2" stroke-linecap="round"/>
+    <rect class="mudflap" x="1964" y="910" width="16" height="100" rx="1" fill="#121314"/>
+    <rect class="mudflap" x="418" y="910" width="14" height="72" rx="1" fill="#121314"/>
+  </g>
+  <g id="steer-axle">
+    <g class="wheel">
+      <circle class="tire" cx="564" cy="1038" r="142" fill="#141516"/>
+      <circle class="tire-sidewall" cx="564" cy="1038" r="130.3" fill="#1C1E20"/>
+      <circle class="rim-lip" cx="564" cy="1038" r="83.4" fill="#D6D9DC"/>
+      <circle class="rim" cx="564" cy="1038" r="81.2" fill="#C4C8CC"/>
+      <circle class="rim-dish" cx="564" cy="1038" r="67.3" fill="#8E9398"/>
+      <circle cx="564.0" cy="988.23" r="7.6" fill="#2A2D30"/>
+      <circle cx="593.26" cy="997.73" r="7.6" fill="#2A2D30"/>
+      <circle cx="611.34" cy="1022.62" r="7.6" fill="#2A2D30"/>
+      <circle cx="611.34" cy="1053.38" r="7.6" fill="#2A2D30"/>
+      <circle cx="593.26" cy="1078.27" r="7.6" fill="#2A2D30"/>
+      <circle cx="564.0" cy="1087.77" r="7.6" fill="#2A2D30"/>
+      <circle cx="534.74" cy="1078.27" r="7.6" fill="#2A2D30"/>
+      <circle cx="516.66" cy="1053.38" r="7.6" fill="#2A2D30"/>
+      <circle cx="516.66" cy="1022.62" r="7.6" fill="#2A2D30"/>
+      <circle cx="534.74" cy="997.73" r="7.6" fill="#2A2D30"/>
+      <circle class="lug-ring" cx="564" cy="1038" r="34.4" fill="none" stroke="#D6D9DC" stroke-width="5"/>
+      <circle cx="564.0" cy="1010.92" r="4.5" fill="#E6E8EA"/>
+      <circle cx="579.92" cy="1016.09" r="4.5" fill="#E6E8EA"/>
+      <circle cx="589.76" cy="1029.63" r="4.5" fill="#E6E8EA"/>
+      <circle cx="589.76" cy="1046.37" r="4.5" fill="#E6E8EA"/>
+      <circle cx="579.92" cy="1059.91" r="4.5" fill="#E6E8EA"/>
+      <circle cx="564.0" cy="1065.08" r="4.5" fill="#E6E8EA"/>
+      <circle cx="548.08" cy="1059.91" r="4.5" fill="#E6E8EA"/>
+      <circle cx="538.24" cy="1046.37" r="4.5" fill="#E6E8EA"/>
+      <circle cx="538.24" cy="1029.63" r="4.5" fill="#E6E8EA"/>
+      <circle cx="548.08" cy="1016.09" r="4.5" fill="#E6E8EA"/>
+      <circle class="hub" cx="564" cy="1038" r="16.8" fill="#3A3D41"/>
+      <circle class="hub-core" cx="564" cy="1038" r="8.8" fill="#1A1C1E"/>
+    </g>
+    <circle class="hit-outer" cx="564" cy="1038" r="158" fill="none" stroke="none" stroke-width="8" pointer-events="all"/>
+    <circle class="hit-inner" cx="564" cy="1038" r="91" fill="none" stroke="none" stroke-width="6" pointer-events="all"/>
+  </g>
+  <g id="drive-axle-2">
+    <g class="wheel">
+      <circle class="tire" cx="1507" cy="1038" r="142" fill="#141516"/>
+      <circle class="tire-sidewall" cx="1507" cy="1038" r="130.3" fill="#1C1E20"/>
+      <circle class="rim-lip" cx="1507" cy="1038" r="83.4" fill="#D6D9DC"/>
+      <circle class="rim" cx="1507" cy="1038" r="81.2" fill="#C4C8CC"/>
+      <circle class="rim-dish" cx="1507" cy="1038" r="67.3" fill="#8E9398"/>
+      <circle cx="1507.0" cy="988.23" r="7.6" fill="#2A2D30"/>
+      <circle cx="1536.26" cy="997.73" r="7.6" fill="#2A2D30"/>
+      <circle cx="1554.34" cy="1022.62" r="7.6" fill="#2A2D30"/>
+      <circle cx="1554.34" cy="1053.38" r="7.6" fill="#2A2D30"/>
+      <circle cx="1536.26" cy="1078.27" r="7.6" fill="#2A2D30"/>
+      <circle cx="1507.0" cy="1087.77" r="7.6" fill="#2A2D30"/>
+      <circle cx="1477.74" cy="1078.27" r="7.6" fill="#2A2D30"/>
+      <circle cx="1459.66" cy="1053.38" r="7.6" fill="#2A2D30"/>
+      <circle cx="1459.66" cy="1022.62" r="7.6" fill="#2A2D30"/>
+      <circle cx="1477.74" cy="997.73" r="7.6" fill="#2A2D30"/>
+      <circle class="lug-ring" cx="1507" cy="1038" r="34.4" fill="none" stroke="#D6D9DC" stroke-width="5"/>
+      <circle cx="1507.0" cy="1010.92" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1522.92" cy="1016.09" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1532.76" cy="1029.63" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1532.76" cy="1046.37" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1522.92" cy="1059.91" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1507.0" cy="1065.08" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1491.08" cy="1059.91" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1481.24" cy="1046.37" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1481.24" cy="1029.63" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1491.08" cy="1016.09" r="4.5" fill="#E6E8EA"/>
+      <circle class="hub" cx="1507" cy="1038" r="16.8" fill="#3A3D41"/>
+      <circle class="hub-core" cx="1507" cy="1038" r="8.8" fill="#1A1C1E"/>
+    </g>
+    <circle class="hit-outer" cx="1507" cy="1038" r="158" fill="none" stroke="none" stroke-width="8" pointer-events="all"/>
+    <circle class="hit-inner" cx="1507" cy="1038" r="91" fill="none" stroke="none" stroke-width="6" pointer-events="all"/>
+  </g>
+  <g id="drive-axle-1">
+    <g class="wheel">
+      <circle class="tire" cx="1828" cy="1038" r="142" fill="#141516"/>
+      <circle class="tire-sidewall" cx="1828" cy="1038" r="130.3" fill="#1C1E20"/>
+      <circle class="rim-lip" cx="1828" cy="1038" r="83.4" fill="#D6D9DC"/>
+      <circle class="rim" cx="1828" cy="1038" r="81.2" fill="#C4C8CC"/>
+      <circle class="rim-dish" cx="1828" cy="1038" r="67.3" fill="#8E9398"/>
+      <circle cx="1828.0" cy="988.23" r="7.6" fill="#2A2D30"/>
+      <circle cx="1857.26" cy="997.73" r="7.6" fill="#2A2D30"/>
+      <circle cx="1875.34" cy="1022.62" r="7.6" fill="#2A2D30"/>
+      <circle cx="1875.34" cy="1053.38" r="7.6" fill="#2A2D30"/>
+      <circle cx="1857.26" cy="1078.27" r="7.6" fill="#2A2D30"/>
+      <circle cx="1828.0" cy="1087.77" r="7.6" fill="#2A2D30"/>
+      <circle cx="1798.74" cy="1078.27" r="7.6" fill="#2A2D30"/>
+      <circle cx="1780.66" cy="1053.38" r="7.6" fill="#2A2D30"/>
+      <circle cx="1780.66" cy="1022.62" r="7.6" fill="#2A2D30"/>
+      <circle cx="1798.74" cy="997.73" r="7.6" fill="#2A2D30"/>
+      <circle class="lug-ring" cx="1828" cy="1038" r="34.4" fill="none" stroke="#D6D9DC" stroke-width="5"/>
+      <circle cx="1828.0" cy="1010.92" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1843.92" cy="1016.09" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1853.76" cy="1029.63" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1853.76" cy="1046.37" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1843.92" cy="1059.91" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1828.0" cy="1065.08" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1812.08" cy="1059.91" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1802.24" cy="1046.37" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1802.24" cy="1029.63" r="4.5" fill="#E6E8EA"/>
+      <circle cx="1812.08" cy="1016.09" r="4.5" fill="#E6E8EA"/>
+      <circle class="hub" cx="1828" cy="1038" r="16.8" fill="#3A3D41"/>
+      <circle class="hub-core" cx="1828" cy="1038" r="8.8" fill="#1A1C1E"/>
+    </g>
+    <circle class="hit-outer" cx="1828" cy="1038" r="158" fill="none" stroke="none" stroke-width="8" pointer-events="all"/>
+    <circle class="hit-inner" cx="1828" cy="1038" r="91" fill="none" stroke="none" stroke-width="6" pointer-events="all"/>
+  </g>
+</svg>

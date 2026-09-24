@@ -1,5 +1,5 @@
 import { getTireCategoryByValue } from "@/lib/catalog/tireCategories";
-import type { CmsTireModel, CmsTireType } from "@/lib/cms/types";
+import type { CmsTireModel, CmsTireType } from "@/lib/content/types";
 
 export type TireCatalogModel = CmsTireModel & {
   href: string;

@@ -9,6 +9,7 @@ export type RequestItemType = (typeof REQUEST_ITEM_TYPES)[number]["value"];
 export const SOURCE_FORMS = [
   { label: "Контакты", value: "contact" },
   { label: "Подбор шин", value: "tire_selection" },
+  { label: "Запрос по спецификации", value: "procurement" },
   { label: "Брендирование", value: "branding" },
   { label: "Поставщик", value: "supplier" },
   { label: "Гарантия", value: "warranty" },

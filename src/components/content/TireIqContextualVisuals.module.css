@@ -1,0 +1,11 @@
+.section { margin-top: 3.5rem; padding-top: 2rem; border-top: 1px solid var(--color-border); }
+.kicker { margin: 0 0 .65rem; color: var(--color-kicker); font-size: .7rem; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }
+.section h2 { margin: 0 0 1.4rem; font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 3rem); line-height: 1; letter-spacing: -.05em; }
+.description { max-width: 52ch; margin: -0.6rem 0 1.4rem; color: var(--color-muted); line-height: 1.5; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; min-width: 0; }
+.figure { min-width: 0; margin: 0; }
+.media { width: 100%; max-width: 100%; min-width: 0; aspect-ratio: 16 / 9; overflow: hidden; background: var(--color-surface-muted); }
+.media img { display: block; width: 100%; max-width: 100%; height: 100%; object-fit: contain; }
+.figure figcaption { display: flex; gap: .65rem; margin-top: .55rem; color: var(--color-muted); font-size: .86rem; line-height: 1.3; }
+.figure figcaption span { color: var(--color-kicker); font-size: .7rem; font-weight: 750; letter-spacing: .08em; }
+@media (max-width: 560px) { .grid { grid-template-columns: minmax(0, 1fr); } }

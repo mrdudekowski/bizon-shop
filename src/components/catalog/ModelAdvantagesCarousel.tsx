@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { getFeatureImage } from "@/lib/catalog/featureImages";
-import type { CmsTireAdvantage } from "@/lib/cms/types";
+import type { CmsTireAdvantage } from "@/lib/content/types";
 import styles from "./ModelAdvantagesCarousel.module.css";
 
 type ModelAdvantagesCarouselProps = {
@@ -105,7 +105,7 @@ export function ModelAdvantagesCarousel({ advantages }: ModelAdvantagesCarouselP
             <div className={styles.overlay} aria-hidden="true" />
             <div className={styles.content}>
               <p id={index === activeIndex ? "advantages-title" : undefined}>
-                Преимущества модели
+                Что это даёт в эксплуатации
               </p>
               <h2>{slide.title}</h2>
               {slide.description ? (

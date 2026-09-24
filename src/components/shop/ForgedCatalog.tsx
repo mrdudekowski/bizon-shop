@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { CmsWheelModel } from "@/lib/cms/types";
+import type { CmsWheelModel } from "@/lib/content/types";
 import { metaLine, toForgedWheelView } from "./forgedView";
 import styles from "./ForgedCatalog.module.css";
 
@@ -66,7 +66,7 @@ export function ForgedCatalog({ models }: { models: CmsWheelModel[] }) {
             <h2>Дизайн — начало подбора</h2>
             <p>Размер, вылет, разболтовка и покрытие подтверждаются после проверки автомобиля.</p>
           </div>
-          <Link href="/contact?subject=wheel-selection" className={styles.ctaLink}>Подобрать диски</Link>
+          <Link href="/contact?subject=wheel-selection" className={styles.ctaLink}>Проверить совместимость дисков</Link>
         </div>
       </section>
     </div>

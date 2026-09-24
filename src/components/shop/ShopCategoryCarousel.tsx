@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import type { ShopCategorySlide } from "@/lib/cms/pages/types";
+import type { ShopCategorySlide } from "@/lib/content/pages/types";
 import { ShopResponsiveImage } from "./ShopResponsiveImage";
 import styles from "./ShopCategoryCarousel.module.css";
 

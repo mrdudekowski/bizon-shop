@@ -1,0 +1,128 @@
+.nav {
+  width: min(100%, var(--container-max));
+  max-width: 100%;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 0 var(--page-gutter) var(--section-space);
+}
+
+.label {
+  margin: 0 0 1rem;
+  color: var(--color-kicker);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.item {
+  min-width: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.link {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: start;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 1.15rem 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.link:hover .title,
+.link:focus-visible .title {
+  color: var(--color-link-hover);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--color-link);
+  outline-offset: 5px;
+}
+
+.index {
+  padding-top: 0.25rem;
+  color: var(--color-kicker);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.copy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  gap: 0.3rem;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  font-weight: 650;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  transition: color 180ms ease;
+}
+
+.outcome {
+  max-width: 42ch;
+  color: var(--color-muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.arrow {
+  padding-top: 0.15rem;
+  color: var(--color-link);
+  font-size: 1.3rem;
+}
+
+@media (min-width: 900px) {
+  .list {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .item + .item {
+    border-left: 1px solid var(--color-border);
+  }
+
+  .link {
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: 13rem;
+    padding: 1.25rem;
+  }
+
+  .index {
+    grid-column: 1 / -1;
+  }
+
+  .copy {
+    grid-column: 1 / -1;
+    align-self: end;
+  }
+
+  .arrow {
+    align-self: end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title {
+    transition: none;
+  }
+}

@@ -36,17 +36,9 @@ export function MainChrome({
           <Link href={ROUTES.tireIq}>Tire IQ</Link>
         </>
       }
-      action={
-        <span className="chrome-actions">
-          <Link className="btn-accent chrome-primary" href="/#solutions">
-            <span>Подобрать шины</span>
-            <span aria-hidden="true">↗</span>
-          </Link>
-          <CartHeaderButton count={cartCount} onOpen={onCartOpen} />
-        </span>
-      }
+      action={<CartHeaderButton count={cartCount} onOpen={onCartOpen} />}
       toneAttribute="data-main-chrome-tone"
-      fallbackTone="light"
+      fallbackTone="dark"
       surface="main"
     />
   );

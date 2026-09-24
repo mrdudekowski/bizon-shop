@@ -71,13 +71,17 @@
   --color-link: var(--bizon-mint-600);
   --color-link-hover: var(--bizon-mint-700);
 
-  --font-sans: Inter, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-manrope), Manrope, "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-bounded), Bounded, "Arial Narrow", var(--font-sans);
   --radius-control: 0.75rem;
   --radius: var(--radius-control);
   --radius-card: 1.25rem;
   --radius-panel: 1.5rem;
   --radius-pill: 999px;
-  --header-height: 72px;
+  /* FloatingChrome: inset-top + bar height (see FloatingChrome.module.css) */
+  --chrome-inset-top: max(12px, env(safe-area-inset-top, 0px));
+  --chrome-bar-height: 84px;
+  --header-height: calc(var(--chrome-inset-top) + var(--chrome-bar-height));
   --container-max: 1600px;
   --content-max: 1180px;
   --page-gutter: 20px;
@@ -144,6 +148,13 @@
   --color-card-foreground: var(--color-foreground);
 }
 
+@media (max-width: 560px) {
+  :root {
+    --chrome-inset-top: max(8px, env(safe-area-inset-top, 0px));
+    --chrome-bar-height: 76px;
+  }
+}
+
 @media (min-width: 768px) {
   :root {
     --page-gutter: 40px;
@@ -179,6 +190,16 @@ body {
   overflow-x: hidden;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+.display,
+.wordmark {
+  font-family: var(--font-display);
+  letter-spacing: -0.035em;
 }
 
 /* Фиксируем body при открытом меню - предотвращаем прокрутку фона для лучшего UX мобильного меню */

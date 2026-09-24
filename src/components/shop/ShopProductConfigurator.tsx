@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { resolveCatalogImageSrc } from "@/constants/images";
 import { useCart } from "@/hooks/useCart";
 import { cartItemKey, requestOpenCart } from "@/lib/cart/cartStorage";
-import type { CmsProduct, CmsProductVariant } from "@/lib/cms/types";
+import type { CmsProduct, CmsProductVariant } from "@/lib/content/types";
 import type { RequestItemInput } from "@/types/requestItem";
 import styles from "./ShopProductConfigurator.module.css";
 

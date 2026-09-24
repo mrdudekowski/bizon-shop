@@ -1,0 +1,133 @@
+.section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+  gap: clamp(2rem, 6vw, 6rem);
+  width: min(100%, var(--container-max));
+  max-width: 100%;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 0 var(--page-gutter) var(--section-space);
+}
+
+.heading,
+.groups,
+.group,
+.groupHeader {
+  min-width: 0;
+}
+
+.heading {
+  align-self: start;
+  position: sticky;
+  top: 7rem;
+}
+
+.kicker {
+  margin: 0 0 0.8rem;
+  color: var(--color-kicker);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.heading h2 {
+  max-width: 10ch;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 5vw, 4.5rem);
+  font-weight: 560;
+  line-height: 0.98;
+  letter-spacing: -0.06em;
+}
+
+.heading > p:last-child {
+  max-width: 38ch;
+  margin: 1.25rem 0 0;
+  color: var(--color-muted);
+  line-height: 1.55;
+}
+
+.groups {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border-top: 1px solid var(--color-border);
+}
+
+.group {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.6fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.groupHeader {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  gap: 0.8rem;
+}
+
+.groupHeader span {
+  color: var(--color-kicker);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.groupHeader h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 650;
+}
+
+.group ul {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.group a {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0;
+  color: var(--color-link);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.group a:hover,
+.group a:focus-visible {
+  color: var(--color-link-hover);
+}
+
+.group a:focus-visible {
+  outline: 2px solid var(--color-link);
+  outline-offset: 4px;
+}
+
+@media (max-width: 899px) {
+  .section {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  .heading {
+    position: static;
+  }
+}
+
+@media (max-width: 560px) {
+  .group {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+}

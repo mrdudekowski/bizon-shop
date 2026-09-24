@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ShopCategoryCarousel } from "@/components/shop/ShopCategoryCarousel";
-import { getPageContent, getWheelModelsByTypeSlug } from "@/lib/cms";
+import { getPageContent, getWheelModelsByTypeSlug } from "@/lib/content";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import styles from "./ShopHome.module.css";
 

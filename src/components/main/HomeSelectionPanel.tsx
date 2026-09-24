@@ -11,7 +11,7 @@ import { SelectionProgress } from "@/components/selection/SelectionProgress";
 import { SelectionResult } from "@/components/selection/SelectionResult";
 import { VehicleTypeStep } from "@/components/selection/VehicleTypeStep";
 import type { TireCatalogReadModel } from "@/lib/catalog/tireReadModel";
-import type { PageShell } from "@/lib/cms/pages/types";
+import type { PageShell } from "@/lib/content/pages/types";
 import { recommendTires } from "@/lib/selection/engine";
 import { selectionHomeHref } from "@/lib/selection/homeHref";
 import type { SelectionState, SelectionStep } from "@/lib/selection/types";
@@ -133,13 +133,17 @@ export function HomeSelectionPanel({
           <p className={styles.eyebrow}>{content.eyebrow}</p>
           <h2>{content.title}</h2>
           <p>{content.lead}</p>
+          <p>
+            Уже знаете размер и количество?{" "}
+            <Link href="/contact?subject=procurement">Отправьте спецификацию</Link> — проверим подходящие модели и сформируем запрос.
+          </p>
         </header>
 
         <div className={styles.selectionPanel}>
           {catalog.directions.length === 0 ? (
             <div className={selectionStyles.failure}>
               <p className={selectionStyles.eyebrow}>Каталог проверяется</p>
-              <h1>Уточним решение вручную</h1>
+              <h2>Уточним решение вручную</h2>
               <p>
                 В опубликованном каталоге пока нет готовых направлений. Мы не
                 будем показывать вымышленные модели.
@@ -153,7 +157,6 @@ export function HomeSelectionPanel({
             </div>
           ) : activeStep === "result" && result ? (
             <div className={selectionStyles.wizard}>
-              <SelectionProgress step={activeStep} />
               <SelectionResult
                 result={result}
                 catalog={catalog}

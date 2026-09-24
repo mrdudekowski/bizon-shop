@@ -29,7 +29,7 @@ export function ForgedModel({ model }: { model: ForgedWheelView }) {
           <p className={styles.status}>Изготавливается под заказ</p>
           <h1>{model.name}</h1>
           <p className={styles.meta}>{metaLine(model)}</p>
-          <Link href="#wheel-request" className={styles.primaryAction}>Подобрать конфигурацию</Link>
+          <Link href="#wheel-request" className={styles.primaryAction}>Проверить совместимость</Link>
         </div>
       </section>
 

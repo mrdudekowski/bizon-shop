@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import type { HomeShopCampaignContent } from "@/lib/cms/pages/types";
+import type { HomeShopCampaignContent } from "@/lib/content/pages/types";
 
 import styles from "./MainHome.module.css";
 
@@ -11,7 +11,17 @@ export function ShopCampaign({ content }: { content: HomeShopCampaignContent }) 
       className={styles.shopCampaign}
       data-home-tone="dark"
       data-main-chrome-tone="dark"
+      aria-label={content.title}
     >
+      <div className={styles.shopMedia}>
+        <Image
+          src={content.imageUrl}
+          alt={content.imageAlt}
+          fill
+          sizes="100vw"
+        />
+      </div>
+      <div className={styles.shopOverlay} aria-hidden="true" />
       <div className={styles.inner}>
         <div className={styles.shopCopy}>
           <p className={styles.eyebrow}>{content.eyebrow}</p>
@@ -20,14 +30,6 @@ export function ShopCampaign({ content }: { content: HomeShopCampaignContent }) 
           <Link className="btn-accent" href={content.cta.href}>
             {content.cta.label}
           </Link>
-        </div>
-        <div className={styles.shopMedia}>
-          <Image
-            src={content.imageUrl}
-            alt={content.imageAlt}
-            fill
-            sizes="(max-width: 767px) 100vw, 55vw"
-          />
         </div>
       </div>
     </section>

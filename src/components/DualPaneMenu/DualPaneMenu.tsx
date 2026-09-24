@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
-import type { DualPaneItem, DualPaneMenuData, DualPaneSection } from "@/lib/cms/dualPaneMenuTypes";
+import type { DualPaneItem, DualPaneMenuData, DualPaneSection } from "@/lib/content/dualPaneMenuTypes";
 import styles from "./DualPaneMenu.module.css";
 
 type DualPaneMenuProps = {
@@ -19,6 +19,13 @@ type DualPaneMenuProps = {
   featuredItem?: { name: string; link: string } | null;
   cartItem?: { name: string; link: string } | null;
 };
+
+const MOBILE_MENU_QUERY = "(max-width: 768px)";
+
+/** Close after the browser starts following the link (avoids focus-restore canceling nav). */
+function closeAfterNavigate(onClose: () => void) {
+  queueMicrotask(onClose);
+}
 
 function GalleryPane({
   items,
@@ -122,29 +129,50 @@ export function DualPaneMenu({
   const menuRef = useFocusTrap(isOpen);
   const pathname = usePathname();
   const baseId = useId();
-  const [activeSectionId, setActiveSectionId] = useState(menu.defaultSectionId);
-  const [mobileView, setMobileView] = useState<"nav" | "pane">("pane");
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  const [mobileView, setMobileView] = useState<"nav" | "pane">("nav");
   const [paneKey, setPaneKey] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
   const sections = menu?.sections ?? [];
   const activeSection =
-    sections.find((section) => section.id === activeSectionId) ?? sections[0];
+    activeSectionId == null
+      ? null
+      : (sections.find((section) => section.id === activeSectionId) ?? null);
+
+  const handleLinkNavigate = () => closeAfterNavigate(onClose);
+
+  useEffect(() => {
+    const media = window.matchMedia(MOBILE_MENU_QUERY);
+    const sync = () => setIsMobile(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
-    setActiveSectionId(menu.defaultSectionId);
-    // Models/Wheels visible immediately; mobile users use Back for section list.
-    setMobileView("pane");
+    // Open on section list; Models/Wheels only after a section click.
+    setActiveSectionId(null);
+    setMobileView("nav");
     setPaneKey((key) => key + 1);
-  }, [isOpen, menu.defaultSectionId]);
+  }, [isOpen]);
 
   useEffect(() => {
+    if (!isOpen) return undefined;
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key !== "Escape") return;
+      if (window.matchMedia(MOBILE_MENU_QUERY).matches && mobileView === "pane") {
+        setMobileView("nav");
+        return;
+      }
+      onClose();
     };
-    if (isOpen) document.addEventListener("keydown", handleKeyDown);
+
+    document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, mobileView]);
 
   const isCurrentLink = (href: string) => {
     const hrefPath = href.split("?")[0]?.split("#")[0] ?? href;
@@ -159,6 +187,9 @@ export function DualPaneMenu({
     setMobileView("pane");
   };
 
+  const leftPaneInert = isMobile && mobileView === "pane" ? true : undefined;
+  const rightPaneInert = isMobile && mobileView === "nav" ? true : undefined;
+
   const renderPane = () => {
     if (!activeSection) return null;
     if (activeSection.pane === "gallery") {
@@ -166,7 +197,7 @@ export function DualPaneMenu({
         <GalleryPane
           items={activeSection.items}
           footerLink={activeSection.footerLink}
-          onNavigate={onClose}
+          onNavigate={handleLinkNavigate}
         />
       );
     }
@@ -174,7 +205,7 @@ export function DualPaneMenu({
       <ListPane
         items={activeSection.items}
         footerLink={activeSection.footerLink}
-        onNavigate={onClose}
+        onNavigate={handleLinkNavigate}
         isCurrentLink={isCurrentLink}
       />
     );
@@ -188,13 +219,25 @@ export function DualPaneMenu({
       inert={isOpen ? undefined : true}
       data-menu-context={context}
       data-mobile-view={mobileView}
+      data-has-section={activeSection ? "true" : "false"}
     >
       <div className={styles.menuBackdrop} onClick={onClose} role="presentation" />
 
-      <div className={styles.menuShell} ref={menuRef}>
-        <aside className={styles.menuPanel} role="dialog" aria-modal="true" aria-label={title}>
+      <div
+        className={styles.menuShell}
+        ref={menuRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
+        <aside className={styles.menuPanel}>
           <div className={styles.menuHeader}>
-            <Link className={styles.menuBrand} href={homeHref} onClick={onClose} translate="no">
+            <Link
+              className={styles.menuBrand}
+              href={homeHref}
+              onClick={handleLinkNavigate}
+              translate="no"
+            >
               {homeLabel}
             </Link>
             <button
@@ -209,14 +252,18 @@ export function DualPaneMenu({
 
           <div className={styles.menuBody}>
             {featuredItem ? (
-              <Link className={styles.featuredLink} href={featuredItem.link} onClick={onClose}>
+              <Link
+                className={styles.featuredLink}
+                href={featuredItem.link}
+                onClick={handleLinkNavigate}
+              >
                 <span>{featuredItem.name}</span>
                 <span aria-hidden="true">→</span>
               </Link>
             ) : null}
 
             {cartItem ? (
-              <Link className={styles.cartLink} href={cartItem.link} onClick={onClose}>
+              <Link className={styles.cartLink} href={cartItem.link} onClick={handleLinkNavigate}>
                 <span>
                   {cartItem.name}
                   <small>Единая заявка BIZON</small>
@@ -226,16 +273,20 @@ export function DualPaneMenu({
             ) : null}
 
             <div className={styles.dualTrack}>
-              <nav className={styles.leftPane} aria-label={title}>
+              <nav
+                className={styles.leftPane}
+                aria-label={title}
+                inert={leftPaneInert}
+              >
                 <ul className={styles.sectionList}>
                   {sections.map((section) => {
-                    const selected = section.id === activeSection?.id;
+                    const selected = section.id === activeSectionId;
                     return (
                       <li key={section.id}>
                         <button
                           type="button"
                           className={`${styles.sectionButton} ${selected ? styles.sectionButtonActive : ""}`}
-                          aria-current={selected ? "true" : undefined}
+                          aria-pressed={selected}
                           aria-controls={`${baseId}-pane`}
                           onClick={() => selectSection(section.id)}
                         >
@@ -254,6 +305,7 @@ export function DualPaneMenu({
                 id={`${baseId}-pane`}
                 className={styles.rightPane}
                 aria-label={activeSection?.label}
+                inert={rightPaneInert}
               >
                 <div className={styles.rightPaneHeader}>
                   <button

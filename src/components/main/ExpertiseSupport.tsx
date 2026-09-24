@@ -1,5 +1,5 @@
-import type { CmsArticle, CmsStory } from "@/lib/cms/types";
-import type { PageShell } from "@/lib/cms/pages/types";
+import type { CmsArticle, CmsStory } from "@/lib/content/types";
+import type { PageShell } from "@/lib/content/pages/types";
 
 import { BrandingCampaign } from "./BrandingCampaign";
 import { EditorialHighlights } from "./EditorialHighlights";

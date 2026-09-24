@@ -1,6 +1,6 @@
 import { PageHero } from "@/components/content/PageHero";
 import { ContextualContactForm } from "@/components/forms/ContextualContactForm";
-import { getPublishedTireCatalog } from "@/lib/cms";
+import { getPublishedTireCatalog } from "@/lib/content";
 import { resolveContactIntent } from "@/lib/requests/contactIntent";
 import {
   normalizeSelectionContext,
@@ -65,7 +65,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
   const intent = resolveContactIntent(params, { hasSelectionContext: Boolean(context) });
 
   return (
-    <main data-main-chrome-tone="light">
+    <div data-main-chrome-tone="light">
       <PageHero
         kicker="BIZON · Заявка"
         title={intent.title}
@@ -78,6 +78,6 @@ export default async function ContactPage({ searchParams }: PageProps) {
       <div className="section-inner" style={{ paddingTop: 0, paddingBottom: "var(--section-space)" }}>
         <ContextualContactForm context={context} intent={intent} />
       </div>
-    </main>
+    </div>
   );
 }

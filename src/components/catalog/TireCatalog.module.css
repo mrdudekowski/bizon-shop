@@ -147,8 +147,9 @@
 .modelCard:hover .modelMedia img { transform: scale(1.035); }
 
 .modelBody { display: grid; gap: 1rem; padding: clamp(1.25rem, 2vw, 1.75rem); }
-.modelMeta { display: flex; flex-wrap: wrap; gap: 0.45rem; }
-.modelMeta span { padding: 0.35rem 0.55rem; border-radius: 999px; background: var(--color-surface-muted); color: var(--color-muted); font-size: 0.7rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.06em; }
+.modelMeta { display: flex; flex-wrap: wrap; gap: 0.35rem 0.6rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--color-border); }
+.modelMeta span { color: var(--color-muted); font-size: 0.75rem; font-weight: 650; letter-spacing: 0.02em; }
+.modelMeta span + span::before { content: "·"; margin-right: 0.6rem; color: var(--color-border-strong); }
 .modelBrand { margin: 0 0 0.25rem; color: var(--color-muted); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; }
 .modelTitle { margin: 0; font-size: clamp(1.75rem, 3vw, 2.4rem); font-weight: 580; letter-spacing: -0.035em; }
 .modelDescription { min-height: 3em; margin: 0; color: var(--color-muted); line-height: 1.5; }
@@ -185,7 +186,6 @@
   background: var(--color-surface-muted);
 }
 .productMedia img { object-fit: contain; padding: clamp(2rem, 6vw, 6rem); }
-.mediaIndex { position: absolute; right: 1.25rem; bottom: 1.25rem; padding: 0.45rem 0.65rem; border-radius: 999px; background: color-mix(in srgb, var(--color-surface) 84%, transparent); font-size: 0.75rem; backdrop-filter: blur(12px); }
 
 .productPanel { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1.25rem; padding: clamp(1rem, 3vw, 2.5rem) 0; }
 .productPanel h2 { max-width: 11ch; margin: 0; font-size: clamp(2.4rem, 5vw, 4.75rem); font-weight: 540; line-height: 0.98; letter-spacing: -0.055em; }

@@ -55,6 +55,8 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen }) {
       brand={<Link href="/shop" translate="no">BIZON SHOP</Link>}
       navigation={
         <>
+          <Link href="/shop/categories">Каталог</Link>
+          <Link href="/shop#wheels">Подобрать по параметрам</Link>
           <Link href="/shop/wheels/forged">Кованые диски</Link>
           <div
             className={styles.categoryMenu}

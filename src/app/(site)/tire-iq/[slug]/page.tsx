@@ -2,8 +2,10 @@ import { notFound } from "next/navigation";
 
 import { ArticleLayout } from "@/components/content/ArticleLayout";
 import { LexicalContent } from "@/components/content/LexicalContent";
-import { getAllTireIQSlugs, getTireIQArticleBySlug } from "@/lib/cms";
+import { TireIqContextualVisuals } from "@/components/content/TireIqContextualVisuals";
+import { getAllTireIQSlugs, getTireIQArticleBySlug } from "@/lib/content";
 import { createPageMetadata } from "@/lib/seo/metadata";
+import { getTireIqArticleCover } from "@/lib/content/tireIqVisuals";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -41,12 +43,13 @@ export default async function TireIQArticlePage({ params }: PageProps) {
         { href: `/tire-iq/${article.slug}`, label: article.title },
       ]}
       meta={article.publishedAt}
-      imageUrl={article.imageUrl}
+      imageUrl={article.imageUrl ?? getTireIqArticleCover(article.slug)}
       imageAlt={article.title}
       fallbackKey={article.slug}
       backHref="/tire-iq"
       backLabel="Все статьи"
     >
+      <TireIqContextualVisuals slug={article.slug} />
       <LexicalContent data={article.content} fallback={article.excerpt} />
     </ArticleLayout>
   );

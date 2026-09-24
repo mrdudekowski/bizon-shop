@@ -5,7 +5,7 @@ import {
   getWheelModelsByTypeSlug,
   getWheelTypeBySlug,
   getWheelVariantsByTypeSlug,
-} from "@/lib/cms";
+} from "@/lib/content";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { WheelModelGrid } from "@/components/catalog/WheelModelGrid";

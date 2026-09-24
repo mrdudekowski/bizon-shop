@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { useCart } from "@/hooks/useCart";
 import { cartItemKey, requestOpenCart } from "@/lib/cart/cartStorage";
-import type { CmsProduct } from "@/lib/cms/types";
+import type { CmsProduct } from "@/lib/content/types";
 import type { RequestItemInput } from "@/types/requestItem";
 import styles from "./ShopProductCard.module.css";
 

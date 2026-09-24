@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { TIRE_PERFORMANCE_FEATURE_OPTIONS } from "@/collections/fields/tireCatalogFields";
+import { TIRE_PERFORMANCE_FEATURE_OPTIONS } from "@/lib/catalog/catalogFieldConstants";
 import { FEATURE_IMAGE_KEYS, getFeatureImage } from "./featureImages";
 
 describe("featureImages", () => {

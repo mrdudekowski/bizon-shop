@@ -8,7 +8,7 @@ import {
   getTireModelsByTypeSlug,
   getAllWheelModelRouteParams,
   getAllWheelTypeSlugs,
-} from "@/lib/cms";
+} from "@/lib/content";
 import { TIRE_CATEGORIES, getTireCategoryByValue } from "@/lib/catalog/tireCategories";
 import { SITEMAP_CONTENT_LIST_ROUTES, SITEMAP_STATIC_ROUTES } from "@/constants/navigation";
 import { SHOP_LIFESTYLE_CATEGORIES } from "@/constants/shopCategories";

@@ -185,6 +185,21 @@
   overflow: hidden;
 }
 
+/* Desktop: section list alone until a section is chosen */
+@media (min-width: 769px) {
+  .menuOverlay[data-has-section="false"] .dualTrack {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .menuOverlay[data-has-section="false"] .rightPane {
+    display: none;
+  }
+
+  .menuOverlay[data-has-section="false"] .leftPane {
+    border-right: 0;
+  }
+}
+
 .leftPane {
   min-width: 0;
   max-width: 100%;

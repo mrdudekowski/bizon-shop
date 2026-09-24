@@ -3,7 +3,7 @@ import {
   getAllTireTypeSlugs,
   getPublishedTireCatalog,
   getTireTypeBySlug,
-} from "@/lib/cms";
+} from "@/lib/content";
 import { TireDirectionPage } from "@/components/catalog/TireDirectionPage";
 import { parseTireFilters } from "@/lib/catalog/tireFilters";
 import { createPageMetadata } from "@/lib/seo/metadata";

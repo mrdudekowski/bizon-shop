@@ -13,6 +13,8 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
     .map((value) => AXLE_OPTIONS.find((option) => option.value === value)?.label)
     .filter(Boolean)
     .join(" · ");
+  const sizeSummary = model.sizes.slice(0, 2).join(" · ");
+  const additionalSizes = Math.max(model.sizes.length - 2, 0);
 
   return (
     <article className={styles.modelCard} data-tire-model-card>
@@ -38,8 +40,12 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
         </div>
         <p className={styles.modelDescription}>{model.descriptionShort}</p>
         <div className={styles.modelFooter}>
-          <span>{model.sizes.length ? `${model.sizes.length} типоразмера` : "Размер — по запросу"}</span>
-          <Link href={model.href}>Изучить модель <span aria-hidden="true">↗</span></Link>
+          <span>
+            {sizeSummary
+              ? `${sizeSummary}${additionalSizes ? ` +${additionalSizes}` : ""}`
+              : "Размер — по запросу"}
+          </span>
+          <Link href={model.href}>Открыть параметры <span aria-hidden="true">↗</span></Link>
         </div>
       </div>
     </article>

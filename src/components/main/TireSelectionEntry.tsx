@@ -1,4 +1,4 @@
-import type { PageShell } from "@/lib/cms/pages/types";
+import type { PageShell } from "@/lib/content/pages/types";
 import type { TireCatalogReadModel } from "@/lib/catalog/tireReadModel";
 
 import { HomeSelectionPanel } from "./HomeSelectionPanel";

@@ -1,4 +1,4 @@
-import { TIRE_PERFORMANCE_FEATURE_OPTIONS } from "@/collections/fields/tireCatalogFields";
+import { TIRE_PERFORMANCE_FEATURE_OPTIONS } from "@/lib/catalog/catalogFieldConstants";
 
 export type TireFeatureKey = (typeof TIRE_PERFORMANCE_FEATURE_OPTIONS)[number]["value"];
 

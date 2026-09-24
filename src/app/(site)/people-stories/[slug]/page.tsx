@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { ArticleLayout } from "@/components/content/ArticleLayout";
 import { LexicalContent } from "@/components/content/LexicalContent";
-import { getAllPeopleStorySlugs, getPeopleStoryBySlug } from "@/lib/cms";
+import { getAllPeopleStorySlugs, getPeopleStoryBySlug } from "@/lib/content";
 import { createPageMetadata } from "@/lib/seo/metadata";
 
 type PageProps = {

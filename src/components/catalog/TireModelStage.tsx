@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/catalog/PageHeader";
 import { TireVariantsTable } from "@/components/catalog/TireVariantsTable";
 import { getTireCategoryByValue } from "@/lib/catalog/tireCategories";
 import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
-import type { CmsTireVariant } from "@/lib/cms/types";
+import type { CmsTireVariant } from "@/lib/content/types";
 import { AXLE_OPTIONS } from "@/lib/selection/options";
 
 import styles from "./TireCatalog.module.css";
@@ -35,9 +35,12 @@ export function TireModelStage({
   const gallery = [model.imageUrl, ...model.gallery].filter(
     (url, index, values): url is string => Boolean(url) && values.indexOf(url) === index,
   );
+  const evidenceDocuments = model.documents.filter(
+    (document) => Boolean(document.url?.trim() && document.title?.trim()),
+  );
 
   return (
-    <main className={styles.modelPage} data-main-chrome-tone="light">
+    <div className={styles.modelPage} data-main-chrome-tone="light">
       <div className={`${styles.pageInner} ${styles.pageInnerBeforeAdvantages}`}>
         <PageHeader
           title={model.name}
@@ -55,15 +58,16 @@ export function TireModelStage({
               priority
               sizes="(max-width: 899px) 100vw, 58vw"
             />
-            <span className={styles.mediaIndex}>
-              01 / {String(Math.max(gallery.length, 1)).padStart(2, "0")}
-            </span>
           </div>
 
           <div className={styles.productPanel}>
             <p className={styles.eyebrow}>{model.brand || "BIZON TBR"}</p>
-            <h2 id="product-stage-title">Создана для рабочей нагрузки</h2>
-            <p>{model.descriptionLong || model.descriptionShort}</p>
+            <h2 id="product-stage-title">Под рабочую нагрузку и ваш маршрут</h2>
+            <p>
+              {model.descriptionLong || model.descriptionShort} Подтвердите применение,
+              ось и типоразмер перед заказом — эти параметры определяют пригодность модели
+              для вашей техники.
+            </p>
             <dl className={styles.productFacts}>
               <div>
                 <dt>Применение</dt>
@@ -100,7 +104,8 @@ export function TireModelStage({
             />
 
             <p className={styles.disclaimer}>
-              Финальную совместимость и наличие подтверждает специалист BIZON.
+              Таблица типоразмеров и документы помогают проверить конфигурацию. Финальную
+              совместимость, наличие и предложение подтверждает специалист BIZON.
             </p>
           </div>
         </section>
@@ -115,11 +120,11 @@ export function TireModelStage({
       <div className={styles.pageInner}>
         <TireVariantsTable model={model} variants={variants} modelPath={modelPath} />
 
-        {model.documents.length > 0 && (
-          <section className={styles.documents} aria-labelledby="documents-title">
-            <h2 id="documents-title">Документы</h2>
+        {evidenceDocuments.length > 0 && (
+          <section className={styles.documents} aria-labelledby="documents-title" data-evidence-source="technical-documents">
+            <h2 id="documents-title">Технические подтверждения</h2>
             <div>
-              {model.documents.map((document) => (
+              {evidenceDocuments.map((document) => (
                 <a key={document.url} href={document.url} target="_blank" rel="noreferrer">
                   <span>{document.title}</span>
                   <span aria-hidden="true">PDF ↗</span>
@@ -135,10 +140,10 @@ export function TireModelStage({
             <h2>Проверим модель под вашу технику и маршрут</h2>
           </div>
           <Link className="btn-secondary" href={contactHref}>
-            Связаться со специалистом
+            Запросить наличие и предложение
           </Link>
         </section>
       </div>
-    </main>
+    </div>
   );
 }

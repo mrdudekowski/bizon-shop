@@ -51,6 +51,56 @@
   min-width: 0;
 }
 
+.nextStep {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  max-width: 48rem;
+  min-width: 0;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.modelContext {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  max-width: 48rem;
+  min-width: 0;
+}
+
+.modelContext h2,
+.modelContext p {
+  margin: 0;
+}
+
+.modelLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.nextStep h2,
+.nextStep p {
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+@media (max-width: 639px) {
+  .actions,
+  .actions a {
+    width: 100%;
+  }
+}
+
 .back {
   margin: 0;
 }

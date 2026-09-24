@@ -18,6 +18,11 @@ type FormValues = {
   email: string;
   company: string;
   comment: string;
+  size: string;
+  quantity: string;
+  axle: string;
+  region: string;
+  desiredTerm: string;
 };
 const EMPTY_VALUES: FormValues = {
   name: "",
@@ -25,6 +30,11 @@ const EMPTY_VALUES: FormValues = {
   email: "",
   company: "",
   comment: "",
+  size: "",
+  quantity: "",
+  axle: "",
+  region: "",
+  desiredTerm: "",
 };
 
 const DEFAULT_INTENT: ContactIntent = {
@@ -43,6 +53,7 @@ export function ContextualContactForm({
   intent?: ContactIntent;
 }) {
   const pathname = usePathname();
+  const isProcurement = intent.subject === "procurement";
   const [values, setValues] = useState<FormValues>(EMPTY_VALUES);
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "success">("idle");
   const [error, setError] = useState("");
@@ -67,6 +78,18 @@ export function ContextualContactForm({
           email: values.email,
           companyName: values.company,
           message: values.comment,
+          ...(isProcurement
+            ? {
+                message: [
+                  `Типоразмер: ${values.size}`,
+                  `Количество: ${values.quantity}`,
+                  `Ось: ${values.axle}`,
+                  `Регион: ${values.region}`,
+                  `Желаемый срок: ${values.desiredTerm}`,
+                  `Комментарий: ${values.comment}`,
+                ].join("\n"),
+              }
+            : {}),
           ...(context ? { selectionContext: context } : {}),
         },
       });
@@ -149,6 +172,30 @@ export function ContextualContactForm({
           <p>Телефон или Email — достаточно одного способа связи.</p>
         </div>
         <div className={styles.fieldGrid}>
+          {isProcurement ? (
+            <>
+              <label>
+                <span>Типоразмер *</span>
+                <input name="size" required placeholder="315/80 R22.5" value={values.size} onChange={(event) => setValue("size", event.target.value)} />
+              </label>
+              <label>
+                <span>Количество *</span>
+                <input name="quantity" required type="number" min="1" inputMode="numeric" value={values.quantity} onChange={(event) => setValue("quantity", event.target.value)} />
+              </label>
+              <label>
+                <span>Ось</span>
+                <input name="axle" placeholder="Ведущая / прицепная" value={values.axle} onChange={(event) => setValue("axle", event.target.value)} />
+              </label>
+              <label>
+                <span>Регион</span>
+                <input name="region" autoComplete="address-level1" value={values.region} onChange={(event) => setValue("region", event.target.value)} />
+              </label>
+              <label>
+                <span>Желаемый срок</span>
+                <input name="desiredTerm" placeholder="Например, до 15 сентября" value={values.desiredTerm} onChange={(event) => setValue("desiredTerm", event.target.value)} />
+              </label>
+            </>
+          ) : null}
           <label>
             <span>Имя *</span>
             <input

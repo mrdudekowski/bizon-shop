@@ -1,36 +1,7 @@
-import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { YandexMetrika } from "@/components/analytics/YandexMetrika";
 import { SiteShell } from "@/components/layout/SiteShell";
-import { getMainDualPaneMenu, getShopDualPaneMenu } from "@/lib/cms/getDualPaneMenu";
-import { createPageMetadata } from "@/lib/seo/metadata";
-import "../globals.css";
+import { getMainDualPaneMenu, getShopDualPaneMenu } from "@/lib/content/getDualPaneMenu";
 
-const inter = Inter({
-  subsets: ["latin", "cyrillic"],
-  variable: "--font-sans",
-  display: "swap",
-});
-
-export const metadata: Metadata = {
-  ...createPageMetadata(),
-  manifest: "/manifest.webmanifest",
-  icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "16x16 32x32 48x48" },
-      { url: "/favicon.svg", type: "image/svg+xml", sizes: "any" },
-      { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
-      { url: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
-    ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-    other: [{ rel: "mask-icon", url: "/favicon.svg", color: "#222222" }],
-  },
-};
-
-export const viewport: Viewport = {
-  themeColor: "#ffffff",
-};
-
-/** ponytail: ISR baseline — admin publishes appear within ~60s even without on-demand revalidate */
 export const revalidate = 60;
 
 export default async function SiteLayout({
@@ -44,12 +15,11 @@ export default async function SiteLayout({
   ]);
 
   return (
-    <html lang="ru" className={inter.variable} data-scroll-behavior="smooth">
-      <body>
-        <SiteShell mainMenu={mainMenu} shopMenu={shopMenu}>
-          {children}
-        </SiteShell>
-      </body>
-    </html>
+    <>
+      <YandexMetrika />
+      <SiteShell mainMenu={mainMenu} shopMenu={shopMenu}>
+        {children}
+      </SiteShell>
+    </>
   );
 }

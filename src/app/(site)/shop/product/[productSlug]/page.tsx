@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { getAllShopProductSlugs, getShopProductBySlug } from "@/lib/cms";
+import { getAllShopProductSlugs, getShopProductBySlug } from "@/lib/content";
 import { createProductMetadata } from "@/lib/seo/metadata";
 import { createProductStructuredData } from "@/lib/seo/structuredData";
 import { ShopProductConfigurator } from "@/components/shop/ShopProductConfigurator";

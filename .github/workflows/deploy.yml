@@ -3,9 +3,11 @@ name: CI
 on:
   push:
     branches:
+      - main-app
       - main
   pull_request:
     branches:
+      - main-app
       - main
   workflow_dispatch:
 
@@ -13,24 +15,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: bizon
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d bizon"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     env:
-      DATABASE_URI: postgresql://postgres:postgres@localhost:5432/bizon
-      PAYLOAD_SECRET: ci-build-placeholder-secret-min-32-chars-long
       NEXT_PUBLIC_SITE_URL: https://bizontires.example
 
     steps:
@@ -49,11 +34,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Seed database
-        run: npm run seed:all
+      - name: Typecheck
+        run: npm run typecheck
 
-      - name: Verify database
-        run: npm run verify:db
+      - name: Unit tests
+        run: npm run test
 
       - name: Build
         run: npm run build

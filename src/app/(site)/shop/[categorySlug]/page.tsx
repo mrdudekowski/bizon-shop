@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getAllShopCategorySlugs, getShopProducts, getShopCategoryBySlug } from "@/lib/cms";
+import { getAllShopCategorySlugs, getShopProducts, getShopCategoryBySlug } from "@/lib/content";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { ShopLifestyleCategoryPage } from "@/components/shop/ShopLifestyleCategory";
 import { ShopProductCatalog } from "@/components/shop/ShopProductCatalog";

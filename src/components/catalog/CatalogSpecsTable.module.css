@@ -197,6 +197,17 @@
   }
 }
 
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Room for sticky size + primary cols without crushing headers */
+  .table {
+    min-width: 36rem;
+  }
+
+  .scrollWide .table {
+    min-width: 52rem;
+  }
+}
+
 @media (min-width: 1024px) {
   .secondary {
     display: table-cell;
@@ -210,12 +221,9 @@
   .table {
     min-width: 0;
   }
-}
 
-@media (min-width: 768px) and (max-width: 1023px) {
-  /* Room for sticky size + primary cols without crushing headers */
-  .table {
-    min-width: 36rem;
+  .scrollWide .table {
+    min-width: 78rem;
   }
 }
 

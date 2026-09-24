@@ -1,4 +1,6 @@
 import { HONEYPOT_FIELD } from "./validateRequest";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
+import { trackEvent } from "@/lib/analytics/yandexMetrika";
 import type { ApiRequestSuccess } from "./types";
 
 export type SubmitRequestOptions = {
@@ -26,8 +28,10 @@ export async function submitRequest({ sourceForm, sourcePage, body }: SubmitRequ
   };
 
   if (!response.ok || !data.ok) {
+    trackEvent(ANALYTICS_EVENTS.requestSubmitError, { sourceForm });
     throw new Error(data.message ?? "Request failed");
   }
 
+  trackEvent(ANALYTICS_EVENTS.requestSubmitSuccess, { sourceForm });
   return data as ApiRequestSuccess;
 }

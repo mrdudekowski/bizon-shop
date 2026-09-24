@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CatalogCard } from "@/components/catalog/CatalogCard";
-import type { CmsWheelModel, CmsWheelVariant } from "@/lib/cms/types";
+import type { CmsWheelModel, CmsWheelVariant } from "@/lib/content/types";
 
 type WheelModelGridProps = {
   models: CmsWheelModel[];

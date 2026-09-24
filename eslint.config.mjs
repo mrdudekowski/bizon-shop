@@ -22,7 +22,6 @@ const eslintConfig = [
       "import-templates/**",
       "payload-bizon/**",
       "next-env.d.ts",
-      "src/payload-types.ts",
     ],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),

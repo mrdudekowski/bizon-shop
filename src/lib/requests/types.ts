@@ -85,6 +85,10 @@ export type ApiRequestSuccess = {
 
 export type ApiRequestError = {
   ok: false;
-  error: RequestValidationError | "request_create_failed" | "unexpected_error";
+  error:
+    | RequestValidationError
+    | "request_create_failed"
+    | "unexpected_error"
+    | "rate_limit_exceeded";
   message: string;
 };
