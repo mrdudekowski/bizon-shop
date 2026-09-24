@@ -2,11 +2,477 @@
 
 import { useEffect, useState } from "react";
 
-import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
-import type { AdminRole, EntityRecord, PageDraft, PageKey } from "@/admin/domain/types";
+import { browserAdminClient } from "@/admin/client/localStore";
+import type {
+  AdminRole,
+  EntityRecord,
+  HomePageDraft,
+  PageCta,
+  PageDraft,
+  PageKey,
+  PageSectionCopy,
+  ShopHomePageDraft,
+  StubPageDraft,
+} from "@/admin/domain/types";
+import { PlacementFields } from "@/admin/media/PlacementFields";
 
 import { PAGE_LABELS } from "./pageLabels";
+import styles from "./PageEditor.module.css";
+
+function SectionFields({
+  value,
+  onChange,
+  title,
+}: {
+  value: PageSectionCopy;
+  onChange: (next: PageSectionCopy) => void;
+  title: string;
+}) {
+  return (
+    <section className={styles.section}>
+      <h2>{title}</h2>
+      <label>
+        Надзаголовок
+        <input
+          value={value.eyebrow}
+          onChange={(event) => onChange({ ...value, eyebrow: event.target.value })}
+        />
+      </label>
+      <label>
+        Заголовок
+        <input value={value.title} onChange={(event) => onChange({ ...value, title: event.target.value })} />
+      </label>
+      <label>
+        Лид
+        <textarea value={value.lead} onChange={(event) => onChange({ ...value, lead: event.target.value })} />
+      </label>
+    </section>
+  );
+}
+
+function CtaFields({
+  value,
+  onChange,
+  label,
+}: {
+  value: PageCta;
+  onChange: (next: PageCta) => void;
+  label: string;
+}) {
+  return (
+    <fieldset className={styles.cta}>
+      <legend>{label}</legend>
+      <label>
+        Текст
+        <input
+          value={value.label}
+          onChange={(event) => onChange({ ...value, label: event.target.value })}
+        />
+      </label>
+      <label>
+        Ссылка
+        <input value={value.href} onChange={(event) => onChange({ ...value, href: event.target.value })} />
+      </label>
+    </fieldset>
+  );
+}
+
+function StubFields({
+  draft,
+  onChange,
+}: {
+  draft: StubPageDraft;
+  onChange: (next: StubPageDraft) => void;
+}) {
+  return (
+    <>
+      <SectionFields
+        title="Шапка"
+        value={draft.hero}
+        onChange={(hero) => onChange({ ...draft, hero: { ...draft.hero, ...hero } })}
+      />
+      <PlacementFields
+        label="Картинка шапки"
+        value={draft.hero.image}
+        onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image } })}
+      />
+    </>
+  );
+}
+
+function HomeFields({
+  draft,
+  onChange,
+}: {
+  draft: HomePageDraft;
+  onChange: (next: HomePageDraft) => void;
+}) {
+  return (
+    <>
+      <SectionFields
+        title="Hero"
+        value={draft.hero}
+        onChange={(hero) => onChange({ ...draft, hero: { ...draft.hero, ...hero } })}
+      />
+      <PlacementFields
+        label="Картинка hero"
+        value={draft.hero.image}
+        onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image } })}
+      />
+      <CtaFields
+        label="Основная кнопка"
+        value={draft.hero.primaryCta}
+        onChange={(primaryCta) => onChange({ ...draft, hero: { ...draft.hero, primaryCta } })}
+      />
+      <CtaFields
+        label="Вторая кнопка"
+        value={draft.hero.secondaryCta}
+        onChange={(secondaryCta) => onChange({ ...draft, hero: { ...draft.hero, secondaryCta } })}
+      />
+      <label>
+        Метрика — подпись
+        <input
+          value={draft.hero.metricLabel}
+          onChange={(event) => onChange({ ...draft, hero: { ...draft.hero, metricLabel: event.target.value } })}
+        />
+      </label>
+      <label>
+        Метрика — текст
+        <input
+          value={draft.hero.metricText}
+          onChange={(event) => onChange({ ...draft, hero: { ...draft.hero, metricText: event.target.value } })}
+        />
+      </label>
+      <SectionFields
+        title="Подбор"
+        value={draft.selectionEntry}
+        onChange={(selectionEntry) => onChange({ ...draft, selectionEntry })}
+      />
+      <SectionFields
+        title="Направления"
+        value={draft.directions}
+        onChange={(directions) => onChange({ ...draft, directions })}
+      />
+      <SectionFields
+        title="Экспертиза"
+        value={draft.expertise}
+        onChange={(expertise) => onChange({ ...draft, expertise })}
+      />
+      <SectionFields
+        title="Кампания магазина"
+        value={draft.shopCampaign}
+        onChange={(shopCampaign) => onChange({ ...draft, shopCampaign: { ...draft.shopCampaign, ...shopCampaign } })}
+      />
+      <PlacementFields
+        label="Картинка кампании"
+        value={draft.shopCampaign.image}
+        onChange={(image) => onChange({ ...draft, shopCampaign: { ...draft.shopCampaign, image } })}
+      />
+      <CtaFields
+        label="Кнопка кампании"
+        value={draft.shopCampaign.cta}
+        onChange={(cta) => onChange({ ...draft, shopCampaign: { ...draft.shopCampaign, cta } })}
+      />
+      <SectionFields
+        title="Резюме"
+        value={draft.resume}
+        onChange={(resume) => onChange({ ...draft, resume: { ...draft.resume, ...resume } })}
+      />
+      <CtaFields
+        label="Основная кнопка резюме"
+        value={draft.resume.primaryCta}
+        onChange={(primaryCta) => onChange({ ...draft, resume: { ...draft.resume, primaryCta } })}
+      />
+      <CtaFields
+        label="Вторая кнопка резюме"
+        value={draft.resume.secondaryCta}
+        onChange={(secondaryCta) => onChange({ ...draft, resume: { ...draft.resume, secondaryCta } })}
+      />
+    </>
+  );
+}
+
+function ShopHomeFields({
+  draft,
+  onChange,
+}: {
+  draft: ShopHomePageDraft;
+  onChange: (next: ShopHomePageDraft) => void;
+}) {
+  return (
+    <>
+      <SectionFields
+        title="Hero"
+        value={draft.hero}
+        onChange={(hero) => onChange({ ...draft, hero: { ...draft.hero, ...hero } })}
+      />
+      <PlacementFields
+        label="Картинка hero"
+        value={draft.hero.image}
+        onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image } })}
+      />
+      <CtaFields
+        label="Кнопка hero"
+        value={draft.hero.cta}
+        onChange={(cta) => onChange({ ...draft, hero: { ...draft.hero, cta } })}
+      />
+      <SectionFields
+        title="Ввод дисков"
+        value={draft.wheelsIntro}
+        onChange={(wheelsIntro) => onChange({ ...draft, wheelsIntro: { ...draft.wheelsIntro, ...wheelsIntro } })}
+      />
+      <label>
+        Kicker
+        <input
+          value={draft.wheelsIntro.kicker}
+          onChange={(event) =>
+            onChange({ ...draft, wheelsIntro: { ...draft.wheelsIntro, kicker: event.target.value } })
+          }
+        />
+      </label>
+
+      <section className={styles.section}>
+        <h2>Шаги заказа</h2>
+        {draft.orderSteps.map((step, index) => (
+          <div key={step.id} className={styles.row}>
+            <label>
+              Заголовок
+              <input
+                value={step.title}
+                onChange={(event) => {
+                  const orderSteps = draft.orderSteps.slice();
+                  orderSteps[index] = { ...step, title: event.target.value };
+                  onChange({ ...draft, orderSteps });
+                }}
+              />
+            </label>
+            <label>
+              Описание
+              <textarea
+                value={step.description}
+                onChange={(event) => {
+                  const orderSteps = draft.orderSteps.slice();
+                  orderSteps[index] = { ...step, description: event.target.value };
+                  onChange({ ...draft, orderSteps });
+                }}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() =>
+                onChange({ ...draft, orderSteps: draft.orderSteps.filter((row) => row.id !== step.id) })
+              }
+            >
+              Убрать
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() =>
+            onChange({
+              ...draft,
+              orderSteps: [...draft.orderSteps, { id: crypto.randomUUID(), title: "", description: "" }],
+            })
+          }
+        >
+          Добавить шаг
+        </button>
+      </section>
+
+      <section className={styles.section}>
+        <h2>Карусель категорий</h2>
+        {draft.categoryCarousel.map((slide, index) => (
+          <div key={slide.id} className={styles.row}>
+            <label>
+              Kicker
+              <input
+                value={slide.kicker}
+                onChange={(event) => {
+                  const categoryCarousel = draft.categoryCarousel.slice();
+                  categoryCarousel[index] = { ...slide, kicker: event.target.value };
+                  onChange({ ...draft, categoryCarousel });
+                }}
+              />
+            </label>
+            <label>
+              Заголовок
+              <input
+                value={slide.title}
+                onChange={(event) => {
+                  const categoryCarousel = draft.categoryCarousel.slice();
+                  categoryCarousel[index] = { ...slide, title: event.target.value };
+                  onChange({ ...draft, categoryCarousel });
+                }}
+              />
+            </label>
+            <label>
+              Действие
+              <input
+                value={slide.action}
+                onChange={(event) => {
+                  const categoryCarousel = draft.categoryCarousel.slice();
+                  categoryCarousel[index] = { ...slide, action: event.target.value };
+                  onChange({ ...draft, categoryCarousel });
+                }}
+              />
+            </label>
+            <label>
+              Ссылка
+              <input
+                value={slide.href}
+                onChange={(event) => {
+                  const categoryCarousel = draft.categoryCarousel.slice();
+                  categoryCarousel[index] = { ...slide, href: event.target.value };
+                  onChange({ ...draft, categoryCarousel });
+                }}
+              />
+            </label>
+            <label>
+              Alt
+              <input
+                value={slide.alt}
+                onChange={(event) => {
+                  const categoryCarousel = draft.categoryCarousel.slice();
+                  categoryCarousel[index] = { ...slide, alt: event.target.value };
+                  onChange({ ...draft, categoryCarousel });
+                }}
+              />
+            </label>
+            <PlacementFields
+              label="Desktop"
+              value={slide.desktopImage}
+              onChange={(desktopImage) => {
+                const categoryCarousel = draft.categoryCarousel.slice();
+                categoryCarousel[index] = { ...slide, desktopImage };
+                onChange({ ...draft, categoryCarousel });
+              }}
+            />
+            <PlacementFields
+              label="Mobile"
+              value={slide.mobileImage}
+              onChange={(mobileImage) => {
+                const categoryCarousel = draft.categoryCarousel.slice();
+                categoryCarousel[index] = { ...slide, mobileImage };
+                onChange({ ...draft, categoryCarousel });
+              }}
+            />
+            <button
+              type="button"
+              onClick={() =>
+                onChange({
+                  ...draft,
+                  categoryCarousel: draft.categoryCarousel.filter((row) => row.id !== slide.id),
+                })
+              }
+            >
+              Убрать
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() =>
+            onChange({
+              ...draft,
+              categoryCarousel: [
+                ...draft.categoryCarousel,
+                {
+                  id: crypto.randomUUID(),
+                  kicker: "",
+                  title: "",
+                  action: "",
+                  href: "",
+                  alt: "",
+                },
+              ],
+            })
+          }
+        >
+          Добавить слайд категории
+        </button>
+      </section>
+
+      <SectionFields
+        title="Техника"
+        value={draft.vehicles}
+        onChange={(vehicles) => onChange({ ...draft, vehicles: { ...draft.vehicles, ...vehicles } })}
+      />
+      <CtaFields
+        label="Кнопка техники"
+        value={draft.vehicles.cta}
+        onChange={(cta) => onChange({ ...draft, vehicles: { ...draft.vehicles, cta } })}
+      />
+      <section className={styles.section}>
+        <h2>Слайды техники</h2>
+        {draft.vehicles.slides.map((slide, index) => (
+          <div key={slide.id} className={styles.row}>
+            <label>
+              Заголовок
+              <input
+                value={slide.title}
+                onChange={(event) => {
+                  const slides = draft.vehicles.slides.slice();
+                  slides[index] = { ...slide, title: event.target.value };
+                  onChange({ ...draft, vehicles: { ...draft.vehicles, slides } });
+                }}
+              />
+            </label>
+            <label>
+              Alt
+              <input
+                value={slide.alt}
+                onChange={(event) => {
+                  const slides = draft.vehicles.slides.slice();
+                  slides[index] = { ...slide, alt: event.target.value };
+                  onChange({ ...draft, vehicles: { ...draft.vehicles, slides } });
+                }}
+              />
+            </label>
+            <PlacementFields
+              label="Картинка"
+              value={slide.image}
+              onChange={(image) => {
+                const slides = draft.vehicles.slides.slice();
+                slides[index] = { ...slide, image };
+                onChange({ ...draft, vehicles: { ...draft.vehicles, slides } });
+              }}
+            />
+            <button
+              type="button"
+              onClick={() =>
+                onChange({
+                  ...draft,
+                  vehicles: {
+                    ...draft.vehicles,
+                    slides: draft.vehicles.slides.filter((row) => row.id !== slide.id),
+                  },
+                })
+              }
+            >
+              Убрать
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() =>
+            onChange({
+              ...draft,
+              vehicles: {
+                ...draft.vehicles,
+                slides: [...draft.vehicles.slides, { id: crypto.randomUUID(), title: "", alt: "" }],
+              },
+            })
+          }
+        >
+          Добавить слайд техники
+        </button>
+      </section>
+    </>
+  );
+}
 
 export function PageEditor({ pageKey }: { pageKey: PageKey }) {
   const [record, setRecord] = useState<EntityRecord<PageDraft> | null>(null);
@@ -27,12 +493,8 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
   const draft = record.draft;
   const dirty = JSON.stringify(draft) !== JSON.stringify(record.savedDraft);
 
-  function patchSeo(next: Partial<Pick<PageDraft, "seoTitle" | "seoDescription">>) {
-    setRecord({ ...record!, draft: { ...draft, ...next } });
-  }
-
-  function patchHero(next: Partial<PageDraft["hero"]>) {
-    setRecord({ ...record!, draft: { ...draft, hero: { ...draft.hero, ...next } } as PageDraft });
+  function setDraft(next: PageDraft) {
+    setRecord({ ...record!, draft: next });
   }
 
   async function onSave() {
@@ -64,32 +526,32 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
   }
 
   return (
-    <main>
+    <main className={styles.editor}>
       <h1>{PAGE_LABELS[pageKey]}</h1>
       <label>
         SEO title
-        <input value={draft.seoTitle} onChange={(event) => patchSeo({ seoTitle: event.target.value })} />
+        <input
+          value={draft.seoTitle}
+          onChange={(event) => setDraft({ ...draft, seoTitle: event.target.value })}
+        />
       </label>
       <label>
         SEO description
         <textarea
           value={draft.seoDescription}
-          onChange={(event) => patchSeo({ seoDescription: event.target.value })}
+          onChange={(event) => setDraft({ ...draft, seoDescription: event.target.value })}
         />
       </label>
-      <label>
-        Надзаголовок
-        <input value={draft.hero.eyebrow} onChange={(event) => patchHero({ eyebrow: event.target.value })} />
-      </label>
-      <label>
-        Заголовок
-        <input value={draft.hero.title} onChange={(event) => patchHero({ title: event.target.value })} />
-      </label>
-      <label>
-        Лид
-        <textarea value={draft.hero.lead} onChange={(event) => patchHero({ lead: event.target.value })} />
-      </label>
-      <div>
+
+      {draft.id === "home" ? (
+        <HomeFields draft={draft} onChange={setDraft} />
+      ) : draft.id === "shop-home" ? (
+        <ShopHomeFields draft={draft} onChange={setDraft} />
+      ) : (
+        <StubFields draft={draft} onChange={setDraft} />
+      )}
+
+      <div className={styles.actions}>
         {message ? <p>{message}</p> : null}
         {dirty ? <p>Есть несохранённые правки</p> : null}
         <button type="button" disabled={saving} onClick={() => void onSave()}>

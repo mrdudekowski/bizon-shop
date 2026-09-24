@@ -1,5 +1,5 @@
-import { SectionPlaceholder } from "@/app/section-placeholder";
+import { UsersScreen } from "@/admin/users/UsersScreen";
 
 export default function UsersPage() {
-  return <SectionPlaceholder title="Пользователи" />;
+  return <UsersScreen />;
 }

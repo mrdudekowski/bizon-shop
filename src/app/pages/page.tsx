@@ -1,5 +1,5 @@
-import { SectionPlaceholder } from "@/app/section-placeholder";
+import { PageList } from "@/admin/pages/PageList";
 
 export default function PagesPage() {
-  return <SectionPlaceholder title="Страницы" />;
+  return <PageList />;
 }

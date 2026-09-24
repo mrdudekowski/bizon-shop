@@ -1,5 +1,5 @@
-import { SectionPlaceholder } from "@/app/section-placeholder";
+import { MediaLibrary } from "@/admin/media/MediaLibrary";
 
 export default function MediaPage() {
-  return <SectionPlaceholder title="Медиа" />;
+  return <MediaLibrary />;
 }

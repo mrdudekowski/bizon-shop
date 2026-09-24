@@ -15,6 +15,23 @@
   background: #fff;
 }
 
+.brandRow,
+.headerSide,
+.roles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.menuButton {
+  display: none;
+}
+
+.roles button[aria-pressed="true"] {
+  font-weight: 650;
+}
+
 .brand {
   margin: 0;
   font-weight: 650;
@@ -26,6 +43,17 @@
   font-size: 14px;
 }
 
+.notice {
+  margin: 0;
+  padding: 10px 16px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  background: #fff6e5;
+  border-bottom: 1px solid #e6d5a8;
+}
+
 .body {
   display: grid;
   grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
@@ -33,7 +61,8 @@
   min-height: 0;
 }
 
-.nav {
+.nav,
+.navOpen {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
@@ -61,5 +90,19 @@
 @media (max-width: 720px) {
   .body {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .menuButton {
+    display: inline-flex;
+  }
+
+  .nav {
+    display: none;
+  }
+
+  .navOpen {
+    display: grid;
+    border-right: 0;
+    border-bottom: 1px solid #ddd;
   }
 }

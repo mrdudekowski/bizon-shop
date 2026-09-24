@@ -1,5 +1,5 @@
-import { SectionPlaceholder } from "@/app/section-placeholder";
+import { MaterialList } from "@/admin/materials/MaterialList";
 
 export default function MaterialsPage() {
-  return <SectionPlaceholder title="Материалы" />;
+  return <MaterialList />;
 }
