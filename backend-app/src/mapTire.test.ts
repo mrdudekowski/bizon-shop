@@ -69,6 +69,27 @@ describe("mapTireVariant", () => {
       }).priceOnRequest,
     ).toBe(true);
   });
+
+  it("coerces Postgres numeric strings and preserves textual specifications", () => {
+    expect(
+      mapTireVariant({
+        id: 8,
+        size: "315/80R22.5",
+        price: "18400.00",
+        price_on_request: false,
+        available: true,
+        load_index: "154/150",
+        speed_index: "L",
+        rim_diameter: "22.5",
+      }),
+    ).toMatchObject({
+      price: 18400,
+      priceOnRequest: false,
+      loadIndex: "154/150",
+      speedIndex: "L",
+      rimDiameter: 22.5,
+    });
+  });
 });
 
 describe("lexicalToHtml", () => {

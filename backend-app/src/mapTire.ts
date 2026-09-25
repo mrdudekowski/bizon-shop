@@ -43,19 +43,19 @@ type TireVariantRow = {
   price: unknown;
   price_on_request: boolean;
   available: boolean;
-  rim_diameter?: number;
-  load_index?: number;
-  load_index_dual?: number;
-  speed_index?: number;
-  ply_rating?: number;
-  overall_diameter?: number;
-  section_width?: number;
-  tread_depth_mm?: number;
-  pressure_single_kpa?: number;
-  pressure_dual_kpa?: number;
-  max_load_single_kg?: number;
-  max_load_dual_kg?: number;
-  recommended_rim?: number;
+  rim_diameter?: unknown;
+  load_index?: unknown;
+  load_index_dual?: unknown;
+  speed_index?: unknown;
+  ply_rating?: unknown;
+  overall_diameter?: unknown;
+  section_width?: unknown;
+  tread_depth_mm?: unknown;
+  pressure_single_kpa?: unknown;
+  pressure_dual_kpa?: unknown;
+  max_load_single_kg?: unknown;
+  max_load_dual_kg?: unknown;
+  recommended_rim?: unknown;
 };
 
 export type CmsTireType = {
@@ -93,10 +93,10 @@ export type CmsTireVariant = {
   priceOnRequest: boolean;
   available: boolean;
   rimDiameter?: number;
-  loadIndex?: number;
-  loadIndexDual?: number;
-  speedIndex?: number;
-  plyRating?: number;
+  loadIndex?: string;
+  loadIndexDual?: string;
+  speedIndex?: string;
+  plyRating?: string;
   overallDiameter?: number;
   sectionWidth?: number;
   treadDepth?: number;
@@ -104,7 +104,7 @@ export type CmsTireVariant = {
   pressureDualKpa?: number;
   maxLoadSingleKg?: number;
   maxLoadDualKg?: number;
-  recommendedRim?: number;
+  recommendedRim?: string;
 };
 
 const escapeHtml = (text: string) =>
@@ -175,32 +175,58 @@ export function mapTireModel(input: TireModelInput): CmsTireModel {
 }
 
 export function mapTireVariant(row: TireVariantRow): CmsTireVariant {
+  const price = toFiniteNumber(row.price);
   const numericSpecs = {
-    rimDiameter: row.rim_diameter,
-    loadIndex: row.load_index,
-    loadIndexDual: row.load_index_dual,
-    speedIndex: row.speed_index,
-    plyRating: row.ply_rating,
-    overallDiameter: row.overall_diameter,
-    sectionWidth: row.section_width,
-    treadDepth: row.tread_depth_mm,
-    pressureSingleKpa: row.pressure_single_kpa,
-    pressureDualKpa: row.pressure_dual_kpa,
-    maxLoadSingleKg: row.max_load_single_kg,
-    maxLoadDualKg: row.max_load_dual_kg,
-    recommendedRim: row.recommended_rim,
+    rimDiameter: toFiniteNumber(row.rim_diameter),
+    overallDiameter: toFiniteNumber(row.overall_diameter),
+    sectionWidth: toFiniteNumber(row.section_width),
+    treadDepth: toFiniteNumber(row.tread_depth_mm),
+    pressureSingleKpa: toFiniteNumber(row.pressure_single_kpa),
+    pressureDualKpa: toFiniteNumber(row.pressure_dual_kpa),
+    maxLoadSingleKg: toFiniteNumber(row.max_load_single_kg),
+    maxLoadDualKg: toFiniteNumber(row.max_load_dual_kg),
+  };
+  const textSpecs = {
+    loadIndex: toTextSpecification(row.load_index),
+    loadIndexDual: toTextSpecification(row.load_index_dual),
+    speedIndex: toTextSpecification(row.speed_index),
+    plyRating: toTextSpecification(row.ply_rating),
+    recommendedRim: toTextSpecification(row.recommended_rim),
   };
 
   return {
     id: String(row.id),
     size: row.size,
-    ...(typeof row.price === "number" ? { price: row.price } : {}),
+    ...(price !== undefined ? { price } : {}),
     priceOnRequest: row.price_on_request,
     available: row.available,
     ...Object.fromEntries(
-      Object.entries(numericSpecs).filter(([, value]) => typeof value === "number"),
+      [...Object.entries(numericSpecs), ...Object.entries(textSpecs)].filter(
+        ([, value]) => value !== undefined,
+      ),
     ),
   };
+}
+
+function toFiniteNumber(value: unknown): number | undefined {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : undefined;
+  }
+
+  if (typeof value !== "string" || !value.trim()) {
+    return undefined;
+  }
+
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) ? parsedValue : undefined;
+}
+
+function toTextSpecification(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value.trim() ? value : undefined;
+  }
+
+  return typeof value === "number" && Number.isFinite(value) ? String(value) : undefined;
 }
 
 function normalizeImageUrl(imageUrl: string | null | undefined): string | null {
