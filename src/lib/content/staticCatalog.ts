@@ -198,32 +198,50 @@ function normalizeTireVariant(raw: BackendTireVariant): CmsTireVariant {
   };
 }
 
-export async function getShopProducts(_options?: GetShopProductsOptions): Promise<CmsProduct[]> {
-  return [];
+export async function getShopProducts(options?: GetShopProductsOptions): Promise<CmsProduct[]> {
+  if (!publishedApiEnabled()) {
+    return [];
+  }
+  const category = options?.categorySlug?.trim();
+  const path = category
+    ? `/v1/shop/products?category=${encodeURIComponent(category)}`
+    : "/v1/shop/products";
+  return (await fetchPublishedJson<CmsProduct[]>(path)) ?? [];
 }
 
-export async function getShopProductsByCategorySlug(_slug: string): Promise<CmsProduct[]> {
-  return [];
+export async function getShopProductsByCategorySlug(slug: string): Promise<CmsProduct[]> {
+  return getShopProducts({ categorySlug: slug });
 }
 
-export async function getShopProductBySlug(_slug: string): Promise<CmsProduct | null> {
-  return null;
+export async function getShopProductBySlug(slug: string): Promise<CmsProduct | null> {
+  if (!publishedApiEnabled()) {
+    return null;
+  }
+  return fetchPublishedJson<CmsProduct>(`/v1/shop/products/${encodeURIComponent(slug)}`);
 }
 
 export async function getAllShopProductSlugs(): Promise<string[]> {
-  return emptySlugs;
+  const products = await getShopProducts();
+  return products.map((product) => product.slug);
 }
 
 export async function getShopCategories(): Promise<CmsShopCategory[]> {
-  return [];
+  if (!publishedApiEnabled()) {
+    return [];
+  }
+  return (await fetchPublishedJson<CmsShopCategory[]>("/v1/shop/categories")) ?? [];
 }
 
-export async function getShopCategoryBySlug(_slug: string): Promise<CmsShopCategory | null> {
-  return null;
+export async function getShopCategoryBySlug(slug: string): Promise<CmsShopCategory | null> {
+  if (!publishedApiEnabled()) {
+    return null;
+  }
+  return fetchPublishedJson<CmsShopCategory>(`/v1/shop/categories/${encodeURIComponent(slug)}`);
 }
 
 export async function getAllShopCategorySlugs(): Promise<string[]> {
-  return emptySlugs;
+  const categories = await getShopCategories();
+  return categories.map((category) => category.slug);
 }
 
 export async function getTireIQArticles(_topic?: string): Promise<CmsArticle[]> {
@@ -343,40 +361,88 @@ export async function getTireVariantsByModelId(modelId: string): Promise<CmsTire
 }
 
 export async function getWheelTypes(): Promise<CmsWheelType[]> {
-  return [];
+  if (!publishedApiEnabled()) {
+    return [];
+  }
+  return (await fetchPublishedJson<CmsWheelType[]>("/v1/wheels/types")) ?? [];
 }
 
-export async function getWheelTypeBySlug(_slug: string): Promise<CmsWheelType | null> {
-  return null;
+export async function getWheelTypeBySlug(slug: string): Promise<CmsWheelType | null> {
+  if (!publishedApiEnabled()) {
+    return null;
+  }
+  return fetchPublishedJson<CmsWheelType>(`/v1/wheels/types/${encodeURIComponent(slug)}`);
 }
 
 export async function getAllWheelTypeSlugs(): Promise<string[]> {
-  return emptySlugs;
+  const types = await getWheelTypes();
+  return types.map((type) => type.slug);
 }
 
-export async function getWheelModelsByTypeSlug(_slug: string): Promise<CmsWheelModel[]> {
-  return [];
+export async function getWheelModelsByTypeSlug(slug: string): Promise<CmsWheelModel[]> {
+  if (!publishedApiEnabled()) {
+    return [];
+  }
+  const models = await fetchPublishedJson<CmsWheelModel[]>(
+    `/v1/wheels/types/${encodeURIComponent(slug)}/models`,
+  );
+  return models ?? [];
 }
 
 export async function getWheelModelByTypeAndSlug(
-  _typeSlug: string,
-  _modelSlug: string,
+  typeSlug: string,
+  modelSlug: string,
 ): Promise<CmsWheelModel | null> {
-  return null;
+  if (!publishedApiEnabled()) {
+    return null;
+  }
+  return fetchPublishedJson<CmsWheelModel>(
+    `/v1/wheels/models/${encodeURIComponent(typeSlug)}/${encodeURIComponent(modelSlug)}`,
+  );
 }
 
 export async function getAllWheelModelRouteParams(): Promise<WheelModelRouteParam[]> {
-  return [];
+  if (!publishedApiEnabled()) {
+    return [];
+  }
+  const types = await getWheelTypes();
+  const nested = await Promise.all(
+    types.map(async (type) => {
+      const models = await getWheelModelsByTypeSlug(type.slug);
+      return models.map((model) => ({
+        wheelTypeSlug: type.slug,
+        modelSlug: model.slug,
+      }));
+    }),
+  );
+  return nested.flat();
 }
 
 export async function getPublishedWheelModels(): Promise<CmsWheelModel[]> {
-  return [];
+  if (!publishedApiEnabled()) {
+    return [];
+  }
+  const types = await getWheelTypes();
+  const nested = await Promise.all(types.map((type) => getWheelModelsByTypeSlug(type.slug)));
+  return nested.flat();
 }
 
-export async function getWheelVariantsByModelId(_modelId: string): Promise<CmsWheelVariant[]> {
-  return [];
+export async function getWheelVariantsByModelId(modelId: string): Promise<CmsWheelVariant[]> {
+  if (!publishedApiEnabled()) {
+    return [];
+  }
+  const variants = await fetchPublishedJson<CmsWheelVariant[]>(
+    `/v1/wheels/models/${encodeURIComponent(modelId)}/variants`,
+  );
+  return variants ?? [];
 }
 
-export async function getWheelVariantsByTypeSlug(_slug: string): Promise<CmsWheelVariant[]> {
-  return [];
+export async function getWheelVariantsByTypeSlug(slug: string): Promise<CmsWheelVariant[]> {
+  if (!publishedApiEnabled()) {
+    return [];
+  }
+  const variants = await fetchPublishedJson<CmsWheelVariant[]>(
+    `/v1/wheels/types/${encodeURIComponent(slug)}/variants`,
+  );
+  return variants ?? [];
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CatalogBuyPanel } from "@/components/catalog/CatalogBuyPanel";
+import { LexicalContent } from "@/components/content/LexicalContent";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { ModelAdvantagesCarousel } from "@/components/catalog/ModelAdvantagesCarousel";
 import { PageHeader } from "@/components/catalog/PageHeader";
@@ -63,10 +64,10 @@ export function TireModelStage({
           <div className={styles.productPanel}>
             <p className={styles.eyebrow}>{model.brand || "BIZON TBR"}</p>
             <h2 id="product-stage-title">Под рабочую нагрузку и ваш маршрут</h2>
+            <LexicalContent data={model.descriptionLong || model.descriptionShort} />
             <p>
-              {model.descriptionLong || model.descriptionShort} Подтвердите применение,
-              ось и типоразмер перед заказом — эти параметры определяют пригодность модели
-              для вашей техники.
+              Подтвердите применение, ось и типоразмер перед заказом — эти параметры
+              определяют пригодность модели для вашей техники.
             </p>
             <dl className={styles.productFacts}>
               <div>

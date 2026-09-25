@@ -212,7 +212,7 @@ export function mapTireVariant(row: TireVariantRow): CmsTireVariant {
   };
 }
 
-function toFiniteNumber(value: unknown): number | undefined {
+export function toFiniteNumber(value: unknown): number | undefined {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : undefined;
   }
@@ -233,6 +233,9 @@ function toTextSpecification(value: unknown): string | undefined {
   return typeof value === "number" && Number.isFinite(value) ? String(value) : undefined;
 }
 
-function normalizeImageUrl(imageUrl: string | null | undefined): string | null {
-  return imageUrl && !imageUrl.startsWith("data:") ? imageUrl : null;
+export function normalizeImageUrl(imageUrl: string | null | undefined): string | null {
+  if (!imageUrl || imageUrl.startsWith("data:")) return null;
+  const payloadFile = imageUrl.match(/^\/api\/media\/file\/([^/?#]+)$/);
+  if (payloadFile) return `/media/${decodeURIComponent(payloadFile[1])}`;
+  return imageUrl;
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { LexicalContent } from "@/components/content/LexicalContent";
 import { resolveCatalogImageSrc } from "@/constants/images";
 import { useCart } from "@/hooks/useCart";
 import { cartItemKey, requestOpenCart } from "@/lib/cart/cartStorage";
@@ -283,7 +284,8 @@ export function ShopProductConfigurator({ product }: { product: CmsProduct }) {
 
       <section className={styles.story} aria-labelledby="product-story-title">
         <p className={styles.kicker}>О товаре</p>
-        <h2 id="product-story-title">{product.descriptionLong}</h2>
+        <h2 id="product-story-title">{product.name}</h2>
+        <LexicalContent data={product.descriptionLong} />
         {product.material ? <p>Материал: {product.material}</p> : null}
       </section>
     </div>

@@ -4,10 +4,19 @@ import {
   readArticleBySlug,
   readArticles,
   readHomePatch,
+  readShopProductBySlug,
+  readShopProducts,
+  readShopCategories,
+  readStubPatch,
   readTireModel,
   readTireModelsByType,
   readTireTypes,
   readTireVariants,
+  readWheelModel,
+  readWheelModelsByType,
+  readWheelTypes,
+  readWheelVariants,
+  readWheelVariantsByType,
   type ReadDatabase,
 } from "./publishedRead";
 
@@ -146,6 +155,19 @@ async function handleRequest(
       return;
     }
 
+    {
+      const match = path.match(/^\/v1\/pages\/([^/]+)$/);
+      if (match && match[1] !== "home") {
+        const page = await readStubPatch(database, decodeURIComponent(match[1]));
+        if (!page) {
+          sendJson(res, 404, { ok: false });
+          return;
+        }
+        sendJson(res, 200, page);
+        return;
+      }
+    }
+
     if (path === "/v1/articles") {
       sendJson(res, 200, await readArticles(database));
       return;
@@ -161,6 +183,104 @@ async function handleRequest(
           return;
         }
         sendJson(res, 200, article);
+        return;
+      }
+    }
+
+    if (path === "/v1/wheels/types") {
+      sendJson(res, 200, await readWheelTypes(database));
+      return;
+    }
+
+    {
+      const modelsMatch = path.match(/^\/v1\/wheels\/types\/([^/]+)\/models$/);
+      if (modelsMatch) {
+        sendJson(res, 200, await readWheelModelsByType(database, decodeURIComponent(modelsMatch[1])));
+        return;
+      }
+      const variantsMatch = path.match(/^\/v1\/wheels\/types\/([^/]+)\/variants$/);
+      if (variantsMatch) {
+        sendJson(
+          res,
+          200,
+          await readWheelVariantsByType(database, decodeURIComponent(variantsMatch[1])),
+        );
+        return;
+      }
+      const typeMatch = path.match(/^\/v1\/wheels\/types\/([^/]+)$/);
+      if (typeMatch) {
+        const slug = decodeURIComponent(typeMatch[1]);
+        const types = await readWheelTypes(database);
+        const wheelType = types.find((entry) => entry.slug === slug);
+        if (!wheelType) {
+          sendJson(res, 404, { ok: false });
+          return;
+        }
+        sendJson(res, 200, wheelType);
+        return;
+      }
+    }
+
+    {
+      const match = path.match(/^\/v1\/wheels\/models\/([^/]+)\/variants$/);
+      if (match) {
+        sendJson(res, 200, await readWheelVariants(database, decodeURIComponent(match[1])));
+        return;
+      }
+    }
+
+    {
+      const match = path.match(/^\/v1\/wheels\/models\/([^/]+)\/([^/]+)$/);
+      if (match) {
+        const model = await readWheelModel(
+          database,
+          decodeURIComponent(match[1]),
+          decodeURIComponent(match[2]),
+        );
+        if (!model) {
+          sendJson(res, 404, { ok: false });
+          return;
+        }
+        sendJson(res, 200, model);
+        return;
+      }
+    }
+
+    if (path === "/v1/shop/categories") {
+      sendJson(res, 200, await readShopCategories(database));
+      return;
+    }
+
+    {
+      const match = path.match(/^\/v1\/shop\/categories\/([^/]+)$/);
+      if (match) {
+        const slug = decodeURIComponent(match[1]);
+        const categories = await readShopCategories(database);
+        const category = categories.find((entry) => entry.slug === slug);
+        if (!category) {
+          sendJson(res, 404, { ok: false });
+          return;
+        }
+        sendJson(res, 200, category);
+        return;
+      }
+    }
+
+    if (path === "/v1/shop/products") {
+      const category = url.searchParams.get("category")?.trim();
+      sendJson(res, 200, await readShopProducts(database, category || undefined));
+      return;
+    }
+
+    {
+      const match = path.match(/^\/v1\/shop\/products\/([^/]+)$/);
+      if (match) {
+        const product = await readShopProductBySlug(database, decodeURIComponent(match[1]));
+        if (!product) {
+          sendJson(res, 404, { ok: false });
+          return;
+        }
+        sendJson(res, 200, product);
         return;
       }
     }

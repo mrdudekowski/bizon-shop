@@ -2,26 +2,36 @@ import { DemoContentNotice } from "@/components/content/DemoContentNotice";
 import { ServicePage } from "@/components/content/ServicePage";
 import { PREMIUM_MEDIA } from "@/constants/images";
 import { ROUTES } from "@/constants/navigation";
+import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { createPageMetadata } from "@/lib/seo/metadata";
 
-export const metadata = createPageMetadata({
-  title: "Гарантия",
-  description:
-    "Как подготовить обращение по гарантии на шины BIZON и какие данные понадобятся для первичной проверки.",
-  path: ROUTES.warranty,
-});
+const fallbackDescription =
+  "Порядок первичного обращения по гарантийному вопросу. Финальные сроки и объём условий подтверждает поставщик.";
 
-export default function WarrantyPage() {
+export async function generateMetadata() {
+  const page = await getPublishedStubOverlay("warranty");
+  return createPageMetadata({
+    title: page?.seoTitle || "Гарантия",
+    description: page?.seoDescription || fallbackDescription,
+    path: ROUTES.warranty,
+  });
+}
+
+export default async function WarrantyPage() {
+  const page = await getPublishedStubOverlay("warranty");
   return (
     <ServicePage
-      kicker="Поддержка"
-      title="Гарантия и обращение"
-      description="Порядок первичного обращения по гарантийному вопросу. Финальные сроки и объём условий подтверждает поставщик."
+      kicker={page?.hero.eyebrow || "Поддержка"}
+      title={page?.hero.title || "Гарантия и обращение"}
+      description={page?.hero.lead || fallbackDescription}
       breadcrumbs={[
         { href: ROUTES.home, label: "Главная" },
         { href: ROUTES.warranty, label: "Гарантия" },
       ]}
-      media={{ src: PREMIUM_MEDIA.inspection, alt: "Проверка протектора шины" }}
+      media={{
+        src: page?.hero.imageUrl || PREMIUM_MEDIA.inspection,
+        alt: page?.hero.imageAlt || "Проверка протектора шины",
+      }}
       notice={
         <DemoContentNotice>
           Пример ниже не устанавливает срок или объём гарантии. Перед запуском его заменяют условия

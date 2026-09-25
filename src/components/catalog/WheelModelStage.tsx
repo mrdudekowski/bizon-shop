@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CatalogBuyPanel } from "@/components/catalog/CatalogBuyPanel";
+import { LexicalContent } from "@/components/content/LexicalContent";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { WheelVariantsTable } from "@/components/catalog/WheelVariantsTable";
@@ -63,9 +64,10 @@ export function WheelModelStage({
           <div className={styles.productPanel}>
             <p className={styles.eyebrow}>{model.series || wheelType.name}</p>
             <h2 id="wheel-stage-title">Параметры под ваш автомобиль</h2>
+            <LexicalContent data={model.descriptionLong || model.descriptionShort} />
             <p>
-              {model.descriptionLong || model.descriptionShort} Выберите размер и
-              конфигурацию, затем подтвердите совместимость с автомобилем до заказа.
+              Выберите размер и конфигурацию, затем подтвердите совместимость с автомобилем
+              до заказа.
             </p>
             <dl className={styles.productFacts}>
               <div>

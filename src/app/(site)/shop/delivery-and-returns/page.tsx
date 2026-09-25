@@ -1,17 +1,22 @@
+import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { DemoContentNotice } from "@/components/content/DemoContentNotice";
 
-export const metadata = createPageMetadata({
-  title: "Доставка и возврат",
-  description: "Информация о порядке согласования доставки и возврата товаров BIZON Shop.",
-  path: "/shop/delivery-and-returns",
-});
+export async function generateMetadata() {
+  const page = await getPublishedStubOverlay("shop-delivery-returns");
+  return createPageMetadata({
+    title: page?.seoTitle || "Доставка и возврат",
+    description: page?.seoDescription || "Информация о порядке согласования доставки и возврата товаров BIZON Shop.",
+    path: "/shop/delivery-and-returns",
+  });
+}
 
-export default function DeliveryAndReturnsPage() {
+export default async function DeliveryAndReturnsPage() {
+  const page = await getPublishedStubOverlay("shop-delivery-returns");
   return (
     <div className="section-inner">
-      <PageHeader title="Доставка и возврат" description="Пример наполнения страницы BIZON Shop для каталога с заявкой." breadcrumbs={[{ href: "/shop", label: "BIZON Shop" }, { href: "/shop/delivery-and-returns", label: "Доставка и возврат" }]} />
+      <PageHeader title={page?.hero.title || "Доставка и возврат"} description={page?.hero.lead || "Пример наполнения страницы BIZON Shop для каталога с заявкой."} breadcrumbs={[{ href: "/shop", label: "BIZON Shop" }, { href: "/shop/delivery-and-returns", label: "Доставка и возврат" }]} />
       <DemoContentNotice>Примеры ниже описывают желаемый UX: Shop принимает заявку, а не онлайн-оплату. Финальные условия необходимо заменить до запуска продаж.</DemoContentNotice>
       <div className="grid gap-5 max-w-3xl">
         <section className="card-base info-card"><h2 className="info-card-title">Оформление заявки</h2><p className="info-card-text mt-3">Добавьте позиции в корзину и оставьте контакты. В демонстрационном сценарии менеджер в течение одного рабочего дня уточняет наличие, цену, способ и срок поставки до оформления сделки.</p></section>

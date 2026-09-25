@@ -1,4 +1,4 @@
-import { lexicalToHtml } from "./mapTire";
+import { lexicalToHtml, normalizeImageUrl } from "./mapTire";
 
 type ArticleRow = {
   title: string;
@@ -21,9 +21,6 @@ export type CmsArticle = {
   showInMenu: boolean;
   menuOrder: number;
 };
-
-const normalizeImageUrl = (imageUrl: string | null): string | null =>
-  imageUrl && !imageUrl.startsWith("data:") ? imageUrl : null;
 
 export function mapArticle(row: ArticleRow): CmsArticle {
   return {

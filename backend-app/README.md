@@ -24,6 +24,17 @@ npm run dev
 - `GET /v1/pages/home`
 - `GET /v1/articles`
 - `GET /v1/articles/:slug`
+- `GET /v1/pages/:key` for about, contact, warranty, branding, become-a-supplier, privacy-policy, shop-delivery-returns
+- `GET /v1/wheels/types`
+- `GET /v1/wheels/types/:slug`
+- `GET /v1/wheels/types/:slug/models`
+- `GET /v1/wheels/types/:slug/variants`
+- `GET /v1/wheels/models/:typeSlug/:modelSlug`
+- `GET /v1/wheels/models/:id/variants`
+- `GET /v1/shop/categories`
+- `GET /v1/shop/categories/:slug`
+- `GET /v1/shop/products` (`?category=` filters by category slug)
+- `GET /v1/shop/products/:slug`
 
 Unknown slug → `404` `{ "ok": false }`. Database error → `500` `{ "ok": false }` (no SQL text, no connection string).
 

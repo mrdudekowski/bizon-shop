@@ -1,15 +1,22 @@
 import { DemoContentNotice } from "@/components/content/DemoContentNotice";
 import { ServicePage } from "@/components/content/ServicePage";
 import { ROUTES } from "@/constants/navigation";
+import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { createPageMetadata } from "@/lib/seo/metadata";
 
 import styles from "./privacy.module.css";
 
-export const metadata = createPageMetadata({
-  title: "Политика конфиденциальности",
-  description: "Принципы обработки персональных данных при использовании сайта BIZON.",
-  path: "/privacy-policy",
-});
+const fallbackDescription =
+  "Принципы обработки персональных данных при отправке заявок на сайтах BIZON Tires и BIZON Shop.";
+
+export async function generateMetadata() {
+  const page = await getPublishedStubOverlay("privacy-policy");
+  return createPageMetadata({
+    title: page?.seoTitle || "Политика конфиденциальности",
+    description: page?.seoDescription || "Принципы обработки персональных данных при использовании сайта BIZON.",
+    path: "/privacy-policy",
+  });
+}
 
 const OPERATOR_NAME =
   process.env.NEXT_PUBLIC_LEGAL_OPERATOR_NAME?.trim() || "ООО «БИЗОН ТАЙРС»";
@@ -19,12 +26,13 @@ const OPERATOR_ADDRESS =
 const OPERATOR_CONTACT_EMAIL =
   process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || "privacy@example.bizon.ru";
 
-export default function PrivacyPolicyPage() {
+export default async function PrivacyPolicyPage() {
+  const page = await getPublishedStubOverlay("privacy-policy");
   return (
     <ServicePage
-      kicker="Документы"
-      title="Политика конфиденциальности"
-      description="Принципы обработки персональных данных при отправке заявок на сайтах BIZON Tires и BIZON Shop."
+      kicker={page?.hero.eyebrow || "Документы"}
+      title={page?.hero.title || "Политика конфиденциальности"}
+      description={page?.hero.lead || fallbackDescription}
       breadcrumbs={[
         { href: ROUTES.home, label: "Главная" },
         { href: ROUTES.privacyPolicy, label: "Политика конфиденциальности" },

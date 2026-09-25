@@ -3,10 +3,12 @@ import {
   readArticleBySlug,
   readArticles,
   readHomePatch,
+  readShopProductBySlug,
   readTireModel,
   readTireModelsByType,
   readTireTypes,
   readTireVariants,
+  readWheelModel,
 } from "./publishedRead";
 
 type QueryCall = { sql: string; params?: unknown[] };
@@ -60,6 +62,7 @@ describe("published catalog readers", () => {
       if (sql.includes("FROM tire_models_features")) {
         return [{ key: "handling", title: "Управление", description: "Держит колею" }];
       }
+      if (sql.includes("tire_models_rels")) return [{ image_url: "/media/gallery.jpg" }];
       return [
         {
           id: 24,
@@ -79,7 +82,7 @@ describe("published catalog readers", () => {
     await expect(readTireModel(db, "tbr", "dsr188")).resolves.toMatchObject({
       id: "24",
       tireTypeSlug: "tbr",
-      gallery: [],
+      gallery: ["/media/gallery.jpg"],
       selectionAxles: ["drive"],
       advantages: [{ key: "handling" }],
     });
@@ -108,6 +111,7 @@ describe("published catalog readers", () => {
       if (sql.includes("FROM tire_models_features")) {
         return [{ key: "safety", title: "Безопасность", description: "Стабильно" }];
       }
+      if (sql.includes("tire_models_rels")) return [];
       return [
         {
           id: 24,
@@ -197,5 +201,73 @@ describe("published content readers", () => {
     expect(list.calls[0].sql).toContain("status = 'published'");
     expect(missing.calls[0]).toMatchObject({ params: ["draft-article"] });
     expect(missing.calls[0].sql).toContain("status = 'published'");
+  });
+
+  it("reads a published wheel model gallery and drops data urls", async () => {
+    const { db, calls } = createRecordingDb((sql) => {
+      if (sql.includes("wheel_models_rels")) {
+        return [
+          { image_url: "/media/wheel.jpg", image_alt: "Диск" },
+          { image_url: "data:image/png;base64,abc", image_alt: "skip" },
+        ];
+      }
+      return [
+        {
+          id: 3,
+          name: "Forged",
+          slug: "forged-1",
+          short_description: "Кованый",
+          full_description: "Прочный",
+          series: "BIZON",
+          wheel_type_slug: "forged",
+          wheel_type_name: "Кованые",
+          image_url: "/media/main.jpg",
+          show_in_menu: true,
+          menu_order: 1,
+        },
+      ];
+    });
+
+    await expect(readWheelModel(db, "forged", "forged-1")).resolves.toMatchObject({
+      slug: "forged-1",
+      descriptionLong: "<p>Прочный</p>",
+      gallery: [{ url: "/media/wheel.jpg", alt: "Диск", label: "Диск" }],
+    });
+    expect(calls[0].sql).toContain("wheel_models.status = 'published'");
+    expect(calls[0].params).toEqual(["forged", "forged-1"]);
+  });
+
+  it("reads a published shop product with html description and numeric variant price", async () => {
+    const { db, calls } = createRecordingDb((sql) => {
+      if (sql.includes("products_variants")) {
+        return [{ id: "sku-1", sku: "SKU", price: "1200.00", price_on_request: false, available: true }];
+      }
+      if (sql.includes("products_rels")) return [{ image_url: "/media/product.jpg" }];
+      return [
+        {
+          id: 8,
+          name: "Вентиль",
+          slug: "valve",
+          short_description: "Коротко",
+          full_description: "Полное описание",
+          price: "900.50",
+          price_on_request: false,
+          available: true,
+          category_slug: "valves",
+          image_url: "/media/valve.jpg",
+        },
+      ];
+    });
+
+    await expect(readShopProductBySlug(db, "valve")).resolves.toMatchObject({
+      slug: "valve",
+      categorySlug: "valves",
+      descriptionLong: "<p>Полное описание</p>",
+      price: 900.5,
+      gallery: ["/media/product.jpg"],
+      variants: [{ id: "sku-1", price: 1200, priceOnRequest: false }],
+    });
+    expect(calls[0].sql).toContain("products.status = 'published'");
+    expect(calls[0].params).toEqual(["valve"]);
   });
 });

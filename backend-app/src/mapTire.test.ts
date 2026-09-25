@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lexicalToHtml, mapTireModel, mapTireVariant } from "./mapTire";
+import { lexicalToHtml, mapTireModel, mapTireVariant, normalizeImageUrl } from "./mapTire";
 
 describe("mapTireModel", () => {
   it("maps a published row into the card the site renders", () => {
@@ -113,5 +113,15 @@ describe("mapTireVariant", () => {
 describe("lexicalToHtml", () => {
   it("passes an existing html string through", () => {
     expect(lexicalToHtml("<p>Уже html</p>")).toBe("<p>Уже html</p>");
+  });
+});
+
+describe("normalizeImageUrl", () => {
+  it("points Payload file routes at the site media folder", () => {
+    expect(normalizeImageUrl("/api/media/file/bizon-atlas-hero-3q.png")).toBe(
+      "/media/bizon-atlas-hero-3q.png",
+    );
+    expect(normalizeImageUrl("/media/already.jpg")).toBe("/media/already.jpg");
+    expect(normalizeImageUrl("data:image/png;base64,abc")).toBeNull();
   });
 });

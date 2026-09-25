@@ -1,6 +1,7 @@
 import { PageHero } from "@/components/content/PageHero";
 import { ContextualContactForm } from "@/components/forms/ContextualContactForm";
 import { getPublishedTireCatalog } from "@/lib/content";
+import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { resolveContactIntent } from "@/lib/requests/contactIntent";
 import {
   normalizeSelectionContext,
@@ -9,11 +10,14 @@ import {
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { parseSelectionParams } from "@/lib/selection/urlState";
 
-export const metadata = createPageMetadata({
-  title: "Контакты",
-  description: "Свяжитесь с BIZON для расчёта, подбора шин или консультации по парку.",
-  path: "/contact",
-});
+export async function generateMetadata() {
+  const page = await getPublishedStubOverlay("contact");
+  return createPageMetadata({
+    title: page?.seoTitle || "Контакты",
+    description: page?.seoDescription || "Свяжитесь с BIZON для расчёта, подбора шин или консультации по парку.",
+    path: "/contact",
+  });
+}
 
 type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -63,13 +67,14 @@ export default async function ContactPage({ searchParams }: PageProps) {
   }
 
   const intent = resolveContactIntent(params, { hasSelectionContext: Boolean(context) });
+  const page = await getPublishedStubOverlay("contact");
 
   return (
     <div data-main-chrome-tone="light">
       <PageHero
-        kicker="BIZON · Заявка"
-        title={intent.title}
-        description={intent.description}
+        kicker={hasSelection ? "BIZON · Заявка" : page?.hero.eyebrow || "BIZON · Заявка"}
+        title={hasSelection ? intent.title : page?.hero.title || intent.title}
+        description={hasSelection ? intent.description : page?.hero.lead || intent.description}
         breadcrumbs={[
           { href: "/", label: "Главная" },
           { href: "/contact", label: "Контакты" },

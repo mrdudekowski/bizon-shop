@@ -54,4 +54,40 @@ describe("mapHomePatch", () => {
       },
     });
   });
+
+  it("maps a public hero image and drops data urls", () => {
+    expect(
+      mapHomePatch({
+        seo_seo_title: "",
+        seo_seo_description: "",
+        home_hero_eyebrow: "",
+        home_hero_title: "Для работы",
+        home_hero_lead: "",
+        home_hero_primary_cta_label: "",
+        home_hero_primary_cta_href: "",
+        home_hero_secondary_cta_label: "",
+        home_hero_secondary_cta_href: "",
+        home_hero_metric_label: "",
+        home_hero_metric_text: "",
+        home_hero_image_url: "/media/hero.jpg",
+      }).hero.imageUrl,
+    ).toBe("/media/hero.jpg");
+
+    expect(
+      mapHomePatch({
+        seo_seo_title: "",
+        seo_seo_description: "",
+        home_hero_eyebrow: "",
+        home_hero_title: "",
+        home_hero_lead: "",
+        home_hero_primary_cta_label: "",
+        home_hero_primary_cta_href: "",
+        home_hero_secondary_cta_label: "",
+        home_hero_secondary_cta_href: "",
+        home_hero_metric_label: "",
+        home_hero_metric_text: "",
+        home_hero_image_url: "data:image/png;base64,abc",
+      }).hero.imageUrl,
+    ).toBeUndefined();
+  });
 });

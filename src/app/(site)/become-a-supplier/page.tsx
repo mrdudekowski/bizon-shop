@@ -1,25 +1,36 @@
 import { ServicePage } from "@/components/content/ServicePage";
 import { PREMIUM_MEDIA } from "@/constants/images";
 import { ROUTES } from "@/constants/navigation";
+import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { createPageMetadata } from "@/lib/seo/metadata";
 
-export const metadata = createPageMetadata({
-  title: "Стать поставщиком",
-  description: "Обсудите сотрудничество с BIZON в сфере грузовых шин и решений для автопарков.",
-  path: "/become-a-supplier",
-});
+const fallbackDescription =
+  "Начните диалог о поставках, ассортименте и работе с профессиональным рынком грузовых шин.";
 
-export default function BecomeASupplierPage() {
+export async function generateMetadata() {
+  const page = await getPublishedStubOverlay("become-a-supplier");
+  return createPageMetadata({
+    title: page?.seoTitle || "Стать поставщиком",
+    description: page?.seoDescription || fallbackDescription,
+    path: "/become-a-supplier",
+  });
+}
+
+export default async function BecomeASupplierPage() {
+  const page = await getPublishedStubOverlay("become-a-supplier");
   return (
     <ServicePage
-      kicker="Партнёрство"
-      title="Стать поставщиком"
-      description="Начните диалог о поставках, ассортименте и работе с профессиональным рынком грузовых шин."
+      kicker={page?.hero.eyebrow || "Партнёрство"}
+      title={page?.hero.title || "Стать поставщиком"}
+      description={page?.hero.lead || fallbackDescription}
       breadcrumbs={[
         { href: ROUTES.home, label: "Главная" },
         { href: ROUTES.supplier, label: "Стать поставщиком" },
       ]}
-      media={{ src: PREMIUM_MEDIA.mixedService, alt: "Техника в смешанных условиях эксплуатации" }}
+      media={{
+        src: page?.hero.imageUrl || PREMIUM_MEDIA.mixedService,
+        alt: page?.hero.imageAlt || "Техника в смешанных условиях эксплуатации",
+      }}
       featuresHeading="Как проходит первичное обращение"
       features={[
         {
