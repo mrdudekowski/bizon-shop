@@ -35,6 +35,8 @@ npm run dev
 - `GET /v1/shop/categories/:slug`
 - `GET /v1/shop/products` (`?category=` filters by category slug)
 - `GET /v1/shop/products/:slug`
+- `POST /v1/admin` JSON `{ method, args }` — the only catalog writer. Same `AdminClient` methods and error codes as the CMS. Browser calls from `localhost` / `127.0.0.1` are allowed.
+- `POST /v1/requests` stores one normalized lead. Cart sync stays on the site until the cookie session contract is chosen.
 
 Unknown slug → `404` `{ "ok": false }`. Database error → `500` `{ "ok": false }` (no SQL text, no connection string).
 

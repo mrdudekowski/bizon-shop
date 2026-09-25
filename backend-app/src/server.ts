@@ -1,5 +1,7 @@
 import http from "node:http";
 import pg from "pg";
+import { dispatchAdminCall } from "./adminDispatch";
+import { insertRequest, type StoredRequestInput } from "./insertRequest";
 import {
   readArticleBySlug,
   readArticles,
@@ -25,22 +27,64 @@ const PORT = 4000;
 
 type JsonBody = unknown;
 
-function sendJson(res: http.ServerResponse, status: number, body: JsonBody) {
+function sendJson(
+  res: http.ServerResponse,
+  status: number,
+  body: JsonBody,
+  extraHeaders: Record<string, string> = {},
+) {
   const payload = JSON.stringify(body);
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
     "content-length": Buffer.byteLength(payload),
+    ...extraHeaders,
   });
   res.end(payload);
 }
 
-function createPgDatabase(connectionString: string): ReadDatabase {
+function localOriginHeaders(origin: string | undefined): Record<string, string> {
+  if (!origin || !/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin)) return {};
+  return {
+    "access-control-allow-origin": origin,
+    "access-control-allow-methods": "POST, OPTIONS",
+    "access-control-allow-headers": "content-type",
+    vary: "origin",
+  };
+}
+
+async function readJson(req: http.IncomingMessage): Promise<unknown> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) chunks.push(Buffer.from(chunk));
+  if (chunks.length === 0) return {};
+  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+}
+
+function createPgDatabase(connectionString: string): ReadDatabase & {
+  transaction<T>(run: (query: ReadDatabase["query"]) => Promise<T>): Promise<T>;
+} {
   const pool = new pg.Pool({ connectionString });
 
   return {
     async query(sql, params) {
       const result = await pool.query(sql, params);
       return result.rows as Record<string, unknown>[];
+    },
+    async transaction(run) {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const result = await run(async (sql, params) => {
+          const queryResult = await client.query(sql, params);
+          return queryResult.rows as Record<string, unknown>[];
+        });
+        await client.query("COMMIT");
+        return result;
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
+      }
     },
   };
 }
@@ -69,6 +113,45 @@ async function handleRequest(
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", `http://${HOST}:${PORT}`);
   const path = url.pathname;
+
+  const originHeaders = localOriginHeaders(req.headers.origin);
+
+  if (method === "OPTIONS" && (path === "/v1/admin" || path === "/v1/requests")) {
+    res.writeHead(204, originHeaders);
+    res.end();
+    return;
+  }
+
+  if (method === "POST" && path === "/v1/admin") {
+    try {
+      const body = (await readJson(req)) as { method?: string; args?: unknown[] };
+      const outcome = await dispatchAdminCall(body);
+      sendJson(res, outcome.status, outcome.body, originHeaders);
+    } catch {
+      sendJson(res, 400, { ok: false, code: "publish_blocked" }, originHeaders);
+    }
+    return;
+  }
+
+  if (method === "POST" && path === "/v1/requests") {
+    try {
+      const body = (await readJson(req)) as StoredRequestInput;
+      if (!body || typeof body.name !== "string" || body.name.trim() === "") {
+        sendJson(res, 400, { ok: false });
+        return;
+      }
+      const database = getDatabase() as ReadDatabase & {
+        transaction<T>(run: (query: ReadDatabase["query"]) => Promise<T>): Promise<T>;
+      };
+      const requestId = await database.transaction((query) =>
+        insertRequest({ query }, body),
+      );
+      sendJson(res, 201, { ok: true, requestId });
+    } catch {
+      sendJson(res, 500, { ok: false });
+    }
+    return;
+  }
 
   if (method !== "GET") {
     sendJson(res, 404, { ok: false });
