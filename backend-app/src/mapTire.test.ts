@@ -70,6 +70,24 @@ describe("mapTireVariant", () => {
     ).toBe(true);
   });
 
+  it("uses the normalized size and defaults missing live fields", () => {
+    expect(
+      mapTireVariant({
+        id: 1,
+        size: null,
+        size_normalized: "385/65R22.5",
+        price: null,
+        price_on_request: null,
+        available: null,
+      }),
+    ).toEqual({
+      id: "1",
+      size: "385/65R22.5",
+      priceOnRequest: true,
+      available: true,
+    });
+  });
+
   it("coerces Postgres numeric strings and preserves textual specifications", () => {
     expect(
       mapTireVariant({

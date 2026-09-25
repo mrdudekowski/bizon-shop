@@ -39,10 +39,11 @@ type TireTypeSelection = {
 
 type TireVariantRow = {
   id: string | number;
-  size: string;
+  size: string | null;
+  size_normalized?: string | null;
   price: unknown;
-  price_on_request: boolean;
-  available: boolean;
+  price_on_request: boolean | null;
+  available: boolean | null;
   rim_diameter?: unknown;
   load_index?: unknown;
   load_index_dual?: unknown;
@@ -196,10 +197,13 @@ export function mapTireVariant(row: TireVariantRow): CmsTireVariant {
 
   return {
     id: String(row.id),
-    size: row.size,
+    size:
+      [row.size, row.size_normalized].find(
+        (value): value is string => typeof value === "string" && value.trim() !== "",
+      ) ?? "",
     ...(price !== undefined ? { price } : {}),
-    priceOnRequest: row.price_on_request,
-    available: row.available,
+    priceOnRequest: price === undefined || row.price_on_request === true,
+    available: row.available !== false,
     ...Object.fromEntries(
       [...Object.entries(numericSpecs), ...Object.entries(textSpecs)].filter(
         ([, value]) => value !== undefined,
