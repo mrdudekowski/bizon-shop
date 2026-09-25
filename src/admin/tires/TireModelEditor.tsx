@@ -1,5 +1,7 @@
 "use client";
 
+import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -15,7 +17,6 @@ import {
 } from "@/admin/domain/options";
 import { tireModelPublishBlockers } from "@/admin/domain/publishRules";
 import type {
-  AdminRole,
   AdvantageItem,
   DocumentLink,
   TireDirection,
@@ -26,8 +27,8 @@ import type {
 import { PlacementFields } from "@/admin/media/PlacementFields";
 
 const ERROR_TEXT: Record<AdminClientError["code"], string> = {
-  slug_taken: "Такой slug уже занят",
-  invalid_slug: "Slug нельзя изменить",
+  slug_taken: "Этот адрес страницы уже занят",
+  invalid_slug: "Нельзя изменить адрес страницы",
   publish_blocked: "Публикация закрыта",
   unsaved: "Сначала сохраните черновик",
   media_in_use: "Файл ещё используется",
@@ -37,7 +38,7 @@ const ERROR_TEXT: Record<AdminClientError["code"], string> = {
 
 const BLOCKER_TEXT: Record<string, string> = {
   name: "Укажите название",
-  slug: "Укажите slug",
+  slug: "Укажите адрес страницы",
   direction: "Выберите направление",
   mainImage: "Добавьте главное фото",
   size: "Укажите читаемый размер",
@@ -92,7 +93,7 @@ export function TireModelEditor({ id }: { id: string }) {
   const [record, setRecord] = useState<TireModelRecord | null>(null);
   const [draft, setDraft] = useState<TireModelDraft | null>(null);
   const [directions, setDirections] = useState<TireDirection[]>([]);
-  const [role, setRole] = useState<AdminRole>("admin");
+  const [role, setRole] = useAdminRole();
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
@@ -107,15 +108,21 @@ export function TireModelEditor({ id }: { id: string }) {
         setRole(session.role);
       },
     );
-  }, [id]);
+  }, [id, setRole]);
 
   if (draft == null || record == null) return <main>Загрузка…</main>;
   const model = draft;
   const stored = record;
 
   const dirty = JSON.stringify(model) !== JSON.stringify(stored.savedDraft) || stored.savedDraft == null;
-  const blockers = tireModelPublishBlockers(model);
-  const savedBlockers = stored.savedDraft == null ? [] : tireModelPublishBlockers(stored.savedDraft);
+  const saved = stored.savedDraft;
+  const savedBlockers =
+    saved == null
+      ? []
+      : tireModelPublishBlockers(
+          saved,
+          directions.some((direction) => direction.id === saved.directionId),
+        );
 
   function patch(next: Partial<TireModelDraft>) {
     setDraft((current) => (current == null ? current : { ...current, ...next }));
@@ -169,14 +176,6 @@ export function TireModelEditor({ id }: { id: string }) {
     return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
   }
 
-  function moveGallery(index: number, delta: -1 | 1) {
-    const target = index + delta;
-    if (target < 0 || target >= model.gallery.length) return;
-    const gallery = model.gallery.slice();
-    const [item] = gallery.splice(index, 1);
-    gallery.splice(target, 0, item);
-    patch({ gallery });
-  }
 
   async function onDocumentFile(file: File | undefined) {
     if (file == null) return;
@@ -191,16 +190,21 @@ export function TireModelEditor({ id }: { id: string }) {
   }
 
   return (
-    <main>
+    <main className="document">
       <h1>{draft.name || "Модель шины"}</h1>
+      <BlockNav />
       <section>
-        <h2>Карточка</h2>
+        <h2>Основные данные</h2>
         <label>
           Название
           <input value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
         </label>
         <label>
-          Slug
+          Код модели
+          <input value={draft.modelCode ?? ""} onChange={(event) => patch({ modelCode: event.target.value })} />
+        </label>
+        <label>
+          Адрес страницы
           <input
             value={draft.slug}
             disabled={record.slugLocked}
@@ -248,24 +252,36 @@ export function TireModelEditor({ id }: { id: string }) {
           <input value={draft.treadType} onChange={(event) => patch({ treadType: event.target.value })} />
         </label>
         <label>
+          Типы применения
           <input
-            type="checkbox"
-            checked={draft.showInMenu}
-            onChange={(event) => patch({ showInMenu: event.target.checked })}
-          />
-          Показывать в меню
-        </label>
-        <label>
-          Порядок в меню
-          <input
-            type="number"
-            value={draft.menuOrder}
-            onChange={(event) => patch({ menuOrder: Number(event.target.value) || 0 })}
+            value={(draft.applicationTypes ?? []).join(", ")}
+            onChange={(event) =>
+              patch({
+                applicationTypes: event.target.value
+                  .split(",")
+                  .map((item) => item.trim())
+                  .filter((item) => item.length > 0),
+              })
+            }
           />
         </label>
+        {(draft.features ?? []).map((feature, index) => (
+          <label key={feature.id || feature.key}>
+            {feature.title || feature.key}
+            <input
+              value={feature.description}
+              onChange={(event) => {
+                const features = (draft.features ?? []).slice();
+                features[index] = { ...feature, description: event.target.value };
+                patch({ features });
+              }}
+            />
+          </label>
+        ))}
       </section>
       <section>
         <h2>Подбор</h2>
+        <p>Направление — запасной совет, если ни одна модель не подошла. Галочки модели задают саму модель.</p>
         {VEHICLE_TYPE_OPTIONS.map((option) => (
           <label key={option.value}>
             <input
@@ -366,49 +382,13 @@ export function TireModelEditor({ id }: { id: string }) {
         </button>
       </section>
       <section>
-        <h2>Медиа</h2>
+        <h2>Фото</h2>
         <PlacementFields
           label="Главное фото"
           value={draft.mainImage}
           onChange={(mainImage) => patch({ mainImage })}
         />
-        <h3>Галерея</h3>
-        {draft.gallery.map((item, index) => (
-          <div key={`${item.assetId}-${index}`}>
-            <PlacementFields
-              label={`Галерея ${index + 1}`}
-              value={item}
-              onChange={(next) => {
-                if (next == null) {
-                  patch({ gallery: draft.gallery.filter((_, i) => i !== index) });
-                  return;
-                }
-                const gallery = draft.gallery.slice();
-                gallery[index] = next;
-                patch({ gallery });
-              }}
-            />
-            <button type="button" disabled={index === 0} onClick={() => moveGallery(index, -1)}>
-              выше
-            </button>
-            <button
-              type="button"
-              disabled={index === draft.gallery.length - 1}
-              onClick={() => moveGallery(index, 1)}
-            >
-              ниже
-            </button>
-          </div>
-        ))}
-        <PlacementFields
-          label="Добавить в галерею"
-          value={undefined}
-          onChange={(next) => {
-            if (next == null) return;
-            patch({ gallery: [...draft.gallery, next] });
-          }}
-        />
-      </section>
+        </section>
       <section>
         <h2>Преимущества</h2>
         {draft.advantages.map((item, index) => (
@@ -444,6 +424,11 @@ export function TireModelEditor({ id }: { id: string }) {
         </button>
       </section>
       <section>
+        <h2>Меню</h2>
+        <label><input type="checkbox" checked={draft.showInMenu} onChange={(event) => patch({ showInMenu: event.target.checked })} />Показывать в меню</label>
+        <label>Порядок в меню<input type="number" value={draft.menuOrder} onChange={(event) => patch({ menuOrder: Number(event.target.value) || 0 })} /></label>
+      </section>
+      <section>
         <h2>PDF</h2>
         {draft.documents.map((doc, index) => (
           <div key={`${doc.assetId}-${index}`}>
@@ -471,7 +456,7 @@ export function TireModelEditor({ id }: { id: string }) {
           onChange={(event) => void onDocumentFile(event.target.files?.[0])}
         />
       </section>
-      <div>
+      <DocumentActions>
         <p>Сохранил: {record.lastSavedBy ?? "—"}</p>
         <p>Опубликовал: {record.lastPublishedBy ?? "—"}</p>
         {message ? <p>{message}</p> : null}
@@ -502,7 +487,7 @@ export function TireModelEditor({ id }: { id: string }) {
             )}
           </>
         ) : null}
-      </div>
+      </DocumentActions>
     </main>
   );
 }

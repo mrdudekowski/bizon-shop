@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 import { browserAdminClient } from "@/admin/client/localStore";
-import type { DocumentStatus, TireDirection } from "@/admin/domain/types";
+import type { DocumentStatus, TireDirection, MediaListItem } from "@/admin/domain/types";
+import { Icon } from "@/admin/ui/Icon";
+import styles from "@/admin/ui/catalog.module.css";
 
 const STATUS_LABEL: Record<DocumentStatus, string> = {
   draft: "черновик",
@@ -15,10 +18,14 @@ const STATUS_LABEL: Record<DocumentStatus, string> = {
 export function TireDirectionList() {
   const router = useRouter();
   const [directions, setDirections] = useState<TireDirection[]>([]);
+  const [assets, setAssets] = useState<MediaListItem[]>([]);
   const [name, setName] = useState("");
 
   async function reload() {
-    setDirections(await browserAdminClient().listTireDirections());
+    const client = browserAdminClient();
+    const [items, media] = await Promise.all([client.listTireDirections(), client.listAssets()]);
+    setDirections(items);
+    setAssets(media);
   }
 
   useEffect(() => {
@@ -33,27 +40,26 @@ export function TireDirectionList() {
 
   return (
     <main>
-      <h1>Направления шин</h1>
+      <div><h1>Направления</h1><p className="subheading">Техника, дороги и условия работы для подбора шин.</p></div>
       <form
+        className={styles.createForm}
         onSubmit={(event) => {
           event.preventDefault();
           void createDirection();
         }}
       >
-        <input
+        <label>Название направления<input
           aria-label="Название нового направления"
           value={name}
           onChange={(event) => setName(event.target.value)}
-        />
-        <button type="submit">Новое направление</button>
+          placeholder="Например, Магистральные"
+        /></label>
+        <button className="primary" type="submit">Добавить направление</button>
       </form>
-      <ul>
+      <ul className={styles.grid}>
         {directions.map((direction) => (
           <li key={direction.id}>
-            <a href={`/tires/directions/${direction.id}`}>{direction.name}</a>
-            <span>{direction.slug}</span>
-            <span>{STATUS_LABEL[direction.status]}</span>
-            {direction.hasUnpublishedDraft ? <span>есть черновик</span> : null}
+            <a className={styles.card} href={`/tires/directions/${direction.id}`}><span className={styles.thumb}>{assets.find((asset) => asset.id === direction.imageAssetId) ? <Image unoptimized width={52} height={56} src={assets.find((asset) => asset.id === direction.imageAssetId)!.dataUrl} alt="" /> : <Icon name="directions" size={34} />}</span><span className={styles.cardBody}><strong>{direction.name}</strong><span className={styles.meta}>/{direction.slug}</span><span className={styles.badges}><span className={direction.status === "on_site" ? styles.badgeOnSite : styles.badge}>{STATUS_LABEL[direction.status]}</span>{direction.hasUnpublishedDraft ? <span className={styles.badge}>есть черновик</span> : null}</span></span><Icon name="arrow" size={16} /></a>
           </li>
         ))}
       </ul>

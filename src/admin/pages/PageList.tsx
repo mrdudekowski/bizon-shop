@@ -6,7 +6,8 @@ import { browserAdminClient } from "@/admin/client/localStore";
 import type { DocumentStatus, EntityRecord, PageDraft } from "@/admin/domain/types";
 
 import { PAGE_LABELS } from "./pageLabels";
-import styles from "./PageList.module.css";
+import styles from "@/admin/ui/catalog.module.css";
+import { Icon } from "@/admin/ui/Icon";
 
 const STATUS_LABEL: Record<DocumentStatus, string> = {
   draft: "черновик",
@@ -36,17 +37,13 @@ export function PageList() {
   }, []);
 
   return (
-    <main className={styles.list}>
-      <h1>Страницы</h1>
-      <ul>
+    <main>
+      <div><h1>Страницы</h1><p className="subheading">Девять страниц сайта. Откройте страницу, чтобы изменить её содержимое.</p></div>
+      <div className={styles.tableWrap}><table className={styles.table}><thead><tr><th>Страница</th><th>Статус публикации</th><th>Черновик</th><th><span className={styles.srOnly}>Открыть</span></th></tr></thead><tbody>
         {pages.map((page) => (
-          <li key={page.id}>
-            <a href={`/pages/${page.draft.id}`}>{PAGE_LABELS[page.draft.id]}</a>
-            <span>{STATUS_LABEL[statusOf(page)]}</span>
-            {hasDraft(page) ? <span>есть черновик</span> : null}
-          </li>
+          <tr key={page.id}><td><a className={styles.nameLink} href={`/pages/${page.draft.id}`}>{PAGE_LABELS[page.draft.id]}</a></td><td><span className={statusOf(page) === "on_site" ? styles.badgeOnSite : styles.badge}>{STATUS_LABEL[statusOf(page)]}</span></td><td><span className={styles.meta}>{hasDraft(page) ? "Есть изменения" : "—"}</span></td><td><a className={styles.openLink} href={`/pages/${page.draft.id}`} aria-label={`Открыть ${PAGE_LABELS[page.draft.id]}`}><Icon name="arrow" size={17} /></a></td></tr>
         ))}
-      </ul>
+      </tbody></table><div className={styles.tableFoot}>{pages.length} страниц · состав раздела фиксирован</div></div>
     </main>
   );
 }

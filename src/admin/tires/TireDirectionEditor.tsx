@@ -1,5 +1,7 @@
 "use client";
 
+import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -12,12 +14,12 @@ import {
   type VehicleType,
 } from "@/admin/domain/options";
 import { tireDirectionPublishBlockers } from "@/admin/domain/publishRules";
-import type { AdminRole, EntityRecord, TireDirectionDraft } from "@/admin/domain/types";
+import type { EntityRecord, TireDirectionDraft } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
 
 const ERROR_TEXT: Record<AdminClientError["code"], string> = {
-  slug_taken: "Такой slug уже занят",
-  invalid_slug: "Slug нельзя изменить",
+  slug_taken: "Этот адрес страницы уже занят",
+  invalid_slug: "Нельзя изменить адрес страницы",
   publish_blocked: "Публикация закрыта",
   unsaved: "Сначала сохраните черновик",
   media_in_use: "Файл ещё используется",
@@ -27,7 +29,7 @@ const ERROR_TEXT: Record<AdminClientError["code"], string> = {
 
 const BLOCKER_TEXT: Record<string, string> = {
   name: "Укажите название",
-  slug: "Укажите slug",
+  slug: "Укажите адрес страницы",
   mainImage: "Добавьте главное фото",
 };
 
@@ -35,7 +37,7 @@ export function TireDirectionEditor({ id }: { id: string }) {
   const router = useRouter();
   const [record, setRecord] = useState<EntityRecord<TireDirectionDraft> | null>(null);
   const [draft, setDraft] = useState<TireDirectionDraft | null>(null);
-  const [role, setRole] = useState<AdminRole>("admin");
+  const [role, setRole] = useAdminRole();
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
@@ -47,12 +49,11 @@ export function TireDirectionEditor({ id }: { id: string }) {
       setDraft(nextRecord.draft);
       setRole(session.role);
     });
-  }, [id]);
+  }, [id, setRole]);
 
   if (draft == null || record == null) return <main>Загрузка…</main>;
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(record.savedDraft) || record.savedDraft == null;
-  const blockers = tireDirectionPublishBlockers(draft);
   const savedBlockers = record.savedDraft == null ? [] : tireDirectionPublishBlockers(record.savedDraft);
 
   function patch(next: Partial<TireDirectionDraft>) {
@@ -97,21 +98,30 @@ export function TireDirectionEditor({ id }: { id: string }) {
   }
 
   async function onDelete() {
-    await browserAdminClient().deleteTireDirection(id);
-    router.push("/tires/directions");
+    try {
+      await browserAdminClient().deleteTireDirection(id);
+      router.push("/tires/directions");
+    } catch (error) {
+      setMessage(
+        error instanceof AdminClientError && error.code === "publish_blocked"
+          ? "Нельзя удалить: есть связанные записи"
+          : "Не удалось удалить",
+      );
+    }
   }
 
   return (
-    <main>
+    <main className="document">
       <h1>{draft.name || "Направление шины"}</h1>
+      <BlockNav />
       <section>
-        <h2>Карточка</h2>
+        <h2>Основные данные</h2>
         <label>
           Название
           <input value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
         </label>
         <label>
-          Slug
+          Адрес страницы
           <input
             value={draft.slug}
             disabled={record.slugLocked}
@@ -148,6 +158,7 @@ export function TireDirectionEditor({ id }: { id: string }) {
       </section>
       <section>
         <h2>Подбор</h2>
+        <p>Направление — запасной совет, если ни одна модель не подошла. Галочки модели задают саму модель.</p>
         {VEHICLE_TYPE_OPTIONS.map((option) => (
           <label key={option.value}>
             <input
@@ -174,14 +185,14 @@ export function TireDirectionEditor({ id }: { id: string }) {
         ))}
       </section>
       <section>
-        <h2>Медиа</h2>
+        <h2>Фото</h2>
         <PlacementFields
           label="Главное фото"
           value={draft.mainImage}
           onChange={(mainImage) => patch({ mainImage })}
         />
       </section>
-      <div>
+      <DocumentActions>
         <p>Сохранил: {record.lastSavedBy ?? "—"}</p>
         <p>Опубликовал: {record.lastPublishedBy ?? "—"}</p>
         {message ? <p>{message}</p> : null}
@@ -212,7 +223,7 @@ export function TireDirectionEditor({ id }: { id: string }) {
             )}
           </>
         ) : null}
-      </div>
+      </DocumentActions>
     </main>
   );
 }

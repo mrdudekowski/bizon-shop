@@ -1,0 +1,50 @@
+<h2>Вариант C — полностью светлая первая секция</h2>
+<p class="subtitle">Navbar, hero, вводный текст и первый шаг подбора находятся в одной белой среде. Чёрных поверхностей внутри блока нет.</p>
+
+<style>
+  .preview-wrap { max-width:1000px; margin:24px auto 0; }
+  .preview { position:relative; overflow:hidden; min-height:680px; border:1px solid #e3e3e0; border-radius:24px; background:#fff; color:#1c1c1c; font-family:Inter,Arial,sans-serif; cursor:pointer; }
+  .preview.selected { border-color:#e45433; box-shadow:0 0 0 2px rgba(228,84,51,.2); }
+  .shop-nav { position:absolute; z-index:10; left:22px; right:22px; top:20px; height:54px; border-radius:999px; padding:0 22px; display:flex; align-items:center; justify-content:space-between; border:1px solid #dededb; background:rgba(255,255,255,.93); box-shadow:0 8px 28px rgba(0,0,0,.06); backdrop-filter:blur(12px); font-size:11px; font-weight:800; letter-spacing:.1em; }
+  .nav-brand { display:flex; align-items:center; gap:13px; }
+  .burger { font-size:23px; letter-spacing:-5px; }
+  .nav-links { color:#555; }
+  .hero { display:grid; grid-template-columns:.9fr 1.1fr; gap:30px; padding:118px 38px 42px; align-items:center; }
+  .eyebrow { margin:0 0 14px; color:#03806b; text-transform:uppercase; letter-spacing:.17em; font-size:10px; font-weight:800; }
+  .hero h3 { margin:0; max-width:430px; font-size:55px; line-height:.92; letter-spacing:-.06em; font-weight:620; }
+  .hero p { max-width:420px; margin:20px 0 24px; color:#666; font-size:15px; line-height:1.55; }
+  .button { display:inline-flex; min-height:44px; align-items:center; padding:0 18px; border-radius:11px; background:#e45433; color:#fff; font-size:12px; font-weight:800; }
+  .photo { position:relative; overflow:hidden; min-height:335px; border-radius:19px; background:#eee; }
+  .photo img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .selector { margin:0 38px 38px; padding:30px; border-radius:19px; background:#f5f5f2; }
+  .selector-head { display:flex; justify-content:space-between; align-items:end; gap:20px; }
+  .selector h3 { margin:7px 0 0; font-size:28px; letter-spacing:-.045em; }
+  .step { color:#777; font-size:11px; }
+  .choices { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:22px; }
+  .choice { min-height:94px; padding:16px; border:1px solid #ddd; border-radius:13px; background:#fff; display:flex; flex-direction:column; justify-content:space-between; font-size:13px; font-weight:750; }
+  .choice span { color:#e45433; font-size:10px; }
+  .note { margin:14px 2px 0; color:#747474; font-size:11px; }
+  .caption { margin-top:15px; padding:16px 18px; border-radius:14px; background:#f5f5f2; font-size:13px; line-height:1.5; color:#555; }
+  @media(max-width:760px){ .hero{grid-template-columns:1fr;padding:100px 20px 26px}.hero h3{font-size:40px}.photo{min-height:260px}.selector{margin:0 20px 24px;padding:22px}.choices{grid-template-columns:1fr 1fr}.shop-nav{left:12px;right:12px}.nav-links{display:none} }
+</style>
+
+<div class="preview-wrap">
+  <div class="preview" data-choice="c2-light" onclick="toggleSelect(this)">
+    <div class="shop-nav"><span class="nav-brand"><span class="burger">☰</span>BIZON</span><span class="nav-links">РЕШЕНИЯ · КАТАЛОГ · РАСЧЁТ</span></div>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">BIZON · Heavy Duty</p>
+        <h3>Ресурс для реальной работы</h3>
+        <p>Подбор шин под технику, ось и условия эксплуатации — без необходимости знать конкретную модель.</p>
+        <span class="button">Подобрать шины</span>
+      </div>
+      <div class="photo"><img src="/files/public/images/premium/highway-hero.png" alt="Грузовик BIZON на маршруте"></div>
+    </section>
+    <section class="selector">
+      <div class="selector-head"><div><span class="eyebrow">Подбор за минуту</span><h3>Для какой техники нужны шины?</h3></div><span class="step">Шаг 1 из 3</span></div>
+      <div class="choices"><div class="choice"><span>01</span>Магистральный тягач</div><div class="choice"><span>02</span>Региональный грузовик</div><div class="choice"><span>03</span>Строительный самосвал</div><div class="choice"><span>04</span>Карьерная техника</div></div>
+      <p class="note">Следующий шаг: условия эксплуатации → известный размер или «не знаю».</p>
+    </section>
+  </div>
+  <div class="caption">Чёрная акцентная секция может появиться значительно ниже — например, для подтверждённого кейса или тяжёлых условий эксплуатации. Она не разрывает первый пользовательский сценарий.</div>
+</div>

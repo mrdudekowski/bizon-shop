@@ -1,0 +1,73 @@
+{
+  "name": "bizon_tires",
+  "version": "1.0.0",
+  "description": "BIZON tires — Next.js 15 + Payload CMS",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
+    "dev:clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && cross-env NODE_OPTIONS=--no-deprecation next dev",
+    "admin:fix": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
+    "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
+    "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
+    "lint": "eslint src scripts payload.config.ts next.config.mjs",
+    "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+    "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
+    "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+    "seed:tire-axis": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-tire-axis.ts",
+    "seed:tbr-models": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-tbr-models.ts",
+    "seed:shop": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-shop.ts",
+    "seed:wheel-axis": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-wheel-axis.ts",
+    "seed:wheel-media": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-wheel-media.ts",
+    "seed:content": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-content.ts",
+    "import:catalog": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/import-catalog.ts",
+    "import:catalog:dry": "cross-env NODE_OPTIONS=--no-deprecation DRY_RUN=1 payload run scripts/import-catalog.ts",
+    "import:all": "npm run import:catalog",
+    "seed:all": "npm run import:catalog && npm run seed:content",
+    "verify:db": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/verify-db.ts",
+    "verify:request-items": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/verify-request-items.ts",
+    "verify:shop": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/verify-shop-readiness.ts",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mrdudekowski/bizon.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/mrdudekowski/bizon/issues"
+  },
+  "homepage": "https://github.com/mrdudekowski/bizon#readme",
+  "dependencies": {
+    "@payloadcms/db-postgres": "3.82.1",
+    "@payloadcms/next": "3.82.1",
+    "@payloadcms/richtext-lexical": "3.82.1",
+    "@payloadcms/storage-s3": "3.82.1",
+    "@payloadcms/ui": "3.82.1",
+    "cross-env": "^10.1.0",
+    "graphql": "^16.12.0",
+    "lucide-react": "^0.562.0",
+    "next": "15.4.11",
+    "payload": "3.82.1",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "sharp": "^0.34.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "20.17.6",
+    "@types/react": "19.2.17",
+    "autoprefixer": "^10.4.23",
+    "eslint": "^9.39.1",
+    "eslint-config-next": "15.4.11",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
+    "typescript": "5.8.2"
+  }
+}

@@ -1,19 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+
+import { useEffect, useRef, useState } from "react";
 
 import { AdminClientError } from "@/admin/client/errors";
 import { browserAdminClient } from "@/admin/client/localStore";
-import type {
-  AdminRole,
-  EntityRecord,
-  HomePageDraft,
-  PageCta,
-  PageDraft,
-  PageKey,
-  PageSectionCopy,
-  ShopHomePageDraft,
-  StubPageDraft,
+import {
+  LEGAL_PAGE_KEYS,
+  type DocumentLink,
+  type EntityRecord,
+  type HomePageDraft,
+  type PageCta,
+  type PageDraft,
+  type PageKey,
+  type PageSectionCopy,
+  type ShopHomePageDraft,
+  type StubPageDraft,
 } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
 
@@ -88,6 +91,28 @@ function CtaFields({
   );
 }
 
+function readPdfFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function moveDocument(documents: DocumentLink[], index: number, delta: number): DocumentLink[] {
+  const target = index + delta;
+  if (target < 0 || target >= documents.length) return documents;
+  const next = documents.slice();
+  const [item] = next.splice(index, 1);
+  next.splice(target, 0, item);
+  return next;
+}
+
+function isLegalPage(id: string): boolean {
+  return (LEGAL_PAGE_KEYS as readonly string[]).includes(id);
+}
+
 function StubFields({
   draft,
   onChange,
@@ -95,6 +120,17 @@ function StubFields({
   draft: StubPageDraft;
   onChange: (next: StubPageDraft) => void;
 }) {
+  async function onDocumentFile(file: File | undefined) {
+    if (file == null) return;
+    const dataUrl = await readPdfFile(file);
+    const asset = await browserAdminClient().createAsset({
+      name: file.name,
+      mimeType: file.type || "application/pdf",
+      dataUrl,
+    });
+    onChange({ ...draft, documents: [...draft.documents, { assetId: asset.id, title: file.name }] });
+  }
+
   return (
     <>
       <SectionFields
@@ -107,6 +143,49 @@ function StubFields({
         value={draft.hero.image}
         onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image } })}
       />
+      {isLegalPage(draft.id) ? (
+        <section className={styles.section}>
+          <h2>Документы</h2>
+          {draft.documents.map((doc, index) => (
+            <div key={`${doc.assetId}-${index}`} className={styles.row}>
+              <label>
+                Название
+                <input
+                  value={doc.title}
+                  onChange={(event) => {
+                    const documents = draft.documents.slice();
+                    documents[index] = { ...doc, title: event.target.value };
+                    onChange({ ...draft, documents });
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => onChange({ ...draft, documents: draft.documents.filter((_, itemIndex) => itemIndex !== index) })}
+              >
+                Убрать
+              </button>
+              <button type="button" onClick={() => onChange({ ...draft, documents: moveDocument(draft.documents, index, -1) })}>
+                выше
+              </button>
+              <button type="button" onClick={() => onChange({ ...draft, documents: moveDocument(draft.documents, index, 1) })}>
+                ниже
+              </button>
+            </div>
+          ))}
+          <label>
+            PDF
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={(event) => {
+                void onDocumentFile(event.target.files?.[0]);
+                event.target.value = "";
+              }}
+            />
+          </label>
+        </section>
+      ) : null}
     </>
   );
 }
@@ -486,10 +565,11 @@ function ShopHomeFields({
 
 export function PageEditor({ pageKey }: { pageKey: PageKey }) {
   const [record, setRecord] = useState<EntityRecord<PageDraft> | null>(null);
-  const [role, setRole] = useState<AdminRole>("admin");
+  const [role, setRole] = useAdminRole();
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const resetDialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     const client = browserAdminClient();
@@ -497,7 +577,7 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
       setRole(session.role);
       setRecord(page);
     });
-  }, [pageKey]);
+  }, [pageKey, setRole]);
 
   if (record == null) return <main>Загрузка…</main>;
   const draft = record.draft;
@@ -532,12 +612,14 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
   }
 
   async function onReset() {
+    resetDialogRef.current?.close();
     setRecord(await browserAdminClient().resetPage(pageKey));
   }
 
   return (
-    <main className={styles.editor}>
+    <main className="document">
       <h1>{PAGE_LABELS[pageKey]}</h1>
+      <BlockNav />
       <label>
         SEO title
         <input
@@ -561,7 +643,7 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
         <StubFields draft={draft} onChange={setDraft} />
       )}
 
-      <div className={styles.actions}>
+      <DocumentActions>
         {message ? <p>{message}</p> : null}
         {dirty ? <p>Есть несохранённые правки</p> : null}
         <button type="button" disabled={saving} onClick={() => void onSave()}>
@@ -572,12 +654,23 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
             <button type="button" disabled={dirty || publishing} onClick={() => void onPublish()}>
               {publishing ? "Публикуем…" : "Опубликовать"}
             </button>
-            <button type="button" onClick={() => void onReset()}>
-              Сбросить публикацию
+            <button type="button" onClick={() => resetDialogRef.current?.showModal()}>
+              Сбросить опубликованный текст
             </button>
+            <dialog ref={resetDialogRef}>
+              <p>Сбросить опубликованный текст? На сайте снова будет текст из кода.</p>
+              <div className={styles.actions}>
+                <button type="button" onClick={() => void onReset()}>
+                  Сбросить
+                </button>
+                <button type="button" onClick={() => resetDialogRef.current?.close()}>
+                  Отмена
+                </button>
+              </div>
+            </dialog>
           </>
         ) : null}
-      </div>
+      </DocumentActions>
     </main>
   );
 }

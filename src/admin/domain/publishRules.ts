@@ -11,16 +11,16 @@ function hasPrice(size: TireModelDraft["sizes"][number]): boolean {
   return size.priceOnRequest || typeof size.price === "number";
 }
 
-export function tireModelPublishBlockers(model: TireModelDraft): PublishBlocker[] {
+export function tireModelPublishBlockers(model: TireModelDraft, parentExists = true): PublishBlocker[] {
   const blockers: PublishBlocker[] = [];
   if (model.name.trim().length === 0) blockers.push("name");
   if (model.slug.trim().length === 0) blockers.push("slug");
-  if (model.directionId.trim().length === 0) blockers.push("direction");
+  if (model.directionId.trim().length === 0 || !parentExists) blockers.push("direction");
   if (model.mainImage == null) blockers.push("mainImage");
   if (model.sizes.some((size) => size.size.trim().length === 0)) blockers.push("size");
   if (model.sizes.some((size) => !hasPrice(size))) blockers.push("price");
 
-  const duplicate = duplicateSizeBlocker(model.sizes.map((size) => size.size));
+  const duplicate = duplicateSizeBlocker(model.sizes.map((size) => `${size.size}|${size.sku ?? ""}`));
   if (duplicate) blockers.push(duplicate);
   return blockers;
 }
@@ -34,11 +34,18 @@ function identityBlockers(input: { name: string; slug: string; mainImage?: unkno
 }
 
 export function wheelTypePublishBlockers(draft: WheelTypeDraft): PublishBlocker[] {
-  return identityBlockers(draft);
+  return nameAndSlug(draft);
 }
 
 export function tireDirectionPublishBlockers(draft: TireDirectionDraft): PublishBlocker[] {
-  return identityBlockers(draft);
+  return nameAndSlug(draft);
+}
+
+function nameAndSlug(input: { name: string; slug: string }): PublishBlocker[] {
+  const blockers: PublishBlocker[] = [];
+  if (input.name.trim().length === 0) blockers.push("name");
+  if (input.slug.trim().length === 0) blockers.push("slug");
+  return blockers;
 }
 
 function duplicateSizeBlocker(keys: string[]): PublishBlocker | null {
@@ -52,9 +59,9 @@ function duplicateSizeBlocker(keys: string[]): PublishBlocker | null {
   return null;
 }
 
-export function wheelModelPublishBlockers(model: WheelModelDraft): PublishBlocker[] {
-  const blockers = identityBlockers(model);
-  if (model.wheelTypeId.trim().length === 0) blockers.push("direction");
+export function wheelModelPublishBlockers(model: WheelModelDraft, parentExists = true): PublishBlocker[] {
+  const blockers: PublishBlocker[] = identityBlockers(model).filter((blocker) => blocker !== "mainImage");
+  if (model.wheelTypeId.trim().length === 0 || !parentExists) blockers.push("direction");
   if (model.variants.some((variant) => variant.sizeLabel.trim().length === 0)) blockers.push("size");
   if (model.variants.some((variant) => !variant.priceOnRequest && typeof variant.price !== "number")) {
     blockers.push("price");
@@ -64,9 +71,10 @@ export function wheelModelPublishBlockers(model: WheelModelDraft): PublishBlocke
   return blockers;
 }
 
-export function shopProductPublishBlockers(product: ShopProductDraft): PublishBlocker[] {
+export function shopProductPublishBlockers(product: ShopProductDraft, parentExists = true): PublishBlocker[] {
   const blockers = identityBlockers(product);
-  if (product.categoryId.trim().length === 0) blockers.push("direction");
+  if (product.categoryId.trim().length === 0 || !parentExists) blockers.push("direction");
+  if (!product.priceOnRequest && typeof product.price !== "number") blockers.push("price");
   if (product.variants.some((variant) => variant.size.trim().length === 0)) blockers.push("size");
   if (product.variants.some((variant) => !variant.priceOnRequest && typeof variant.price !== "number")) {
     blockers.push("price");

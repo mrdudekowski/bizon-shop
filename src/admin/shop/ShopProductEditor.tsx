@@ -1,5 +1,7 @@
 "use client";
 
+import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -7,7 +9,6 @@ import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
 import { shopProductPublishBlockers } from "@/admin/domain/publishRules";
 import type {
-  AdminRole,
   EntityRecord,
   ShopCategoryDraft,
   ShopProductDraft,
@@ -18,8 +19,8 @@ import { PlacementFields } from "@/admin/media/PlacementFields";
 import styles from "./ShopDocument.module.css";
 
 const ERROR_TEXT: Record<AdminClientError["code"], string> = {
-  slug_taken: "Такой slug уже занят",
-  invalid_slug: "Slug нельзя изменить",
+  slug_taken: "Этот адрес страницы уже занят",
+  invalid_slug: "Нельзя изменить адрес страницы",
   publish_blocked: "Публикация закрыта",
   unsaved: "Сначала сохраните черновик",
   media_in_use: "Файл ещё используется",
@@ -29,7 +30,7 @@ const ERROR_TEXT: Record<AdminClientError["code"], string> = {
 
 const BLOCKER_TEXT: Record<string, string> = {
   name: "Укажите название",
-  slug: "Укажите slug",
+  slug: "Укажите адрес страницы",
   direction: "Выберите категорию",
   mainImage: "Добавьте главное фото",
   size: "Укажите размер варианта",
@@ -59,7 +60,7 @@ export function ShopProductEditor({ id }: { id: string }) {
   const [record, setRecord] = useState<EntityRecord<ShopProductDraft> | null>(null);
   const [draft, setDraft] = useState<ShopProductDraft | null>(null);
   const [categories, setCategories] = useState<EntityRecord<ShopCategoryDraft>[]>([]);
-  const [role, setRole] = useState<AdminRole>("admin");
+  const [role, setRole] = useAdminRole();
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
@@ -74,15 +75,21 @@ export function ShopProductEditor({ id }: { id: string }) {
         setRole(session.role);
       },
     );
-  }, [id]);
+  }, [id, setRole]);
 
   if (draft == null || record == null) return <main className={styles.page}>Загрузка…</main>;
   const product = draft;
   const stored = record;
 
   const dirty = JSON.stringify(product) !== JSON.stringify(stored.savedDraft) || stored.savedDraft == null;
-  const blockers = shopProductPublishBlockers(product);
-  const savedBlockers = stored.savedDraft == null ? [] : shopProductPublishBlockers(stored.savedDraft);
+  const saved = stored.savedDraft;
+  const savedBlockers =
+    saved == null
+      ? []
+      : shopProductPublishBlockers(
+          saved,
+          categories.some((category) => category.id === saved.categoryId),
+        );
 
   function patch(next: Partial<ShopProductDraft>) {
     setDraft((current) => (current == null ? current : { ...current, ...next }));
@@ -94,14 +101,6 @@ export function ShopProductEditor({ id }: { id: string }) {
     patch({ variants });
   }
 
-  function moveGallery(index: number, delta: -1 | 1) {
-    const target = index + delta;
-    if (target < 0 || target >= product.gallery.length) return;
-    const gallery = product.gallery.slice();
-    const [item] = gallery.splice(index, 1);
-    gallery.splice(target, 0, item);
-    patch({ gallery });
-  }
 
   async function onSave() {
     setSaving(true);
@@ -132,16 +131,17 @@ export function ShopProductEditor({ id }: { id: string }) {
   }
 
   return (
-    <main className={styles.page}>
+    <main className="document">
       <h1>{draft.name || "Товар"}</h1>
+      <BlockNav />
       <section className={styles.section}>
-        <h2>Карточка</h2>
+        <h2>Основные данные</h2>
         <label className={styles.field}>
           Название
           <input value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
         </label>
         <label className={styles.field}>
-          Slug
+          Адрес страницы
           <input
             value={draft.slug}
             disabled={record.slugLocked}
@@ -236,11 +236,6 @@ export function ShopProductEditor({ id }: { id: string }) {
               />
               в наличии
             </label>
-            <PlacementFields
-              label="Фото варианта"
-              value={variant.image}
-              onChange={(image) => patchVariant(index, { image })}
-            />
             <div className={styles.rowActions}>
               <button
                 type="button"
@@ -256,52 +251,14 @@ export function ShopProductEditor({ id }: { id: string }) {
         </button>
       </section>
       <section className={styles.section}>
-        <h2>Медиа</h2>
+        <h2>Фото</h2>
         <PlacementFields
           label="Главное фото"
           value={draft.mainImage}
           onChange={(mainImage) => patch({ mainImage })}
         />
-        <h3>Галерея</h3>
-        {draft.gallery.map((item, index) => (
-          <div key={`${item.assetId}-${index}`} className={styles.row}>
-            <PlacementFields
-              label={`Галерея ${index + 1}`}
-              value={item}
-              onChange={(next) => {
-                if (next == null) {
-                  patch({ gallery: draft.gallery.filter((_, i) => i !== index) });
-                  return;
-                }
-                const gallery = draft.gallery.slice();
-                gallery[index] = next;
-                patch({ gallery });
-              }}
-            />
-            <div className={styles.rowActions}>
-              <button type="button" disabled={index === 0} onClick={() => moveGallery(index, -1)}>
-                выше
-              </button>
-              <button
-                type="button"
-                disabled={index === draft.gallery.length - 1}
-                onClick={() => moveGallery(index, 1)}
-              >
-                ниже
-              </button>
-            </div>
-          </div>
-        ))}
-        <PlacementFields
-          label="Добавить в галерею"
-          value={undefined}
-          onChange={(next) => {
-            if (next == null) return;
-            patch({ gallery: [...draft.gallery, next] });
-          }}
-        />
-      </section>
-      <div className={styles.actions}>
+        </section>
+      <DocumentActions>
         <p>Сохранил: {record.lastSavedBy ?? "—"}</p>
         <p>Опубликовал: {record.lastPublishedBy ?? "—"}</p>
         {message ? <p>{message}</p> : null}
@@ -335,7 +292,7 @@ export function ShopProductEditor({ id }: { id: string }) {
             )}
           </>
         ) : null}
-      </div>
+      </DocumentActions>
     </main>
   );
 }

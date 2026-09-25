@@ -1,19 +1,21 @@
 "use client";
 
+import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
 import { wheelTypePublishBlockers } from "@/admin/domain/publishRules";
-import type { AdminRole, EntityRecord, ShopCategoryDraft } from "@/admin/domain/types";
+import type { EntityRecord, ShopCategoryDraft } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
 
 import styles from "./ShopDocument.module.css";
 
 const ERROR_TEXT: Record<AdminClientError["code"], string> = {
-  slug_taken: "Такой slug уже занят",
-  invalid_slug: "Slug нельзя изменить",
+  slug_taken: "Этот адрес страницы уже занят",
+  invalid_slug: "Нельзя изменить адрес страницы",
   publish_blocked: "Публикация закрыта",
   unsaved: "Сначала сохраните черновик",
   media_in_use: "Файл ещё используется",
@@ -23,7 +25,7 @@ const ERROR_TEXT: Record<AdminClientError["code"], string> = {
 
 const BLOCKER_TEXT: Record<string, string> = {
   name: "Укажите название",
-  slug: "Укажите slug",
+  slug: "Укажите адрес страницы",
   mainImage: "Добавьте главное фото",
 };
 
@@ -31,7 +33,7 @@ export function ShopCategoryEditor({ id }: { id: string }) {
   const router = useRouter();
   const [record, setRecord] = useState<EntityRecord<ShopCategoryDraft> | null>(null);
   const [draft, setDraft] = useState<ShopCategoryDraft | null>(null);
-  const [role, setRole] = useState<AdminRole>("admin");
+  const [role, setRole] = useAdminRole();
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
@@ -46,7 +48,7 @@ export function ShopCategoryEditor({ id }: { id: string }) {
         setRole(session.role);
       })
       .catch(() => setMissing(true));
-  }, [id]);
+  }, [id, setRole]);
 
   if (missing) return <main className={styles.page}>Категория не найдена</main>;
   if (draft == null || record == null) return <main className={styles.page}>Загрузка…</main>;
@@ -86,17 +88,31 @@ export function ShopCategoryEditor({ id }: { id: string }) {
     }
   }
 
+  async function onDelete() {
+    try {
+      await browserAdminClient().deleteShopCategory(id);
+      router.push("/shop");
+    } catch (error) {
+      setMessage(
+        error instanceof AdminClientError && error.code === "publish_blocked"
+          ? "Нельзя удалить: есть связанные записи"
+          : "Не удалось удалить",
+      );
+    }
+  }
+
   return (
-    <main className={styles.page}>
+    <main className="document">
       <h1>{draft.name || "Категория shop"}</h1>
+      <BlockNav />
       <section className={styles.section}>
-        <h2>Карточка</h2>
+        <h2>Основные данные</h2>
         <label className={styles.field}>
           Название
           <input value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
         </label>
         <label className={styles.field}>
-          Slug
+          Адрес страницы
           <input
             value={draft.slug}
             disabled={record.slugLocked}
@@ -125,14 +141,14 @@ export function ShopCategoryEditor({ id }: { id: string }) {
         </label>
       </section>
       <section className={styles.section}>
-        <h2>Медиа</h2>
+        <h2>Фото</h2>
         <PlacementFields
           label="Главное фото"
           value={draft.mainImage}
           onChange={(mainImage) => patch({ mainImage })}
         />
       </section>
-      <div className={styles.actions}>
+      <DocumentActions>
         <p>Сохранил: {record.lastSavedBy ?? "—"}</p>
         <p>Опубликовал: {record.lastPublishedBy ?? "—"}</p>
         {message ? <p>{message}</p> : null}
@@ -159,14 +175,14 @@ export function ShopCategoryEditor({ id }: { id: string }) {
             ) : (
               <button
                 type="button"
-                onClick={() => void browserAdminClient().deleteShopCategory(id).then(() => router.push("/shop"))}
+                onClick={() => void onDelete()}
               >
                 Удалить
               </button>
             )}
           </>
         ) : null}
-      </div>
+      </DocumentActions>
     </main>
   );
 }

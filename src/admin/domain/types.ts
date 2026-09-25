@@ -72,6 +72,9 @@ export type TireModelDraft = {
   descriptionLong: string;
   applicationCategory: TireCategory | "";
   treadType: string;
+  modelCode?: string;
+  features?: { id: string; key: string; title: string; description: string }[];
+  applicationTypes?: string[];
   selectionVehicleTypes: VehicleType[];
   selectionConditions: OperatingCondition[];
   selectionAxles: CatalogAxle[];
@@ -104,6 +107,7 @@ export type TireDirection = {
   slug: string;
   status: DocumentStatus;
   hasUnpublishedDraft: boolean;
+  imageAssetId: string | null;
 };
 
 export type MediaAsset = {
@@ -159,6 +163,7 @@ export type WheelModelDraft = {
   slug: string;
   wheelTypeId: string;
   series: string;
+  designStyle?: string;
   material: string;
   constructionMethod: string;
   fitmentNotes: string;
@@ -232,11 +237,14 @@ export type PageSectionCopy = {
   lead: string;
 };
 
+export const LEGAL_PAGE_KEYS = ["privacy-policy", "warranty", "shop-delivery-returns"] as const;
+
 export type StubPageDraft = {
   id: Exclude<PageKey, "home" | "shop-home">;
   seoTitle: string;
   seoDescription: string;
   hero: PageSectionCopy & { image?: ImagePlacement };
+  documents: DocumentLink[];
 };
 
 export type HomePageDraft = {

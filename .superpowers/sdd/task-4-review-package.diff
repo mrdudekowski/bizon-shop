@@ -1,0 +1,165 @@
+=== COMMITS ===
+34f47c4 fix(wheels): drop unrelated non-forged UI from route cutover
+8223550 feat(wheels): remove forged static catalog bypass
+
+=== STAT ===
+ .../wheels/[wheelTypeSlug]/[modelSlug]/page.tsx    | 28 ++++++++++++++++++----
+ .../(site)/shop/wheels/[wheelTypeSlug]/page.tsx    | 15 +++++++++++-
+ 2 files changed, 38 insertions(+), 5 deletions(-)
+
+=== DIFF ===
+diff --git a/src/app/(site)/shop/wheels/[wheelTypeSlug]/[modelSlug]/page.tsx b/src/app/(site)/shop/wheels/[wheelTypeSlug]/[modelSlug]/page.tsx
+index 9e662df..c512f90 100644
+--- a/src/app/(site)/shop/wheels/[wheelTypeSlug]/[modelSlug]/page.tsx
++++ b/src/app/(site)/shop/wheels/[wheelTypeSlug]/[modelSlug]/page.tsx
+@@ -7,63 +7,83 @@ import {
+   getWheelTypeBySlug,
+   getWheelVariantsByModelId,
+ } from "@/lib/cms";
+ import { getWheelConstructionMethodLabel } from "@/lib/cms/wheelConstructionMethod";
+ import { createPageMetadata } from "@/lib/seo/metadata";
+ import { createProductStructuredData } from "@/lib/seo/structuredData";
+ import { PageHeader } from "@/components/catalog/PageHeader";
+ import { WheelVariantsTable } from "@/components/catalog/WheelVariantsTable";
+ import { AddToCartSection } from "@/components/cart/AddToCartSection";
+ import { QuickOrderSection } from "@/components/forms/QuickOrderSection";
++import { ForgedModel } from "@/components/shop/ForgedModel";
++import { toForgedWheelView } from "@/components/shop/forgedView";
+ 
+ type PageProps = {
+   params: Promise<{ wheelTypeSlug: string; modelSlug: string }>;
+ };
+ 
+ export async function generateStaticParams() {
+   return getAllWheelModelRouteParams();
+ }
+ 
+ export async function generateMetadata({ params }: PageProps) {
+   const { wheelTypeSlug, modelSlug } = await params;
+-  const model = await getWheelModelByTypeAndSlug(wheelTypeSlug, modelSlug);
+-  if (!model) return {};
++  const [wheelType, model] = await Promise.all([
++    getWheelTypeBySlug(wheelTypeSlug),
++    getWheelModelByTypeAndSlug(wheelTypeSlug, modelSlug),
++  ]);
++  if (!wheelType || !model) notFound();
++
+   return createPageMetadata({
+     title: model.name,
+     description: model.descriptionShort,
+     path: `/shop/wheels/${model.wheelTypeSlug}/${model.slug}`,
+   });
+ }
+ 
+ export default async function WheelModelPage({ params }: PageProps) {
+   const { wheelTypeSlug, modelSlug } = await params;
+   const [wheelType, model] = await Promise.all([
+     getWheelTypeBySlug(wheelTypeSlug),
+     getWheelModelByTypeAndSlug(wheelTypeSlug, modelSlug),
+   ]);
+ 
+   if (!wheelType || !model) {
+     notFound();
+   }
+ 
+-  const variants = await getWheelVariantsByModelId(model.id);
+   const typeBasePath = `/shop/wheels/${wheelType.slug}`;
+   const modelPath = `${typeBasePath}/${model.slug}`;
+-
+   const structuredData = createProductStructuredData({
+     name: model.name,
+     description: model.descriptionShort,
+     path: modelPath,
+     brand: model.series ?? "BIZON",
+     category: wheelType.name,
+   });
+ 
++  if (wheelType.slug === "forged") {
++    const view = toForgedWheelView(model);
++    if (!view) notFound();
++
++    return (
++      <>
++        <script
++          type="application/ld+json"
++          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
++        />
++        <ForgedModel model={view} />
++      </>
++    );
++  }
++
++  const variants = await getWheelVariantsByModelId(model.id);
+   const metaParts = [
+     model.series,
+     getWheelConstructionMethodLabel(model.constructionMethod),
+     model.material,
+     model.designStyle,
+   ].filter(Boolean);
+ 
+   return (
+     <div className="section-inner">
+       <script
+diff --git a/src/app/(site)/shop/wheels/[wheelTypeSlug]/page.tsx b/src/app/(site)/shop/wheels/[wheelTypeSlug]/page.tsx
+index eafd8f2..3e2b272 100644
+--- a/src/app/(site)/shop/wheels/[wheelTypeSlug]/page.tsx
++++ b/src/app/(site)/shop/wheels/[wheelTypeSlug]/page.tsx
+@@ -2,43 +2,56 @@ import { notFound } from "next/navigation";
+ import Link from "next/link";
+ import {
+   getAllWheelTypeSlugs,
+   getWheelModelsByTypeSlug,
+   getWheelTypeBySlug,
+   getWheelVariantsByTypeSlug,
+ } from "@/lib/cms";
+ import { createPageMetadata } from "@/lib/seo/metadata";
+ import { PageHeader } from "@/components/catalog/PageHeader";
+ import { WheelModelGrid } from "@/components/catalog/WheelModelGrid";
++import { ForgedCatalog } from "@/components/shop/ForgedCatalog";
+ 
+ type PageProps = {
+   params: Promise<{ wheelTypeSlug: string }>;
+ };
+ 
+ export async function generateStaticParams() {
+   const slugs = await getAllWheelTypeSlugs();
+-  return slugs.map((wheelTypeSlug) => ({ wheelTypeSlug }));
++  return [...new Set(["forged", ...slugs])].map((wheelTypeSlug) => ({ wheelTypeSlug }));
+ }
+ 
+ export async function generateMetadata({ params }: PageProps) {
+   const { wheelTypeSlug } = await params;
++  if (wheelTypeSlug.toLowerCase() === "forged") {
++    return createPageMetadata({
++      title: "BIZON Forged",
++      description: "╨Я╤П╤В╤М ╨┤╨╕╨╖╨░╨╣╨╜╨╛╨▓ ╨║╨╛╨▓╨░╨╜╤Л╤Е ╨┤╨╕╤Б╨║╨╛╨▓ BIZON, ╨╕╨╖╨│╨╛╤В╨░╨▓╨╗╨╕╨▓╨░╨╡╨╝╤Л╤Е ╨┐╨╛╨┤ ╨╖╨░╨║╨░╨╖.",
++      path: "/shop/wheels/forged",
++    });
++  }
+   const wheelType = await getWheelTypeBySlug(wheelTypeSlug);
+   if (!wheelType) return {};
+   return createPageMetadata({
+     title: wheelType.name,
+     description: wheelType.description,
+     path: `/shop/wheels/${wheelType.slug}`,
+   });
+ }
+ 
+ export default async function WheelTypePage({ params }: PageProps) {
+   const { wheelTypeSlug } = await params;
++  if (wheelTypeSlug.toLowerCase() === "forged") {
++    const models = await getWheelModelsByTypeSlug("forged");
++    return <ForgedCatalog models={models} />;
++  }
++
+   const wheelType = await getWheelTypeBySlug(wheelTypeSlug);
+ 
+   if (!wheelType) {
+     notFound();
+   }
+ 
+   const [models, variants] = await Promise.all([
+     getWheelModelsByTypeSlug(wheelType.slug),
+     getWheelVariantsByTypeSlug(wheelType.slug),
+   ]);
+

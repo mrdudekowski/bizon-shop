@@ -1,0 +1,103 @@
+=== COMMITS ===
+bf3b823 fix(wheels): validate forged type and gallery in readiness
+
+=== STAT ===
+ .superpowers/sdd/task-final-fix-report.md           | 11 +++++++++++
+ scripts/verify-shop-readiness.ts                    | 12 +++++++++++-
+ src/app/(site)/shop/wheels/[wheelTypeSlug]/page.tsx |  6 +++++-
+ 3 files changed, 27 insertions(+), 2 deletions(-)
+
+=== DIFF ===
+diff --git a/.superpowers/sdd/task-final-fix-report.md b/.superpowers/sdd/task-final-fix-report.md
+new file mode 100644
+index 0000000..9c90c56
+--- /dev/null
++++ b/.superpowers/sdd/task-final-fix-report.md
+@@ -0,0 +1,11 @@
++# Forged wheels final review fixes
++
++## Changes
++
++- The forged listing now resolves the published `forged` wheel type through CMS and returns `notFound()` when it is missing or unpublished.
++- Shop readiness now blocks each required forged model unless its gallery contains at least three valid Media upload relations.
++
++## Verification
++
++- `npx eslint "src/app/(site)/shop/wheels/[wheelTypeSlug]/page.tsx" "scripts/verify-shop-readiness.ts"` тАФ passed.
++- Staging `npm run verify:shop` with `DATABASE_URI=postgresql://postgres:postgres@127.0.0.1:55433/bizon_payload_stage` and S3 variables cleared тАФ exited 1 only for the two already-known missing lifestyle categories; all five forged models passed with no `FORGED_*` blockers.
+diff --git a/scripts/verify-shop-readiness.ts b/scripts/verify-shop-readiness.ts
+index 5bb4e14..fc69739 100644
+--- a/scripts/verify-shop-readiness.ts
++++ b/scripts/verify-shop-readiness.ts
+@@ -204,28 +204,38 @@ if (!forgedType) {
+ 
+   for (const design of SHOP_WHEEL_DESIGNS) {
+     const model = forgedModels.find((item) => item.slug === design.slug);
+     if (!model) {
+       findings.push({
+         severity: "blocker",
+         code: "FORGED_MODEL_NOT_IN_CMS",
+         item: design.slug,
+         message: "╨г╤В╨▓╨╡╤А╨╢╨┤╤С╨╜╨╜╤Л╨╣ ╨┤╨╕╨╖╨░╨╣╨╜ ╨┐╨╛╨║╨░ ╤Б╤Г╤Й╨╡╤Б╤В╨▓╤Г╨╡╤В ╤В╨╛╨╗╤М╨║╨╛ ╨▓ ╤Б╤В╨░╤В╨╕╤З╨╡╤Б╨║╨╛╨╝ ╤Б╨╗╨╛╨╡ ╨╕ ╨╜╨╡ ╨┐╨╡╤А╨╡╨╜╨╡╤Б╤С╨╜ ╨▓ CMS.",
+       });
+-    } else if (!hasUpload(model.mainImage)) {
++      continue;
++    }
++    if (!hasUpload(model.mainImage)) {
+       findings.push({
+         severity: "blocker",
+         code: "FORGED_MODEL_IMAGE_MISSING",
+         item: design.slug,
+         message: "╨Ф╨╗╤П ╨╛╨┐╤Г╨▒╨╗╨╕╨║╨╛╨▓╨░╨╜╨╜╨╛╨╣ CMS-╨╝╨╛╨┤╨╡╨╗╨╕ ╤В╤А╨╡╨▒╤Г╨╡╤В╤Б╤П mainImage ╨▓ Media.",
+       });
+     }
++    if ((model.gallery ?? []).filter(hasUpload).length < 3) {
++      findings.push({
++        severity: "blocker",
++        code: "FORGED_MODEL_GALLERY_MISSING",
++        item: design.slug,
++        message: "╨Ф╨╗╤П ╨╛╨┐╤Г╨▒╨╗╨╕╨║╨╛╨▓╨░╨╜╨╜╨╛╨╣ CMS-╨╝╨╛╨┤╨╡╨╗╨╕ ╤В╤А╨╡╨▒╤Г╨╡╤В╤Б╤П ╨│╨░╨╗╨╡╤А╨╡╤П ╨╝╨╕╨╜╨╕╨╝╤Г╨╝ ╨╕╨╖ 3 ╨╕╨╖╨╛╨▒╤А╨░╨╢╨╡╨╜╨╕╨╣ ╨▓ Media.",
++      });
++    }
+   }
+ }
+ 
+ const blockers = findings.filter((finding) => finding.severity === "blocker");
+ const warnings = findings.filter((finding) => finding.severity === "warning");
+ 
+ console.log(JSON.stringify({
+   ok: blockers.length === 0,
+   counts: {
+     categories: categories.length,
+diff --git a/src/app/(site)/shop/wheels/[wheelTypeSlug]/page.tsx b/src/app/(site)/shop/wheels/[wheelTypeSlug]/page.tsx
+index 3e2b272..afb53ee 100644
+--- a/src/app/(site)/shop/wheels/[wheelTypeSlug]/page.tsx
++++ b/src/app/(site)/shop/wheels/[wheelTypeSlug]/page.tsx
+@@ -34,21 +34,25 @@ export async function generateMetadata({ params }: PageProps) {
+   return createPageMetadata({
+     title: wheelType.name,
+     description: wheelType.description,
+     path: `/shop/wheels/${wheelType.slug}`,
+   });
+ }
+ 
+ export default async function WheelTypePage({ params }: PageProps) {
+   const { wheelTypeSlug } = await params;
+   if (wheelTypeSlug.toLowerCase() === "forged") {
+-    const models = await getWheelModelsByTypeSlug("forged");
++    const wheelType = await getWheelTypeBySlug(wheelTypeSlug);
++    if (!wheelType) {
++      notFound();
++    }
++    const models = await getWheelModelsByTypeSlug(wheelType.slug);
+     return <ForgedCatalog models={models} />;
+   }
+ 
+   const wheelType = await getWheelTypeBySlug(wheelTypeSlug);
+ 
+   if (!wheelType) {
+     notFound();
+   }
+ 
+   const [models, variants] = await Promise.all([
+

@@ -1,0 +1,1385 @@
+@config "../../tailwind.config.js";
+
+@custom-variant dark (&:is(.dark *));
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Box-sizing reset - обеспечивает предсказуемые размеры элементов, включая padding и border */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/*
+ * CSS Variables — Single Source of Truth (см. docs/theme-palette.md, docs/design-principles.md)
+ * Тема: класс .dark на <html>; светлая — :root без .dark
+ */
+:root {
+  /* Bizon brand palette (SSOT) — см. docs/theprompt.md */
+  --bizon-black: #050505;
+  --bizon-white: #ffffff;
+  --bizon-light: #f2f3f4;
+  --bizon-light-2: #e7e9ec;
+  --bizon-gray: #6c7075;
+  --bizon-dark: #1c1f22;
+  --bizon-accent: #f2a900;
+  --bizon-accent-dark: #c88a00;
+
+  --font-sans: Inter, Manrope, "Helvetica Neue", Arial, sans-serif;
+  --radius: 0.75rem;
+  --radius-card: 2rem;
+  --radius-card-inner: 1.5rem;
+  --header-height: 80px;
+  --container-max: 1600px;
+  --transition-fast: 200ms ease-out;
+  --transition-premium: 300ms ease-out;
+  --transition-media: 700ms ease-out;
+  --spacing-button-padding: 10px 18px;
+  --spacing-card-padding: 20px;
+  --spacing-card-gap: 8px;
+  --spacing-card-gap-large: 12px;
+  --spacing-section-padding: 80px 20px;
+  --focus-outline: 2px solid var(--color-ring);
+  --focus-offset: 2px;
+  --transform-hover-lift: translateY(-1px);
+  --transform-active-press: scale(0.97);
+  --z-index-skip-link: 1000;
+  --z-index-header: 200;
+  --z-index-back-to-top: 150;
+  --z-index-carousel-nav: 10;
+
+  /* Light (default без .dark) */
+  color-scheme: light;
+  --color-background: var(--bizon-white);
+  --color-foreground: var(--bizon-black);
+  --color-primary: var(--bizon-accent);
+  --color-on-primary: var(--bizon-black);
+  --color-secondary: var(--bizon-light);
+  --color-muted: var(--bizon-gray);
+  --color-surface: var(--bizon-white);
+  --color-surface-muted: var(--bizon-light);
+  --color-surface-strong: var(--bizon-black);
+  --color-on-surface-strong: var(--bizon-white);
+  --color-border: var(--bizon-light-2);
+  --color-border-strong: #d0d3d7;
+  --color-border-dashed: var(--bizon-gray);
+  --color-text-subtle: var(--bizon-gray);
+  --color-ring: var(--bizon-accent);
+  --color-overlay: rgba(5, 5, 5, 0.5);
+  --color-primary-dark: var(--bizon-accent-dark);
+  --color-primary-light: #ffd54d;
+  --shadow-contact-default: 0 0 0 0.5px rgba(242, 169, 0, 0.35), 0 0 0 0 rgba(242, 169, 0, 0);
+  --shadow-contact-hover: 0 0 0 0.5px rgba(242, 169, 0, 0.65), 0 0 20px rgba(242, 169, 0, 0.25);
+  --shadow-contact-active: 0 0 0 0.5px rgba(200, 138, 0, 0.9), 0 0 12px rgba(242, 169, 0, 0.35);
+  --color-overlay-dark: rgba(0, 0, 0, 0.82);
+  --color-carousel-nav-bg: rgba(0, 0, 0, 0.06);
+  --color-carousel-nav-bg-hover: rgba(0, 0, 0, 0.12);
+  --color-primary-foreground: var(--color-on-primary);
+  --color-secondary-foreground: var(--color-foreground);
+  --color-accent: var(--color-surface-muted);
+  --color-accent-foreground: var(--color-foreground);
+  --color-destructive: var(--color-primary);
+  --color-destructive-foreground: var(--color-on-primary);
+  --color-input: var(--color-border);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-foreground);
+}
+
+.dark {
+  color-scheme: dark;
+  --color-background: var(--bizon-black);
+  --color-foreground: var(--bizon-white);
+  --color-primary: var(--bizon-accent);
+  --color-on-primary: var(--bizon-black);
+  --color-secondary: var(--bizon-dark);
+  --color-muted: #a8acb0;
+  --color-surface: var(--bizon-dark);
+  --color-surface-muted: #25292d;
+  --color-surface-strong: var(--bizon-black);
+  --color-on-surface-strong: var(--bizon-white);
+  --color-border: #2e3236;
+  --color-border-strong: #3d4247;
+  --color-border-dashed: #4a4f54;
+  --color-text-subtle: #8c9196;
+  --color-ring: var(--bizon-accent);
+  --color-overlay: rgba(0, 0, 0, 0.65);
+  --color-primary-dark: var(--bizon-accent-dark);
+  --color-primary-light: #ffd54d;
+  --shadow-contact-default: 0 0 0 0.5px rgba(242, 169, 0, 0.45), 0 0 0 0 rgba(242, 169, 0, 0);
+  --shadow-contact-hover: 0 0 0 0.5px rgba(242, 169, 0, 0.85), 0 0 22px rgba(242, 169, 0, 0.35);
+  --shadow-contact-active: 0 0 0 0.5px rgba(200, 138, 0, 0.95), 0 0 14px rgba(242, 169, 0, 0.45);
+  --color-overlay-dark: rgba(0, 0, 0, 0.88);
+  --color-carousel-nav-bg: rgba(255, 255, 255, 0.1);
+  --color-carousel-nav-bg-hover: rgba(255, 255, 255, 0.2);
+}
+
+/* Плавная прокрутка для улучшения UX при навигации по странице */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Отступ якорей под фиксированный хедер */
+section[id] {
+  scroll-margin-top: var(--header-height);
+}
+
+/* Базовые стили body - используем CSS-переменные для единообразия темы */
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-foreground);
+  background: var(--color-background);
+  min-height: 100vh;
+  /* Предотвращаем горизонтальный скролл при переполнении контента */
+  overflow-x: hidden;
+}
+
+/* Фиксируем body при открытом меню - предотвращаем прокрутку фона для лучшего UX мобильного меню */
+body.menu-open {
+  position: fixed;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Сброс стилей ссылок - наследуем цвет и убираем подчеркивание для чистого дизайна */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Размытие фона при открытом мобильном меню - визуально выделяет меню и фокусирует внимание */
+.page--blurred {
+  filter: blur(8px);
+  transition: filter var(--transition-fast);
+}
+
+/* Skip link для доступности - скрыт визуально, но доступен для screen readers и клавиатурной навигации */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.skip-link:focus {
+  position: fixed;
+  left: 16px;
+  top: 16px;
+  width: auto;
+  height: auto;
+  padding: 8px 12px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  z-index: var(--z-index-skip-link);
+}
+
+/* Фиксированный хедер - всегда видим при прокрутке для постоянного доступа к навигации */
+.site-header {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  height: var(--header-height);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--color-border);
+  z-index: var(--z-index-header);
+}
+
+/* Базовый контейнер - единый источник для всех контейнеров с max-width */
+.container-base,
+.navbar,
+.section,
+.footer-content {
+  max-width: var(--container-max);
+  margin: 0 auto;
+}
+
+/* Навигационная панель - сетка с тремя колонками: burger, логотип (центр), действия (справа) */
+.navbar {
+  height: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 0 24px;
+}
+
+@media (min-width: 768px) {
+  .navbar {
+    padding: 0 40px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .navbar {
+    padding: 0 64px;
+  }
+}
+
+/* Кнопка мобильного меню - квадратная для удобного тапа на мобильных устройствах */
+.burger-button {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Бренд/логотип - кликабельный элемент для возврата на главную, центрируется на мобильных */
+.brand {
+  justify-self: center;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand-logo {
+  display: block;
+  /* Уменьшаем высоту на мобильных для визуального баланса с burger-кнопкой */
+  height: calc(var(--header-height) - 8px);
+  max-height: calc(var(--header-height) - 8px);
+  width: auto;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Адаптивная сетка навигации: на планшетах+ логотип выравнивается к началу для лучшей читаемости */
+@media (min-width: 768px) {
+  .navbar {
+    grid-template-columns: auto auto 1fr;
+  }
+
+  .brand {
+    justify-self: start;
+  }
+
+  .brand-logo {
+    /* На больших экранах логотип ближе к полной высоте для лучшей видимости */
+    height: calc(var(--header-height) - 2px);
+    max-height: calc(var(--header-height) - 2px);
+  }
+}
+
+/* Контейнер действий навигации - выравнивается вправо в сетке navbar */
+.nav-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-self: end;
+}
+
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-muted);
+  color: var(--color-foreground);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.theme-toggle:hover {
+  background: var(--color-secondary);
+  border-color: var(--color-border-strong);
+}
+
+.theme-toggle:active {
+  transform: var(--transform-active-press);
+}
+
+.theme-toggle:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+
+.theme-toggle svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.cart-button {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-muted);
+  color: var(--color-foreground);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.cart-button:hover {
+  background: var(--color-secondary);
+  border-color: var(--color-border-strong);
+}
+
+.cart-button:active {
+  transform: var(--transform-active-press);
+}
+
+.cart-button:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+
+.cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--bizon-accent);
+  color: var(--bizon-black);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* Десктопная навигация - горизонтальное меню ссылок, скрывается на мобильных */
+.desktop-nav {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+/* Стили ссылок десктопной навигации - компактный размер для экономии места */
+.desktop-nav a {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--color-foreground);
+  transition: color var(--transition-fast);
+}
+
+.desktop-nav a:hover {
+  color: var(--color-muted);
+}
+
+/* Десктопная навигация скрывается на мобильных и планшетах для экономии места - используется burger-меню */
+@media (max-width: 1023px) {
+  .desktop-nav {
+    display: none;
+  }
+}
+
+/* Базовые стили кнопок — единая премиальная система */
+.button-base,
+.cta-button,
+.ghost-button,
+.btn-accent,
+.btn-glass {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 16px 32px;
+  border-radius: calc(var(--radius) + 4px);
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.2;
+  outline: none;
+  cursor: pointer;
+  transition:
+    transform var(--transition-premium),
+    background-color var(--transition-premium),
+    border-color var(--transition-premium),
+    color var(--transition-premium);
+}
+
+.cta-button {
+  background: var(--bizon-black);
+  color: var(--bizon-white);
+  border: none;
+}
+
+.cta-button:hover {
+  background: var(--bizon-dark);
+  transform: translateY(-2px);
+}
+
+.cta-button:active {
+  transform: var(--transform-active-press);
+}
+
+.btn-accent,
+.contact-button {
+  background: var(--bizon-accent);
+  color: var(--bizon-black);
+}
+
+.btn-accent:hover {
+  background: var(--bizon-accent-dark);
+  transform: translateY(-2px);
+}
+
+.ghost-button {
+  background: transparent;
+  border: 1px solid currentColor;
+  color: inherit;
+}
+
+.ghost-button:hover {
+  transform: translateY(-2px);
+}
+
+.btn-glass {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--bizon-white);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(16px);
+}
+
+.btn-glass:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.card-title-base,
+.product-card-title {
+  margin: 0;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  font-weight: 600;
+  color: var(--color-foreground);
+  line-height: 1.25;
+}
+
+/* Active состояние ghost кнопки - единообразная обратная связь с CTA */
+.ghost-button:active {
+  transform: var(--transform-active-press);
+}
+
+.cta-button:focus-visible,
+.ghost-button:focus-visible,
+.btn-accent:focus-visible,
+.btn-glass:focus-visible,
+.contact-button:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+
+/* Отступ main для фиксированного хедера - предотвращает перекрытие контента */
+main {
+  padding-top: var(--header-height);
+}
+
+/* Cinematic hero — near-fullscreen premium block */
+.hero {
+  position: relative;
+  min-height: calc(100vh - var(--header-height));
+  min-height: calc(100dvh - var(--header-height));
+  overflow: hidden;
+  background: var(--bizon-black);
+  color: var(--bizon-white);
+  margin: 0;
+  max-width: none;
+}
+
+.hero-media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.hero-media-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  border: none;
+  border-radius: 0;
+  background: linear-gradient(135deg, #1c1f22 0%, #050505 45%, #2a2f34 100%);
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(5, 5, 5, 0.4) 0%,
+    rgba(5, 5, 5, 0.3) 40%,
+    rgba(5, 5, 5, 0.82) 100%
+  );
+  pointer-events: none;
+}
+
+.hero-container {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  min-height: calc(100vh - var(--header-height));
+  min-height: calc(100dvh - var(--header-height));
+  align-items: flex-end;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 64px 24px;
+}
+
+@media (min-width: 768px) {
+  .hero-container {
+    padding: 96px 40px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .hero-container {
+    padding: 128px 80px;
+  }
+}
+
+.hero-content {
+  max-width: 56rem;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.72);
+  margin: 0 0 1rem;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(2.75rem, 8vw, 6rem);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.hero-text {
+  margin: 1.5rem 0 0;
+  font-size: clamp(1.125rem, 2vw, 1.5rem);
+  line-height: 1.65;
+  max-width: 40rem;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.hero-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+@media (min-width: 640px) {
+  .hero-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+}
+
+.hero .ghost-button {
+  border-color: rgba(255, 255, 255, 0.65);
+  color: var(--bizon-white);
+}
+
+.hero .ghost-button:hover {
+  border-color: var(--bizon-white);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hero-scroll-hint {
+  display: none;
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 48px;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.5));
+  z-index: 10;
+}
+
+@media (min-width: 1024px) {
+  .hero-scroll-hint {
+    display: block;
+  }
+}
+
+.image-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  border: none;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: transparent;
+}
+
+.section {
+  padding: 4rem 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  max-width: var(--container-max);
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding: 6rem 40px;
+    gap: 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .section {
+    padding: 8rem 80px;
+    gap: 2.5rem;
+  }
+}
+
+.section--dark {
+  max-width: none;
+  width: 100%;
+  background: var(--bizon-black);
+  color: var(--bizon-white);
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+
+.section--dark .section-title,
+.section--dark .section-description {
+  color: inherit;
+}
+
+.section--dark .section-description {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.section--dark .section-inner {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 24px;
+  display: grid;
+  gap: inherit;
+}
+
+@media (min-width: 768px) {
+  .section--dark .section-inner {
+    padding: 0 40px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .section--dark .section-inner {
+    padding: 0 80px;
+  }
+}
+
+.section--muted {
+  background: var(--bizon-light);
+}
+
+.dark .section--muted {
+  background: var(--bizon-dark);
+}
+
+.section-title {
+  font-size: clamp(2.25rem, 5vw, 4.5rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+
+.section-description {
+  margin: 0;
+  max-width: 42rem;
+  font-size: clamp(1.125rem, 2vw, 1.375rem);
+  line-height: 1.65;
+  color: var(--color-muted);
+}
+
+.section-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .section-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.card-base {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 1.5rem;
+  border-radius: var(--radius-card);
+  transition: transform var(--transition-premium), box-shadow var(--transition-premium);
+}
+
+.info-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 2rem;
+}
+
+.catalog-card {
+  padding: 0;
+  overflow: hidden;
+  gap: 0;
+}
+
+.catalog-card__media {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--color-surface-muted);
+}
+
+.catalog-card__body {
+  padding: 2rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.catalog-image {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.catalog-image--placeholder {
+  opacity: 0.9;
+}
+
+.catalog-detail-media {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--color-surface-muted);
+}
+
+.info-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(5, 5, 5, 0.08);
+}
+
+.info-card-title {
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  font-weight: 600;
+}
+
+.info-card-text {
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+
+.lexical-content {
+  display: grid;
+  gap: 1rem;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+
+.lexical-content :is(h1, h2, h3, h4) {
+  margin: 0;
+  color: var(--color-foreground);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.lexical-content h2 {
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+}
+
+.lexical-content h3 {
+  font-size: 1.125rem;
+}
+
+.lexical-content :is(ul, ol) {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.lexical-content li {
+  margin: 0;
+}
+
+.lexical-content a {
+  color: var(--bizon-accent);
+  text-decoration: underline;
+}
+
+.lexical-content blockquote {
+  margin: 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--bizon-accent);
+  color: var(--color-foreground);
+}
+
+/* Список в info карточке - маркированный список с вертикальными отступами */
+.info-card-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  list-style: disc;
+  color: var(--color-muted);
+}
+
+.site-footer {
+  background: var(--bizon-black);
+  color: var(--bizon-white);
+  padding: 3rem 24px;
+}
+
+@media (min-width: 768px) {
+  .site-footer {
+    padding: 4rem 40px;
+  }
+}
+
+/* Логотип «inverted» рассчитан на тёмный header; на светлом — монохромный тёмный */
+html:not(.dark) .brand-logo {
+  filter: brightness(0);
+}
+
+/* Контент футера - использует .container-base для единообразия max-width и центрирования */
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.contact-button {
+  min-height: 44px;
+  width: auto;
+  min-width: 148px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: calc(var(--radius) + 4px);
+  background: var(--bizon-accent);
+  color: var(--bizon-black);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: var(--shadow-contact-default);
+  transition:
+    transform var(--transition-premium),
+    background-color var(--transition-premium),
+    box-shadow var(--transition-premium);
+}
+
+.contact-button:hover {
+  background: var(--bizon-accent-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-contact-hover);
+}
+
+.contact-button:active {
+  transform: var(--transform-active-press);
+  box-shadow: var(--shadow-contact-active);
+}
+
+.product-carousel {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0;
+  margin-top: 1rem;
+}
+
+.product-carousel-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  gap: 1.5rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  min-width: 0;
+  cursor: grab;
+  padding-bottom: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .product-carousel-track {
+    grid-auto-columns: 45vw;
+  }
+}
+
+@media (min-width: 1024px) {
+  .product-carousel-track {
+    grid-auto-columns: 34vw;
+  }
+}
+
+/* Изменение курсора при перетаскивании - визуальная обратная связь для drag-взаимодействия */
+.product-carousel-track:active {
+  cursor: grabbing;
+}
+
+.product-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Category cards — cinematic horizontal scroll */
+.category-card {
+  position: relative;
+  display: block;
+  min-height: 420px;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  background: var(--bizon-dark);
+  color: inherit;
+  text-decoration: none;
+  user-select: none;
+}
+
+@media (min-width: 768px) {
+  .category-card {
+    min-height: 520px;
+  }
+}
+
+.category-card-media {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bizon-dark);
+  transition: transform var(--transition-media);
+}
+
+.category-card:hover .category-card-media {
+  transform: scale(1.05);
+}
+
+.category-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(5, 5, 5, 0.85) 0%,
+    rgba(5, 5, 5, 0.3) 45%,
+    transparent 100%
+  );
+}
+
+.category-card-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  padding: 1.5rem;
+  color: var(--bizon-white);
+}
+
+@media (min-width: 768px) {
+  .category-card-content {
+    padding: 2rem 2.5rem;
+  }
+}
+
+.category-card-title {
+  margin: 0;
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.category-card-desc {
+  margin: 0.75rem 0 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.78);
+  max-width: 28rem;
+}
+
+.category-card-arrow {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 3;
+  width: 3.5rem;
+  height: 3.5rem;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
+  color: var(--bizon-white);
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-premium),
+    color var(--transition-premium),
+    transform var(--transition-premium);
+}
+
+.category-card:hover .category-card-arrow {
+  background: var(--bizon-accent);
+  color: var(--bizon-black);
+}
+
+.category-card * {
+  user-select: none;
+}
+
+.product-card {
+  display: none;
+}
+
+/* Navigation Arrows - стеклянный эффект для видимости поверх контента */
+.section--dark .carousel-nav {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--bizon-white);
+}
+
+.section--dark .carousel-nav:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: var(--color-carousel-nav-bg);
+  backdrop-filter: blur(12px);
+  color: var(--color-foreground);
+  font-size: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  z-index: var(--z-index-carousel-nav);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hover состояние навигации - увеличение и изменение прозрачности для обратной связи */
+.carousel-nav:hover:not(:disabled) {
+  background: var(--color-carousel-nav-bg-hover);
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* Disabled состояние навигации - визуально показывает недоступность действия */
+.carousel-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Позиционирование стрелок навигации - базовые отступы от краев карусели */
+.carousel-nav-prev {
+  left: 4px;
+}
+
+.carousel-nav-next {
+  right: 4px;
+}
+
+/* Адаптивные стили навигации карусели: группировка всех медиа-запросов */
+/* Мобильные: меньшие размеры и отступы для экономии места */
+@media (max-width: 639px) {
+  .carousel-nav {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .carousel-nav-prev {
+    left: 2px;
+    display: none;
+  }
+
+  .carousel-nav-next {
+    right: 2px;
+    display: none;
+  }
+}
+
+/* Пагинация карусели — только на мобильных (≤639px), подсказка что карточки можно листать */
+.carousel-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 0;
+}
+
+.carousel-pagination-dot {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition:
+    width var(--transition-premium),
+    background-color var(--transition-premium);
+}
+
+.carousel-pagination-dot:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.carousel-pagination-dot:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+
+.carousel-pagination-dot-active {
+  width: 2.5rem;
+  background: var(--bizon-white);
+}
+
+.carousel-pagination-dot-active:hover {
+  background: var(--bizon-white);
+}
+
+/* Accessories media banner */
+.accessories-banner {
+  position: relative;
+  overflow: hidden;
+  min-height: 520px;
+  margin: 0 auto;
+  max-width: var(--container-max);
+  border-radius: 0;
+  background: var(--bizon-black);
+  color: var(--bizon-white);
+}
+
+@media (min-width: 768px) {
+  .accessories-banner {
+    border-radius: var(--radius-card);
+    margin-left: 40px;
+    margin-right: 40px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .accessories-banner {
+    margin-left: 80px;
+    margin-right: 80px;
+  }
+}
+
+.accessories-banner-media {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, #1c1f22 0%, #050505 60%, #2d3339 100%);
+}
+
+.accessories-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgba(5, 5, 5, 0.92) 0%,
+    rgba(5, 5, 5, 0.55) 55%,
+    transparent 100%
+  );
+}
+
+.accessories-banner-content {
+  position: relative;
+  z-index: 2;
+  max-width: 48rem;
+  padding: 2rem 1.5rem;
+  display: grid;
+  gap: 1.25rem;
+  align-content: center;
+  min-height: 520px;
+}
+
+@media (min-width: 768px) {
+  .accessories-banner-content {
+    padding: 3rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .accessories-banner-content {
+    padding: 4rem;
+  }
+}
+
+.accessories-banner h2 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.accessories-banner p {
+  margin: 0;
+  font-size: clamp(1.125rem, 2vw, 1.375rem);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Десктоп: увеличенные отступы для лучшей доступности и видимости */
+@media (min-width: 1024px) {
+  .carousel-nav-prev {
+    left: 6px;
+  }
+  
+  .carousel-nav-next {
+    right: 6px;
+  }
+}
+
+/* Плавающая кнопка «наверх» — появляется после секции с каруселью */
+.back-to-top {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right, 0px));
+  bottom: max(24px, env(safe-area-inset-bottom, 0px));
+  z-index: var(--z-index-back-to-top);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  backdrop-filter: blur(16px);
+  color: var(--color-foreground);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition:
+    opacity var(--transition-premium),
+    visibility var(--transition-premium),
+    transform var(--transition-premium),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  box-shadow: 0 4px 16px rgba(5, 5, 5, 0.12);
+}
+
+.back-to-top--visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.back-to-top:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: 0 6px 20px rgba(5, 5, 5, 0.16);
+}
+
+.back-to-top--visible:active {
+  transform: var(--transform-active-press);
+}
+
+.back-to-top:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+
+@media (min-width: 768px) {
+  .back-to-top {
+    right: max(40px, env(safe-area-inset-right, 0px));
+    bottom: max(32px, env(safe-area-inset-bottom, 0px));
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* Уважаем предпочтения пользователей с вестибулярными расстройствами - отключаем анимации для предотвращения тошноты и головокружения */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  * {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Tailwind base layer - применяем глобальные стили через Tailwind утилиты для консистентности */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

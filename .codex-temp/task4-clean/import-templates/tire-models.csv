@@ -1,0 +1,4 @@
+slug,name,tireTypeSlug,applicationCategory,series,application,axlePosition,treadType,shortDescription,status
+dsr158,DSR158,tbr,long_haul,DOUBLESTAR,Магистральные перевозки,Steer,Rib,Radial TBR для магистральных маршрутов,published
+dsr177,DSR177,tbr,regional,DOUBLESTAR,Региональные маршруты,Drive,Mixed,Regional TBR для смешанного профиля,published
+dsr188,DSR188,tbr,regional,DOUBLESTAR,Региональная эксплуатация,Trailer,Rib,Regional TBR для прицепных осей,published

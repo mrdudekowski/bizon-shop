@@ -1,0 +1,98 @@
+<h2>Три направления для белой системы bizon.ru</h2>
+<p class="subtitle">Во всех вариантах: navbar геометрически наследует BIZON Shop, фон сайта преимущественно белый, чёрный используется только для акцентных секций.</p>
+
+<style>
+  .variants { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin-top:24px; }
+  .variant { overflow:hidden; border:1px solid var(--border); border-radius:20px; background:#fff; cursor:pointer; transition:transform .2s,border-color .2s; }
+  .variant:hover { transform:translateY(-3px); }
+  .variant.selected { border-color:#e45433; box-shadow:0 0 0 2px rgba(228,84,51,.2); }
+  .page-mini { position:relative; height:610px; overflow:hidden; background:#f7f7f5; color:#1c1c1c; font-family:Inter,Arial,sans-serif; }
+  .shop-nav { position:absolute; z-index:10; left:12px; right:12px; top:12px; height:42px; border-radius:999px; padding:0 14px; display:flex; align-items:center; justify-content:space-between; border:1px solid rgba(28,28,28,.12); background:rgba(255,255,255,.9); box-shadow:0 6px 20px rgba(0,0,0,.06); backdrop-filter:blur(10px); font-size:8px; font-weight:800; letter-spacing:.1em; }
+  .burger { font-size:16px; letter-spacing:-3px; margin-right:8px; }
+  .nav-brand { display:flex; align-items:center; }
+  .nav-links { opacity:.72; }
+  .eyebrow { margin:0 0 8px; color:#03806b; text-transform:uppercase; letter-spacing:.15em; font-size:8px; font-weight:800; }
+  .hero-title { margin:0; font-size:34px; line-height:.94; letter-spacing:-.055em; font-weight:650; }
+  .hero-text { margin:11px 0 14px; max-width:220px; color:#626262; font-size:10px; line-height:1.45; }
+  .button { display:inline-flex; align-items:center; min-height:32px; padding:0 12px; border-radius:9px; background:#e45433; color:white; font-size:9px; font-weight:800; }
+  .section-label { font-size:7px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#03806b; }
+  .mini-title { margin:5px 0 0; font-size:18px; line-height:1; letter-spacing:-.045em; }
+  .choice-row { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:13px; }
+  .choice { min-height:62px; padding:9px; border:1px solid #ddd; border-radius:10px; background:white; font-size:8px; font-weight:700; display:flex; flex-direction:column; justify-content:space-between; }
+  .choice span { color:#e45433; font-size:7px; }
+  .black-band { background:#171919; color:white; }
+  .black-band .section-label { color:#86fce8; }
+  .variant-copy { padding:15px 17px 18px; }
+  .variant-copy h3 { margin:0 0 7px; }
+  .variant-copy p { margin:0; opacity:.72; font-size:13px; line-height:1.45; }
+  .recommended { display:inline-block; margin-top:10px; padding:4px 8px; border-radius:999px; background:rgba(228,84,51,.12); color:#c93b1b; font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+
+  /* A */
+  .a-hero { height:300px; padding:92px 20px 18px; display:grid; grid-template-columns:1.05fr .95fr; gap:8px; background:white; }
+  .a-photo { position:relative; overflow:hidden; border-radius:16px; }
+  .a-photo img { width:100%; height:100%; object-fit:cover; }
+  .a-selector { height:170px; padding:23px 20px; background:#f4f4f1; }
+  .a-proof { height:140px; padding:23px 20px; display:grid; grid-template-columns:1fr 1.4fr; gap:18px; }
+  .proof-number { font-size:32px; color:#86fce8; letter-spacing:-.05em; }
+  .proof-copy { font-size:9px; line-height:1.5; color:rgba(255,255,255,.68); }
+
+  /* B */
+  .b-hero { height:335px; position:relative; padding:90px 20px 20px; background:white; }
+  .b-grid { position:absolute; inset:55px 0 0; opacity:.7; background:linear-gradient(90deg,transparent 49.6%,#ececea 50%,transparent 50.4%),linear-gradient(0deg,transparent 49.6%,#ececea 50%,transparent 50.4%); background-size:34px 34px; }
+  .b-copy { position:relative; z-index:2; width:56%; }
+  .b-tire { position:absolute; z-index:1; right:-33px; top:75px; width:205px; height:205px; object-fit:contain; filter:drop-shadow(0 22px 18px rgba(0,0,0,.15)); }
+  .b-specs { position:absolute; z-index:2; left:20px; right:20px; bottom:17px; border-top:1px solid #aaa; padding-top:8px; display:grid; grid-template-columns:repeat(3,1fr); font-size:7px; text-transform:uppercase; letter-spacing:.11em; }
+  .b-accent { height:135px; padding:22px 20px; display:grid; grid-template-columns:1.15fr .85fr; gap:10px; }
+  .b-accent img { width:100%; height:90px; object-fit:cover; border-radius:10px; }
+  .b-selector { height:140px; padding:20px; background:#fff; }
+
+  /* C */
+  .c-wrap { padding:72px 14px 14px; background:#fff; }
+  .c-hero { height:278px; position:relative; overflow:hidden; border-radius:18px; color:white; }
+  .c-hero img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .c-hero::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg,rgba(0,0,0,.78),rgba(0,0,0,.12)); }
+  .c-hero-copy { position:absolute; z-index:2; left:18px; bottom:20px; width:62%; }
+  .c-hero .eyebrow { color:#86fce8; }
+  .c-hero .hero-title { font-size:29px; color:white; }
+  .c-hero .hero-text { color:rgba(255,255,255,.72); }
+  .c-selector { height:165px; padding:22px 20px; background:white; }
+  .c-editorial { height:140px; margin:0 14px; border-radius:16px 16px 0 0; padding:22px 18px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .dark-card { border:1px solid rgba(255,255,255,.16); border-radius:10px; padding:10px; font-size:8px; color:rgba(255,255,255,.72); }
+
+  @media(max-width:900px){ .variants{grid-template-columns:1fr;} }
+</style>
+
+<div class="variants">
+  <div class="variant" data-choice="a2" onclick="toggleSelect(this)">
+    <div class="page-mini">
+      <div class="shop-nav"><span class="nav-brand"><span class="burger">☰</span>BIZON</span><span class="nav-links">РЕШЕНИЯ · КАТАЛОГ · РАСЧЁТ</span></div>
+      <section class="a-hero">
+        <div><p class="eyebrow">BIZON · Heavy Duty</p><p class="hero-title">Ресурс для<br>реальной работы</p><p class="hero-text">Подбор шин под технику, ось и условия эксплуатации.</p><span class="button">Подобрать шины</span></div>
+        <div class="a-photo"><img src="/files/public/images/premium/highway-hero.png" alt="Грузовик на маршруте"></div>
+      </section>
+      <section class="a-selector"><span class="section-label">Начните с техники</span><p class="mini-title">Для чего подбираем шины?</p><div class="choice-row"><div class="choice"><span>01</span>Тягач</div><div class="choice"><span>02</span>Самосвал</div><div class="choice"><span>03</span>Спецтехника</div></div></section>
+      <section class="a-proof black-band"><div><span class="section-label">Инженерный подход</span><div class="proof-number">3 шага</div></div><div class="proof-copy">Техника → условия → размер.<br><br>Специалист подтверждает совместимость и готовит расчёт.</div></section>
+    </div>
+    <div class="variant-copy"><h3>A · Editorial Split</h3><p>Белый hero с разделением текста и фотографии. Подбор становится главным продолжением первого экрана; чёрная секция используется как доказательство.</p><span class="recommended">Рекомендация</span></div>
+  </div>
+
+  <div class="variant" data-choice="b2" onclick="toggleSelect(this)">
+    <div class="page-mini">
+      <div class="shop-nav"><span class="nav-brand"><span class="burger">☰</span>BIZON</span><span class="nav-links">РЕШЕНИЯ · КАТАЛОГ · РАСЧЁТ</span></div>
+      <section class="b-hero"><div class="b-grid"></div><div class="b-copy"><p class="eyebrow">Технический подбор</p><p class="hero-title">Шина как рабочий инструмент</p><p class="hero-text">Параметры и применение впереди рекламных обещаний.</p><span class="button">Начать подбор</span></div><img class="b-tire" src="/files/public/images/premium/steer-tire-385.png" alt="Грузовая шина"><div class="b-specs"><span>Ось</span><span>Нагрузка</span><span>Маршрут</span></div></section>
+      <section class="b-accent black-band"><div><span class="section-label">В реальной среде</span><p class="mini-title">Решения под нагрузкой</p><p class="proof-copy">Магистраль, стройка и карьер.</p></div><img src="/files/public/images/premium/quarry-haul-truck.png" alt="Карьерная техника"></section>
+      <section class="b-selector"><span class="section-label">Подбор</span><p class="mini-title">Какая у вас техника?</p><div class="choice-row"><div class="choice">Тягач</div><div class="choice">Самосвал</div><div class="choice">Спецтехника</div></div></section>
+    </div>
+    <div class="variant-copy"><h3>B · Technical Gallery</h3><p>Максимально светлая и предметная система: крупный продукт, техническая сетка и параметры. Чёрный появляется только в блоках применения.</p></div>
+  </div>
+
+  <div class="variant" data-choice="c2" onclick="toggleSelect(this)">
+    <div class="page-mini">
+      <div class="shop-nav"><span class="nav-brand"><span class="burger">☰</span>BIZON</span><span class="nav-links">РЕШЕНИЯ · КАТАЛОГ · РАСЧЁТ</span></div>
+      <div class="c-wrap"><section class="c-hero"><img src="/files/public/images/premium/highway-hero.png" alt="Грузовик на маршруте"><div class="c-hero-copy"><p class="eyebrow">BIZON · Heavy Duty</p><p class="hero-title">Ресурс, который работает</p><p class="hero-text">Подбор для реальной эксплуатации.</p><span class="button">Подобрать шины</span></div></section></div>
+      <section class="c-selector"><span class="section-label">Подбор за минуту</span><p class="mini-title">Начнём с типа техники</p><div class="choice-row"><div class="choice">Тягач</div><div class="choice">Самосвал</div><div class="choice">Спецтехника</div></div></section>
+      <section class="c-editorial black-band"><div><span class="section-label">BIZON в работе</span><p class="mini-title">Маршруты и результаты</p></div><div class="dark-card">Кейс автопарка<br><br>Условия → решение → подтверждённый результат</div></section>
+    </div>
+    <div class="variant-copy"><h3>C · Cinematic Islands</h3><p>Белая страница с отдельными чёрными «островами»: framed hero и кейсы. Ближе всего к Shop, но менее монолитно и более B2B.</p></div>
+  </div>
+</div>

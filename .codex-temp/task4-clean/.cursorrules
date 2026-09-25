@@ -1,0 +1,402 @@
+# CSS Layout & Responsive Design Rules for Cursor AI
+
+## **CRITICAL: CSS Grid Best Practices**
+
+### 1. Always Define `grid-template-columns` Explicitly
+**Rule:** Never use `display: grid` without explicit `grid-template-columns` for containers with overflow or intrinsic-sized children.
+
+**Why:** Implicit `auto` sizing calculates column width as `max-content` of children, causing overflow.
+
+**Implementation:**
+```css
+/* ❌ AVOID - causes overflow */
+.container {
+  display: grid;
+  gap: 20px;
+}
+
+/* ✅ REQUIRED */
+.container {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr); /* Forces column to respect container width */
+  gap: 20px;
+}
+```
+
+**When to use:**
+- Any Grid container with children that have `overflow: auto/scroll`
+- Any Grid container with nested Grids/Flex
+- Any Grid container in responsive layouts
+
+---
+
+### 2. Add `min-width: 0` to Grid/Flex Items with Overflow Children
+**Rule:** Always add `min-width: 0` (or `min-height: 0` for vertical) to Grid/Flex items that contain elements with `overflow: auto/scroll`.
+
+**Why:** Grid/Flex items have implicit `min-width: auto`, preventing shrink below intrinsic content size, breaking overflow behavior.
+
+**Implementation:**
+```css
+/* ✅ REQUIRED PATTERN */
+.grid-item {
+  width: 100%;
+  min-width: 0; /* Allows item to shrink below intrinsic size */
+}
+
+.grid-item-child {
+  overflow-x: auto;
+  min-width: 0; /* Also needed for nested grids */
+}
+```
+
+**When to use:**
+- Grid/Flex items containing scrollable content
+- Nested Grid/Flex containers
+- Any element with `overflow-x: auto` or `overflow-y: auto`
+
+---
+
+### 3. Combine `width: 100%` with `max-width: 100%`
+**Rule:** Always pair `width: 100%` with `max-width: 100%` for elements that must not overflow their parent.
+
+**Why:** In Grid/Flex context, `width: 100%` resolves relative to track/container size, not visual parent, potentially causing overflow.
+
+**Implementation:**
+```css
+/* ❌ AVOID - can overflow */
+.element {
+  width: 100%;
+}
+
+/* ✅ REQUIRED */
+.element {
+  width: 100%;
+  max-width: 100%; /* Hard constraint - prevents overflow */
+  min-width: 0;    /* Allows shrink if needed */
+}
+```
+
+**When to use:**
+- All Grid items in responsive layouts
+- All elements with percentage widths in Grid/Flex
+- Carousels, galleries, scrollable containers
+
+---
+
+## **RESPONSIVE LAYOUT ARCHITECTURE**
+
+### 4. Establish Sizing Constraints at Every Level
+**Rule:** Set explicit sizing constraints (`max-width`, `min-width`) at every nesting level, not just media queries.
+
+**Why:** Prevents intrinsic sizing from propagating up the layout tree and causing unexpected overflow.
+
+**Implementation:**
+```css
+/* ✅ LAYERED CONSTRAINTS */
+
+/* Level 1: Container */
+.section {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr); /* Explicit constraint */
+}
+
+/* Level 2: Grid item */
+.carousel {
+  width: 100%;
+  max-width: 100%;  /* Respects parent */
+  min-width: 0;     /* Allows shrink */
+}
+
+/* Level 3: Overflow container */
+.carousel-track {
+  overflow-x: auto;
+  min-width: 0;     /* Critical for overflow */
+}
+
+/* Level 4: Media queries for adaptivity */
+@media (min-width: 640px) {
+  .carousel-track {
+    grid-auto-columns: calc((100% - 16px) / 2);
+  }
+}
+```
+
+---
+
+### 5. Mobile-First Responsive Design
+**Rule:** Start with mobile constraints in base styles, expand through media queries for larger screens.
+
+**Implementation:**
+```css
+/* Base: Mobile (< 640px) */
+.element {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 20px;
+}
+
+/* Tablet (≥ 640px) */
+@media (min-width: 640px) {
+  .element {
+    padding: 40px;
+  }
+}
+
+/* Desktop (≥ 1024px) */
+@media (min-width: 1024px) {
+  .element {
+    max-width: 1200px;
+  }
+}
+```
+
+---
+
+## **DEBUGGING GUIDELINES**
+
+### 6. DevTools Diagnostic Checklist
+**Rule:** When debugging layout issues, always run these diagnostics in browser console.
+
+**Implementation:**
+```javascript
+// 1. Viewport validation
+console.log({
+  innerWidth: window.innerWidth,
+  clientWidth: document.documentElement.clientWidth
+});
+
+// 2. Media query validation
+console.log({
+  mobile: window.matchMedia('(max-width: 639px)').matches,
+  tablet: window.matchMedia('(min-width: 640px)').matches
+});
+
+// 3. Grid container validation
+const grid = document.querySelector('.grid-container');
+console.log({
+  display: getComputedStyle(grid).display,
+  gridTemplateColumns: getComputedStyle(grid).gridTemplateColumns,
+  width: getComputedStyle(grid).width
+});
+
+// 4. Grid item validation
+const item = document.querySelector('.grid-item');
+console.log({
+  width: getComputedStyle(item).width,
+  minWidth: getComputedStyle(item).minWidth,
+  maxWidth: getComputedStyle(item).maxWidth,
+  offsetWidth: item.offsetWidth,
+  parentWidth: item.parentElement.offsetWidth
+});
+```
+
+**Expected Results:**
+- `innerWidth` should match expected viewport (e.g., 390 for iPhone 12 Pro)
+- `gridTemplateColumns` should NOT be 'none' or larger than container width
+- `offsetWidth` of items should NOT exceed parent `offsetWidth`
+
+---
+
+## **BOX MODEL ESSENTIALS**
+
+### 7. CSS Box Model Application Order
+**Rule:** Understand CSS property application order for correct constraint setting.
+
+**Order:**
+```
+1. Grid/Flex track sizing (grid-template-columns, flex-basis)
+2. min-width / min-height (can expand element)
+3. width / height (base size)
+4. max-width / max-height (OVERRIDES width/height if smaller)
+5. padding (included if box-sizing: border-box)
+6. border
+```
+
+**Best Practice Pattern:**
+```css
+.element {
+  /* Allow shrink */
+  min-width: 0;
+  
+  /* Base size */
+  width: 100%;
+  
+  /* Hard limit (OVERRIDES width if needed) */
+  max-width: 100%;
+  
+  /* Include padding in width calculation */
+  box-sizing: border-box;
+}
+```
+
+---
+
+## **COMMON PATTERNS**
+
+### Pattern 1: Horizontal Scrollable Container (Carousel)
+```css
+/* Container */
+.carousel-container {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  position: relative;
+}
+
+/* Scrollable track */
+.carousel-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%; /* Mobile: 1 card */
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  min-width: 0; /* Critical */
+  
+  /* Hide scrollbar */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Responsive columns */
+@media (min-width: 640px) {
+  .carousel-track {
+    grid-auto-columns: calc((100% - 16px) / 2); /* 2 cards */
+  }
+}
+```
+
+### Pattern 2: Grid Container with Variable Content
+```css
+.grid-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr); /* Explicit sizing */
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.grid-item {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+```
+
+### Pattern 3: Nested Grid with Overflow
+```css
+.outer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.outer-grid-item {
+  min-width: 0; /* Critical for nested grids */
+}
+
+.inner-grid {
+  display: grid;
+  overflow-x: auto;
+  min-width: 0; /* Critical */
+}
+```
+
+---
+
+## **CHECKLIST FOR NEW COMPONENTS**
+
+When creating new layout components, verify:
+
+- [ ] All Grid containers have explicit `grid-template-columns` (not relying on implicit 'auto')
+- [ ] All Grid/Flex items with overflow children have `min-width: 0` (or `min-height: 0`)
+- [ ] All elements with `width: 100%` also have `max-width: 100%`
+- [ ] Mobile-first approach: base styles for smallest screen, media queries for expansion
+- [ ] Tested in DevTools with actual device dimensions (not just browser resize)
+- [ ] Ran diagnostic console checks to verify computed styles match expectations
+
+---
+
+## **WHEN TO APPLY THESE RULES**
+
+**Always apply when:**
+- Using `display: grid` or `display: flex`
+- Creating scrollable/overflow containers
+- Building responsive layouts
+- Nesting Grid/Flex containers
+- Working with percentage widths
+
+**Critical for:**
+- Carousels and galleries
+- Horizontal scrollable lists
+- Sidebar layouts
+- Modal/drawer components
+- Any component with `overflow: auto/scroll`
+
+---
+
+## **REFERENCE: ROOT CAUSE OF COMMON OVERFLOW ISSUES**
+
+**Issue:** Element overflows parent container despite `width: 100%`
+
+**Root Causes (in order of frequency):**
+1. **Missing `grid-template-columns`** on Grid container (implicit 'auto' uses max-content)
+2. **Missing `min-width: 0`** on Grid/Flex item (can't shrink below intrinsic size)
+3. **Missing `max-width: 100%`** on element (no hard constraint)
+4. **Intrinsic sizing propagation** from nested overflow containers
+
+**Solution Pattern:**
+```css
+/* Parent Grid */
+.parent {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr); /* Fix #1 */
+}
+
+/* Child Grid item */
+.child {
+  width: 100%;
+  max-width: 100%;  /* Fix #3 */
+  min-width: 0;     /* Fix #2 */
+}
+
+/* Nested overflow */
+.nested {
+  overflow-x: auto;
+  min-width: 0;     /* Fix #4 */
+}
+```
+
+---
+
+## **AI ASSISTANT INSTRUCTIONS**
+
+When generating or modifying CSS for layout components:
+
+1. **ALWAYS check** if parent is `display: grid` or `display: flex`
+2. **ALWAYS add** `grid-template-columns: minmax(0, 1fr)` to Grid containers (unless specific column layout needed)
+3. **ALWAYS add** `min-width: 0` to Grid/Flex items with overflow children
+4. **ALWAYS pair** `width: 100%` with `max-width: 100%`
+5. **ALWAYS start** with mobile constraints, expand via media queries
+6. **NEVER assume** DevTools emulation is accurate without console validation
+7. **ALWAYS run** diagnostic checks after implementing responsive layouts
+
+**Red Flags (require immediate attention):**
+- `display: grid` without `grid-template-columns`
+- `overflow: auto` without `min-width: 0` on parent
+- `width: 100%` without `max-width: 100%` in Grid/Flex
+- Percentage widths in nested Grid/Flex without constraints
+- Computed width > parent width in DevTools
+
+---
+
+**Last Updated:** 2024-01-27  
+**Source:** Diagnostic analysis of carousel overflow issue in bizon_tires project  
+**Status:** Active - enforce in all CSS development

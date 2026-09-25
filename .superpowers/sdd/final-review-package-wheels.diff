@@ -1,0 +1,1508 @@
+=== COMMITS ===
+c44b6e8 fix(wheels): type gallery ids and restore verify:shop script
+00f8180 feat(wheels): drive shop home and readiness from CMS media
+34f47c4 fix(wheels): drop unrelated non-forged UI from route cutover
+8223550 feat(wheels): remove forged static catalog bypass
+d36d293 feat(wheels): feed Forged UI from CMS view models
+446cebb fix(wheels): restore forged wheel-type sync in axis seed
+73b318e feat(wheels): seed forged PNGs into Payload Media
+68f73b3 feat(wheels): map CMS gallery media onto CmsWheelModel
+
+=== STAT ===
+ package.json                                       |   2 +
+ scripts/seed-wheel-axis.ts                         | 122 ++++------
+ scripts/seed-wheel-media.ts                        | 115 ++++++++++
+ scripts/verify-shop-readiness.ts                   | 247 +++++++++++++++++++++
+ src/app/(site)/shop/page.tsx                       | 130 ++++++++---
+ .../wheels/[wheelTypeSlug]/[modelSlug]/page.tsx    |  28 ++-
+ .../(site)/shop/wheels/[wheelTypeSlug]/page.tsx    |  15 +-
+ src/components/shop/ForgedCatalog.tsx              |  74 ++++++
+ src/components/shop/ForgedConfigurator.tsx         | 116 ++++++++++
+ src/components/shop/ForgedModel.tsx                |  94 ++++++++
+ src/components/shop/forgedView.test.mjs            |  61 +++++
+ src/components/shop/forgedView.ts                  |  36 +++
+ src/constants/shopHome.ts                          |  68 ++++++
+ src/lib/cms/payload/mappers.test.ts                |  54 ++++-
+ src/lib/cms/payload/mappers.ts                     |  13 ++
+ src/lib/cms/types.ts                               |   7 +
+ 16 files changed, 1063 insertions(+), 119 deletions(-)
+
+=== DIFF ===
+diff --git a/package.json b/package.json
+index be4429e..1d84ce8 100644
+--- a/package.json
++++ b/package.json
+@@ -17,17 +17,19 @@
+     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+     "seed:tire-axis": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-tire-axis.ts",
+     "seed:tbr-models": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-tbr-models.ts",
+     "seed:shop": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-shop.ts",
+     "seed:wheel-axis": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-wheel-axis.ts",
++    "seed:wheel-media": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-wheel-media.ts",
+     "seed:content": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-content.ts",
+     "import:catalog": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/import-catalog.ts",
+     "import:catalog:dry": "cross-env NODE_OPTIONS=--no-deprecation DRY_RUN=1 payload run scripts/import-catalog.ts",
+     "import:all": "npm run import:catalog",
+     "seed:all": "npm run import:catalog && npm run seed:content",
+     "verify:db": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/verify-db.ts",
+     "verify:request-items": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/verify-request-items.ts",
++    "verify:shop": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/verify-shop-readiness.ts",
+     "db:up": "docker compose up -d postgres",
+     "db:down": "docker compose down",
+     "db:logs": "docker compose logs -f postgres"
+   },
+   "repository": {
+diff --git a/scripts/seed-wheel-axis.ts b/scripts/seed-wheel-axis.ts
+index 5afec50..0537326 100644
+--- a/scripts/seed-wheel-axis.ts
++++ b/scripts/seed-wheel-axis.ts
+@@ -1,11 +1,12 @@
+ /**
+- * Seeds WheelTypes (forged only тАФ BIZON MVP) + one demo model and variant.
++ * Bootstraps WheelTypes (forged) and approved forged designs from SHOP_WHEEL_DESIGNS.
+  *
+  * Run: npm run seed:wheel-axis
+- * ponytail: cast not seeded until product direction changes тАФ add row in admin when needed.
++ * ponytail: mainImage stays empty until npm run seed:wheel-media uploads PNGs.
+  */
++import { SHOP_WHEEL_DESIGNS } from "../src/constants/shopWheels";
+ import { getPayload } from "../src/lib/payload/getPayload";
+ 
+ const FORGED_TYPE = {
+   slug: "forged",
+   name: "╨Ъ╨╛╨▓╨░╨╜╤Л╨╡ ╨┤╨╕╤Б╨║╨╕",
+@@ -13,39 +14,10 @@ const FORGED_TYPE = {
+   shortDescription: "╨Т╤Л╤Б╨╛╨║╨╛╨┐╤А╨╛╤З╨╜╤Л╨╡ ╨║╨╛╨▓╨░╨╜╤Л╨╡ ╨┤╨╕╤Б╨║╨╕",
+   sortOrder: 0,
+   status: "published" as const,
+ };
+ 
+-const DEMO_MODEL = {
+-  slug: "bizon-forged-pro",
+-  name: "BIZON Forged Pro",
+-  series: "BIZON",
+-  designStyle: "Pro",
+-  material: "╨Ъ╨╛╨▓╨░╨╜╤Л╨╣ ╨░╨╗╤О╨╝╨╕╨╜╨╕╨╣",
+-  constructionMethod: "forged" as const,
+-  shortDescription: "╨Ъ╨╛╨▓╨░╨╜╤Л╨╣ ╨┤╨╕╤Б╨║ ╨┤╨╗╤П ╨╝╨░╨│╨╕╤Б╤В╤А╨░╨╗╤М╨╜╤Л╤Е ╨╛╤Б╨╡╨╣.",
+-  fitmentNotes: "╨г╤В╨╛╤З╨╜╤П╨╣╤В╨╡ PCD ╨╕ ET ╨┐╨╛╨┤ ╨▓╨░╤И ╨░╨▓╤В╨╛╨┐╨░╤А╨║.",
+-};
+-
+-const DEMO_VARIANT = {
+-  sizeLabel: "22.5├Ч8.25 ┬╖ 10├Ч335 ┬╖ ET+120",
+-  sku: "BIZ-FG-225825-335",
+-  diameter: 22.5,
+-  width: 8.25,
+-  boltHoles: 10,
+-  pcd: "335",
+-  offsetET: 120,
+-  centerBore: 281,
+-  loadRating: "9000 kg",
+-  color: "Polished",
+-  finish: "Polished",
+-  available: true,
+-  priceOnRequest: true,
+-  sortOrder: 0,
+-  status: "published" as const,
+-};
+-
+ console.log("seed-wheel-axis: connectingтАж");
+ 
+ const payload = await getPayload();
+ 
+ const existingType = await payload.find({
+@@ -53,76 +25,60 @@ const existingType = await payload.find({
+   where: { slug: { equals: FORGED_TYPE.slug } },
+   limit: 1,
+   depth: 0,
+ });
+ 
+-let forgedId: number;
+-if (existingType.docs[0]) {
+-  const updated = await payload.update({
++let forgedTypeId = existingType.docs[0]?.id;
++if (forgedTypeId) {
++  await payload.update({
+     collection: "wheel-types",
+-    id: existingType.docs[0].id,
++    id: forgedTypeId,
+     data: FORGED_TYPE,
+   });
+-  forgedId = updated.id;
+   console.log(`Updated wheel-type: ${FORGED_TYPE.slug}`);
+ } else {
+   const created = await payload.create({
+     collection: "wheel-types",
+     data: FORGED_TYPE,
+   });
+-  forgedId = created.id;
++  forgedTypeId = created.id;
+   console.log(`Created wheel-type: ${FORGED_TYPE.slug}`);
+ }
+ 
+-const existingModel = await payload.find({
+-  collection: "wheel-models",
+-  where: { slug: { equals: DEMO_MODEL.slug } },
+-  limit: 1,
+-  depth: 0,
+-});
+-
+-const modelData = { ...DEMO_MODEL, wheelType: forgedId, status: "published" as const };
+-
+-let modelId: number;
+-if (existingModel.docs[0]) {
+-  const updated = await payload.update({
++for (const design of SHOP_WHEEL_DESIGNS) {
++  const existingModel = await payload.find({
+     collection: "wheel-models",
+-    id: existingModel.docs[0].id,
+-    data: modelData,
++    where: { slug: { equals: design.slug } },
++    limit: 1,
++    depth: 0,
+   });
+-  modelId = updated.id;
+-  console.log(`Updated wheel-model: ${DEMO_MODEL.slug}`);
+-} else {
+-  const created = await payload.create({
+-    collection: "wheel-models",
+-    data: modelData,
+-  });
+-  modelId = created.id;
+-  console.log(`Created wheel-model: ${DEMO_MODEL.slug}`);
+-}
+-
+-const existingVariant = await payload.find({
+-  collection: "wheel-variants",
+-  where: { sku: { equals: DEMO_VARIANT.sku } },
+-  limit: 1,
+-  depth: 0,
+-});
+ 
+-const variantData = { ...DEMO_VARIANT, wheelModel: modelId };
++  const modelData = {
++    name: design.name,
++    slug: design.slug,
++    wheelType: forgedTypeId,
++    designStyle: design.positioning,
++    series: design.finish,
++    material: "╨Ъ╨╛╨▓╨░╨╜╤Л╨╣ ╨░╨╗╤О╨╝╨╕╨╜╨╕╨╣",
++    constructionMethod: "forged" as const,
++    shortDescription: design.description,
++    status: "published" as const,
++  };
+ 
+-if (existingVariant.docs[0]) {
+-  await payload.update({
+-    collection: "wheel-variants",
+-    id: existingVariant.docs[0].id,
+-    data: variantData,
+-  });
+-  console.log(`Updated wheel-variant: ${DEMO_VARIANT.sku}`);
+-} else {
+-  await payload.create({
+-    collection: "wheel-variants",
+-    data: variantData,
+-  });
+-  console.log(`Created wheel-variant: ${DEMO_VARIANT.sku}`);
++  if (existingModel.docs[0]) {
++    await payload.update({
++      collection: "wheel-models",
++      id: existingModel.docs[0].id,
++      data: modelData,
++    });
++    console.log(`Updated wheel-model: ${design.slug}`);
++  } else {
++    await payload.create({
++      collection: "wheel-models",
++      data: modelData,
++    });
++    console.log(`Created wheel-model: ${design.slug}`);
++  }
+ }
+ 
+-console.log("Done.");
++console.log("Done. Run npm run seed:wheel-media to upload mainImage and gallery.");
+ process.exit(0);
+diff --git a/scripts/seed-wheel-media.ts b/scripts/seed-wheel-media.ts
+new file mode 100644
+index 0000000..b3a6ffe
+--- /dev/null
++++ b/scripts/seed-wheel-media.ts
+@@ -0,0 +1,115 @@
++/**
++ * Uploads forged wheel PNGs into Payload Media and links them on wheel-models.
++ *
++ * Run (staging recommended):
++ *   cross-env DATABASE_URI=postgresql://postgres:postgres@127.0.0.1:55433/bizon_payload_stage npm run seed:wheel-media
++ *
++ * Views: hero-3q тЖТ mainImage; front, depth-3q, detail тЖТ gallery (order).
++ * Idempotent by media.filename.
++ */
++import fs from "node:fs";
++import path from "node:path";
++import { fileURLToPath } from "node:url";
++import { SHOP_WHEEL_DESIGNS } from "../src/constants/shopWheels";
++import { getPayload } from "../src/lib/payload/getPayload";
++
++const __dirname = path.dirname(fileURLToPath(import.meta.url));
++const ROOT = path.resolve(__dirname, "..");
++
++const GALLERY_VIEWS = [
++  { view: "front", title: "Front", altSuffix: "╤Д╤А╨╛╨╜╤В╨░╨╗╤М╨╜╤Л╨╣ ╨▓╨╕╨┤" },
++  { view: "depth-3q", title: "Depth", altSuffix: "╨╛╨▒╤К╤С╨╝ ╨╕ ╨│╨╗╤Г╨▒╨╕╨╜╨░ ╨┐╤А╨╛╤Д╨╕╨╗╤П" },
++  { view: "detail", title: "Detail", altSuffix: "╨┤╨╡╤В╨░╨╗╤М ╨┐╨╛╨▓╨╡╤А╤Е╨╜╨╛╤Б╤В╨╕" },
++] as const;
++
++function wheelFile(slug: string, view: string) {
++  return path.join(
++    ROOT,
++    "public/images/premium/shop/wheels",
++    slug,
++    `bizon-${slug}-${view}.png`,
++  );
++}
++
++async function ensureMedia(
++  payload: Awaited<ReturnType<typeof getPayload>>,
++  filePath: string,
++  data: { title: string; alt: string },
++) {
++  if (!fs.existsSync(filePath)) {
++    throw new Error(`Missing wheel image: ${filePath}`);
++  }
++  const filename = path.basename(filePath);
++  const existing = await payload.find({
++    collection: "media",
++    where: { filename: { equals: filename } },
++    limit: 1,
++    depth: 0,
++  });
++  if (existing.docs[0]) {
++    console.log(`  media kept: ${filename} (#${existing.docs[0].id})`);
++    return existing.docs[0].id;
++  }
++  const created = await payload.create({
++    collection: "media",
++    data: {
++      title: data.title,
++      alt: data.alt,
++      mediaType: "image",
++      status: "published",
++    },
++    filePath,
++  });
++  console.log(`  media created: ${filename} (#${created.id})`);
++  return created.id;
++}
++
++console.log("seed-wheel-media: connectingтАж");
++const payload = await getPayload();
++
++for (const design of SHOP_WHEEL_DESIGNS) {
++  console.log(`model ${design.slug}`);
++  const models = await payload.find({
++    collection: "wheel-models",
++    where: { slug: { equals: design.slug } },
++    limit: 1,
++    depth: 0,
++  });
++  const model = models.docs[0];
++  if (!model) {
++    throw new Error(
++      `wheel-model "${design.slug}" missing тАФ run npm run seed:wheel-axis first`,
++    );
++  }
++
++  const heroPath = wheelFile(design.slug, "hero-3q");
++  const mainImage = await ensureMedia(payload, heroPath, {
++    title: `${design.name} Hero`,
++    alt: design.name,
++  });
++
++  const gallery: number[] = [];
++  for (const item of GALLERY_VIEWS) {
++    const id = await ensureMedia(payload, wheelFile(design.slug, item.view), {
++      title: item.title,
++      alt: `${design.name}, ${item.altSuffix}`,
++    });
++    gallery.push(id as number);
++  }
++
++  await payload.update({
++    collection: "wheel-models",
++    id: model.id,
++    data: {
++      mainImage,
++      gallery,
++      series: design.finish,
++      designStyle: design.positioning,
++      shortDescription: design.description,
++    },
++  });
++  console.log(`  linked mainImage + gallery (${gallery.length})`);
++}
++
++console.log("Done.");
++process.exit(0);
+diff --git a/scripts/verify-shop-readiness.ts b/scripts/verify-shop-readiness.ts
+new file mode 100644
+index 0000000..5bb4e14
+--- /dev/null
++++ b/scripts/verify-shop-readiness.ts
+@@ -0,0 +1,247 @@
++import { SHOP_LIFESTYLE_CATEGORIES } from "../src/constants/shopCategories";
++import { SHOP_WHEEL_DESIGNS } from "../src/constants/shopWheels";
++import { getPayload } from "../src/lib/payload/getPayload";
++import type { Product, ShopCategory, WheelModel, WheelType } from "../src/payload-types";
++
++type Severity = "blocker" | "warning";
++
++type Finding = {
++  severity: Severity;
++  code: string;
++  item: string;
++  message: string;
++};
++
++function relationId(value: unknown): number | null {
++  if (typeof value === "number") return value;
++  if (value && typeof value === "object" && "id" in value && typeof value.id === "number") {
++    return value.id;
++  }
++  return null;
++}
++
++function relationSlug(value: unknown): string | null {
++  if (value && typeof value === "object" && "slug" in value && typeof value.slug === "string") {
++    return value.slug;
++  }
++  return null;
++}
++
++function hasUpload(value: unknown): boolean {
++  return typeof value === "number" || Boolean(value && typeof value === "object" && "id" in value);
++}
++
++function normalizedOption(value: string | null | undefined): string {
++  return value?.trim().toLowerCase() ?? "";
++}
++
++console.log("verify-shop-readiness: start");
++
++const payload = await getPayload();
++const [categoryResult, productResult, wheelTypeResult, wheelModelResult] = await Promise.all([
++  payload.find({ collection: "shop-categories", limit: 500, depth: 1, overrideAccess: true }),
++  payload.find({ collection: "products", limit: 500, depth: 1, overrideAccess: true }),
++  payload.find({ collection: "wheel-types", limit: 500, depth: 1, overrideAccess: true }),
++  payload.find({ collection: "wheel-models", limit: 500, depth: 1, overrideAccess: true }),
++]);
++
++const categories = categoryResult.docs as ShopCategory[];
++const products = productResult.docs as Product[];
++const wheelTypes = wheelTypeResult.docs as WheelType[];
++const wheelModels = wheelModelResult.docs as WheelModel[];
++const findings: Finding[] = [];
++
++const categoriesById = new Map(categories.map((category) => [category.id, category]));
++const publishedCategories = categories.filter((category) => category.status === "published");
++const publishedProducts = products.filter((product) => product.status === "published");
++const forgedType = wheelTypes.find(
++  (type) => type.slug === "forged" && type.status === "published",
++);
++
++for (const requiredCategory of SHOP_LIFESTYLE_CATEGORIES) {
++  const category = publishedCategories.find((item) => item.slug === requiredCategory.slug);
++  if (!category) {
++    findings.push({
++      severity: "blocker",
++      code: "CATEGORY_NOT_PUBLISHED",
++      item: requiredCategory.slug,
++      message: "╨Ю╨▒╤П╨╖╨░╤В╨╡╨╗╤М╨╜╨░╤П ╨║╨░╤В╨╡╨│╨╛╤А╨╕╤П ╨╛╤В╤Б╤Г╤В╤Б╤В╨▓╤Г╨╡╤В ╨╕╨╗╨╕ ╨╜╨╡ ╨╛╨┐╤Г╨▒╨╗╨╕╨║╨╛╨▓╨░╨╜╨░.",
++    });
++    continue;
++  }
++
++  if (!category.description?.trim()) {
++    findings.push({
++      severity: "warning",
++      code: "CATEGORY_DESCRIPTION_MISSING",
++      item: category.slug,
++      message: "╨Т CMS ╨╜╨╡ ╨╖╨░╨┐╨╛╨╗╨╜╨╡╨╜╨╛ ╨╛╨┐╨╕╤Б╨░╨╜╨╕╨╡ ╨║╨░╤В╨╡╨│╨╛╤А╨╕╨╕.",
++    });
++  }
++  if (!hasUpload(category.coverImage)) {
++    findings.push({
++      severity: "warning",
++      code: "CATEGORY_COVER_MISSING",
++      item: category.slug,
++      message: "╨Т CMS ╨╜╨╡╤В ╨╛╨▒╨╗╨╛╨╢╨║╨╕; ╨┐╤Г╨▒╨╗╨╕╤З╨╜╨░╤П ╤Б╤В╤А╨░╨╜╨╕╤Ж╨░ ╨┐╨╛╨║╨░ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В ╤Г╤В╨▓╨╡╤А╨╢╨┤╤С╨╜╨╜╤Л╨╣ ╤Б╤В╨░╤В╨╕╤З╨╡╤Б╨║╨╕╨╣ ╨░╤А╤В.",
++    });
++  }
++}
++
++for (const product of publishedProducts) {
++  const categoryId = relationId(product.shopCategory);
++  const category = categoryId ? categoriesById.get(categoryId) : undefined;
++  const item = product.slug || String(product.id);
++
++  if (!category || category.status !== "published") {
++    findings.push({
++      severity: "blocker",
++      code: "PRODUCT_CATEGORY_INVALID",
++      item,
++      message: "╨в╨╛╨▓╨░╤А ╤Б╨▓╤П╨╖╨░╨╜ ╤Б ╨╛╤В╤Б╤Г╤В╤Б╤В╨▓╤Г╤О╤Й╨╡╨╣ ╨╕╨╗╨╕ ╨╜╨╡╨╛╨┐╤Г╨▒╨╗╨╕╨║╨╛╨▓╨░╨╜╨╜╨╛╨╣ ╨║╨░╤В╨╡╨│╨╛╤А╨╕╨╡╨╣.",
++    });
++  }
++  if (!product.shortDescription?.trim()) {
++    findings.push({
++      severity: "blocker",
++      code: "PRODUCT_DESCRIPTION_MISSING",
++      item,
++      message: "╨Ф╨╗╤П ╨╛╨┐╤Г╨▒╨╗╨╕╨║╨╛╨▓╨░╨╜╨╜╨╛╨│╨╛ ╤В╨╛╨▓╨░╤А╨░ ╤В╤А╨╡╨▒╤Г╨╡╤В╤Б╤П ╨║╤А╨░╤В╨║╨╛╨╡ ╨╛╨┐╨╕╤Б╨░╨╜╨╕╨╡.",
++    });
++  }
++  if (!hasUpload(product.mainImage)) {
++    findings.push({
++      severity: "blocker",
++      code: "PRODUCT_IMAGE_MISSING",
++      item,
++      message: "╨Ф╨╗╤П ╨╛╨┐╤Г╨▒╨╗╨╕╨║╨╛╨▓╨░╨╜╨╜╨╛╨│╨╛ ╤В╨╛╨▓╨░╤А╨░ ╤В╤А╨╡╨▒╤Г╨╡╤В╤Б╤П ╨╛╤Б╨╜╨╛╨▓╨╜╨╛╨╡ ╨╕╨╖╨╛╨▒╤А╨░╨╢╨╡╨╜╨╕╨╡.",
++    });
++  }
++  if (!product.priceOnRequest && product.price == null) {
++    findings.push({
++      severity: "blocker",
++      code: "PRODUCT_PRICE_MISSING",
++      item,
++      message: "╨г╨║╨░╨╢╨╕╤В╨╡ ╤Ж╨╡╨╜╤Г ╨╗╨╕╨▒╨╛ ╨▓╨║╨╗╤О╤З╨╕╤В╨╡ ╤А╨╡╨╢╨╕╨╝ ┬л╨ж╨╡╨╜╨░ ╨┐╨╛ ╨╖╨░╨┐╤А╨╛╤Б╤Г┬╗.",
++    });
++  }
++  if (product.oldPrice != null && product.price != null && product.oldPrice <= product.price) {
++    findings.push({
++      severity: "blocker",
++      code: "PRODUCT_OLD_PRICE_INVALID",
++      item,
++      message: "╨б╤В╨░╤А╨░╤П ╤Ж╨╡╨╜╨░ ╨┤╨╛╨╗╨╢╨╜╨░ ╨▒╤Л╤В╤М ╨▒╨╛╨╗╤М╤И╨╡ ╤В╨╡╨║╤Г╤Й╨╡╨╣.",
++    });
++  }
++
++  const combinations = new Set<string>();
++  const skus = new Set<string>();
++  for (const [index, variant] of (product.variants ?? []).entries()) {
++    const variantItem = `${item}#${index + 1}`;
++    const combination = [variant.color, variant.size, variant.configuration]
++      .map(normalizedOption)
++      .join("|");
++    const sku = normalizedOption(variant.sku);
++
++    if (combination === "||") {
++      findings.push({
++        severity: "blocker",
++        code: "VARIANT_OPTIONS_MISSING",
++        item: variantItem,
++        message: "╨Т╨░╤А╨╕╨░╨╜╤В ╨┤╨╛╨╗╨╢╨╡╨╜ ╨╛╤В╨╗╨╕╤З╨░╤В╤М╤Б╤П ╤Ж╨▓╨╡╤В╨╛╨╝, ╤А╨░╨╖╨╝╨╡╤А╨╛╨╝ ╨╕╨╗╨╕ ╨║╨╛╨╝╨┐╨╗╨╡╨║╤В╨░╤Ж╨╕╨╡╨╣.",
++      });
++    } else if (combinations.has(combination)) {
++      findings.push({
++        severity: "blocker",
++        code: "VARIANT_DUPLICATE",
++        item: variantItem,
++        message: "╨Ъ╨╛╨╝╨▒╨╕╨╜╨░╤Ж╨╕╤П ╨▓╨░╤А╨╕╨░╨╜╤В╨░ ╨┤╤Г╨▒╨╗╨╕╤А╤Г╨╡╤В╤Б╤П ╨▓╨╜╤Г╤В╤А╨╕ ╤В╨╛╨▓╨░╤А╨░.",
++      });
++    }
++    combinations.add(combination);
++
++    if (sku && skus.has(sku)) {
++      findings.push({
++        severity: "blocker",
++        code: "VARIANT_SKU_DUPLICATE",
++        item: variantItem,
++        message: "╨Р╤А╤В╨╕╨║╤Г╨╗ ╨▓╨░╤А╨╕╨░╨╜╤В╨░ ╨┤╤Г╨▒╨╗╨╕╤А╤Г╨╡╤В╤Б╤П ╨▓╨╜╤Г╤В╤А╨╕ ╤В╨╛╨▓╨░╤А╨░.",
++      });
++    }
++    if (sku) skus.add(sku);
++
++    if (!variant.priceOnRequest && variant.price == null) {
++      findings.push({
++        severity: "blocker",
++        code: "VARIANT_PRICE_MISSING",
++        item: variantItem,
++        message: "╨г╨║╨░╨╢╨╕╤В╨╡ ╤Ж╨╡╨╜╤Г ╨▓╨░╤А╨╕╨░╨╜╤В╨░ ╨╗╨╕╨▒╨╛ ╨▓╨║╨╗╤О╤З╨╕╤В╨╡ ╤А╨╡╨╢╨╕╨╝ ┬л╨ж╨╡╨╜╨░ ╨┐╨╛ ╨╖╨░╨┐╤А╨╛╤Б╤Г┬╗.",
++      });
++    }
++    if (variant.oldPrice != null && variant.price != null && variant.oldPrice <= variant.price) {
++      findings.push({
++        severity: "blocker",
++        code: "VARIANT_OLD_PRICE_INVALID",
++        item: variantItem,
++        message: "╨б╤В╨░╤А╨░╤П ╤Ж╨╡╨╜╨░ ╨▓╨░╤А╨╕╨░╨╜╤В╨░ ╨┤╨╛╨╗╨╢╨╜╨░ ╨▒╤Л╤В╤М ╨▒╨╛╨╗╤М╤И╨╡ ╤В╨╡╨║╤Г╤Й╨╡╨╣.",
++      });
++    }
++  }
++}
++
++if (!forgedType) {
++  findings.push({
++    severity: "blocker",
++    code: "FORGED_TYPE_NOT_PUBLISHED",
++    item: "forged",
++    message: "╨в╨╕╨┐ ╨║╨╛╨▓╨░╨╜╤Л╤Е ╨┤╨╕╤Б╨║╨╛╨▓ ╨╛╤В╤Б╤Г╤В╤Б╤В╨▓╤Г╨╡╤В ╨╕╨╗╨╕ ╨╜╨╡ ╨╛╨┐╤Г╨▒╨╗╨╕╨║╨╛╨▓╨░╨╜.",
++  });
++} else {
++  const forgedModels = wheelModels.filter(
++    (model) => model.status === "published" &&
++      (relationId(model.wheelType) === forgedType.id || relationSlug(model.wheelType) === forgedType.slug),
++  );
++
++  for (const design of SHOP_WHEEL_DESIGNS) {
++    const model = forgedModels.find((item) => item.slug === design.slug);
++    if (!model) {
++      findings.push({
++        severity: "blocker",
++        code: "FORGED_MODEL_NOT_IN_CMS",
++        item: design.slug,
++        message: "╨г╤В╨▓╨╡╤А╨╢╨┤╤С╨╜╨╜╤Л╨╣ ╨┤╨╕╨╖╨░╨╣╨╜ ╨┐╨╛╨║╨░ ╤Б╤Г╤Й╨╡╤Б╤В╨▓╤Г╨╡╤В ╤В╨╛╨╗╤М╨║╨╛ ╨▓ ╤Б╤В╨░╤В╨╕╤З╨╡╤Б╨║╨╛╨╝ ╤Б╨╗╨╛╨╡ ╨╕ ╨╜╨╡ ╨┐╨╡╤А╨╡╨╜╨╡╤Б╤С╨╜ ╨▓ CMS.",
++      });
++    } else if (!hasUpload(model.mainImage)) {
++      findings.push({
++        severity: "blocker",
++        code: "FORGED_MODEL_IMAGE_MISSING",
++        item: design.slug,
++        message: "╨Ф╨╗╤П ╨╛╨┐╤Г╨▒╨╗╨╕╨║╨╛╨▓╨░╨╜╨╜╨╛╨╣ CMS-╨╝╨╛╨┤╨╡╨╗╨╕ ╤В╤А╨╡╨▒╤Г╨╡╤В╤Б╤П mainImage ╨▓ Media.",
++      });
++    }
++  }
++}
++
++const blockers = findings.filter((finding) => finding.severity === "blocker");
++const warnings = findings.filter((finding) => finding.severity === "warning");
++
++console.log(JSON.stringify({
++  ok: blockers.length === 0,
++  counts: {
++    categories: categories.length,
++    publishedCategories: publishedCategories.length,
++    products: products.length,
++    publishedProducts: publishedProducts.length,
++    wheelModels: wheelModels.length,
++  },
++  blockers,
++  warnings,
++}, null, 2));
++
++if (blockers.length > 0) {
++  console.error(`verify-shop-readiness: blocked (${blockers.length} blocker(s), ${warnings.length} warning(s))`);
++  process.exit(1);
++}
++
++console.log(`verify-shop-readiness: ready (${warnings.length} warning(s))`);
++process.exit(0);
+diff --git a/src/app/(site)/shop/page.tsx b/src/app/(site)/shop/page.tsx
+index 4cde36a..16d9825 100644
+--- a/src/app/(site)/shop/page.tsx
++++ b/src/app/(site)/shop/page.tsx
+@@ -1,41 +1,111 @@
++import Image from "next/image";
++import Link from "next/link";
++import { ShopCategoryCarousel } from "@/components/shop/ShopCategoryCarousel";
++import {
++  SHOP_CATEGORY_SLIDES,
++  SHOP_HOME_WHEEL_SLUGS,
++  SHOP_ORDER_STEPS,
++  SHOP_VEHICLE_STORIES,
++} from "@/constants/shopHome";
++import { getWheelModelsByTypeSlug } from "@/lib/cms";
+ import { createPageMetadata } from "@/lib/seo/metadata";
+-import { getShopCategories, getWheelTypes } from "@/lib/cms";
+-import { CatalogListingPage } from "@/components/catalog/CatalogListingPage";
++import styles from "./ShopHome.module.css";
+ 
+ export const metadata = createPageMetadata({
+-  title: "╨Ь╨░╨│╨░╨╖╨╕╨╜",
+-  description: "╨Ъ╨░╤В╨╡╨│╨╛╤А╨╕╨╕ ╨┐╤А╨╛╨┤╤Г╨║╤Ж╨╕╨╕ BIZON тАФ ╤И╨╕╨╜╤Л ╨╕ ╨░╨║╤Б╨╡╤Б╤Б╤Г╨░╤А╤Л ╨┤╨╗╤П fleet-╨╛╨┐╨╡╤А╨░╤В╨╛╤А╨╛╨▓.",
++  title: "BIZON Shop",
++  description: "╨Ъ╨╛╨▓╨░╨╜╤Л╨╡ ╨┤╨╕╤Б╨║╨╕ BIZON ╨┐╨╛╨┤ ╨╖╨░╨║╨░╨╖, ╨░╨║╤Б╨╡╤Б╤Б╤Г╨░╤А╤Л ╨╕ outdoor-╤В╨╛╨▓╨░╤А╤Л.",
+   path: "/shop",
+ });
+ 
+ export default async function ShopPage() {
+-  const [categories, wheelTypes] = await Promise.all([getShopCategories(), getWheelTypes()]);
+-
+-  const items = [
+-    ...wheelTypes.map((wheelType) => ({
+-      key: `wheel-${wheelType.slug}`,
+-      href: `/shop/wheels/${wheelType.slug}`,
+-      title: wheelType.name,
+-      description: wheelType.shortDescription,
+-      imageUrl: wheelType.imageUrl,
+-      imageAlt: wheelType.name,
+-    })),
+-    ...categories.map((category) => ({
+-      key: `category-${category.slug}`,
+-      href: `/shop/${category.slug}`,
+-      title: category.name,
+-      description: category.description,
+-      imageUrl: category.imageUrl,
+-      imageAlt: category.name,
+-    })),
+-  ];
++  const forgedModels = await getWheelModelsByTypeSlug("forged");
++  const forgedModelsBySlug = new Map(forgedModels.map((model) => [model.slug, model]));
++  const homeModels = SHOP_HOME_WHEEL_SLUGS
++    .map((slug) => forgedModelsBySlug.get(slug))
++    .filter((model): model is NonNullable<typeof model> => Boolean(model?.imageUrl));
+ 
+   return (
+-    <CatalogListingPage
+-      title="╨Ь╨░╨│╨░╨╖╨╕╨╜"
+-      description="╨Ъ╨░╤В╨░╨╗╨╛╨│ ╨┐╤А╨╛╨┤╤Г╨║╤Ж╨╕╨╕ ╨┤╨╗╤П ╨░╨▓╤В╨╛╨┐╨░╤А╨║╨╛╨▓ ╨╕ ╤В╤П╨╢╤С╨╗╨╛╨╣ ╤В╨╡╤Е╨╜╨╕╨║╨╕."
+-      breadcrumbs={[{ href: "/", label: "╨У╨╗╨░╨▓╨╜╨░╤П" }, { href: "/shop", label: "╨Ь╨░╨│╨░╨╖╨╕╨╜" }]}
+-      items={items}
+-    />
++    <div className={styles.page}>
++      <section className={styles.hero} data-shop-chrome-tone="dark">
++        <div className={styles.heroMedia}>
++          <Image
++            src="/images/premium/shop-hero-forged-wheel-model.png"
++            alt="╨Ъ╨╛╨▓╨░╨╜╤Л╨╣ ╨┤╨╕╤Б╨║ BIZON ╨╕ ╨╝╨╛╨┤╨╡╨╗╤М ╨▓ ╨║╤А╨░╤Б╨╜╨╛╨╝ ╨╛╨▒╤А╨░╨╖╨╡"
++            fill
++            priority
++            sizes="100vw"
++          />
++        </div>
++        <div className={styles.heroOverlay} />
++        <div className={styles.heroContent}>
++          <p className={styles.eyebrow}>BIZON Forged</p>
++          <h1>╨Ъ╨╛╨▓╨░╨╜╤Л╨╡ ╨┤╨╕╤Б╨║╨╕ ╨┤╨╗╤П ╨▓╨░╤И╨╡╨│╨╛ ╨░╨▓╤В╨╛╨╝╨╛╨▒╨╕╨╗╤П</h1>
++          <p className={styles.heroLead}>╨Т╤Л╨▒╨╡╤А╨╕╤В╨╡ ╨┤╨╕╨╖╨░╨╣╨╜ тАФ ╨┐╨░╤А╨░╨╝╨╡╤В╤А╤Л ╨╕ ╤Б╨╛╨▓╨╝╨╡╤Б╤В╨╕╨╝╨╛╤Б╤В╤М ╨┐╤А╨╛╨▓╨╡╤А╨╕╤В ╤Б╨┐╨╡╤Ж╨╕╨░╨╗╨╕╤Б╤В BIZON.</p>
++          <Link className={styles.heroAction} href="#wheels">╨Т╤Л╨▒╤А╨░╤В╤М ╨┤╨╕╤Б╨║╨╕</Link>
++        </div>
++      </section>
++
++      <section className={styles.modelsSection} id="wheels" data-shop-chrome-tone="dark" aria-labelledby="shop-title">
++        <div className={styles.content}>
++          <div className={styles.modelsIntro}>
++            <p className={styles.collectionKicker}>BIZON Forged</p>
++            <h2 id="shop-title">╨Т╤Л╨▒╨╡╤А╨╕╤В╨╡ ╤Б╨▓╨╛╨╣ ╨┤╨╕╨╖╨░╨╣╨╜</h2>
++            <p>╨Ъ╨╛╨▓╨░╨╜╤Л╨╡ ╨┤╨╕╤Б╨║╨╕ BIZON ╨╕╨╖╨│╨╛╤В╨░╨▓╨╗╨╕╨▓╨░╤О╤В╤Б╤П ╨┐╨╛╨┤ ╨╖╨░╨║╨░╨╖. ╨Т╤Л╨▒╨╡╤А╨╕╤В╨╡ ╨╝╨╛╨┤╨╡╨╗╤М тАФ ╤Б╨┐╨╡╤Ж╨╕╨░╨╗╨╕╤Б╤В ╨┐╤А╨╛╨▓╨╡╤А╨╕╤В ╤Б╨╛╨▓╨╝╨╡╤Б╤В╨╕╨╝╨╛╤Б╤В╤М ╤Б ╨▓╨░╤И╨╕╨╝ ╨░╨▓╤В╨╛╨╝╨╛╨▒╨╕╨╗╨╡╨╝.</p>
++          </div>
++
++          <div className={styles.modelGrid}>
++            {homeModels.map((model) => (
++              <Link className={styles.modelCard} href={`/shop/wheels/forged/${model.slug}`} key={model.slug}>
++                <span className={styles.modelMedia}>
++                  <Image src={model.imageUrl!} alt={model.name} fill sizes="(max-width: 767px) 92vw, 33vw" />
++                </span>
++                <span className={styles.modelContent}>
++                  <span className={styles.modelStatus}>╨Ш╨╖╨│╨╛╤В╨░╨▓╨╗╨╕╨▓╨░╨╡╤В╤Б╤П ╨┐╨╛╨┤ ╨╖╨░╨║╨░╨╖</span>
++                  <strong>{model.name}</strong>
++                  <span>{[model.designStyle, model.series].filter(Boolean).join(" ┬╖ ")}</span>
++                </span>
++                <span className={styles.modelArrow} aria-hidden="true">тЖЧ</span>
++              </Link>
++            ))}
++          </div>
++
++          <div className={styles.orderSteps} aria-label="╨Ъ╨░╨║ ╨╖╨░╨║╨░╨╖╨░╤В╤М ╨║╨╛╨▓╨░╨╜╤Л╨╡ ╨┤╨╕╤Б╨║╨╕ BIZON">
++            {SHOP_ORDER_STEPS.map((step, index) => (
++              <article key={step.title}>
++                <span>{String(index + 1).padStart(2, "0")}</span>
++                <h2>{step.title}</h2>
++                <p>{step.description}</p>
++              </article>
++            ))}
++          </div>
++        </div>
++      </section>
++
++      <div id="categories" data-shop-chrome-tone="dark">
++        <ShopCategoryCarousel slides={SHOP_CATEGORY_SLIDES} />
++      </div>
++
++      <section className={styles.vehiclesSection} data-shop-section="vehicles" data-shop-chrome-tone="light" aria-labelledby="vehicles-title">
++        <div className={styles.vehiclesInner}>
++          <div className={styles.vehiclesHead}>
++            <div>
++              <p className={styles.darkKicker}>BIZON Forged</p>
++              <h2 id="vehicles-title">╨б╨╛╨╖╨┤╨░╨╜╤Л ╨╝╨╡╨╜╤П╤В╤М ╤Е╨░╤А╨░╨║╤В╨╡╤А</h2>
++              <p>╨Ю╨┤╨╕╨╜ ╨░╨▓╤В╨╛╨╝╨╛╨▒╨╕╨╗╤М тАФ ╤А╨░╨╖╨╜╤Л╨╡ ╨╛╤Й╤Г╤Й╨╡╨╜╨╕╤П. ╨Ф╨╕╨╖╨░╨╣╨╜ BIZON ╨┐╨╛╨┤╤З╤С╤А╨║╨╕╨▓╨░╨╡╤В ╤Б╤В╨╕╨╗╤М ╨╛╤В ╨│╨╛╤А╨╛╨┤╤Б╨║╨╛╨│╨╛ premium ╨┤╨╛ ╤Н╨║╤Б╨┐╨╡╨┤╨╕╤Ж╨╕╨╛╨╜╨╜╨╛╨│╨╛ off-road.</p>
++            </div>
++            <Link className={styles.selectionAction} href="#wheels">╨Т╤Л╨▒╤А╨░╤В╤М ╨┤╨╕╤Б╨║╨╕</Link>
++          </div>
++
++          <div className={styles.vehicleGrid}>
++            {SHOP_VEHICLE_STORIES.map((story, index) => (
++              <figure className={index < 2 ? styles.vehicleFeature : styles.vehicleCard} key={story.image}>
++                <Image src={story.image} alt={story.alt} fill sizes={index < 2 ? "(max-width: 767px) 100vw, 50vw" : "(max-width: 767px) 100vw, 33vw"} />
++                <figcaption>{story.title}</figcaption>
++              </figure>
++            ))}
++          </div>
++        </div>
++      </section>
++    </div>
+   );
+ }
+diff --git a/src/app/(site)/shop/wheels/[wheelTypeSlug]/[modelSlug]/page.tsx b/src/app/(site)/shop/wheels/[wheelTypeSlug]/[modelSlug]/page.tsx
+index 9e662df..c512f90 100644
+--- a/src/app/(site)/shop/wheels/[wheelTypeSlug]/[modelSlug]/page.tsx
++++ b/src/app/(site)/shop/wheels/[wheelTypeSlug]/[modelSlug]/page.tsx
+@@ -12,10 +12,12 @@ import { createPageMetadata } from "@/lib/seo/metadata";
+ import { createProductStructuredData } from "@/lib/seo/structuredData";
+ import { PageHeader } from "@/components/catalog/PageHeader";
+ import { WheelVariantsTable } from "@/components/catalog/WheelVariantsTable";
+ import { AddToCartSection } from "@/components/cart/AddToCartSection";
+ import { QuickOrderSection } from "@/components/forms/QuickOrderSection";
++import { ForgedModel } from "@/components/shop/ForgedModel";
++import { toForgedWheelView } from "@/components/shop/forgedView";
+ 
+ type PageProps = {
+   params: Promise<{ wheelTypeSlug: string; modelSlug: string }>;
+ };
+ 
+@@ -23,12 +25,16 @@ export async function generateStaticParams() {
+   return getAllWheelModelRouteParams();
+ }
+ 
+ export async function generateMetadata({ params }: PageProps) {
+   const { wheelTypeSlug, modelSlug } = await params;
+-  const model = await getWheelModelByTypeAndSlug(wheelTypeSlug, modelSlug);
+-  if (!model) return {};
++  const [wheelType, model] = await Promise.all([
++    getWheelTypeBySlug(wheelTypeSlug),
++    getWheelModelByTypeAndSlug(wheelTypeSlug, modelSlug),
++  ]);
++  if (!wheelType || !model) notFound();
++
+   return createPageMetadata({
+     title: model.name,
+     description: model.descriptionShort,
+     path: `/shop/wheels/${model.wheelTypeSlug}/${model.slug}`,
+   });
+@@ -43,22 +49,36 @@ export default async function WheelModelPage({ params }: PageProps) {
+ 
+   if (!wheelType || !model) {
+     notFound();
+   }
+ 
+-  const variants = await getWheelVariantsByModelId(model.id);
+   const typeBasePath = `/shop/wheels/${wheelType.slug}`;
+   const modelPath = `${typeBasePath}/${model.slug}`;
+-
+   const structuredData = createProductStructuredData({
+     name: model.name,
+     description: model.descriptionShort,
+     path: modelPath,
+     brand: model.series ?? "BIZON",
+     category: wheelType.name,
+   });
+ 
++  if (wheelType.slug === "forged") {
++    const view = toForgedWheelView(model);
++    if (!view) notFound();
++
++    return (
++      <>
++        <script
++          type="application/ld+json"
++          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
++        />
++        <ForgedModel model={view} />
++      </>
++    );
++  }
++
++  const variants = await getWheelVariantsByModelId(model.id);
+   const metaParts = [
+     model.series,
+     getWheelConstructionMethodLabel(model.constructionMethod),
+     model.material,
+     model.designStyle,
+diff --git a/src/app/(site)/shop/wheels/[wheelTypeSlug]/page.tsx b/src/app/(site)/shop/wheels/[wheelTypeSlug]/page.tsx
+index eafd8f2..3e2b272 100644
+--- a/src/app/(site)/shop/wheels/[wheelTypeSlug]/page.tsx
++++ b/src/app/(site)/shop/wheels/[wheelTypeSlug]/page.tsx
+@@ -7,22 +7,30 @@ import {
+   getWheelVariantsByTypeSlug,
+ } from "@/lib/cms";
+ import { createPageMetadata } from "@/lib/seo/metadata";
+ import { PageHeader } from "@/components/catalog/PageHeader";
+ import { WheelModelGrid } from "@/components/catalog/WheelModelGrid";
++import { ForgedCatalog } from "@/components/shop/ForgedCatalog";
+ 
+ type PageProps = {
+   params: Promise<{ wheelTypeSlug: string }>;
+ };
+ 
+ export async function generateStaticParams() {
+   const slugs = await getAllWheelTypeSlugs();
+-  return slugs.map((wheelTypeSlug) => ({ wheelTypeSlug }));
++  return [...new Set(["forged", ...slugs])].map((wheelTypeSlug) => ({ wheelTypeSlug }));
+ }
+ 
+ export async function generateMetadata({ params }: PageProps) {
+   const { wheelTypeSlug } = await params;
++  if (wheelTypeSlug.toLowerCase() === "forged") {
++    return createPageMetadata({
++      title: "BIZON Forged",
++      description: "╨Я╤П╤В╤М ╨┤╨╕╨╖╨░╨╣╨╜╨╛╨▓ ╨║╨╛╨▓╨░╨╜╤Л╤Е ╨┤╨╕╤Б╨║╨╛╨▓ BIZON, ╨╕╨╖╨│╨╛╤В╨░╨▓╨╗╨╕╨▓╨░╨╡╨╝╤Л╤Е ╨┐╨╛╨┤ ╨╖╨░╨║╨░╨╖.",
++      path: "/shop/wheels/forged",
++    });
++  }
+   const wheelType = await getWheelTypeBySlug(wheelTypeSlug);
+   if (!wheelType) return {};
+   return createPageMetadata({
+     title: wheelType.name,
+     description: wheelType.description,
+@@ -30,10 +38,15 @@ export async function generateMetadata({ params }: PageProps) {
+   });
+ }
+ 
+ export default async function WheelTypePage({ params }: PageProps) {
+   const { wheelTypeSlug } = await params;
++  if (wheelTypeSlug.toLowerCase() === "forged") {
++    const models = await getWheelModelsByTypeSlug("forged");
++    return <ForgedCatalog models={models} />;
++  }
++
+   const wheelType = await getWheelTypeBySlug(wheelTypeSlug);
+ 
+   if (!wheelType) {
+     notFound();
+   }
+diff --git a/src/components/shop/ForgedCatalog.tsx b/src/components/shop/ForgedCatalog.tsx
+new file mode 100644
+index 0000000..beb3e1d
+--- /dev/null
++++ b/src/components/shop/ForgedCatalog.tsx
+@@ -0,0 +1,74 @@
++import Image from "next/image";
++import Link from "next/link";
++import type { CmsWheelModel } from "@/lib/cms/types";
++import { metaLine, toForgedWheelView } from "./forgedView";
++import styles from "./ForgedCatalog.module.css";
++
++const BASE_PATH = "/shop/wheels/forged";
++
++export function ForgedCatalog({ models }: { models: CmsWheelModel[] }) {
++  const wheelViews = models.flatMap((model) => {
++    const view = toForgedWheelView(model);
++    return view ? [view] : [];
++  });
++
++  return (
++    <div className={styles.page}>
++      <section className={styles.hero} data-shop-chrome-tone="dark">
++        <div className={styles.heroInner}>
++          <p className={styles.kicker}>BIZON Forged</p>
++          <h1>╨Я╤П╤В╤М ╤Е╨░╤А╨░╨║╤В╨╡╤А╨╛╨▓.<br />{" "}╨Ю╨┤╨╜╨░ ╤В╨╛╤З╨╜╨╛╤Б╤В╤М.</h1>
++          <p className={styles.lead}>
++            ╨Ъ╨╛╨▓╨░╨╜╤Л╨╡ ╨┤╨╕╤Б╨║╨╕ BIZON ╨╕╨╖╨│╨╛╤В╨░╨▓╨╗╨╕╨▓╨░╤О╤В╤Б╤П ╨┐╨╛╨┤ ╨╖╨░╨║╨░╨╖. ╨Т╤Л╨▒╨╡╤А╨╕╤В╨╡ ╨┤╨╕╨╖╨░╨╣╨╜ тАФ ╤Б╨┐╨╡╤Ж╨╕╨░╨╗╨╕╤Б╤В
++            ╨┐╤А╨╛╨▓╨╡╤А╨╕╤В ╨┐╨░╤А╨░╨╝╨╡╤В╤А╤Л ╨░╨▓╤В╨╛╨╝╨╛╨▒╨╕╨╗╤П ╨╕ ╨▓╨╛╨╖╨╝╨╛╨╢╨╜╨╛╤Б╤В╤М ╨║╨╛╨╜╤Д╨╕╨│╤Г╤А╨░╤Ж╨╕╨╕.
++          </p>
++        </div>
++      </section>
++
++      <section className={styles.catalog} data-shop-chrome-tone="light" aria-labelledby="forged-models-title">
++        <div className={styles.inner}>
++          <div className={styles.sectionHead}>
++            <p className={styles.kicker}>╨Ъ╨╛╨╗╨╗╨╡╨║╤Ж╨╕╤П</p>
++            <h2 id="forged-models-title">╨Т╤Л╨▒╨╡╤А╨╕╤В╨╡ ╨┤╨╕╨╖╨░╨╣╨╜</h2>
++          </div>
++          <div className={styles.grid}>
++            {wheelViews.map((view, index) => (
++              <Link
++                className={`${styles.card} ${index === 0 || index === 3 ? styles.cardWide : ""}`}
++                href={`${BASE_PATH}/${view.slug}`}
++                key={view.id}
++              >
++                <div className={styles.media}>
++                  <Image
++                    src={view.heroImage}
++                    alt={view.name}
++                    fill
++                    sizes={index === 0 || index === 3 ? "(max-width: 760px) 92vw, 66vw" : "(max-width: 760px) 92vw, 34vw"}
++                    priority={index < 2}
++                  />
++                </div>
++                <div className={styles.cardContent}>
++                  <span>╨Ш╨╖╨│╨╛╤В╨░╨▓╨╗╨╕╨▓╨░╨╡╤В╤Б╤П ╨┐╨╛╨┤ ╨╖╨░╨║╨░╨╖</span>
++                  <strong>{view.name}</strong>
++                  <p>{metaLine(view)}</p>
++                </div>
++                <span className={styles.arrow} aria-hidden="true">тЖЧ</span>
++              </Link>
++            ))}
++          </div>
++        </div>
++      </section>
++
++      <section className={styles.cta} data-shop-chrome-tone="dark">
++        <div className={styles.ctaInner}>
++          <div>
++            <p className={styles.darkKicker}>╨Ш╨╜╨┤╨╕╨▓╨╕╨┤╤Г╨░╨╗╤М╨╜╨░╤П ╨║╨╛╨╜╤Д╨╕╨│╤Г╤А╨░╤Ж╨╕╤П</p>
++            <h2>╨Ф╨╕╨╖╨░╨╣╨╜ тАФ ╨╜╨░╤З╨░╨╗╨╛ ╨┐╨╛╨┤╨▒╨╛╤А╨░</h2>
++            <p>╨а╨░╨╖╨╝╨╡╤А, ╨▓╤Л╨╗╨╡╤В, ╤А╨░╨╖╨▒╨╛╨╗╤В╨╛╨▓╨║╨░ ╨╕ ╨┐╨╛╨║╤А╤Л╤В╨╕╨╡ ╨┐╨╛╨┤╤В╨▓╨╡╤А╨╢╨┤╨░╤О╤В╤Б╤П ╨┐╨╛╤Б╨╗╨╡ ╨┐╤А╨╛╨▓╨╡╤А╨║╨╕ ╨░╨▓╤В╨╛╨╝╨╛╨▒╨╕╨╗╤П.</p>
++          </div>
++          <Link href="/contact?subject=wheel-selection" className={styles.ctaLink}>╨Я╨╛╨┤╨╛╨▒╤А╨░╤В╤М ╨┤╨╕╤Б╨║╨╕</Link>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/src/components/shop/ForgedConfigurator.tsx b/src/components/shop/ForgedConfigurator.tsx
+new file mode 100644
+index 0000000..5f9ed88
+--- /dev/null
++++ b/src/components/shop/ForgedConfigurator.tsx
+@@ -0,0 +1,116 @@
++"use client";
++
++import type { FormEvent } from "react";
++import { requestOpenCart } from "@/lib/cart/cartStorage";
++import { useCart } from "@/hooks/useCart";
++import type { ForgedWheelView } from "./forgedView";
++import styles from "./ForgedConfigurator.module.css";
++
++function value(formData: FormData, name: string): string {
++  return String(formData.get(name) ?? "").trim();
++}
++
++function configurationKey(vehicle: string, year: string): string {
++  const normalized = `${vehicle}-${year}`
++    .toLowerCase()
++    .replace(/[^a-z╨░-╤П╤С0-9]+/gi, "-")
++    .replace(/^-|-$/g, "")
++    .slice(0, 80);
++  return normalized || "vehicle";
++}
++
++export function ForgedConfigurator({ model }: { model: ForgedWheelView }) {
++  const cart = useCart();
++  const maxYear = new Date().getFullYear() + 1;
++
++  function handleSubmit(event: FormEvent<HTMLFormElement>) {
++    event.preventDefault();
++    const formData = new FormData(event.currentTarget);
++    const vehicle = value(formData, "vehicle");
++    const year = value(formData, "year");
++    const currentSize = value(formData, "currentSize");
++    const desiredSize = value(formData, "desiredSize");
++    const finish = value(formData, "finish");
++    const quantity = Math.min(Math.max(Number(formData.get("quantity")) || 4, 1), 8);
++    const variantLabel = `${vehicle}, ${year}`;
++    const notes = [
++      `╨Р╨▓╤В╨╛╨╝╨╛╨▒╨╕╨╗╤М: ${variantLabel}`,
++      currentSize ? `╨в╨╡╨║╤Г╤Й╨╕╨╣ ╤А╨░╨╖╨╝╨╡╤А: ${currentSize}` : "",
++      desiredSize ? `╨Ц╨╡╨╗╨░╨╡╨╝╤Л╨╣ ╤А╨░╨╖╨╝╨╡╤А: ${desiredSize}` : "",
++      finish ? `╨Ш╤Б╨┐╨╛╨╗╨╜╨╡╨╜╨╕╨╡: ${finish}` : "",
++    ].filter(Boolean).join("; ");
++
++    cart.addItem({
++      itemType: "wheel",
++      itemId: model.id,
++      variantId: configurationKey(vehicle, year),
++      name: model.name,
++      slug: model.slug,
++      parentSlug: "forged",
++      quantity,
++      priceOnRequest: true,
++      url: `/shop/wheels/forged/${model.slug}`,
++      variantLabel,
++      notes,
++    });
++    requestOpenCart();
++  }
++
++  return (
++    <form id="wheel-request" className={styles.form} onSubmit={handleSubmit}>
++      <div className={styles.formHead}>
++        <div>
++          <p>╨Ъ╨╛╨╜╤Д╨╕╨│╤Г╤А╨░╤Ж╨╕╤П ╨┤╨╗╤П ╤А╨░╤Б╤З╤С╤В╨░</p>
++          <h3>{model.name}</h3>
++        </div>
++        <span>╨ж╨╡╨╜╨░ ╨╕ ╤Б╨╛╨▓╨╝╨╡╤Б╤В╨╕╨╝╨╛╤Б╤В╤М ╨┐╨╛╨┤╤В╨▓╨╡╤А╨╢╨┤╨░╤О╤В╤Б╤П ╤Б╨┐╨╡╤Ж╨╕╨░╨╗╨╕╤Б╤В╨╛╨╝</span>
++      </div>
++
++      <div className={styles.grid}>
++        <label>
++          <span>╨Р╨▓╤В╨╛╨╝╨╛╨▒╨╕╨╗╤М *</span>
++          <input
++            name="vehicle"
++            required
++            maxLength={120}
++            placeholder="╨Ь╨░╤А╨║╨░ ╨╕ ╨╝╨╛╨┤╨╡╨╗╤М"
++            autoComplete="off"
++          />
++        </label>
++        <label>
++          <span>╨У╨╛╨┤ ╨▓╤Л╨┐╤Г╤Б╨║╨░ *</span>
++          <input
++            name="year"
++            type="number"
++            required
++            min={1950}
++            max={maxYear}
++            inputMode="numeric"
++            placeholder="2024"
++          />
++        </label>
++        <label>
++          <span>╨в╨╡╨║╤Г╤Й╨╕╨╣ ╤А╨░╨╖╨╝╨╡╤А ╨║╨╛╨╗╤С╤Б</span>
++          <input name="currentSize" maxLength={50} placeholder="╨Э╨░╨┐╤А╨╕╨╝╨╡╤А, 265/65 R17" />
++        </label>
++        <label>
++          <span>╨Ц╨╡╨╗╨░╨╡╨╝╤Л╨╣ ╤А╨░╨╖╨╝╨╡╤А</span>
++          <input name="desiredSize" maxLength={50} placeholder="╨Х╤Б╨╗╨╕ ╤Г╨╢╨╡ ╨╛╨┐╤А╨╡╨┤╨╡╨╗╨╕╨╗╨╕╤Б╤М" />
++        </label>
++        <label>
++          <span>╨Ш╤Б╨┐╨╛╨╗╨╜╨╡╨╜╨╕╨╡</span>
++          <input name="finish" maxLength={80} defaultValue={model.finish} />
++        </label>
++        <label>
++          <span>╨Ъ╨╛╨╗╨╕╤З╨╡╤Б╤В╨▓╨╛ ╨┤╨╕╤Б╨║╨╛╨▓</span>
++          <input name="quantity" type="number" min={1} max={8} defaultValue={4} inputMode="numeric" />
++        </label>
++      </div>
++
++      <div className={styles.submitRow}>
++        <button type="submit">╨Ф╨╛╨▒╨░╨▓╨╕╤В╤М ╨▓ ╨╖╨░╤П╨▓╨║╤Г</button>
++        <p>╨Ю╤В╨┐╤А╨░╨▓╨║╨░ ╨╖╨░╤П╨▓╨║╨╕ ╨╜╨╡ ╤П╨▓╨╗╤П╨╡╤В╤Б╤П ╨┐╨╛╨║╤Г╨┐╨║╨╛╨╣ ╨╕ ╨╜╨╡ ╤Д╨╕╨║╤Б╨╕╤А╤Г╨╡╤В ╤Б╤В╨╛╨╕╨╝╨╛╤Б╤В╤М.</p>
++      </div>
++    </form>
++  );
++}
+diff --git a/src/components/shop/ForgedModel.tsx b/src/components/shop/ForgedModel.tsx
+new file mode 100644
+index 0000000..b0d76ec
+--- /dev/null
++++ b/src/components/shop/ForgedModel.tsx
+@@ -0,0 +1,94 @@
++import Image from "next/image";
++import Link from "next/link";
++import { ForgedConfigurator } from "./ForgedConfigurator";
++import { metaLine, type ForgedWheelView } from "./forgedView";
++import styles from "./ForgedModel.module.css";
++
++const BASE_PATH = "/shop/wheels/forged";
++
++export function ForgedModel({ model }: { model: ForgedWheelView }) {
++  return (
++    <div className={styles.page}>
++      <section className={styles.hero} data-shop-chrome-tone="dark">
++        <div className={styles.heroMedia}>
++          <Image
++            src={model.heroImage}
++            alt={model.name}
++            fill
++            priority
++            sizes="100vw"
++          />
++        </div>
++        <div className={styles.heroShade} />
++        <div className={styles.heroInner}>
++          <nav aria-label="╨е╨╗╨╡╨▒╨╜╤Л╨╡ ╨║╤А╨╛╤И╨║╨╕" className={styles.breadcrumbs}>
++            <Link href="/shop">Shop</Link>
++            <span aria-hidden="true">/</span>
++            <Link href={BASE_PATH}>BIZON Forged</Link>
++          </nav>
++          <p className={styles.status}>╨Ш╨╖╨│╨╛╤В╨░╨▓╨╗╨╕╨▓╨░╨╡╤В╤Б╤П ╨┐╨╛╨┤ ╨╖╨░╨║╨░╨╖</p>
++          <h1>{model.name}</h1>
++          <p className={styles.meta}>{metaLine(model)}</p>
++          <Link href="#wheel-request" className={styles.primaryAction}>╨Я╨╛╨┤╨╛╨▒╤А╨░╤В╤М ╨║╨╛╨╜╤Д╨╕╨│╤Г╤А╨░╤Ж╨╕╤О</Link>
++        </div>
++      </section>
++
++      <section className={styles.intro} data-shop-chrome-tone="light">
++        <div className={styles.introInner}>
++          <p className={styles.kicker}>╨е╨░╤А╨░╨║╤В╨╡╤А ╨┤╨╕╨╖╨░╨╣╨╜╨░</p>
++          <div className={styles.introGrid}>
++            <h2>{model.description}</h2>
++            <p>
++              ╨д╨╕╨╜╨░╨╗╤М╨╜╨░╤П ╨║╨╛╨╜╤Д╨╕╨│╤Г╤А╨░╤Ж╨╕╤П ╨╖╨░╨▓╨╕╤Б╨╕╤В ╨╛╤В ╨░╨▓╤В╨╛╨╝╨╛╨▒╨╕╨╗╤П. ╨б╨┐╨╡╤Ж╨╕╨░╨╗╨╕╤Б╤В BIZON ╨┐╤А╨╛╨▓╨╡╤А╨╕╤В
++              ╨┐╨╛╤Б╨░╨┤╨╛╤З╨╜╤Л╨╡ ╨┐╨░╤А╨░╨╝╨╡╤В╤А╤Л, ╨┤╨╛╨┐╤Г╤Б╤В╨╕╨╝╤Г╤О ╨╜╨░╨│╤А╤Г╨╖╨║╤Г ╨╕ ╨▓╨╛╨╖╨╝╨╛╨╢╨╜╨╛╤Б╤В╤М ╨▓╤Л╨▒╤А╨░╨╜╨╜╨╛╨│╨╛ ╨┐╨╛╨║╤А╤Л╤В╨╕╤П.
++            </p>
++          </div>
++        </div>
++      </section>
++
++      <section className={styles.gallery} data-shop-chrome-tone="dark" aria-label={`╨Т╨╕╨┤╤Л ${model.name}`}>
++        {model.gallery.map((image, index) => (
++          <figure className={index === 0 ? styles.galleryFeature : styles.galleryCard} key={image.src}>
++            <Image
++              src={image.src}
++              alt={image.alt}
++              fill
++              sizes={index === 0 ? "(max-width: 760px) 100vw, 66vw" : "(max-width: 760px) 100vw, 34vw"}
++            />
++            <figcaption>{image.label}</figcaption>
++          </figure>
++        ))}
++      </section>
++
++      <section className={styles.selection} data-shop-chrome-tone="light">
++        <div className={styles.selectionInner}>
++          <div className={styles.selectionHead}>
++            <p className={styles.kicker}>╨Я╨╡╤А╨╡╨┤ ╨╕╨╖╨│╨╛╤В╨╛╨▓╨╗╨╡╨╜╨╕╨╡╨╝</p>
++            <h2>╨Я╨╛╨┤╤В╨▓╨╡╤А╨┤╨╕╨╝ ╤Б╨╛╨▓╨╝╨╡╤Б╤В╨╕╨╝╨╛╤Б╤В╤М</h2>
++          </div>
++          <div className={styles.facts}>
++            <article>
++              <span>01</span>
++              <h3>╨Р╨▓╤В╨╛╨╝╨╛╨▒╨╕╨╗╤М</h3>
++              <p>╨Ь╨░╤А╨║╨░, ╨╝╨╛╨┤╨╡╨╗╤М, ╨│╨╛╨┤ ╨╕ ╤В╨╡╨║╤Г╤Й╨░╤П ╨║╨╛╨╜╤Д╨╕╨│╤Г╤А╨░╤Ж╨╕╤П ╨║╨╛╨╗╤С╤Б.</p>
++            </article>
++            <article>
++              <span>02</span>
++              <h3>╨Я╨░╤А╨░╨╝╨╡╤В╤А╤Л</h3>
++              <p>╨а╨░╨╖╨╝╨╡╤А, ╤А╨░╨╖╨▒╨╛╨╗╤В╨╛╨▓╨║╨░, ╨▓╤Л╨╗╨╡╤В ╨╕ ╤Ж╨╡╨╜╤В╤А╨░╨╗╤М╨╜╨╛╨╡ ╨╛╤В╨▓╨╡╤А╤Б╤В╨╕╨╡.</p>
++            </article>
++            <article>
++              <span>03</span>
++              <h3>╨Ш╤Б╨┐╨╛╨╗╨╜╨╡╨╜╨╕╨╡</h3>
++              <p>╨ж╨▓╨╡╤В, ╨┐╨╛╨║╤А╤Л╤В╨╕╨╡ ╨╕ ╨┤╨╡╤В╨░╨╗╨╕ ╨╕╨╜╨┤╨╕╨▓╨╕╨┤╤Г╨░╨╗╤М╨╜╨╛╨│╨╛ ╨╖╨░╨║╨░╨╖╨░.</p>
++            </article>
++          </div>
++          <ForgedConfigurator model={model} />
++          <div className={styles.actions}>
++            <Link href={BASE_PATH} className={styles.secondaryAction}>тЖР ╨Т╤Б╨╡ ╨┤╨╕╨╖╨░╨╣╨╜╤Л</Link>
++          </div>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/src/components/shop/forgedView.test.mjs b/src/components/shop/forgedView.test.mjs
+new file mode 100644
+index 0000000..b1d5667
+--- /dev/null
++++ b/src/components/shop/forgedView.test.mjs
+@@ -0,0 +1,61 @@
++import assert from "node:assert/strict";
++import test from "node:test";
++import { metaLine, toForgedWheelView } from "./forgedView.ts";
++
++const cmsModel = {
++  id: "wheel-42",
++  slug: "atlas",
++  name: "Atlas",
++  wheelTypeSlug: "forged",
++  wheelTypeName: "Forged",
++  series: "  Satin Black  ",
++  designStyle: "  Monoblock  ",
++  descriptionShort: "Forged for demanding routes.",
++  descriptionLong: "Long description",
++  imageUrl: "  /media/atlas.png  ",
++  gallery: [
++    {
++      url: "/media/atlas-detail.png",
++      alt: "Atlas wheel detail",
++      label: "Detail",
++    },
++  ],
++};
++
++test("maps CMS wheel fields to the forged view", () => {
++  const view = toForgedWheelView(cmsModel);
++
++  assert.deepEqual(view, {
++    id: "wheel-42",
++    slug: "atlas",
++    name: "Atlas",
++    positioning: "Monoblock",
++    finish: "Satin Black",
++    description: "Forged for demanding routes.",
++    heroImage: "/media/atlas.png",
++    gallery: [
++      {
++        src: "/media/atlas-detail.png",
++        alt: "Atlas wheel detail",
++        label: "Detail",
++      },
++    ],
++  });
++  assert.equal(metaLine(view), "Monoblock ┬╖ Satin Black");
++});
++
++test("rejects models without a usable hero image", () => {
++  assert.equal(toForgedWheelView({ ...cmsModel, imageUrl: "   " }), null);
++});
++
++test("uses the forged fallback and omits an empty finish from metadata", () => {
++  const view = toForgedWheelView({
++    ...cmsModel,
++    designStyle: " ",
++    series: " ",
++  });
++
++  assert.equal(view.positioning, "Forged");
++  assert.equal(view.finish, "");
++  assert.equal(metaLine(view), "Forged");
++});
+diff --git a/src/components/shop/forgedView.ts b/src/components/shop/forgedView.ts
+new file mode 100644
+index 0000000..1bed4fa
+--- /dev/null
++++ b/src/components/shop/forgedView.ts
+@@ -0,0 +1,36 @@
++import type { CmsWheelModel } from "@/lib/cms/types";
++
++export type ForgedWheelView = {
++  id: string;
++  slug: string;
++  name: string;
++  positioning: string;
++  finish: string;
++  description: string;
++  heroImage: string;
++  gallery: { src: string; alt: string; label: string }[];
++};
++
++export function toForgedWheelView(model: CmsWheelModel): ForgedWheelView | null {
++  const heroImage = model.imageUrl?.trim();
++  if (!heroImage) return null;
++
++  return {
++    id: model.id,
++    slug: model.slug,
++    name: model.name,
++    positioning: model.designStyle?.trim() || "Forged",
++    finish: model.series?.trim() || "",
++    description: model.descriptionShort,
++    heroImage,
++    gallery: model.gallery.map((image) => ({
++      src: image.url,
++      alt: image.alt,
++      label: image.label,
++    })),
++  };
++}
++
++export function metaLine(view: ForgedWheelView): string {
++  return [view.positioning, view.finish].filter(Boolean).join(" ┬╖ ");
++}
+diff --git a/src/constants/shopHome.ts b/src/constants/shopHome.ts
+new file mode 100644
+index 0000000..8847b29
+--- /dev/null
++++ b/src/constants/shopHome.ts
+@@ -0,0 +1,68 @@
++/** Preferred order for forged cards on /shop (CMS supplies name/image/meta). */
++export const SHOP_HOME_WHEEL_SLUGS = ["atlas", "vector", "nomad"] as const;
++
++export const SHOP_ORDER_STEPS = [
++  {
++    title: "╨Т╤Л╨▒╨╡╤А╨╕╤В╨╡ ╨┤╨╕╨╖╨░╨╣╨╜",
++    description: "╨Я╨╛╤Б╨╝╨╛╤В╤А╨╕╤В╨╡ ╨╝╨╛╨┤╨╡╨╗╨╕ ╨╕ ╤Г╨║╨░╨╢╨╕╤В╨╡ ╨┐╤А╨╡╨┤╨┐╨╛╤З╤В╨╕╤В╨╡╨╗╤М╨╜╤Г╤О ╨║╨╛╨╜╤Д╨╕╨│╤Г╤А╨░╤Ж╨╕╤О.",
++  },
++  {
++    title: "╨а╨░╤Б╤Б╨║╨░╨╢╨╕╤В╨╡ ╨╛╨▒ ╨░╨▓╤В╨╛╨╝╨╛╨▒╨╕╨╗╨╡",
++    description: "╨г╨║╨░╨╢╨╕╤В╨╡ ╨╝╨░╤А╨║╤Г, ╨╝╨╛╨┤╨╡╨╗╤М, ╨│╨╛╨┤ ╨╕ ╨┐╨╛╨╢╨╡╨╗╨░╨╜╨╕╤П ╨║ ╨┤╨╕╤Б╨║╨░╨╝.",
++  },
++  {
++    title: "╨Я╨╛╨╗╤Г╤З╨╕╤В╨╡ ╨┐╨╛╨┤╤В╨▓╨╡╤А╨╢╨┤╨╡╨╜╨╕╨╡",
++    description: "╨б╨┐╨╡╤Ж╨╕╨░╨╗╨╕╤Б╤В BIZON ╨┐╤А╨╛╨▓╨╡╤А╨╕╤В ╤Б╨╛╨▓╨╝╨╡╤Б╤В╨╕╨╝╨╛╤Б╤В╤М, ╤Б╤В╨╛╨╕╨╝╨╛╤Б╤В╤М ╨╕ ╨▓╨╛╨╖╨╝╨╛╨╢╨╜╨╛╤Б╤В╤М ╨╕╨╖╨│╨╛╤В╨╛╨▓╨╗╨╡╨╜╨╕╤П.",
++  },
++] as const;
++
++export const SHOP_CATEGORY_SLIDES = [
++  {
++    id: "accessories",
++    kicker: "Accessories",
++    title: "╨Ф╨╡╤В╨░╨╗╨╕ ╨┤╨╗╤П ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П",
++    action: "╨Ю╤В╨║╤А╤Л╤В╤М Accessories",
++    href: "/shop/accessories",
++    desktopImage: "/images/premium/shop/lifestyle/categories/accessories-driver-glasses-primorye.png",
++    mobileImage: "/images/premium/shop/lifestyle/categories/accessories-driver-glasses-primorye-mobile.png",
++    alt: "╨Т╨╛╨┤╨╕╤В╨╡╨╗╤М ╨▓ ╨╛╤З╨║╨░╤Е BIZON ╨╜╨░ ╨┐╤А╨╕╨╝╨╛╤А╤Б╨║╨╛╨╣ ╨┤╨╛╤А╨╛╨│╨╡",
++  },
++  {
++    id: "outdoor",
++    kicker: "Outdoor",
++    title: "╨Ч╨░ ╨┐╤А╨╡╨┤╨╡╨╗╨░╨╝╨╕ ╨╝╨░╤А╤И╤А╤Г╤В╨░",
++    action: "╨Ю╤В╨║╤А╤Л╤В╤М Outdoor",
++    href: "/shop/outdoor",
++    desktopImage: "/images/premium/shop/lifestyle/categories/outdoor-wrangler-camp-desktop.png",
++    mobileImage: "/images/premium/shop/lifestyle/categories/outdoor-wrangler-camp-mobile.png",
++    alt: "Wrangler BIZON ╨╕ ╨║╨╛╨╝╨┐╨░╨╜╨╕╤П ╨╜╨░ ╨╗╨╡╤В╨╜╨╡╨╣ ╤Б╤В╨╛╤П╨╜╨║╨╡ ╤Г ╨╗╨╡╤Б╨╜╨╛╨│╨╛ ╨╛╨╖╨╡╤А╨░",
++  },
++] as const;
++
++export const SHOP_VEHICLE_STORIES = [
++  {
++    title: "Rubicon ┬╖ Nomad",
++    image: "/images/premium/shop/lifestyle/vehicles/wrangler-nomad-forest-desktop.png",
++    alt: "╨С╨╡╨╗╤Л╨╣ Rubicon ╤Б ╨┤╨╕╤Б╨║╨░╨╝╨╕ BIZON Nomad ╨╜╨░ ╨╗╨╡╤Б╨╜╨╛╨╣ ╨┤╨╛╤А╨╛╨│╨╡",
++  },
++  {
++    title: "Skyline ┬╖ Vector",
++    image: "/images/premium/shop/lifestyle/vehicles/skyline-vector-vladivostok.png",
++    alt: "Skyline ╤Б ╨┤╨╕╤Б╨║╨░╨╝╨╕ BIZON Vector ╨╜╨░ ╨╜╨╛╤З╨╜╨╛╨╣ ╨╜╨░╨▒╨╡╤А╨╡╨╢╨╜╨╛╨╣ ╨Т╨╗╨░╨┤╨╕╨▓╨╛╤Б╤В╨╛╨║╨░",
++  },
++  {
++    title: "Bronco ┬╖ Ember",
++    image: "/images/premium/shop/lifestyle/vehicles/bronco-ember-summer.png",
++    alt: "Bronco ╤Б ╨║╤А╨░╤Б╨╜╤Л╨╝╨╕ ╨┤╨╕╤Б╨║╨░╨╝╨╕ BIZON Ember ╨▓ ╨╗╨╡╤В╨╜╨╡╨╝ ╨Я╤А╨╕╨╝╨╛╤А╤М╨╡",
++  },
++  {
++    title: "TANK 300 ┬╖ Bastion",
++    image: "/images/premium/shop/lifestyle/vehicles/tank-300-bastion-coast-sup.png",
++    alt: "╨Ю╤А╨░╨╜╨╢╨╡╨▓╤Л╨╣ TANK 300 ╤Б ╨┤╨╕╤Б╨║╨░╨╝╨╕ BIZON Bastion ╨╜╨░ ╨┐╤А╨╕╨╝╨╛╤А╤Б╨║╨╛╨╝ ╤Г╤В╤С╤Б╨╡",
++  },
++  {
++    title: "Gladiator ┬╖ Nomad",
++    image: "/images/premium/shop/lifestyle/vehicles/gladiator-nomad-river.png",
++    alt: "╨Ч╨╡╨╗╤С╨╜╤Л╨╣ Gladiator ╤Б ╨┤╨╕╤Б╨║╨░╨╝╨╕ BIZON Nomad ╨╜╨░ ╨║╨░╨╝╨╡╨╜╨╕╤Б╤В╨╛╨╣ ╤А╨╡╨║╨╡",
++  },
++] as const;
+diff --git a/src/lib/cms/payload/mappers.test.ts b/src/lib/cms/payload/mappers.test.ts
+index 425f837..8067bf2 100644
+--- a/src/lib/cms/payload/mappers.test.ts
++++ b/src/lib/cms/payload/mappers.test.ts
+@@ -1,8 +1,8 @@
+ import { describe, expect, it } from "vitest";
+ 
+-import { mapTireModelDetail, mapTireVariant } from "./mappers";
++import { mapTireModelDetail, mapTireVariant, mapWheelModelDetail } from "./mappers";
+ 
+ describe("mapTireModelDetail", () => {
+   it("maps CMS features to site advantages", () => {
+     const mapped = mapTireModelDetail({
+       id: 1,
+@@ -24,10 +24,62 @@ describe("mapTireModelDetail", () => {
+       { title: "╨б╤Ж╨╡╨┐╨╗╨╡╨╜╨╕╨╡", description: "╨Э╨░ ╨╝╨╛╨║╤А╨╛╨╝ ╨┐╨╛╨║╤А╤Л╤В╨╕╨╕" },
+     ]);
+   });
+ });
+ 
++describe("mapWheelModelDetail", () => {
++  it("maps mainImage and gallery media with alt/label", () => {
++    const mapped = mapWheelModelDetail({
++      id: 42,
++      slug: "atlas",
++      name: "BIZON Atlas",
++      wheelType: { slug: "forged", name: "╨Ъ╨╛╨▓╨░╨╜╤Л╨╡ ╨┤╨╕╤Б╨║╨╕" },
++      designStyle: "Off-road",
++      series: "Satin Black / Machined Silver",
++      shortDescription: "╨Т╤Л╤А╨░╨╖╨╕╤В╨╡╨╗╤М╨╜╨░╤П ╨│╨╡╨╛╨╝╨╡╤В╤А╨╕╤П",
++      mainImage: {
++        id: 1,
++        url: "/media/bizon-atlas-hero-3q.png",
++        alt: "BIZON Atlas",
++        title: "Hero",
++      },
++      gallery: [
++        {
++          id: 2,
++          url: "/media/bizon-atlas-front.png",
++          alt: "BIZON Atlas, ╤Д╤А╨╛╨╜╤В╨░╨╗╤М╨╜╤Л╨╣ ╨▓╨╕╨┤",
++          title: "Front",
++        },
++        {
++          id: 3,
++          url: "/media/bizon-atlas-depth-3q.png",
++          alt: "BIZON Atlas, ╨╛╨▒╤К╤С╨╝",
++          title: "Depth",
++        },
++      ],
++      documents: [],
++    } as never);
++
++    expect(mapped.id).toBe("42");
++    expect(mapped.imageUrl).toBeTruthy();
++    expect(mapped.gallery).toEqual([
++      {
++        url: expect.stringContaining("bizon-atlas-front"),
++        alt: "BIZON Atlas, ╤Д╤А╨╛╨╜╤В╨░╨╗╤М╨╜╤Л╨╣ ╨▓╨╕╨┤",
++        label: "Front",
++      },
++      {
++        url: expect.stringContaining("bizon-atlas-depth-3q"),
++        alt: "BIZON Atlas, ╨╛╨▒╤К╤С╨╝",
++        label: "Depth",
++      },
++    ]);
++    expect(mapped.series).toBe("Satin Black / Machined Silver");
++    expect(mapped.designStyle).toBe("Off-road");
++  });
++});
++
+ describe("mapTireVariant", () => {
+   it("uses normalized size and treats a null price as price on request", () => {
+     const mapped = mapTireVariant({
+       id: 1,
+       sizeNormalized: " 315/80R22.5 ",
+diff --git a/src/lib/cms/payload/mappers.ts b/src/lib/cms/payload/mappers.ts
+index 6bc1cf2..153a1f1 100644
+--- a/src/lib/cms/payload/mappers.ts
++++ b/src/lib/cms/payload/mappers.ts
+@@ -210,10 +210,22 @@ export function mapWheelModelDetail(doc: WheelModel): CmsWheelModel {
+             return { url: media.url, title: media.title || media.filename || "╨Ф╨╛╨║╤Г╨╝╨╡╨╜╤В" };
+           })
+           .filter((item): item is { url: string; title: string } => Boolean(item))
+       : undefined;
+ 
++  const gallery = (doc.gallery ?? [])
++    .map((item) => {
++      const media = resolveMedia(item, "hero");
++      if (!media) return null;
++      return {
++        url: media.url,
++        alt: media.alt || doc.name,
++        label: (media.title || "").trim() || "View",
++      };
++    })
++    .filter((item): item is { url: string; alt: string; label: string } => Boolean(item));
++
+   return {
+     id: String(doc.id),
+     slug: doc.slug,
+     name: doc.name,
+     wheelTypeSlug,
+@@ -224,10 +236,11 @@ export function mapWheelModelDetail(doc: WheelModel): CmsWheelModel {
+     constructionMethod: doc.constructionMethod ?? undefined,
+     fitmentNotes: doc.fitmentNotes?.trim() || undefined,
+     descriptionShort,
+     descriptionLong,
+     documents,
++    gallery,
+     imageUrl: mapImageUrl(doc.mainImage),
+   };
+ }
+ 
+ export function mapWheelVariant(doc: WheelVariant, modelId?: string): CmsWheelVariant {
+diff --git a/src/lib/cms/types.ts b/src/lib/cms/types.ts
+index df3c84f..45ab392 100644
+--- a/src/lib/cms/types.ts
++++ b/src/lib/cms/types.ts
+@@ -138,10 +138,16 @@ export type CmsWheelType = {
+   shortDescription: string;
+   sortOrder: number;
+   imageUrl?: string | null;
+ };
+ 
++export type CmsWheelGalleryImage = {
++  url: string;
++  alt: string;
++  label: string;
++};
++
+ export type CmsWheelModel = {
+   id: string;
+   slug: string;
+   name: string;
+   wheelTypeSlug: string;
+@@ -152,10 +158,11 @@ export type CmsWheelModel = {
+   constructionMethod?: string;
+   fitmentNotes?: string;
+   descriptionShort: string;
+   descriptionLong: string;
+   imageUrl?: string | null;
++  gallery: CmsWheelGalleryImage[];
+   documents?: { url: string; title: string }[];
+ };
+ 
+ export type CmsWheelVariant = {
+   id: string;
+

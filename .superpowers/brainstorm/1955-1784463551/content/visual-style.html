@@ -1,0 +1,96 @@
+<h2>Каким голосом должен говорить bizon.ru?</h2>
+<p class="subtitle">Во всех вариантах сохраняются общие с Shop токены, типографика, сетка и моторика. Отличается характер основной поверхности.</p>
+
+<style>
+  .direction-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin-top:24px; }
+  .direction { border:1px solid var(--border); border-radius:18px; overflow:hidden; cursor:pointer; background:var(--surface); transition:transform .2s,border-color .2s; }
+  .direction:hover { transform:translateY(-3px); }
+  .direction.selected { border-color:#e45433; box-shadow:0 0 0 2px rgba(228,84,51,.22); }
+  .screen { min-height:490px; position:relative; overflow:hidden; font-family:Inter,Arial,sans-serif; }
+  .screen img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .mini-nav { position:absolute; z-index:3; left:14px; right:14px; top:14px; height:40px; border-radius:999px; display:flex; align-items:center; justify-content:space-between; padding:0 15px; font-size:9px; letter-spacing:.14em; font-weight:800; }
+  .copy { position:absolute; z-index:2; left:22px; right:22px; bottom:24px; }
+  .kicker { margin:0 0 9px; font-size:9px; letter-spacing:.16em; text-transform:uppercase; font-weight:800; }
+  .headline { margin:0; font-size:37px; line-height:.94; letter-spacing:-.055em; font-weight:650; }
+  .body { margin:13px 0 16px; max-width:270px; font-size:12px; line-height:1.45; }
+  .cta { display:inline-flex; min-height:34px; align-items:center; border-radius:9px; padding:0 13px; font-size:10px; font-weight:800; }
+  .metric { position:absolute; z-index:2; right:18px; bottom:20px; border-left:2px solid #06e3be; padding-left:9px; font-size:9px; line-height:1.4; }
+  .card-copy { padding:16px 17px 18px; }
+  .card-copy h3 { margin:0 0 6px; }
+  .card-copy p { margin:0; font-size:13px; line-height:1.45; opacity:.75; }
+  .recommended { display:inline-block; margin-top:10px; padding:4px 8px; border-radius:999px; background:rgba(228,84,51,.12); color:#c93b1b; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+
+  .editorial { background:#171919; color:white; }
+  .editorial::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg,rgba(5,8,8,.9) 0%,rgba(5,8,8,.5) 48%,rgba(5,8,8,.08) 100%),linear-gradient(0deg,rgba(5,8,8,.72),transparent 55%); }
+  .editorial .mini-nav { color:#fff; background:rgba(12,14,14,.76); border:1px solid rgba(255,255,255,.18); backdrop-filter:blur(10px); }
+  .editorial .kicker { color:#86fce8; }
+  .editorial .cta { background:#e45433; color:white; }
+
+  .precision { background:#f4f4f2; color:#1c1c1c; }
+  .precision .mini-nav { top:0; left:0; right:0; border-radius:0; background:white; border-bottom:1px solid #d8d8d5; color:#1c1c1c; }
+  .precision .technical { position:absolute; inset:55px 0 0; background:linear-gradient(90deg,transparent 49.7%,rgba(28,28,28,.08) 50%,transparent 50.3%),linear-gradient(0deg,transparent 49.7%,rgba(28,28,28,.08) 50%,transparent 50.3%); background-size:44px 44px; }
+  .precision .tire { position:absolute; right:-58px; top:95px; width:245px; height:245px; border:36px solid #242424; border-radius:50%; box-shadow:inset 0 0 0 8px #777,0 20px 40px rgba(0,0,0,.12); }
+  .precision .copy { top:104px; bottom:auto; right:45%; }
+  .precision .kicker { color:#03806b; }
+  .precision .headline { font-size:32px; }
+  .precision .cta { background:#1c1c1c; color:white; }
+  .precision .specs { position:absolute; left:22px; right:22px; bottom:26px; display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid #aaa; padding-top:12px; font-size:9px; text-transform:uppercase; letter-spacing:.08em; }
+
+  .documentary { background:#0b0b0b; color:white; }
+  .documentary::after { content:""; position:absolute; inset:0; background:linear-gradient(0deg,rgba(0,0,0,.92),rgba(0,0,0,.04) 70%); }
+  .documentary .mini-nav { left:0; right:0; top:0; border-radius:0; background:#050505; color:#fff; }
+  .documentary img { filter:grayscale(.35) contrast(1.12); }
+  .documentary .copy { left:18px; right:18px; }
+  .documentary .kicker { color:#f0a08d; }
+  .documentary .headline { font-size:41px; text-transform:uppercase; font-weight:850; }
+  .documentary .body { color:rgba(255,255,255,.74); }
+  .documentary .cta { background:#fff; color:#050505; border-radius:2px; }
+
+  @media(max-width:900px){ .direction-grid{grid-template-columns:1fr;} .screen{min-height:430px;} }
+</style>
+
+<div class="direction-grid">
+  <div class="direction" data-choice="a" onclick="toggleSelect(this)">
+    <div class="screen editorial">
+      <img src="/files/public/images/premium/highway-hero.png" alt="Грузовик на маршруте">
+      <div class="mini-nav"><span>☰ &nbsp; BIZON</span><span>РЕШЕНИЯ &nbsp; КАТАЛОГ &nbsp; РАСЧЁТ</span></div>
+      <div class="copy">
+        <p class="kicker">BIZON · Heavy Duty</p>
+        <p class="headline">Ресурс для<br>реальной работы</p>
+        <p class="body">Подбор под технику, ось и условия эксплуатации.</p>
+        <span class="cta">Подобрать шины</span>
+      </div>
+      <div class="metric">ТЕХНИКА → УСЛОВИЯ<br>→ РЕШЕНИЕ</div>
+    </div>
+    <div class="card-copy"><h3>A · Operational Editorial</h3><p>Кинематографичность Shop, но вместо lifestyle — маршрут, нагрузка, инженерная экспертиза и доказательства.</p><span class="recommended">Рекомендация</span></div>
+  </div>
+
+  <div class="direction" data-choice="b" onclick="toggleSelect(this)">
+    <div class="screen precision">
+      <div class="mini-nav"><span>☰ &nbsp; BIZON</span><span>МОДЕЛИ &nbsp; ПОДБОР</span></div>
+      <div class="technical"></div><div class="tire"></div>
+      <div class="copy">
+        <p class="kicker">Технический подбор</p>
+        <p class="headline">Шина как рабочий инструмент</p>
+        <p class="body">Точные параметры, применение и сравнение моделей.</p>
+        <span class="cta">Начать подбор</span>
+      </div>
+      <div class="specs"><span>Ось</span><span>Нагрузка</span><span>Маршрут</span></div>
+    </div>
+    <div class="card-copy"><h3>B · Industrial Precision</h3><p>Светлая техническая система: сетка, параметры и каталог впереди эмоции. Очень рационально, менее выразительно.</p></div>
+  </div>
+
+  <div class="direction" data-choice="c" onclick="toggleSelect(this)">
+    <div class="screen documentary">
+      <img src="/files/public/images/premium/quarry-haul-truck.png" alt="Техника в карьере">
+      <div class="mini-nav"><span>☰ &nbsp; BIZON</span><span>HEAVY DUTY</span></div>
+      <div class="copy">
+        <p class="kicker">Созданы выдерживать</p>
+        <p class="headline">Работа без компромиссов</p>
+        <p class="body">Жёсткая среда, высокая нагрузка, понятный результат.</p>
+        <span class="cta">Выбрать решение</span>
+      </div>
+    </div>
+    <div class="card-copy"><h3>C · Rugged Documentary</h3><p>Брутальный документальный характер. Максимум силы и среды, минимум сервисной лёгкости.</p></div>
+  </div>
+</div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -7,7 +9,6 @@ import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
 import { wheelModelPublishBlockers } from "@/admin/domain/publishRules";
 import type {
-  AdminRole,
   DocumentLink,
   EntityRecord,
   WheelModelDraft,
@@ -19,8 +20,8 @@ import { PlacementFields } from "@/admin/media/PlacementFields";
 import styles from "./WheelDocument.module.css";
 
 const ERROR_TEXT: Record<AdminClientError["code"], string> = {
-  slug_taken: "Такой slug уже занят",
-  invalid_slug: "Slug нельзя изменить",
+  slug_taken: "Этот адрес страницы уже занят",
+  invalid_slug: "Нельзя изменить адрес страницы",
   publish_blocked: "Публикация закрыта",
   unsaved: "Сначала сохраните черновик",
   media_in_use: "Файл ещё используется",
@@ -30,7 +31,7 @@ const ERROR_TEXT: Record<AdminClientError["code"], string> = {
 
 const BLOCKER_TEXT: Record<string, string> = {
   name: "Укажите название",
-  slug: "Укажите slug",
+  slug: "Укажите адрес страницы",
   direction: "Выберите тип диска",
   mainImage: "Добавьте главное фото",
   size: "Укажите читаемый размер",
@@ -69,7 +70,7 @@ export function WheelModelEditor({ id }: { id: string }) {
   const [record, setRecord] = useState<EntityRecord<WheelModelDraft> | null>(null);
   const [draft, setDraft] = useState<WheelModelDraft | null>(null);
   const [types, setTypes] = useState<EntityRecord<WheelTypeDraft>[]>([]);
-  const [role, setRole] = useState<AdminRole>("admin");
+  const [role, setRole] = useAdminRole();
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
@@ -84,15 +85,21 @@ export function WheelModelEditor({ id }: { id: string }) {
         setRole(session.role);
       },
     );
-  }, [id]);
+  }, [id, setRole]);
 
   if (draft == null || record == null) return <main className={styles.page}>Загрузка…</main>;
   const model = draft;
   const stored = record;
 
   const dirty = JSON.stringify(model) !== JSON.stringify(stored.savedDraft) || stored.savedDraft == null;
-  const blockers = wheelModelPublishBlockers(model);
-  const savedBlockers = stored.savedDraft == null ? [] : wheelModelPublishBlockers(stored.savedDraft);
+  const saved = stored.savedDraft;
+  const savedBlockers =
+    saved == null
+      ? []
+      : wheelModelPublishBlockers(
+          saved,
+          types.some((type) => type.id === saved.wheelTypeId),
+        );
 
   function patch(next: Partial<WheelModelDraft>) {
     setDraft((current) => (current == null ? current : { ...current, ...next }));
@@ -104,14 +111,6 @@ export function WheelModelEditor({ id }: { id: string }) {
     patch({ variants });
   }
 
-  function moveGallery(index: number, delta: -1 | 1) {
-    const target = index + delta;
-    if (target < 0 || target >= model.gallery.length) return;
-    const gallery = model.gallery.slice();
-    const [item] = gallery.splice(index, 1);
-    gallery.splice(target, 0, item);
-    patch({ gallery });
-  }
 
   async function onDocumentFile(file: File | undefined) {
     if (file == null) return;
@@ -154,16 +153,17 @@ export function WheelModelEditor({ id }: { id: string }) {
   }
 
   return (
-    <main className={styles.page}>
+    <main className="document">
       <h1>{draft.name || "Модель диска"}</h1>
+      <BlockNav />
       <section className={styles.section}>
-        <h2>Карточка</h2>
+        <h2>Основные данные</h2>
         <label className={styles.field}>
           Название
           <input value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
         </label>
         <label className={styles.field}>
-          Slug
+          Адрес страницы
           <input
             value={draft.slug}
             disabled={record.slugLocked}
@@ -183,6 +183,10 @@ export function WheelModelEditor({ id }: { id: string }) {
         <label className={styles.field}>
           Серия
           <input value={draft.series} onChange={(event) => patch({ series: event.target.value })} />
+        </label>
+        <label className={styles.field}>
+          Стиль
+          <input value={draft.designStyle ?? ""} onChange={(event) => patch({ designStyle: event.target.value })} />
         </label>
         <label className={styles.field}>
           Материал
@@ -307,51 +311,13 @@ export function WheelModelEditor({ id }: { id: string }) {
         </button>
       </section>
       <section className={styles.section}>
-        <h2>Медиа</h2>
+        <h2>Фото</h2>
         <PlacementFields
           label="Главное фото"
           value={draft.mainImage}
           onChange={(mainImage) => patch({ mainImage })}
         />
-        <h3>Галерея</h3>
-        {draft.gallery.map((item, index) => (
-          <div key={`${item.assetId}-${index}`} className={styles.row}>
-            <PlacementFields
-              label={`Галерея ${index + 1}`}
-              value={item}
-              onChange={(next) => {
-                if (next == null) {
-                  patch({ gallery: draft.gallery.filter((_, i) => i !== index) });
-                  return;
-                }
-                const gallery = draft.gallery.slice();
-                gallery[index] = next;
-                patch({ gallery });
-              }}
-            />
-            <div className={styles.rowActions}>
-              <button type="button" disabled={index === 0} onClick={() => moveGallery(index, -1)}>
-                выше
-              </button>
-              <button
-                type="button"
-                disabled={index === draft.gallery.length - 1}
-                onClick={() => moveGallery(index, 1)}
-              >
-                ниже
-              </button>
-            </div>
-          </div>
-        ))}
-        <PlacementFields
-          label="Добавить в галерею"
-          value={undefined}
-          onChange={(next) => {
-            if (next == null) return;
-            patch({ gallery: [...draft.gallery, next] });
-          }}
-        />
-      </section>
+        </section>
       <section className={styles.section}>
         <h2>PDF</h2>
         {draft.documents.map((doc, index) => (
@@ -384,7 +350,7 @@ export function WheelModelEditor({ id }: { id: string }) {
           onChange={(event) => void onDocumentFile(event.target.files?.[0])}
         />
       </section>
-      <div className={styles.actions}>
+      <DocumentActions>
         <p>Сохранил: {record.lastSavedBy ?? "—"}</p>
         <p>Опубликовал: {record.lastPublishedBy ?? "—"}</p>
         {message ? <p>{message}</p> : null}
@@ -418,7 +384,7 @@ export function WheelModelEditor({ id }: { id: string }) {
             )}
           </>
         ) : null}
-      </div>
+      </DocumentActions>
     </main>
   );
 }

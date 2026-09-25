@@ -1,0 +1,272 @@
+.carousel {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: clamp(620px, 86vh, 920px);
+  overflow: hidden;
+  background: var(--bizon-black);
+  color: var(--bizon-white);
+  touch-action: pan-y;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 720ms ease;
+}
+
+.slideActive {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.media,
+.media img,
+.mediaFallback,
+.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+}
+
+.media {
+  min-width: 0;
+}
+
+.media img {
+  object-fit: cover;
+}
+
+.mediaFallback {
+  background: var(--bizon-black);
+}
+
+.overlay {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(10, 12, 12, 0.86) 0%,
+      rgba(10, 12, 12, 0.42) 42%,
+      rgba(10, 12, 12, 0.08) 72%
+    ),
+    linear-gradient(0deg, rgba(10, 12, 12, 0.72) 0%, transparent 42%);
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: min(var(--container-max), calc(100% - (var(--page-gutter) * 2)));
+  min-width: 0;
+  min-height: clamp(620px, 86vh, 920px);
+  align-content: center;
+  gap: 18px;
+  margin: 0 auto;
+}
+
+.content p,
+.content h2 {
+  margin: 0;
+}
+
+.content > p:first-child {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.content h2 {
+  max-width: 10ch;
+  font-size: clamp(2.75rem, 7vw, 7.5rem);
+  font-weight: 500;
+  letter-spacing: -0.065em;
+  line-height: 0.92;
+}
+
+.description {
+  max-width: 62ch;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: clamp(1rem, 1.4vw, 1.125rem);
+  line-height: 1.6;
+}
+
+.controls {
+  position: absolute;
+  right: var(--page-gutter);
+  bottom: 34px;
+  left: var(--page-gutter);
+  z-index: 2;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.progress {
+  display: flex;
+  width: min(420px, 56vw);
+  max-width: 100%;
+  min-width: 0;
+  gap: 8px;
+}
+
+.progress button {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 44px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 99px;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.progress button::before {
+  position: absolute;
+  top: 20px;
+  right: 0;
+  left: 0;
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.28);
+  content: "";
+}
+
+.progressActive {
+  background: transparent !important;
+}
+
+.progressActive::before {
+  background: rgba(255, 255, 255, 0.48) !important;
+}
+
+.progressFill {
+  position: absolute;
+  top: 20px;
+  right: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: 3px;
+  background: var(--bizon-white);
+  transform-origin: left;
+  animation: advantages-progress 7s linear forwards;
+}
+
+.autoplay {
+  width: auto !important;
+  min-width: 76px;
+  border-radius: var(--radius-pill) !important;
+  padding: 0 14px;
+  font-size: 0.75rem !important;
+}
+
+.arrows {
+  display: flex;
+  min-width: 0;
+  gap: 10px;
+}
+
+.arrows button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 46px;
+  max-width: 100%;
+  height: 46px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  background: rgba(20, 22, 22, 0.34);
+  color: var(--bizon-white);
+  font-size: 1.15rem;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.arrows button:hover {
+  border-color: var(--bizon-mint-300);
+  background: rgba(20, 22, 22, 0.62);
+}
+
+.controls button:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 3px;
+}
+
+@keyframes advantages-progress {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (max-width: 639px) {
+  .carousel,
+  .content {
+    min-height: min(880px, 92svh);
+  }
+
+  .media img {
+    object-position: center top;
+  }
+
+  .overlay {
+    background: linear-gradient(
+      0deg,
+      rgba(10, 12, 12, 0.92) 0%,
+      rgba(10, 12, 12, 0.74) 38%,
+      rgba(10, 12, 12, 0.08) 70%
+    );
+  }
+
+  .content {
+    align-content: end;
+    padding-bottom: 128px;
+  }
+
+  .content h2 {
+    font-size: clamp(2.5rem, 13vw, 4rem);
+  }
+
+  .controls {
+    bottom: 24px;
+  }
+
+  .progress {
+    width: min(220px, 58vw);
+  }
+
+  .arrows button {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide {
+    transition: none;
+  }
+
+  .progressFill {
+    animation: none;
+  }
+}

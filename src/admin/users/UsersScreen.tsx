@@ -7,6 +7,7 @@ import { browserAdminClient } from "@/admin/client/localStore";
 import type { AdminRole, AdminSession, AdminUser } from "@/admin/domain/types";
 
 import styles from "./UsersScreen.module.css";
+import { Icon } from "@/admin/ui/Icon";
 
 const ERROR_TEXT: Partial<Record<string, string>> = {
   cannot_disable_self: "Нельзя отключить свою учётную запись",
@@ -22,6 +23,7 @@ export function UsersScreen() {
   const [role, setRole] = useState<AdminRole>("editor");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const activeAdmins = users.filter((user) => user.role === "admin" && !user.disabled).length;
 
   async function reload() {
     setUsers(await browserAdminClient().listUsers());
@@ -40,7 +42,8 @@ export function UsersScreen() {
   if (session.role === "editor") {
     return (
       <main className={styles.screen}>
-        <p>Раздел доступен администратору</p>
+        <h1>Управление пользователями</h1>
+        <div className={styles.notice}><Icon name="users" size={24}/><p><strong>Этот раздел доступен только администратору</strong><br/>Попросите администратора управлять учётными записями.</p></div>
       </main>
     );
   }
@@ -52,7 +55,7 @@ export function UsersScreen() {
 
   return (
     <main className={styles.screen}>
-      <h1>Пользователи</h1>
+      <div><h1>Пользователи</h1><p className="subheading">Управление доступом к редактору BIZON.</p></div>
       <form
         className={styles.form}
         onSubmit={(event) => {
@@ -68,24 +71,27 @@ export function UsersScreen() {
             .catch(showError);
         }}
       >
-        <input aria-label="Логин" value={login} onChange={(event) => setLogin(event.target.value)} />
-        <select aria-label="Роль" value={role} onChange={(event) => setRole(event.target.value as AdminRole)}>
+        <label>Логин<input autoComplete="off" placeholder="Имя для входа" aria-label="Логин" value={login} onChange={(event) => setLogin(event.target.value)} required /></label>
+        <label>Роль<select aria-label="Роль" value={role} onChange={(event) => setRole(event.target.value as AdminRole)}>
           <option value="editor">Редактор</option>
           <option value="admin">Администратор</option>
-        </select>
-        <input
+        </select></label>
+        <label>Пароль при создании<input
           aria-label="Пароль"
           type="password"
+          autoComplete="new-password"
+          required
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-        />
-        <button type="submit">Добавить</button>
+        /><span className={styles.hint}>Пароль применяется при создании и не хранится в CMS.</span></label>
+        <button className="primary" type="submit"><Icon name="plus" size={18}/> Добавить пользователя</button>
       </form>
       {message ? <p>{message}</p> : null}
-      <ul className={styles.list}>
+      <div className={styles.tableWrap}><table className={styles.table}><thead><tr><th>Логин</th><th>Роль</th><th>Доступ</th><th>Действие</th></tr></thead><tbody>
         {users.map((user) => (
-          <li key={user.id} className={styles.row}>
-            <span>{user.login}</span>
+          <tr key={user.id}>
+            <td>{user.login}{user.login === session.login ? <span className={styles.you}> · Вы</span> : null}</td>
+            <td>
             <select
               aria-label={`Роль ${user.login}`}
               value={user.role}
@@ -107,10 +113,12 @@ export function UsersScreen() {
               <option value="editor">Редактор</option>
               <option value="admin">Администратор</option>
             </select>
-            <span>{user.disabled ? "отключён" : "активен"}</span>
-            {user.disabled ? null : (
+            </td>
+            <td><span className={user.disabled ? styles.badge : styles.badgeOnSite}>{user.disabled ? "Отключён" : "Активен"}</span></td>
+            <td>{user.disabled ? <span className={styles.hint}>Доступ отключён</span> : user.login === session.login ? <span className={styles.hint}>Нельзя отключить себя</span> : user.role === "admin" && activeAdmins < 2 ? <span className={styles.hint}>Последний администратор</span> : (
               <button
                 type="button"
+                className="ghost"
                 onClick={() => {
                   setMessage("");
                   void browserAdminClient().disableUser(user.id).then(reload).catch(showError);
@@ -118,10 +126,10 @@ export function UsersScreen() {
               >
                 Отключить
               </button>
-            )}
-          </li>
+            )}</td>
+          </tr>
         ))}
-      </ul>
+      </tbody></table><div className={styles.tableFoot}>{users.filter((user) => !user.disabled).length} активных из {users.length}</div></div>
     </main>
   );
 }

@@ -1,0 +1,331 @@
+=== COMMITS ===
+446cebb fix(wheels): restore forged wheel-type sync in axis seed
+73b318e feat(wheels): seed forged PNGs into Payload Media
+
+=== STAT ===
+ package.json                |   1 +
+ scripts/seed-wheel-axis.ts  | 122 ++++++++++++++------------------------------
+ scripts/seed-wheel-media.ts | 115 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 155 insertions(+), 83 deletions(-)
+
+=== DIFF ===
+diff --git a/package.json b/package.json
+index be4429e..863cb6d 100644
+--- a/package.json
++++ b/package.json
+@@ -12,20 +12,21 @@
+     "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
+     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
+     "lint": "eslint src scripts payload.config.ts next.config.mjs",
+     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
+     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+     "seed:tire-axis": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-tire-axis.ts",
+     "seed:tbr-models": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-tbr-models.ts",
+     "seed:shop": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-shop.ts",
+     "seed:wheel-axis": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-wheel-axis.ts",
++    "seed:wheel-media": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-wheel-media.ts",
+     "seed:content": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-content.ts",
+     "import:catalog": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/import-catalog.ts",
+     "import:catalog:dry": "cross-env NODE_OPTIONS=--no-deprecation DRY_RUN=1 payload run scripts/import-catalog.ts",
+     "import:all": "npm run import:catalog",
+     "seed:all": "npm run import:catalog && npm run seed:content",
+     "verify:db": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/verify-db.ts",
+     "verify:request-items": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/verify-request-items.ts",
+     "db:up": "docker compose up -d postgres",
+     "db:down": "docker compose down",
+     "db:logs": "docker compose logs -f postgres"
+diff --git a/scripts/seed-wheel-axis.ts b/scripts/seed-wheel-axis.ts
+index 5afec50..0537326 100644
+--- a/scripts/seed-wheel-axis.ts
++++ b/scripts/seed-wheel-axis.ts
+@@ -1,128 +1,84 @@
+ /**
+- * Seeds WheelTypes (forged only тАФ BIZON MVP) + one demo model and variant.
++ * Bootstraps WheelTypes (forged) and approved forged designs from SHOP_WHEEL_DESIGNS.
+  *
+  * Run: npm run seed:wheel-axis
+- * ponytail: cast not seeded until product direction changes тАФ add row in admin when needed.
++ * ponytail: mainImage stays empty until npm run seed:wheel-media uploads PNGs.
+  */
++import { SHOP_WHEEL_DESIGNS } from "../src/constants/shopWheels";
+ import { getPayload } from "../src/lib/payload/getPayload";
+ 
+ const FORGED_TYPE = {
+   slug: "forged",
+   name: "╨Ъ╨╛╨▓╨░╨╜╤Л╨╡ ╨┤╨╕╤Б╨║╨╕",
+   description: "╨Ъ╨╛╨▓╨░╨╜╤Л╨╡ ╨┤╨╕╤Б╨║╨╕ BIZON ╨┤╨╗╤П ╨│╤А╤Г╨╖╨╛╨▓╨╛╨│╨╛ ╨╕ ╨║╨╛╨╝╨╝╨╡╤А╤З╨╡╤Б╨║╨╛╨│╨╛ ╤В╤А╨░╨╜╤Б╨┐╨╛╤А╤В╨░.",
+   shortDescription: "╨Т╤Л╤Б╨╛╨║╨╛╨┐╤А╨╛╤З╨╜╤Л╨╡ ╨║╨╛╨▓╨░╨╜╤Л╨╡ ╨┤╨╕╤Б╨║╨╕",
+   sortOrder: 0,
+   status: "published" as const,
+ };
+ 
+-const DEMO_MODEL = {
+-  slug: "bizon-forged-pro",
+-  name: "BIZON Forged Pro",
+-  series: "BIZON",
+-  designStyle: "Pro",
+-  material: "╨Ъ╨╛╨▓╨░╨╜╤Л╨╣ ╨░╨╗╤О╨╝╨╕╨╜╨╕╨╣",
+-  constructionMethod: "forged" as const,
+-  shortDescription: "╨Ъ╨╛╨▓╨░╨╜╤Л╨╣ ╨┤╨╕╤Б╨║ ╨┤╨╗╤П ╨╝╨░╨│╨╕╤Б╤В╤А╨░╨╗╤М╨╜╤Л╤Е ╨╛╤Б╨╡╨╣.",
+-  fitmentNotes: "╨г╤В╨╛╤З╨╜╤П╨╣╤В╨╡ PCD ╨╕ ET ╨┐╨╛╨┤ ╨▓╨░╤И ╨░╨▓╤В╨╛╨┐╨░╤А╨║.",
+-};
+-
+-const DEMO_VARIANT = {
+-  sizeLabel: "22.5├Ч8.25 ┬╖ 10├Ч335 ┬╖ ET+120",
+-  sku: "BIZ-FG-225825-335",
+-  diameter: 22.5,
+-  width: 8.25,
+-  boltHoles: 10,
+-  pcd: "335",
+-  offsetET: 120,
+-  centerBore: 281,
+-  loadRating: "9000 kg",
+-  color: "Polished",
+-  finish: "Polished",
+-  available: true,
+-  priceOnRequest: true,
+-  sortOrder: 0,
+-  status: "published" as const,
+-};
+-
+ console.log("seed-wheel-axis: connectingтАж");
+ 
+ const payload = await getPayload();
+ 
+ const existingType = await payload.find({
+   collection: "wheel-types",
+   where: { slug: { equals: FORGED_TYPE.slug } },
+   limit: 1,
+   depth: 0,
+ });
+ 
+-let forgedId: number;
+-if (existingType.docs[0]) {
+-  const updated = await payload.update({
++let forgedTypeId = existingType.docs[0]?.id;
++if (forgedTypeId) {
++  await payload.update({
+     collection: "wheel-types",
+-    id: existingType.docs[0].id,
++    id: forgedTypeId,
+     data: FORGED_TYPE,
+   });
+-  forgedId = updated.id;
+   console.log(`Updated wheel-type: ${FORGED_TYPE.slug}`);
+ } else {
+   const created = await payload.create({
+     collection: "wheel-types",
+     data: FORGED_TYPE,
+   });
+-  forgedId = created.id;
++  forgedTypeId = created.id;
+   console.log(`Created wheel-type: ${FORGED_TYPE.slug}`);
+ }
+ 
+-const existingModel = await payload.find({
+-  collection: "wheel-models",
+-  where: { slug: { equals: DEMO_MODEL.slug } },
+-  limit: 1,
+-  depth: 0,
+-});
+-
+-const modelData = { ...DEMO_MODEL, wheelType: forgedId, status: "published" as const };
+-
+-let modelId: number;
+-if (existingModel.docs[0]) {
+-  const updated = await payload.update({
++for (const design of SHOP_WHEEL_DESIGNS) {
++  const existingModel = await payload.find({
+     collection: "wheel-models",
+-    id: existingModel.docs[0].id,
+-    data: modelData,
++    where: { slug: { equals: design.slug } },
++    limit: 1,
++    depth: 0,
+   });
+-  modelId = updated.id;
+-  console.log(`Updated wheel-model: ${DEMO_MODEL.slug}`);
+-} else {
+-  const created = await payload.create({
+-    collection: "wheel-models",
+-    data: modelData,
+-  });
+-  modelId = created.id;
+-  console.log(`Created wheel-model: ${DEMO_MODEL.slug}`);
+-}
+-
+-const existingVariant = await payload.find({
+-  collection: "wheel-variants",
+-  where: { sku: { equals: DEMO_VARIANT.sku } },
+-  limit: 1,
+-  depth: 0,
+-});
+ 
+-const variantData = { ...DEMO_VARIANT, wheelModel: modelId };
++  const modelData = {
++    name: design.name,
++    slug: design.slug,
++    wheelType: forgedTypeId,
++    designStyle: design.positioning,
++    series: design.finish,
++    material: "╨Ъ╨╛╨▓╨░╨╜╤Л╨╣ ╨░╨╗╤О╨╝╨╕╨╜╨╕╨╣",
++    constructionMethod: "forged" as const,
++    shortDescription: design.description,
++    status: "published" as const,
++  };
+ 
+-if (existingVariant.docs[0]) {
+-  await payload.update({
+-    collection: "wheel-variants",
+-    id: existingVariant.docs[0].id,
+-    data: variantData,
+-  });
+-  console.log(`Updated wheel-variant: ${DEMO_VARIANT.sku}`);
+-} else {
+-  await payload.create({
+-    collection: "wheel-variants",
+-    data: variantData,
+-  });
+-  console.log(`Created wheel-variant: ${DEMO_VARIANT.sku}`);
++  if (existingModel.docs[0]) {
++    await payload.update({
++      collection: "wheel-models",
++      id: existingModel.docs[0].id,
++      data: modelData,
++    });
++    console.log(`Updated wheel-model: ${design.slug}`);
++  } else {
++    await payload.create({
++      collection: "wheel-models",
++      data: modelData,
++    });
++    console.log(`Created wheel-model: ${design.slug}`);
++  }
+ }
+ 
+-console.log("Done.");
++console.log("Done. Run npm run seed:wheel-media to upload mainImage and gallery.");
+ process.exit(0);
+diff --git a/scripts/seed-wheel-media.ts b/scripts/seed-wheel-media.ts
+new file mode 100644
+index 0000000..88f305a
+--- /dev/null
++++ b/scripts/seed-wheel-media.ts
+@@ -0,0 +1,115 @@
++/**
++ * Uploads forged wheel PNGs into Payload Media and links them on wheel-models.
++ *
++ * Run (staging recommended):
++ *   cross-env DATABASE_URI=postgresql://postgres:postgres@127.0.0.1:55433/bizon_payload_stage npm run seed:wheel-media
++ *
++ * Views: hero-3q тЖТ mainImage; front, depth-3q, detail тЖТ gallery (order).
++ * Idempotent by media.filename.
++ */
++import fs from "node:fs";
++import path from "node:path";
++import { fileURLToPath } from "node:url";
++import { SHOP_WHEEL_DESIGNS } from "../src/constants/shopWheels";
++import { getPayload } from "../src/lib/payload/getPayload";
++
++const __dirname = path.dirname(fileURLToPath(import.meta.url));
++const ROOT = path.resolve(__dirname, "..");
++
++const GALLERY_VIEWS = [
++  { view: "front", title: "Front", altSuffix: "╤Д╤А╨╛╨╜╤В╨░╨╗╤М╨╜╤Л╨╣ ╨▓╨╕╨┤" },
++  { view: "depth-3q", title: "Depth", altSuffix: "╨╛╨▒╤К╤С╨╝ ╨╕ ╨│╨╗╤Г╨▒╨╕╨╜╨░ ╨┐╤А╨╛╤Д╨╕╨╗╤П" },
++  { view: "detail", title: "Detail", altSuffix: "╨┤╨╡╤В╨░╨╗╤М ╨┐╨╛╨▓╨╡╤А╤Е╨╜╨╛╤Б╤В╨╕" },
++] as const;
++
++function wheelFile(slug: string, view: string) {
++  return path.join(
++    ROOT,
++    "public/images/premium/shop/wheels",
++    slug,
++    `bizon-${slug}-${view}.png`,
++  );
++}
++
++async function ensureMedia(
++  payload: Awaited<ReturnType<typeof getPayload>>,
++  filePath: string,
++  data: { title: string; alt: string },
++) {
++  if (!fs.existsSync(filePath)) {
++    throw new Error(`Missing wheel image: ${filePath}`);
++  }
++  const filename = path.basename(filePath);
++  const existing = await payload.find({
++    collection: "media",
++    where: { filename: { equals: filename } },
++    limit: 1,
++    depth: 0,
++  });
++  if (existing.docs[0]) {
++    console.log(`  media kept: ${filename} (#${existing.docs[0].id})`);
++    return existing.docs[0].id;
++  }
++  const created = await payload.create({
++    collection: "media",
++    data: {
++      title: data.title,
++      alt: data.alt,
++      mediaType: "image",
++      status: "published",
++    },
++    filePath,
++  });
++  console.log(`  media created: ${filename} (#${created.id})`);
++  return created.id;
++}
++
++console.log("seed-wheel-media: connectingтАж");
++const payload = await getPayload();
++
++for (const design of SHOP_WHEEL_DESIGNS) {
++  console.log(`model ${design.slug}`);
++  const models = await payload.find({
++    collection: "wheel-models",
++    where: { slug: { equals: design.slug } },
++    limit: 1,
++    depth: 0,
++  });
++  const model = models.docs[0];
++  if (!model) {
++    throw new Error(
++      `wheel-model "${design.slug}" missing тАФ run npm run seed:wheel-axis first`,
++    );
++  }
++
++  const heroPath = wheelFile(design.slug, "hero-3q");
++  const mainImage = await ensureMedia(payload, heroPath, {
++    title: `${design.name} Hero`,
++    alt: design.name,
++  });
++
++  const gallery: (string | number)[] = [];
++  for (const item of GALLERY_VIEWS) {
++    const id = await ensureMedia(payload, wheelFile(design.slug, item.view), {
++      title: item.title,
++      alt: `${design.name}, ${item.altSuffix}`,
++    });
++    gallery.push(id);
++  }
++
++  await payload.update({
++    collection: "wheel-models",
++    id: model.id,
++    data: {
++      mainImage,
++      gallery,
++      series: design.finish,
++      designStyle: design.positioning,
++      shortDescription: design.description,
++    },
++  });
++  console.log(`  linked mainImage + gallery (${gallery.length})`);
++}
++
++console.log("Done.");
++process.exit(0);
+

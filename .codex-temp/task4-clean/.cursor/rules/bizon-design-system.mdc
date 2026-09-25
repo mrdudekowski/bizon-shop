@@ -1,0 +1,41 @@
+---
+description: BIZON premium industrial design system — tokens, patterns, burger menu protection
+globs: src/**/*.{jsx,css},docs/design*.md,docs/theme-palette.md,index.html,tailwind.config.js
+alwaysApply: false
+---
+
+# BIZON Design System (для UI/вёрстки/дизайна)
+
+Перед изменением визуала прочитай **канон**: `docs/design-principles.md`.  
+Промпт для роли дизайнера: `docs/designer-prompt.md`.  
+Цвета SSOT: `src/index.css` (`--bizon-*`), таблица: `docs/theme-palette.md`.
+
+## Brand
+
+Premium **industrial** B2B (большегрузные шины, fleet). Не каталог.  
+Вдохновение — дисциплина премиальных automotive layout, **без копирования** чужих брендов.
+
+## Tokens (не дублировать hex в компонентах)
+
+- Black `#050505`, accent `#f2a900`, light `#f2f3f4`, gray `#6c7075`, dark `#1c1f22`
+- Жёлтый accent — **только CTA / focus / highlights**, не большие фоны
+- Контейнер max **1600px**, шрифт **Inter**
+
+## Паттерны
+
+- **Hero:** fullscreen cinematic, overlay, контент снизу, accent + glass CTA
+- **Products:** `.section--dark` + `.category-card` (gradient overlay, hover scale)
+- **Features:** `.section--muted` + `.info-card`
+- **Кнопки:** `cta-button` | `btn-accent` | `ghost-button` | `btn-glass` — min-height 44px
+
+## Защита
+
+**`BurgerMenu.jsx`** — не менять структуру, логику, JSX, handlers. Стили: `BurgerMenu.module.css`, `BurgerToggle.module.css`. Задание polish: `docs/burger-menu-refactor-prompt.md`.
+
+## Принцип
+
+`Preserve structure. Improve style. Strengthen system.`
+
+## Motion
+
+300ms UI hover lift; 700ms card image scale; без bounce/neon; `prefers-reduced-motion`.

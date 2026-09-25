@@ -1,0 +1,55 @@
+<h2>Смежные страницы — единая premium-система каталога</h2>
+<p class="subtitle">Три уровня одного пути: выбрать направление → сузить задачу → проверить конкретную модель.</p>
+
+<style>
+  .catalog-system{max-width:1100px;margin:26px auto 0;cursor:pointer}
+  .catalog-system.selected .screen{border-color:#e45433;box-shadow:0 0 0 2px rgba(228,84,51,.13)}
+  .flow{display:grid;grid-template-columns:.82fr 1fr 1.18fr;gap:17px;align-items:start}
+  .screen{overflow:hidden;min-height:650px;border:1px solid #ddd;border-radius:20px;background:#fff;color:#1c1c1c;font-family:Inter,Arial,sans-serif;transition:border-color .2s,box-shadow .2s}
+  .screen-label{padding:11px 14px;background:#f3f3f0;color:#666;font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.12em}
+  .nav{height:42px;margin:12px;border:1px solid #ddd;border-radius:999px;display:flex;align-items:center;justify-content:space-between;padding:0 13px;font-size:7px;font-weight:850;letter-spacing:.1em}.nav strong{font-size:10px}.nav span{color:#666}
+  .kicker{color:#03806b;font-size:7px;text-transform:uppercase;letter-spacing:.16em;font-weight:850}.title{margin:7px 0 0;font-size:30px;line-height:.91;letter-spacing:-.055em;font-weight:580}.desc{color:#6b6b6b;font-size:9px;line-height:1.5}
+  .hero{padding:42px 18px 24px}.hero .desc{margin:12px 0 0}.hairline{border-top:1px solid #d8d8d4}
+  .type-list{padding:0 14px 18px}.type{position:relative;min-height:175px;margin-top:10px;border-radius:14px;overflow:hidden;padding:16px;color:white;display:flex;flex-direction:column;justify-content:space-between}.type img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.type:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.75),rgba(0,0,0,.08))}.type>*{position:relative;z-index:2}.type small{font-size:7px;letter-spacing:.12em;text-transform:uppercase}.type strong{font-size:28px;font-weight:580}.type p{font-size:8px;color:rgba(255,255,255,.72)}
+  .filters{display:flex;gap:5px;padding:13px 14px;border-top:1px solid #ddd;border-bottom:1px solid #ddd;overflow:hidden}.filter{padding:7px 9px;border:1px solid #d5d5d1;border-radius:999px;white-space:nowrap;font-size:7px}.filter.active{background:#1c1c1c;color:#fff;border-color:#1c1c1c}
+  .results-head{display:flex;justify-content:space-between;align-items:end;padding:22px 15px 10px}.results-head h4{margin:5px 0 0;font-size:20px;letter-spacing:-.045em}.count{font-size:7px;color:#777}
+  .models{padding:0 12px 18px;display:grid;grid-template-columns:1fr 1fr;gap:8px}.model{overflow:hidden;border:1px solid #dededb;border-radius:12px;background:#fff}.model-media{height:115px;background:#f1f1ef}.model-media img{width:100%;height:100%;object-fit:contain}.model-body{padding:10px}.status{font-size:6px;color:#03806b;text-transform:uppercase;letter-spacing:.1em;font-weight:850}.model strong{display:block;margin:5px 0;font-size:14px}.model p{margin:0;color:#777;font-size:7px;line-height:1.4}
+  .product-stage{position:relative;height:285px;margin:0 13px;border-radius:15px;background:linear-gradient(135deg,#f7f7f5,#ececea);overflow:hidden}.product-stage img{position:absolute;right:-14px;bottom:-5px;width:72%;height:94%;object-fit:contain;filter:drop-shadow(0 22px 18px rgba(0,0,0,.15))}.product-tag{position:absolute;left:15px;top:17px}.product-tag .title{font-size:33px}.product-tag .desc{max-width:120px;margin-top:10px}.product-copy{padding:24px 16px 16px}.facts{display:grid;grid-template-columns:repeat(3,1fr);margin:14px 0;border-top:1px solid #ccc;border-bottom:1px solid #ddd;padding:12px 0}.fact{padding-left:8px;border-left:1px solid #ddd}.fact strong{display:block;font-size:12px}.fact span{font-size:6px;color:#777;text-transform:uppercase}.button{display:flex;min-height:38px;align-items:center;justify-content:center;border-radius:10px;background:#e45433;color:#fff;font-size:8px;font-weight:850}.variants{margin:17px 16px 0}.variants h4{font-size:16px;margin:0 0 8px}.variant-row{display:grid;grid-template-columns:1.2fr .7fr .7fr;gap:5px;padding:8px 0;border-top:1px solid #ddd;font-size:7px}.available{color:#03806b;font-weight:800}
+  .arrow{display:flex;align-items:center;justify-content:center;color:#9a9a96;font-size:24px;padding-top:300px}
+  .note{margin-top:18px;padding:16px 18px;border-radius:14px;background:#f4f4f1;color:#555;font-size:13px;line-height:1.5;text-align:center}
+  @media(max-width:900px){.flow{grid-template-columns:1fr}.arrow{display:none}.screen{min-height:auto}}
+</style>
+
+<div class="catalog-system" data-choice="approve-catalog-system" onclick="toggleSelect(this)">
+  <div class="flow">
+    <section class="screen">
+      <div class="screen-label">1 · /models</div><div class="nav"><strong>☰ &nbsp; BIZON</strong><span>КАТАЛОГ · РАСЧЁТ</span></div>
+      <div class="hero"><span class="kicker">Каталог BIZON</span><h3 class="title">Выберите направление</h3><p class="desc">Только опубликованные направления с готовыми моделями и страницами.</p></div>
+      <div class="type-list">
+        <article class="type"><img src="/files/public/images/premium/highway-hero.png" alt="TBR"><small>Коммерческий транспорт</small><div><strong>TBR</strong><p>Магистраль, регион и смешанный сервис →</p></div></article>
+        <article class="type"><img src="/files/public/images/premium/quarry-haul-truck.png" alt="OTR"><small>Карьер и спецтехника</small><div><strong>OTR</strong><p>Тяжёлые условия и высокая нагрузка →</p></div></article>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="screen-label">2 · /models/tbr</div><div class="nav"><strong>☰ &nbsp; BIZON</strong><span>КАТАЛОГ · РАСЧЁТ</span></div>
+      <div class="hero"><span class="kicker">TBR</span><h3 class="title">Шины для коммерческого транспорта</h3><p class="desc">Editorial-введение остаётся коротким; каталог начинается в первом экране.</p></div>
+      <div class="filters"><span class="filter active">Все</span><span class="filter">Магистраль</span><span class="filter">Регион</span><span class="filter">Смешанный сервис</span></div>
+      <div class="results-head"><div><span class="kicker">Модели</span><h4>Подходят под задачу</h4></div><span class="count">12 моделей</span></div>
+      <div class="models">
+        <article class="model"><div class="model-media"><img src="/files/public/images/premium/steer-tire-385.png" alt="DSR188"></div><div class="model-body"><span class="status">Доступна к заказу</span><strong>DSR188</strong><p>Регион · рулевая ось</p></div></article>
+        <article class="model"><div class="model-media"><img src="/files/public/images/premium/steer-tire-295.png" alt="DSR177"></div><div class="model-body"><span class="status">Доступна к заказу</span><strong>DSR177</strong><p>Регион · ведущая ось</p></div></article>
+        <article class="model"><div class="model-media"><img src="/files/public/images/premium/mixed-service-tire-315.png" alt="DSR158"></div><div class="model-body"><span class="status">Доступна к заказу</span><strong>DSR158</strong><p>Смешанный сервис</p></div></article>
+        <article class="model"><div class="model-media"><img src="/files/public/images/premium/regional-all-position-315.png" alt="Модель"></div><div class="model-body"><span class="status">Доступна к заказу</span><strong>DSR168</strong><p>Все позиции</p></div></article>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="screen-label">3 · Карточка модели</div><div class="nav"><strong>☰ &nbsp; BIZON</strong><span>КАТАЛОГ · РАСЧЁТ</span></div>
+      <div class="product-stage"><div class="product-tag"><span class="kicker">Regional · TBR</span><h3 class="title">DSR188</h3><p class="desc">Для стабильной работы на региональном маршруте.</p></div><img src="/files/public/images/premium/steer-tire-385.png" alt="DSR188"></div>
+      <div class="product-copy"><span class="kicker">Ключевые параметры</span><div class="facts"><div class="fact"><strong>Рулевая</strong><span>Ось</span></div><div class="fact"><strong>Регион</strong><span>Применение</span></div><div class="fact"><strong>R22.5</strong><span>Размеры</span></div></div><div class="button">Проверить совместимость</div></div>
+      <div class="variants"><h4>Типоразмеры</h4><div class="variant-row"><span>385/65 R22.5</span><span>160K</span><span class="available">К заказу</span></div><div class="variant-row"><span>315/80 R22.5</span><span>156L</span><span class="available">К заказу</span></div><div class="variant-row"><span>295/80 R22.5</span><span>152M</span><span>Уточнить</span></div></div>
+    </section>
+  </div>
+  <div class="note">Нажмите, если логика каталога утверждена: направление → URL-фильтры и модели → Product Theatre с типоразмерами и проверкой совместимости.</div>
+</div>

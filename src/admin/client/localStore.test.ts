@@ -157,11 +157,12 @@ describe("createLocalAdminClient", () => {
     });
   });
 
-  it("publishes a tire direction only with a main image", async () => {
+  it("publishes a tire direction without a cover image", async () => {
     const client = createLocalAdminClient(memory());
     const created = await client.createTireDirection({ name: "Регион" });
     await client.saveTireDirection(created.id, created.draft);
-    await expect(client.publishTireDirection(created.id)).rejects.toMatchObject({ code: "publish_blocked" });
+    const published = await client.publishTireDirection(created.id);
+    expect(published.publishedSnapshot?.name).toBe("Регион");
   });
 
   it("rejects removing the last admin role", async () => {
@@ -261,5 +262,66 @@ describe("createLocalAdminClient", () => {
     const client = createLocalAdminClient(memory());
     const direction = await client.getTireDirection("dir-long-haul");
     expect(direction.slugLocked).toBe(false);
+  });
+
+  it("blocks publish when the parent record is missing", async () => {
+    const client = createLocalAdminClient(memory());
+    const created = await client.createTireModel({ name: "Orphan", directionId: "missing-direction" });
+    await client.saveTireModel(created.id, publishable({ ...created.draft, directionId: "missing-direction" }));
+    await expect(client.publishTireModel(created.id)).rejects.toMatchObject({ code: "publish_blocked" });
+  });
+
+  it("blocks deleting a direction that still has a model", async () => {
+    const client = createLocalAdminClient(memory());
+    await client.createTireModel({ name: "Still here", directionId: "dir-long-haul" });
+    await expect(client.deleteTireDirection("dir-long-haul")).rejects.toMatchObject({ code: "publish_blocked" });
+    expect(await client.getTireDirection("dir-long-haul")).toMatchObject({ id: "dir-long-haul" });
+  });
+
+  it("blocks shop publish without a card price", async () => {
+    const client = createLocalAdminClient(memory());
+    const category = await client.createShopCategory({ name: "Аксессуары" });
+    const asset = await client.createAsset({ name: "p.png", mimeType: "image/png", dataUrl: "data:image/png,x" });
+    const image = {
+      assetId: asset.id,
+      alt: "",
+      focalX: 0.5,
+      focalY: 0.5,
+      crop: { x: 0, y: 0, width: 1, height: 1 },
+    };
+    await client.saveShopCategory(category.id, { ...category.draft, mainImage: image });
+    const product = await client.createShopProduct({ name: "Колпак", categoryId: category.id });
+    await client.saveShopProduct(product.id, {
+      ...product.draft,
+      mainImage: image,
+      priceOnRequest: false,
+      variants: [{ id: "v1", color: "", size: "22.5", sku: "", priceOnRequest: true, available: true }],
+    });
+    await expect(client.publishShopProduct(product.id)).rejects.toMatchObject({ code: "publish_blocked" });
+  });
+
+  it("treats two colors of the same shop size as a size conflict", async () => {
+    const client = createLocalAdminClient(memory());
+    const category = await client.createShopCategory({ name: "Аксессуары" });
+    const asset = await client.createAsset({ name: "p.png", mimeType: "image/png", dataUrl: "data:image/png,x" });
+    const image = {
+      assetId: asset.id,
+      alt: "",
+      focalX: 0.5,
+      focalY: 0.5,
+      crop: { x: 0, y: 0, width: 1, height: 1 },
+    };
+    await client.saveShopCategory(category.id, { ...category.draft, mainImage: image });
+    const product = await client.createShopProduct({ name: "Колпак", categoryId: category.id });
+    await client.saveShopProduct(product.id, {
+      ...product.draft,
+      mainImage: image,
+      priceOnRequest: true,
+      variants: [
+        { id: "v1", color: "чёрный", size: "22.5", sku: "", priceOnRequest: true, available: true },
+        { id: "v2", color: "серебро", size: "22.5", sku: "", priceOnRequest: true, available: true },
+      ],
+    });
+    await expect(client.publishShopProduct(product.id)).rejects.toMatchObject({ code: "publish_blocked" });
   });
 });

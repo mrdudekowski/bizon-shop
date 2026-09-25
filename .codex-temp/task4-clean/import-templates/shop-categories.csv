@@ -1,0 +1,5 @@
+slug,name,description,sortOrder,showInMenu,showOnShopHome,status
+accessories,Аксессуары,Fleet accessories beyond tyres.,0,true,true,published
+outdoor,Outdoor,Outdoor gear for fleet operators.,1,true,true,published
+glasses,Glasses,Protective eyewear.,2,true,true,published
+merch,Merch,BIZON branded merchandise.,3,true,true,published

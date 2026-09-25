@@ -44,7 +44,7 @@ export type AdminClient = {
   hideWheelType(id: string): Promise<EntityRecord<WheelTypeDraft>>;
   deleteWheelType(id: string): Promise<void>;
   listWheelModels(): Promise<
-    { id: string; name: string; typeName: string; status: DocumentStatus; hasUnpublishedDraft: boolean }[]
+    { id: string; name: string; typeName: string; wheelTypeId: string; status: DocumentStatus; hasUnpublishedDraft: boolean }[]
   >;
   createWheelModel(input: { name: string; wheelTypeId: string }): Promise<EntityRecord<WheelModelDraft>>;
   getWheelModel(id: string): Promise<EntityRecord<WheelModelDraft>>;
@@ -60,7 +60,7 @@ export type AdminClient = {
   hideShopCategory(id: string): Promise<EntityRecord<ShopCategoryDraft>>;
   deleteShopCategory(id: string): Promise<void>;
   listShopProducts(): Promise<
-    { id: string; name: string; categoryName: string; status: DocumentStatus; hasUnpublishedDraft: boolean }[]
+    { id: string; name: string; categoryName: string; categoryId: string; status: DocumentStatus; hasUnpublishedDraft: boolean }[]
   >;
   createShopProduct(input: { name: string; categoryId: string }): Promise<EntityRecord<ShopProductDraft>>;
   getShopProduct(id: string): Promise<EntityRecord<ShopProductDraft>>;
