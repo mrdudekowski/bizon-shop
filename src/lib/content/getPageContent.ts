@@ -1,10 +1,25 @@
 import { getPageDefaults } from "./pages/defaults";
 import type { PageKey } from "./pages/keys";
-import type { PageContentByKey } from "./pages/types";
+import { mergeHomeContent } from "./pages/merge";
+import type { HomePageContent, PageContentByKey } from "./pages/types";
+import { fetchPublishedJson, publishedApiEnabled } from "./publishedClient";
 
-/** Stage 1: static page defaults only (backend-app will merge published content later). */
+type HomePatch = Parameters<typeof mergeHomeContent>[1];
+
+/** Stage 1: code defaults, optionally merged with backend-app for home. */
 export async function getPageContent<K extends PageKey>(
   key: K,
 ): Promise<PageContentByKey[K]> {
-  return getPageDefaults(key);
+  const defaults = getPageDefaults(key);
+
+  if (key !== "home" || !publishedApiEnabled()) {
+    return defaults;
+  }
+
+  const patch = await fetchPublishedJson<HomePatch>("/v1/pages/home");
+  if (!patch) {
+    return defaults;
+  }
+
+  return mergeHomeContent(defaults as HomePageContent, patch) as PageContentByKey[K];
 }
