@@ -30,18 +30,67 @@ export async function readTireTypes(db: ReadDatabase): Promise<CmsTireType[]> {
     tireTypeRows.map(async (tireTypeRow) => {
       const [vehicleTypeRows, conditionRows] = await Promise.all([
         db.query(
-          "SELECT vehicle_type FROM tire_types_selection_vehicle_types WHERE parent_id = $1",
+          "SELECT value FROM tire_types_selection_vehicle_types WHERE parent_id = $1",
           [tireTypeRow.id],
         ),
         db.query(
-          "SELECT condition FROM tire_types_selection_conditions WHERE parent_id = $1",
+          "SELECT value FROM tire_types_selection_conditions WHERE parent_id = $1",
           [tireTypeRow.id],
         ),
       ]);
 
       return mapTireType(tireTypeRow as Parameters<typeof mapTireType>[0], {
-        vehicleTypes: readStringColumn(vehicleTypeRows, "vehicle_type"),
-        conditions: readStringColumn(conditionRows, "condition"),
+        vehicleTypes: readStringColumn(vehicleTypeRows, "value"),
+        conditions: readStringColumn(conditionRows, "value"),
+      });
+    }),
+  );
+}
+
+export async function readTireModelsByType(
+  db: ReadDatabase,
+  typeSlug: string,
+): Promise<CmsTireModel[]> {
+  const modelRows = await db.query(
+    `
+      SELECT tire_models.*, tire_types.slug AS tire_type_slug, tire_types.name AS tire_type_name,
+        media.url AS image_url
+      FROM tire_models
+      JOIN tire_types ON tire_types.id = tire_models.tire_type_id
+      LEFT JOIN media ON media.id = tire_models.main_image_id
+      WHERE tire_models.status = 'published'
+        AND tire_types.status = 'published'
+        AND tire_types.slug = $1
+      ORDER BY tire_models.name, tire_models.id
+    `,
+    [typeSlug],
+  );
+
+  return Promise.all(
+    modelRows.map(async (modelRow) => {
+      const [axleRows, featureRows] = await Promise.all([
+        db.query("SELECT value FROM tire_models_positions WHERE parent_id = $1", [modelRow.id]),
+        db.query(
+          `
+            SELECT key, title, description
+            FROM tire_models_features
+            WHERE _parent_id = $1
+            ORDER BY _order
+          `,
+          [modelRow.id],
+        ),
+      ]);
+
+      return mapTireModel({
+        row: modelRow as Parameters<typeof mapTireModel>[0]["row"],
+        tireType: {
+          slug: modelRow.tire_type_slug as string,
+          name: modelRow.tire_type_name as string,
+        },
+        imageUrl: typeof modelRow.image_url === "string" ? modelRow.image_url : null,
+        gallery: [],
+        advantages: featureRows.map(({ key, title, description }) => ({ key, title, description })),
+        selectionAxles: readStringColumn(axleRows, "value"),
       });
     }),
   );
@@ -72,7 +121,7 @@ export async function readTireModel(
   }
 
   const [axleRows, featureRows] = await Promise.all([
-    db.query("SELECT position FROM tire_models_positions WHERE parent_id = $1", [modelRow.id]),
+    db.query("SELECT value FROM tire_models_positions WHERE parent_id = $1", [modelRow.id]),
     db.query(
       `
         SELECT key, title, description
@@ -93,7 +142,7 @@ export async function readTireModel(
     imageUrl: typeof modelRow.image_url === "string" ? modelRow.image_url : null,
     gallery: [],
     advantages: featureRows.map(({ key, title, description }) => ({ key, title, description })),
-    selectionAxles: readStringColumn(axleRows, "position"),
+    selectionAxles: readStringColumn(axleRows, "value"),
   });
 }
 

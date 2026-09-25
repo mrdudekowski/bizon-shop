@@ -4,6 +4,7 @@ import {
   readArticles,
   readHomePatch,
   readTireModel,
+  readTireModelsByType,
   readTireTypes,
   readTireVariants,
 } from "./publishedRead";
@@ -27,8 +28,8 @@ function createRecordingDb(respond: (sql: string, params?: unknown[]) => Record<
 describe("published catalog readers", () => {
   it("reads only published tire types with their selection relations", async () => {
     const { db, calls } = createRecordingDb((sql) => {
-      if (sql.includes("FROM tire_types_selection_vehicle_types")) return [{ vehicle_type: "truck" }];
-      if (sql.includes("FROM tire_types_selection_conditions")) return [{ condition: "highway" }];
+      if (sql.includes("FROM tire_types_selection_vehicle_types")) return [{ value: "truck" }];
+      if (sql.includes("FROM tire_types_selection_conditions")) return [{ value: "highway" }];
       return [
         {
           id: 1,
@@ -55,7 +56,7 @@ describe("published catalog readers", () => {
 
   it("returns a published model with axles and ordered advantages", async () => {
     const { db, calls } = createRecordingDb((sql) => {
-      if (sql.includes("FROM tire_models_positions")) return [{ position: "drive" }];
+      if (sql.includes("FROM tire_models_positions")) return [{ value: "drive" }];
       if (sql.includes("FROM tire_models_features")) {
         return [{ key: "handling", title: "Управление", description: "Держит колею" }];
       }
@@ -99,6 +100,39 @@ describe("published catalog readers", () => {
     expect(calls).toHaveLength(1);
     expect(calls[0].sql).toContain("tire_models.status = 'published'");
     expect(calls[0]).toMatchObject({ params: ["tbr", "draft-model"] });
+  });
+
+  it("reads only published models for a published tire type", async () => {
+    const { db, calls } = createRecordingDb((sql) => {
+      if (sql.includes("FROM tire_models_positions")) return [{ value: "steer" }];
+      if (sql.includes("FROM tire_models_features")) {
+        return [{ key: "safety", title: "Безопасность", description: "Стабильно" }];
+      }
+      return [
+        {
+          id: 24,
+          name: "DSR188",
+          slug: "dsr188",
+          short_description: "Магистраль",
+          full_description: null,
+          series: "BIZON",
+          tread_type: "rib",
+          tire_type_slug: "tbr",
+          tire_type_name: "TBR",
+          image_url: "/media/dsr188.jpg",
+        },
+      ];
+    });
+
+    await expect(readTireModelsByType(db, "tbr")).resolves.toMatchObject([
+      { id: "24", slug: "dsr188", tireTypeSlug: "tbr", selectionAxles: ["steer"] },
+    ]);
+    expect(calls[0]).toMatchObject({ params: ["tbr"] });
+    expect(calls[0].sql).toContain("FROM tire_models");
+    expect(calls[0].sql).toContain("JOIN tire_types");
+    expect(calls[0].sql).toContain("tire_models.status = 'published'");
+    expect(calls[0].sql).toContain("tire_types.status = 'published'");
+    expect(calls[0].sql).toContain("ORDER BY tire_models.name, tire_models.id");
   });
 
   it("reads only published variants in canonical order", async () => {
