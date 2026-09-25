@@ -1,6 +1,7 @@
 import http from "node:http";
 import pg from "pg";
 import { dispatchAdminCall } from "./adminDispatch";
+import { deleteCartSession, readCartSession, saveCartSession } from "./cartSession";
 import { insertRequest, type StoredRequestInput } from "./insertRequest";
 import {
   readArticleBySlug,
@@ -131,6 +132,37 @@ async function handleRequest(
       sendJson(res, 400, { ok: false, code: "publish_blocked" }, originHeaders);
     }
     return;
+  }
+
+  if (path === "/v1/cart") {
+    const token = req.headers["x-cart-token"];
+    const cartToken = typeof token === "string" ? token : "";
+    if (!cartToken) {
+      sendJson(res, 400, { ok: false });
+      return;
+    }
+    try {
+      const database = getDatabase();
+      if (method === "GET") {
+        const items = await readCartSession(database, cartToken);
+        sendJson(res, 200, { ok: true, hasSession: items != null, items: items ?? [] });
+        return;
+      }
+      if (method === "PUT") {
+        const body = (await readJson(req)) as { items?: unknown };
+        await saveCartSession(database, cartToken, body.items);
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+      if (method === "DELETE") {
+        await deleteCartSession(database, cartToken);
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+    } catch {
+      sendJson(res, 500, { ok: false });
+      return;
+    }
   }
 
   if (method === "POST" && path === "/v1/requests") {

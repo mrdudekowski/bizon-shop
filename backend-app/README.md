@@ -36,7 +36,8 @@ npm run dev
 - `GET /v1/shop/products` (`?category=` filters by category slug)
 - `GET /v1/shop/products/:slug`
 - `POST /v1/admin` JSON `{ method, args }` — the only catalog writer. Same `AdminClient` methods and error codes as the CMS. Browser calls from `localhost` / `127.0.0.1` are allowed.
-- `POST /v1/requests` stores one normalized lead. Cart sync stays on the site until the cookie session contract is chosen.
+- `POST /v1/requests` stores one normalized lead.
+- `GET` / `PUT` / `DELETE /v1/cart` with header `x-cart-token`. The site keeps the opaque `bizon-cart-session-v1` cookie and stores only its hash.
 
 Unknown slug → `404` `{ "ok": false }`. Database error → `500` `{ "ok": false }` (no SQL text, no connection string).
 

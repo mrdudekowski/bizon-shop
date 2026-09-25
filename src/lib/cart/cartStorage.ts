@@ -88,11 +88,30 @@ export function writeCart(items: RequestItemInput[]): void {
   if (typeof window === "undefined") return;
   const compactItems = compactCartForCookie(items);
   writeLocalCart(compactItems);
+  syncCartToServer(compactItems);
 }
 
 export function replaceCartFromServer(items: RequestItemInput[]): void {
   if (typeof window === "undefined") return;
   writeLocalCart(compactCartForCookie(items));
+}
+
+function syncCartToServer(items: RequestItemInput[]): void {
+  if (typeof window === "undefined") return;
+  void fetch("/api/cart", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+}
+
+export async function loadServerCart(): Promise<RequestItemInput[] | null> {
+  if (typeof window === "undefined") return null;
+  const response = await fetch("/api/cart");
+  if (!response.ok) return null;
+  const body = (await response.json()) as { hasSession?: boolean; items?: RequestItemInput[] };
+  if (body.hasSession !== true) return null;
+  return body.items ?? [];
 }
 
 function writeLocalCart(compactItems: RequestItemInput[]): void {

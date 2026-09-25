@@ -10,8 +10,10 @@ import {
   CART_UPDATED_EVENT,
   CART_STORAGE_KEY,
   clearCart,
+  loadServerCart,
   readCart,
   removeCartItem,
+  replaceCartFromServer,
   updateCartItemQuantity,
 } from "@/lib/cart/cartStorage";
 import type { RequestItemInput } from "@/types/requestItem";
@@ -26,6 +28,13 @@ export function useCart() {
 
   useEffect(() => {
     refresh();
+    void loadServerCart()
+      .then((serverItems) => {
+        if (!serverItems) return;
+        replaceCartFromServer(serverItems);
+        setItems(serverItems);
+      })
+      .catch(() => undefined);
 
     const onUpdate = () => refresh();
     const onStorage = (event: StorageEvent) => {
