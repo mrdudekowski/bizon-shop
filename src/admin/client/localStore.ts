@@ -146,6 +146,7 @@ function emptyPageDraft(key: PageKey): PageDraft {
     seoTitle: "",
     seoDescription: "",
     hero: emptySection(),
+    documents: [],
   };
 }
 
@@ -337,19 +338,31 @@ function deleteNamed<T extends { id: string }>(
   save(state);
 }
 
+function recordUsesParent<T>(
+  records: EntityRecord<T>[],
+  parentId: string,
+  readParentId: (draft: T) => string,
+): boolean {
+  return records.some((record) =>
+    [record.draft, record.savedDraft, record.publishedSnapshot].some(
+      (draft) => draft != null && readParentId(draft) === parentId,
+    ),
+  );
+}
+
 function publishNamed<T extends { id: string; slug: string }>(
   load: () => StoreState,
   save: (state: StoreState) => void,
   pick: (state: StoreState) => EntityRecord<T>[],
   id: string,
-  blockers: (draft: T) => unknown[],
+  blockers: (draft: T, state: StoreState) => unknown[],
 ): EntityRecord<T> {
   const state = load();
   const record = requireNamed(pick(state), id);
   if (record.savedDraft == null || !sameJson(record.draft, record.savedDraft)) {
     throw new AdminClientError("unsaved");
   }
-  if (blockers(record.savedDraft).length > 0) throw new AdminClientError("publish_blocked");
+  if (blockers(record.savedDraft, state).length > 0) throw new AdminClientError("publish_blocked");
   record.publishedSnapshot = record.savedDraft;
   record.slugLocked = true;
   record.hidden = false;
@@ -396,6 +409,7 @@ function notePageDraft(used: Map<string, string[]>, page: PageDraft | null | und
     return;
   }
   noteAsset(used, page.hero.image, label);
+  noteDocuments(used, page.documents, label);
 }
 
 function noteEntityMedia(used: Map<string, string[]>, draft: object, label: string): void {
@@ -452,6 +466,19 @@ function isDirectionRecord(value: unknown): value is EntityRecord<TireDirectionD
   return value != null && typeof value === "object" && "draft" in value;
 }
 
+function withStubDocuments(page: EntityRecord<PageDraft>): EntityRecord<PageDraft> {
+  const fill = (draft: PageDraft | null): PageDraft | null => {
+    if (draft == null || draft.id === "home" || draft.id === "shop-home") return draft;
+    return { ...draft, documents: Array.isArray(draft.documents) ? draft.documents : [] };
+  };
+  return {
+    ...page,
+    draft: fill(page.draft) ?? page.draft,
+    savedDraft: fill(page.savedDraft),
+    publishedSnapshot: fill(page.publishedSnapshot),
+  };
+}
+
 function isPageWithHero(value: unknown): value is EntityRecord<PageDraft> {
   if (value == null || typeof value !== "object" || !("draft" in value)) return false;
   const draft = (value as { draft: unknown }).draft;
@@ -482,7 +509,7 @@ function normalizeLoaded(parsed: Partial<StoreState>): StoreState {
     );
     merged.pages = PAGE_KEYS.map((key) => {
       const existing = byKey.get(key);
-      if (existing != null && isPageWithHero(existing)) return existing;
+      if (existing != null && isPageWithHero(existing)) return withStubDocuments(existing);
       return emptyPage(key);
     });
   }
@@ -543,6 +570,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         slug: record.draft.slug,
         status: listStatus(record),
         hasUnpublishedDraft: hasUnpublishedDraft(record),
+        imageAssetId: record.draft.mainImage?.assetId ?? null,
       }));
     },
 
@@ -569,6 +597,10 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async deleteTireDirection(id) {
+      const state = load();
+      if (recordUsesParent(state.models, id, (model) => model.directionId)) {
+        throw new AdminClientError("publish_blocked");
+      }
       deleteNamed(
         load,
         save,
@@ -595,6 +627,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         return {
           id: record.id,
           name: record.draft.name,
+          directionId: record.draft.directionId,
           directionName: direction?.draft.name ?? "",
           sizeCount: record.draft.sizes.length,
           status: listStatus(record),
@@ -657,7 +690,8 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       if (record.savedDraft == null || !sameJson(record.draft, record.savedDraft)) {
         throw new AdminClientError("unsaved");
       }
-      if (tireModelPublishBlockers(record.savedDraft).length > 0) {
+      const parentExists = state.directions.some((direction) => direction.id === record.savedDraft?.directionId);
+      if (tireModelPublishBlockers(record.savedDraft, parentExists).length > 0) {
         throw new AdminClientError("publish_blocked");
       }
       record.publishedSnapshot = record.savedDraft;
@@ -717,6 +751,10 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async deleteWheelType(id: string) {
+      const state = load();
+      if (recordUsesParent(state.wheelModels, id, (model) => model.wheelTypeId)) {
+        throw new AdminClientError("publish_blocked");
+      }
       deleteNamed(
         load,
         save,
@@ -733,6 +771,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       return state.wheelModels.map((record) => ({
         id: record.id,
         name: record.draft.name,
+        wheelTypeId: record.draft.wheelTypeId,
         typeName: state.wheelTypes.find((item) => item.id === record.draft.wheelTypeId)?.draft.name ?? "",
         status: listStatus(record),
         hasUnpublishedDraft: hasUnpublishedDraft(record),
@@ -768,7 +807,9 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async publishWheelModel(id: string) {
-      return publishNamed(load, save, (state) => state.wheelModels, id, wheelModelPublishBlockers);
+      return publishNamed(load, save, (state) => state.wheelModels, id, (draft, state) =>
+        wheelModelPublishBlockers(draft, state.wheelTypes.some((type) => type.id === draft.wheelTypeId)),
+      );
     },
 
     async hideWheelModel(id: string) {
@@ -819,6 +860,10 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async deleteShopCategory(id: string) {
+      const state = load();
+      if (recordUsesParent(state.shopProducts, id, (product) => product.categoryId)) {
+        throw new AdminClientError("publish_blocked");
+      }
       deleteNamed(
         load,
         save,
@@ -835,6 +880,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       return state.shopProducts.map((record) => ({
         id: record.id,
         name: record.draft.name,
+        categoryId: record.draft.categoryId,
         categoryName: state.shopCategories.find((item) => item.id === record.draft.categoryId)?.draft.name ?? "",
         status: listStatus(record),
         hasUnpublishedDraft: hasUnpublishedDraft(record),
@@ -864,7 +910,9 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async publishShopProduct(id: string) {
-      return publishNamed(load, save, (state) => state.shopProducts, id, shopProductPublishBlockers);
+      return publishNamed(load, save, (state) => state.shopProducts, id, (draft, state) =>
+        shopProductPublishBlockers(draft, state.shopCategories.some((category) => category.id === draft.categoryId)),
+      );
     },
 
     async hideShopProduct(id: string) {
@@ -1040,8 +1088,29 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 }
 
 export function browserAdminClient(): AdminClient {
-  return createLocalAdminClient({
-    read: () => localStorage.getItem(LOCAL_STORAGE_KEY),
-    write: (value) => localStorage.setItem(LOCAL_STORAGE_KEY, value),
+  return remoteAdminClient();
+}
+
+function remoteAdminClient(): AdminClient {
+  const call = (method: string) => async (...args: unknown[]) => {
+    const adminApi = (process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://127.0.0.1:4000").replace(
+      /\/+$/,
+      "",
+    );
+    const response = await fetch(`${adminApi}/v1/admin`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ method, args }),
+    });
+    const body = (await response.json()) as { ok: boolean; result?: unknown; code?: AdminClientError["code"] };
+    if (!body.ok) throw new AdminClientError(body.code ?? "publish_blocked");
+    return body.result;
+  };
+  return new Proxy({} as AdminClient, {
+    get(_target, method) {
+      if (typeof method !== "string") return undefined;
+      return call(method);
+    },
   });
 }
+
