@@ -198,9 +198,13 @@ function mapSize(row: Row): TireSizeDraft {
 
 async function mapTireModel(row: Row): Promise<TireModelDraft> {
   const id = Number(row.id);
-  const [sizes, features, positions, applications, vehicles, conditions, axles] = await Promise.all([
+  const [sizes, features, gallery, positions, applications, vehicles, conditions, axles] = await Promise.all([
     query("SELECT * FROM tire_variants WHERE tire_model_id = $1 ORDER BY sort_order, id", [id]),
     query("SELECT * FROM tire_models_features WHERE _parent_id = $1 ORDER BY _order, id", [id]),
+    query(
+      `SELECT media_id FROM tire_models_rels WHERE parent_id = $1 AND path = 'gallery' ORDER BY "order", id`,
+      [id],
+    ),
     valuesOf("tire_models_positions", "parent_id", id),
     valuesOf("tire_models_application_types", "parent_id", id),
     valuesOf("tire_models_selection_vehicle_types", "parent_id", id),
@@ -216,17 +220,25 @@ async function mapTireModel(row: Row): Promise<TireModelDraft> {
     slug: str(row.slug),
     directionId: str(row.tire_type_id),
     mainImage: placement(row.main_image_id),
-    gallery: [],
-    advantages: [],
+    gallery: gallery.map((item) => placement(item.media_id)!).filter(Boolean),
+    advantages: features
+      .filter((feature) => !str(feature.id).startsWith("model-feature-"))
+      .map((feature) => ({
+        id: str(feature.id),
+        title: str(feature.title),
+        description: str(feature.description),
+      })),
     documents: [] as DocumentLink[],
     sizes: sizes.map(mapSize),
-    brand: "",
+    brand: str(row.series),
     descriptionShort: str(row.short_description),
     descriptionLong: plainText(row.full_description),
     applicationCategory: (str(row.application_category) || "") as TireModelDraft["applicationCategory"],
     treadType: str(row.tread_type),
     modelCode: str(row.model_code),
-    features: features.map((feature) => ({
+    features: features
+      .filter((feature) => str(feature.id).startsWith("model-feature-"))
+      .map((feature) => ({
       id: str(feature.id),
       key: str(feature.key),
       title: str(feature.title),
@@ -496,6 +508,25 @@ export const TIRE_MODEL_PUBLISH_COLUMNS = [
   "series",
 ] as const;
 
+async function replaceGallery(
+  client: PoolClient,
+  table: "tire_models_rels" | "wheel_models_rels",
+  parentId: number,
+  images: { assetId: string }[],
+) {
+  await client.query(`DELETE FROM ${table} WHERE parent_id = $1 AND path = 'gallery'`, [parentId]);
+  let order = 0;
+  for (const image of images) {
+    const mediaId = numericId(image.assetId);
+    if (mediaId == null) continue;
+    await client.query(
+      `INSERT INTO ${table} ("order", parent_id, path, media_id) VALUES ($1, $2, 'gallery', $3)`,
+      [order, parentId, mediaId],
+    );
+    order += 1;
+  }
+}
+
 async function writeTireModel(client: PoolClient, draft: TireModelDraft, status: string) {
   const id = numericId(draft.id);
   if (id == null) throw new AdminClientError("publish_blocked");
@@ -557,13 +588,50 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
       );
     }
   }
-  for (const feature of draft.features ?? []) {
-    await client.query("UPDATE tire_models_features SET title=$2, description=$3 WHERE id=$1", [
-      feature.id,
-      feature.title,
-      feature.description,
-    ]);
+  const keptFeatureIds: string[] = [];
+  for (const [index, feature] of (draft.features ?? []).entries()) {
+    if (!feature.key) continue;
+    keptFeatureIds.push(feature.id);
+    const existing = await client.query("SELECT id FROM tire_models_features WHERE id = $1", [feature.id]);
+    if (existing.rows.length > 0) {
+      await client.query(
+        "UPDATE tire_models_features SET title=$2, description=$3, key=$4, _order=$5 WHERE id=$1",
+        [feature.id, feature.title, feature.description, feature.key, index],
+      );
+    } else {
+      await client.query(
+        `INSERT INTO tire_models_features (_order, _parent_id, id, key, title, description)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [index, id, feature.id, feature.key, feature.title, feature.description],
+      );
+    }
   }
+  for (const [index, advantage] of draft.advantages.entries()) {
+    if (!advantage.title.trim() && !advantage.description.trim()) continue;
+    keptFeatureIds.push(advantage.id);
+    const existing = await client.query("SELECT id FROM tire_models_features WHERE id = $1", [advantage.id]);
+    if (existing.rows.length > 0) {
+      await client.query(
+        "UPDATE tire_models_features SET title=$2, description=$3, _order=$4 WHERE id=$1",
+        [advantage.id, advantage.title, advantage.description, 100 + index],
+      );
+    } else {
+      await client.query(
+        `INSERT INTO tire_models_features (_order, _parent_id, id, key, title, description)
+         VALUES ($1, $2, $3, 'handling', $4, $5)`,
+        [100 + index, id, advantage.id, advantage.title, advantage.description],
+      );
+    }
+  }
+  if (keptFeatureIds.length === 0) {
+    await client.query("DELETE FROM tire_models_features WHERE _parent_id = $1", [id]);
+  } else {
+    await client.query(
+      "DELETE FROM tire_models_features WHERE _parent_id = $1 AND NOT (id = ANY($2::varchar[]))",
+      [id, keptFeatureIds],
+    );
+  }
+  await replaceGallery(client, "tire_models_rels", id, draft.gallery);
   await replaceValues(client, "tire_models_positions", "parent_id", id, draft.selectionAxles);
   await replaceValues(client, "tire_models_application_types", "parent_id", id, draft.applicationTypes ?? []);
 }
@@ -859,14 +927,43 @@ export function createPostgresAdminClient(): AdminClient {
             draft.menuOrder,
           ],
         );
+        const keptVariantIds: number[] = [];
         for (const variant of draft.variants) {
           const variantId = numericId(variant.id);
-          if (variantId == null) continue;
+          const values = [
+            variant.sizeLabel,
+            variant.pcd,
+            variant.offsetET ?? null,
+            variant.centerBore ?? null,
+            variant.color,
+            variant.price ?? null,
+            variant.priceOnRequest,
+            variant.available,
+          ];
+          if (variantId == null) {
+            const inserted = await client.query(
+              `INSERT INTO wheel_variants (wheel_model_id, size_label, pcd, offset_e_t, center_bore, color, price, price_on_request, available, status)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'published') RETURNING id`,
+              [Number(id), ...values],
+            );
+            keptVariantIds.push(Number(inserted.rows[0].id));
+          } else {
+            await client.query(
+              "UPDATE wheel_variants SET size_label=$2, pcd=$3, offset_e_t=$4, center_bore=$5, color=$6, price=$7, price_on_request=$8, available=$9, status='published', updated_at=now() WHERE id=$1",
+              [variantId, ...values],
+            );
+            keptVariantIds.push(variantId);
+          }
+        }
+        if (keptVariantIds.length === 0) {
+          await client.query("DELETE FROM wheel_variants WHERE wheel_model_id = $1", [Number(id)]);
+        } else {
           await client.query(
-            "UPDATE wheel_variants SET size_label=$2, pcd=$3, offset_e_t=$4, center_bore=$5, color=$6, price=$7, price_on_request=$8, available=$9, status='published', updated_at=now() WHERE id=$1",
-            [variantId, variant.sizeLabel, variant.pcd, variant.offsetET ?? null, variant.centerBore ?? null, variant.color, variant.price ?? null, variant.priceOnRequest, variant.available],
+            "DELETE FROM wheel_variants WHERE wheel_model_id = $1 AND NOT (id = ANY($2::int[]))",
+            [Number(id), keptVariantIds],
           );
         }
+        await replaceGallery(client, "wheel_models_rels", Number(id), draft.gallery);
         await client.query("COMMIT");
       } catch (error) {
         await client.query("ROLLBACK");
@@ -973,18 +1070,46 @@ export function createPostgresAdminClient(): AdminClient {
       const categories = await query("SELECT id FROM shop_categories WHERE id = $1", [Number(draft.categoryId)]);
       if (shopProductPublishBlockers(draft, categories.length > 0).length > 0) throw new AdminClientError("publish_blocked");
       await query(
-        "UPDATE products SET name=$2, slug=$3, shop_category_id=$4, short_description=$5, price=$6, price_on_request=$7, main_image_id=$8, status='published', updated_at=now() WHERE id=$1",
+        "UPDATE products SET name=$2, slug=$3, shop_category_id=$4, short_description=$5, full_description=$6::jsonb, price=$7, price_on_request=$8, main_image_id=$9, status='published', updated_at=now() WHERE id=$1",
         [
           Number(id),
           draft.name,
           draft.slug,
           Number(draft.categoryId),
           draft.descriptionShort,
+          JSON.stringify(lexical(draft.descriptionLong)),
           draft.price ?? null,
           draft.priceOnRequest,
           draft.mainImage ? Number(draft.mainImage.assetId) : null,
         ],
       );
+      const keptVariantIds = draft.variants.map((variant) => variant.id);
+      for (const [index, variant] of draft.variants.entries()) {
+        await query(
+          `INSERT INTO products_variants (_order, _parent_id, id, sku, color, size, price, price_on_request, available)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+           ON CONFLICT (id) DO UPDATE SET _order=$1, sku=$4, color=$5, size=$6, price=$7, price_on_request=$8, available=$9`,
+          [
+            index,
+            Number(id),
+            variant.id,
+            variant.sku,
+            variant.color,
+            variant.size,
+            variant.price ?? null,
+            variant.priceOnRequest,
+            variant.available,
+          ],
+        );
+      }
+      if (keptVariantIds.length === 0) {
+        await query("DELETE FROM products_variants WHERE _parent_id = $1", [Number(id)]);
+      } else {
+        await query(
+          "DELETE FROM products_variants WHERE _parent_id = $1 AND NOT (id = ANY($2::varchar[]))",
+          [Number(id), keptVariantIds],
+        );
+      }
       await clearOverlay("shop-products", id);
       return this.getShopProduct(id);
     },
@@ -1152,6 +1277,7 @@ async function writePage(draft: PageDraft) {
         home_hero_primary_cta_label=$7, home_hero_primary_cta_href=$8,
         home_hero_secondary_cta_label=$9, home_hero_secondary_cta_href=$10,
         home_hero_metric_label=$11, home_hero_metric_text=$12,
+        home_hero_image_id=$13, home_hero_image_alt=$14,
         status='published', updated_at=now()
        WHERE key='home'`,
       [
@@ -1167,6 +1293,8 @@ async function writePage(draft: PageDraft) {
         draft.hero.secondaryCta.href,
         draft.hero.metricLabel,
         draft.hero.metricText,
+        draft.hero.image ? Number(draft.hero.image.assetId) : null,
+        draft.hero.image?.alt || null,
       ],
     );
     return;
@@ -1179,8 +1307,17 @@ async function writePage(draft: PageDraft) {
     return;
   }
   await query(
-    `UPDATE pages SET seo_seo_title=$2, seo_seo_description=$3, stub_hero_eyebrow=$4, stub_hero_title=$5, stub_hero_lead=$6, status='published', updated_at=now() WHERE key=$1`,
-    [draft.id, draft.seoTitle, draft.seoDescription, draft.hero.eyebrow, draft.hero.title, draft.hero.lead],
+    `UPDATE pages SET seo_seo_title=$2, seo_seo_description=$3, stub_hero_eyebrow=$4, stub_hero_title=$5, stub_hero_lead=$6, stub_hero_image_id=$7, stub_hero_image_alt=$8, status='published', updated_at=now() WHERE key=$1`,
+    [
+      draft.id,
+      draft.seoTitle,
+      draft.seoDescription,
+      draft.hero.eyebrow,
+      draft.hero.title,
+      draft.hero.lead,
+      draft.hero.image ? Number(draft.hero.image.assetId) : null,
+      draft.hero.image?.alt || null,
+    ],
   );
 }
 

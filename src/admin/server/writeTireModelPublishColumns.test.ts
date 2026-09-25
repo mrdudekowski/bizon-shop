@@ -18,5 +18,7 @@ describe("writeTireModel publish columns", () => {
     expect(writeTireModelSource).toContain("tread_type");
     expect(writeTireModelSource).toContain("series");
     expect(writeTireModelSource).toMatch(/COALESCE\s*\(\s*NULLIF/);
+    expect(writeTireModelSource).toContain("INSERT INTO tire_models_features");
+    expect(writeTireModelSource).toContain("tire_models_rels");
   });
 });
