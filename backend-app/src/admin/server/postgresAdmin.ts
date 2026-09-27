@@ -2,6 +2,7 @@ import { Pool, type PoolClient } from "pg";
 
 import { AdminClientError } from "../client/errors";
 import type { AdminClient } from "../client/adminClient";
+import { hashPassword, storedRole, type AuthenticatedAccount } from "./adminAuth";
 import {
   articlePublishBlockers,
   shopProductPublishBlockers,
@@ -49,7 +50,6 @@ function getPool(): Pool {
   return pool;
 }
 
-let session: AdminSession = { login: "admin", role: "admin" };
 let draftsReady: Promise<void> | null = null;
 
 type Row = Record<string, unknown>;
@@ -649,13 +649,17 @@ async function publishStatus(table: string, id: string, status: "published" | "a
   await query(`UPDATE ${table} SET status=$2, updated_at=now() WHERE id=$1`, [Number(id), status]);
 }
 
-export function createPostgresAdminClient(): AdminClient {
+export function createPostgresAdminClient(account: AuthenticatedAccount): AdminClient {
+  const session: AdminSession = { login: account.login, role: account.role };
+
+  /** Managing accounts is an administrator action, whatever the caller asks for. */
+  function requireAdmin(): void {
+    if (session.role !== "admin") throw new AdminClientError("forbidden");
+  }
+
   return {
     async getSession() {
       return session;
-    },
-    async setSessionRole(role) {
-      session = { ...session, role };
     },
     async storageNotice() {
       return null;
@@ -1239,6 +1243,7 @@ export function createPostgresAdminClient(): AdminClient {
       await query(`DELETE FROM ${table} WHERE id = $1`, [Number(id.split("-").slice(1).join("-"))]);
     },
     async listUsers() {
+      requireAdmin();
       const rows = await query("SELECT id, email, name, role, status FROM users ORDER BY email");
       return rows.map(
         (row): AdminUser => ({
@@ -1250,13 +1255,17 @@ export function createPostgresAdminClient(): AdminClient {
       );
     },
     async createUser(input) {
+      requireAdmin();
       const rows = await query(
-        "INSERT INTO users (name, email, role, status) VALUES ($1, $2, $3, 'active') RETURNING id, email, role, status",
-        [input.login, input.login, input.role],
+        `INSERT INTO users (name, email, role, status, hash, created_at, updated_at)
+         VALUES ($1, $1, $2, 'active', $3, now(), now())
+         RETURNING id, email, role, status`,
+        [input.login, storedRole(input.role), hashPassword(input.password)],
       );
       return { id: str(rows[0].id), login: str(rows[0].email), role: input.role, disabled: false };
     },
     async disableUser(id) {
+      requireAdmin();
       const users = await this.listUsers();
       const user = users.find((item) => item.id === id);
       if (user == null) throw new AdminClientError("publish_blocked");
@@ -1267,12 +1276,16 @@ export function createPostgresAdminClient(): AdminClient {
       return { ...user, disabled: true };
     },
     async setUserRole(id, role) {
+      requireAdmin();
       const users = await this.listUsers();
       const user = users.find((item) => item.id === id);
       if (user == null) throw new AdminClientError("publish_blocked");
       const admins = users.filter((item) => item.role === "admin" && !item.disabled);
       if (user.role === "admin" && role !== "admin" && admins.length <= 1) throw new AdminClientError("last_admin");
-      await query("UPDATE users SET role = $2, updated_at = now() WHERE id = $1", [Number(id), role]);
+      await query("UPDATE users SET role = $2, updated_at = now() WHERE id = $1", [
+        Number(id),
+        storedRole(role),
+      ]);
       return { ...user, role };
     },
   };

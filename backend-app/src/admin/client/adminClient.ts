@@ -19,8 +19,8 @@ import type {
 } from "../domain/types";
 
 export type AdminClient = {
+  /** Sign-in, sign-out and session lookup are dedicated routes, not dispatched calls. */
   getSession(): Promise<AdminSession>;
-  setSessionRole(role: AdminSession["role"]): Promise<void>;
   listTireDirections(): Promise<TireDirection[]>;
   createTireDirection(input: { name: string }): Promise<EntityRecord<TireDirectionDraft>>;
   getTireDirection(id: string): Promise<EntityRecord<TireDirectionDraft>>;

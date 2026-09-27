@@ -1,6 +1,18 @@
 import http from "node:http";
 import pg from "pg";
 import { dispatchAdminCall } from "./adminDispatch";
+import {
+  authenticate,
+  bootstrapAccounts,
+  clearedSessionCookie,
+  endSession,
+  ensureAuthSchema,
+  readSession,
+  readSessionCookie,
+  sessionCookie,
+  startSession,
+  type AuthenticatedAccount,
+} from "./admin/server/adminAuth";
 import { deleteCartSession, readCartSession, saveCartSession } from "./cartSession";
 import { insertRequest, type StoredRequestInput } from "./insertRequest";
 import {
@@ -47,8 +59,10 @@ function localOriginHeaders(origin: string | undefined): Record<string, string> 
   if (!origin || !/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin)) return {};
   return {
     "access-control-allow-origin": origin,
-    "access-control-allow-methods": "POST, OPTIONS",
+    "access-control-allow-methods": "GET, POST, OPTIONS",
     "access-control-allow-headers": "content-type",
+    // The CMS session lives in a cookie, so the browser only sends it when credentials are allowed.
+    "access-control-allow-credentials": "true",
     vary: "origin",
   };
 }
@@ -107,6 +121,29 @@ function getDatabase(): ReadDatabase {
   return db;
 }
 
+function isAuthPath(path: string): boolean {
+  return path === "/v1/admin/auth/login" || path === "/v1/admin/auth/logout" || path === "/v1/admin/auth/session";
+}
+
+function authQuery() {
+  const database = getDatabase();
+  return (sql: string, params: unknown[] = []) => database.query(sql, params);
+}
+
+function isSecureRequest(req: http.IncomingMessage): boolean {
+  return req.headers["x-forwarded-proto"] === "https";
+}
+
+function sessionOf(account: AuthenticatedAccount): { login: string; role: AuthenticatedAccount["role"] } {
+  return { login: account.login, role: account.role };
+}
+
+async function currentAccount(req: http.IncomingMessage): Promise<AuthenticatedAccount | null> {
+  const token = readSessionCookie(req.headers.cookie);
+  if (token == null) return null;
+  return readSession(authQuery(), token);
+}
+
 async function handleRequest(
   req: http.IncomingMessage,
   res: http.ServerResponse,
@@ -117,16 +154,70 @@ async function handleRequest(
 
   const originHeaders = localOriginHeaders(req.headers.origin);
 
-  if (method === "OPTIONS" && (path === "/v1/admin" || path === "/v1/requests")) {
+  if (method === "OPTIONS" && (path === "/v1/admin" || path === "/v1/requests" || isAuthPath(path))) {
     res.writeHead(204, originHeaders);
     res.end();
     return;
   }
 
+  if (method === "POST" && path === "/v1/admin/auth/login") {
+    try {
+      const body = (await readJson(req)) as { login?: unknown; password?: unknown };
+      const login = typeof body.login === "string" ? body.login : "";
+      const password = typeof body.password === "string" ? body.password : "";
+      const account = await authenticate(authQuery(), login, password);
+      if (account == null) {
+        sendJson(res, 401, { ok: false, code: "invalid_credentials" }, originHeaders);
+        return;
+      }
+      const token = await startSession(authQuery(), account.id);
+      sendJson(res, 200, { ok: true, result: sessionOf(account) }, {
+        ...originHeaders,
+        "set-cookie": sessionCookie(token, isSecureRequest(req)),
+      });
+    } catch {
+      sendJson(res, 500, { ok: false, code: "storage_unavailable" }, originHeaders);
+    }
+    return;
+  }
+
+  if (method === "POST" && path === "/v1/admin/auth/logout") {
+    try {
+      const token = readSessionCookie(req.headers.cookie);
+      if (token != null) await endSession(authQuery(), token);
+      sendJson(res, 200, { ok: true, result: null }, {
+        ...originHeaders,
+        "set-cookie": clearedSessionCookie(isSecureRequest(req)),
+      });
+    } catch {
+      sendJson(res, 500, { ok: false, code: "storage_unavailable" }, originHeaders);
+    }
+    return;
+  }
+
+  if (method === "GET" && path === "/v1/admin/auth/session") {
+    try {
+      const account = await currentAccount(req);
+      if (account == null) {
+        sendJson(res, 401, { ok: false, code: "unauthorized" }, originHeaders);
+        return;
+      }
+      sendJson(res, 200, { ok: true, result: sessionOf(account) }, originHeaders);
+    } catch {
+      sendJson(res, 500, { ok: false, code: "storage_unavailable" }, originHeaders);
+    }
+    return;
+  }
+
   if (method === "POST" && path === "/v1/admin") {
     try {
+      const account = await currentAccount(req);
+      if (account == null) {
+        sendJson(res, 401, { ok: false, code: "unauthorized" }, originHeaders);
+        return;
+      }
       const body = (await readJson(req)) as { method?: string; args?: unknown[] };
-      const outcome = await dispatchAdminCall(body);
+      const outcome = await dispatchAdminCall(body, account);
       sendJson(res, outcome.status, outcome.body, originHeaders);
     } catch {
       sendJson(res, 400, { ok: false, code: "publish_blocked" }, originHeaders);
@@ -410,6 +501,15 @@ const server = http.createServer((req, res) => {
   void handleRequest(req, res);
 });
 
+async function prepareAuth(): Promise<void> {
+  await ensureAuthSchema(authQuery());
+  await bootstrapAccounts(authQuery(), process.env);
+}
+
 server.listen(PORT, HOST, () => {
   console.log(`backend-app listening on http://${HOST}:${PORT}`);
+  prepareAuth().then(
+    () => console.log("CMS accounts ready"),
+    (error: unknown) => console.error("CMS accounts unavailable:", (error as Error).message),
+  );
 });

@@ -1,5 +1,6 @@
 import { AdminClientError } from "./admin/client/errors";
 import type { AdminClient } from "./admin/client/adminClient";
+import type { AuthenticatedAccount } from "./admin/server/adminAuth";
 import { createPostgresAdminClient } from "./admin/server/postgresAdmin";
 
 type AdminCall = {
@@ -7,11 +8,14 @@ type AdminCall = {
   args?: unknown[];
 };
 
-export async function dispatchAdminCall(body: AdminCall): Promise<{
+export async function dispatchAdminCall(
+  body: AdminCall,
+  account: AuthenticatedAccount,
+): Promise<{
   status: number;
   body: { ok: boolean; result?: unknown; code?: string };
 }> {
-  const client = createPostgresAdminClient();
+  const client = createPostgresAdminClient(account);
   const method = body.method;
   if (method == null || typeof client[method as keyof AdminClient] !== "function") {
     return { status: 400, body: { ok: false, code: "publish_blocked" } };
@@ -24,6 +28,6 @@ export async function dispatchAdminCall(body: AdminCall): Promise<{
     return { status: 200, body: { ok: true, result: result ?? null } };
   } catch (error) {
     const code = error instanceof AdminClientError ? error.code : "publish_blocked";
-    return { status: 400, body: { ok: false, code } };
+    return { status: code === "forbidden" ? 403 : 400, body: { ok: false, code } };
   }
 }
