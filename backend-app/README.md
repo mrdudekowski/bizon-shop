@@ -6,10 +6,12 @@ HTTP read API for published BIZON catalog content. Listens on `http://127.0.0.1:
 
 ```bash
 npm install
+cp .env.example .env   # then fill in DATABASE_URI
 npm run dev
 ```
 
 `DATABASE_URI` is required for data routes (`/v1/...`). There is no default connection string.
+The dev script reads it from `.env`, so the server does not depend on what the shell happens to export.
 
 `GET /health` answers `{ "ok": true }` without contacting the database.
 

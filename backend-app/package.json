@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx src/server.ts",
+    "dev": "tsx --env-file=.env src/server.ts",
     "test": "vitest run"
   },
   "dependencies": {
