@@ -1,0 +1,120 @@
+.shell {
+  min-height: 100dvh;
+  background: var(--canvas, #f3f4f6);
+}
+
+.body {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  min-height: 100dvh;
+  transition: grid-template-columns 180ms ease;
+}
+
+.bodyCollapsed { grid-template-columns: 72px minmax(0, 1fr); }
+
+.nav,
+.navOpen {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  padding: 18px 14px 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #1f2427;
+  color: #c8d0d7;
+}
+
+.sidebarBrand {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: center;
+  margin: -6px -8px 8px;
+  padding: 4px 8px 0;
+}
+
+.sidebarBrand a { display: flex; align-items: center; justify-content: center; width: 100%; }
+.fullMark { display: block; width: 176px; height: auto; }
+
+.collapseButton,
+.mobileCloseButton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.collapseButton:hover,.mobileCloseButton:hover { background: #30373b; }
+.collapseButton { margin-top: auto; }
+.collapseButton svg { transform: rotate(180deg); }
+.navCollapsed .collapseButton { justify-content: center; padding: 0; }
+.navCollapsed .collapseButton svg { transform: none; }
+.navCollapsed .collapseButton span,.navCollapsed .account,.navCollapsed .logout { display: none; }
+.navCollapsed .sidebarBrand { min-height: 48px; margin-top: 0; padding: 0; }
+.navCollapsed .fullMark { width: 44px; }
+
+.nav > a {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 14px;
+  padding: 0 12px;
+  border-radius: 9px;
+  color: inherit;
+  text-decoration: none;
+  font-size: 16px;
+}
+.nav > a:hover,.navOpen > a:hover { background: #30373b; }
+.nav > a[aria-current="page"],.navOpen > a[aria-current="page"] { background: var(--mint); color: #1f2427; font-weight: 650; }
+.nav > a svg,.navOpen > a svg { flex: 0 0 auto; }
+.navCollapsed > a { justify-content: center; padding: 0; }
+.navCollapsed > a span { display: none; }
+
+.sidebarBottom { padding-top: 12px; }
+.roles { display: flex; min-width: 0; align-items: center; gap: 10px; padding: 8px 10px; }
+.account { display: grid; min-width: 0; flex: 1; gap: 2px; overflow: hidden; }
+.account strong,.account small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account strong { color: #fff; font-size: 13px; }
+.account small { color: #aeb8c0; font-size: 11px; }
+.logout { padding: 6px; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; font-size: 12px; cursor: pointer; }
+.logout:hover { background: #30373b; color: #fff; }
+.avatar { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border-radius: 50%; background: #30373b; }
+.navCollapsed .roles { justify-content: center; padding-inline: 0; }
+.mobileCloseButton,.menuButton { display: none; }
+
+.content { min-width: 0; padding: 32px 32px 0; }
+.notice { margin: 0 0 20px; padding: 12px 16px; border: 1px solid #f1d88a; border-radius: 12px; background: #fff7dc; color: #604b0b; }
+.authLoading { min-height: 100dvh; display: grid; place-items: center; color: #687586; }
+
+@media (max-width: 1000px) {
+  .body { grid-template-columns: 208px minmax(0, 1fr); }
+  .bodyCollapsed { grid-template-columns: 72px minmax(0, 1fr); }
+  .content { padding-inline: 22px; }
+}
+
+@media (max-width: 720px) {
+  .body,.bodyCollapsed { display: block; }
+  .content { padding: 70px 16px 0; }
+  .menuButton { position: fixed; z-index: 30; top: 12px; left: 12px; display: inline-flex; min-height: 40px; align-items: center; padding: 0 14px; border: 1px solid #dce1e7; border-radius: 9px; background: white; color: #20262b; font: inherit; }
+  .nav { display: none; }
+  .navOpen { position: fixed; z-index: 40; inset: 0 auto 0 0; display: flex; width: min(280px, 86vw); height: 100dvh; overflow-y: auto; overscroll-behavior: contain; box-shadow: 12px 0 36px #0003; }
+  .navOpen .mobileCloseButton { display: flex; }
+  .navOpen .collapseButton { display: none; }
+  .navOpen .account { display: grid; }
+  .navOpen .logout { display: block; }
+}
+
+@media (prefers-reduced-motion: reduce) { .body { transition: none; } }

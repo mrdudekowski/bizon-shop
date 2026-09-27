@@ -1,0 +1,105 @@
+:root {
+  --canvas: #f3f4f6;
+  --surface: #ffffff;
+  --surface-muted: #edf0f4;
+  --ink: #191f28;
+  --ink-muted: #697386;
+  --line: #e4e7ed;
+  --mint: #06e3be;
+  --mint-wash: #d1fef6;
+  --mint-hover: #05b194;
+  --mint-ink: #024e41;
+  --action: #e45433;
+  --action-hover: #ea7a60;
+  --action-ink: #000000;
+  --accent: var(--mint);
+  --accent-wash: var(--mint-wash);
+  --accent-hover: var(--mint-hover);
+  --sidebar: #202527;
+  --sidebar-hover: #30363a;
+  --sidebar-muted: #bec5ce;
+  --sidebar-line: #ffffff1a;
+  --success: #21834b;
+  --success-wash: #e7f6eb;
+  --radius: 8px;
+  --control: 44px;
+  --space: 24px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+html { scroll-behavior: smooth; scroll-padding-top: 152px; scroll-padding-bottom: 160px; }
+body { font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.5; color: var(--ink); background: var(--canvas); -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { min-height: var(--control); padding: 0 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); font-weight: 600; cursor: pointer; transition: background-color 140ms ease; }
+button:hover { background: var(--surface-muted); }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+button:disabled { cursor: not-allowed; background: var(--surface-muted); border-color: var(--surface-muted); color: #89919e; }
+button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+.primary { background: var(--action); border-color: var(--action); color: var(--action-ink); }
+.primary:hover { background: var(--action-hover); border-color: var(--action-hover); }
+.primary:disabled { background: var(--surface-muted); border-color: var(--surface-muted); color: #89919e; }
+.ghost { border-color: transparent; background: transparent; }
+input, select, textarea { width: 100%; max-width: 100%; min-width: 0; min-height: var(--control); padding: 10px 12px; border: 1px solid #cfd5df; border-radius: var(--radius); background: var(--surface); font-weight: 400; }
+input::placeholder, textarea::placeholder { color: #8992a1; }
+input:disabled, select:disabled, textarea:disabled { background: var(--surface-muted); color: var(--ink-muted); }
+textarea { min-height: 110px; resize: vertical; }
+input[type="checkbox"], input[type="radio"] { width: 17px !important; height: 17px; min-height: 17px; flex-shrink: 0; accent-color: var(--accent); }
+label { display: grid; gap: 7px; min-width: 0; font-size: 13px; font-weight: 600; }
+label:has(> input[type="checkbox"]) { display: flex !important; flex-direction: row; align-items: center; gap: 9px; font-weight: 400; }
+main { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space); width: 100%; max-width: 1440px; min-width: 0; margin: 0 auto; padding-bottom: 32px; }
+h1, h2, h3 { margin: 0; line-height: 1.25; }
+h1 { font-size: 34px; font-weight: 750; letter-spacing: -1.2px; }
+h2 { font-size: 18px; font-weight: 650; scroll-margin-top: 150px; }
+h3 { font-size: 15px; }
+p { margin: 0; }
+a { color: inherit; }
+ul { margin: 0; padding: 0; min-width: 0; list-style: none; }
+fieldset { min-width: 0; border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+legend { padding: 0 6px; font-weight: 600; }
+dialog { border: 1px solid var(--line); border-radius: 12px; padding: 24px; box-shadow: 0 24px 80px #17212e33; }
+dialog::backdrop { background: #141b2766; backdrop-filter: blur(3px); }
+.subheading { color: var(--ink-muted); font-size: 14px; margin-top: 7px; font-weight: 400; }
+.document { gap: 22px !important; }
+.document > section, .document > fieldset { padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: grid; gap: 18px; min-width: 0; }
+.document > section > h2 { padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.document > section > button { justify-self: start; }
+.document > section > div:has(> input), .document > section > div:has(> textarea) { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--line); border-radius: 8px; }
+.document > section > label:has(textarea) { grid-column: 1 / -1; }
+.document > label { background: var(--surface); padding: 16px 24px; border-radius: var(--radius); }
+.blockNav { position: sticky; top: 76px; z-index: 15; display: flex; overflow-x: auto; overflow-y: hidden; gap: 8px; min-width: 0; background: var(--canvas); border-bottom: 1px solid #dbe0e7; padding-top: 4px; scrollbar-width: thin; scrollbar-color: #aab2bf transparent; scroll-snap-type: x proximity; }
+.blockNav:empty { display: none; }
+.blockNav button { flex-shrink: 0; min-height: 44px; padding: 10px 14px; border: 0; border-bottom: 3px solid transparent; border-radius: 8px 8px 0 0; background: transparent; color: var(--ink-muted); }
+.blockNav button:hover { background: var(--surface-muted); color: var(--ink); }
+.blockNav button[aria-selected="true"] { border-bottom-color: var(--accent); background: var(--surface); color: var(--ink); font-weight: 650; }
+.document [data-document-tab-panel][hidden] { display: none !important; }
+.documentActions { position: sticky; bottom: 0; z-index: 18; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 10px 10px 0 0; background: var(--surface); box-shadow: 0 -4px 18px #17212e06; }
+.documentFeedback { display: flex; flex-wrap: wrap; gap: 2px 16px; flex: 1 1 260px; font-size: 12px; color: var(--ink-muted); }
+.documentFeedback p:last-child { color: var(--ink); }
+.documentButtons { display: flex; flex-wrap: wrap; gap: 8px; }
+.documentButtons > button:first-child { background: var(--action); border-color: var(--action); color: var(--action-ink); min-width: 132px; }
+.documentButtons > button:first-child:hover:not(:disabled) { background: var(--action-hover); border-color: var(--action-hover); }
+.documentButtons > button:first-child:disabled { background: var(--surface-muted); border-color: var(--surface-muted); }
+.documentButtons > button:last-child:not(:first-child) { font-weight: 400; }
+.backLink { display: inline-flex; min-height: 32px; align-items: center; margin: 0 0 8px; color: var(--ink-muted); font-size: 13px; text-decoration: none; }
+.backLink:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.advantageList { display: grid; gap: 12px; }
+.advantageItem { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.advantageChoice { display: flex !important; align-items: center; gap: 10px; font-weight: 650 !important; }
+.advantageChoice img { width: 40px; height: 40px; border-radius: 8px; background: #111; object-fit: cover; }
+.tireSize { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; gap: 14px; }
+.tireSize > label:has(> input[type="checkbox"]) { align-self: center; min-height: 44px; }
+.choiceGroup { display: grid; gap: 12px; }
+.fieldHint { color: var(--ink-muted); font-size: 12px; font-weight: 400; }
+@media (min-width: 1000px) { .document > section:has(> label) { grid-template-columns: repeat(2, minmax(0, 1fr)); } .document > section > h2, .document > section > fieldset, .document > section > div, .document > section > section { grid-column: 1 / -1; } }
+@media (max-width: 720px) {
+  h1 { font-size: 28px; }
+  .blockNav { top: 64px; gap: 3px; }
+  .blockNav button { padding: 10px; font-size: 12px; }
+  .document > section, .document > fieldset { padding: 18px; }
+  .tireSize { grid-template-columns: minmax(0,1fr); }
+  .documentActions { padding: 8px 10px; gap: 6px; }
+  .documentFeedback { flex-basis: 100%; font-size: 12px; line-height: 1.4; }
+  .documentButtons { width: 100%; gap: 6px; }
+  .documentButtons button { flex: 1 1 140px; min-height: 44px; padding-inline: 10px; font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } button { transition: none; } }

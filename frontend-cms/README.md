@@ -1,7 +1,5 @@
-# frontend-cms (reserved)
+# BIZON frontend-cms
 
-Future admin UI for BIZON content and catalog. Replaces Payload CMS.
+Отдельная ветка админки. Публичный сайт живёт на `main-app` и в это дерево не входит.
 
-Will talk to `backend-app` only — not bundled with the public site.
-
-Not implemented on this branch.
+`npm run dev` открывает оболочку CMS на localhost. База и `backend-app` не подключены.
