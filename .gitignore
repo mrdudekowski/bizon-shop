@@ -8,3 +8,13 @@ coverage/
 *.local
 .DS_Store
 next-env.d.ts
+tsconfig.tsbuildinfo
+
+# Scratch space for one-off scripts, agent notes and tool output. Never shipped,
+# and some of it holds local credentials, so it must stay out of history.
+.codex-temp/
+.superpowers/
+.npm-cache/
+outputs/
+reports/
+test-results/
