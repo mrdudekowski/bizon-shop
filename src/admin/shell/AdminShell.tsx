@@ -119,11 +119,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <div className={styles.sidebarBrand}>
             <Link href="/" aria-label="BIZON — на главную" title="BIZON — на главную">
               <Image
-                src={collapsed ? "/brand/bizon-head.svg" : "/brand/bizon-full.svg"}
+                src={collapsed ? "/brand/bizon-mark-light.png" : "/brand/bizon-logo-light.png"}
                 alt=""
-                className={collapsed ? styles.headMark : styles.fullMark}
-                width={collapsed ? 44 : 190}
-                height={collapsed ? 44 : 123}
+                className={styles.fullMark}
+                width={collapsed ? 96 : 300}
+                height={collapsed ? 96 : 69}
                 priority
                 unoptimized
               />

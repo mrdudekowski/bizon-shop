@@ -115,6 +115,8 @@ export function ShopProductList() {
                 meta={`/${category.draft.slug} · ${productCounts[category.id] ?? 0} товаров`}
                 icon="shop"
                 imageUrl={imageUrl(category)}
+                imageOnWhiteBackground
+                largeShopCategory
                 status={category.hidden ? "hidden" : category.publishedSnapshot == null ? "draft" : "on_site"}
                 onStatusChange={role === "admin" ? (status) => changeCategoryStatus(category.id, status) : undefined}
               />

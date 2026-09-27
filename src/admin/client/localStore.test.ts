@@ -301,6 +301,32 @@ describe("createLocalAdminClient", () => {
     await expect(client.publishShopProduct(product.id)).rejects.toMatchObject({ code: "publish_blocked" });
   });
 
+  it("returns main image asset ids for wheel and shop product cards", async () => {
+    const client = createLocalAdminClient(memory());
+    const asset = await client.createAsset({ name: "card.png", mimeType: "image/png", dataUrl: "data:image/png,x" });
+    const image = {
+      assetId: asset.id,
+      alt: "",
+      focalX: 0.5,
+      focalY: 0.5,
+      crop: { x: 0, y: 0, width: 1, height: 1 },
+    };
+
+    const wheelType = await client.createWheelType({ name: "Кованые" });
+    const wheel = await client.createWheelModel({ name: "Atlas", wheelTypeId: wheelType.id });
+    await client.saveWheelModel(wheel.id, { ...wheel.draft, mainImage: image });
+
+    const category = await client.createShopCategory({ name: "Аксессуары" });
+    const product = await client.createShopProduct({ name: "Колпак", categoryId: category.id });
+    await client.saveShopProduct(product.id, { ...product.draft, mainImage: image });
+    const material = await client.createMaterial({ title: "Tire IQ", kind: "article" });
+    await client.saveMaterial(material.id, { ...material.draft, image });
+
+    expect((await client.listWheelModels()).find((item) => item.id === wheel.id)).toMatchObject({ imageAssetId: asset.id });
+    expect((await client.listShopProducts()).find((item) => item.id === product.id)).toMatchObject({ imageAssetId: asset.id });
+    expect((await client.listMaterials()).find((item) => item.id === material.id)).toMatchObject({ imageAssetId: asset.id });
+  });
+
   it("treats two colors of the same shop size as a size conflict", async () => {
     const client = createLocalAdminClient(memory());
     const category = await client.createShopCategory({ name: "Аксессуары" });

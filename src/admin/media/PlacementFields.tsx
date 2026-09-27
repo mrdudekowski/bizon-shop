@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import Image from "next/image";
 import type { ImagePlacement, MediaListItem } from "@/admin/domain/types";
+import { resolveMediaPreviewUrl } from "@/admin/domain/catalogPreviewUrl";
 import { AdminClientError } from "@/admin/client/errors";
 import { browserAdminClient } from "@/admin/client/localStore";
 import styles from "./PlacementFields.module.css";
@@ -18,7 +19,7 @@ export function PlacementFields({ value, onChange, label = "Фото" }: Props) 
   useEffect(() => {
     if (!assetId) { setPreviewUrl(null); return; }
     let cancelled = false;
-    void browserAdminClient().listAssets().then((assets: MediaListItem[]) => { if (!cancelled) setPreviewUrl(assets.find((asset) => asset.id === assetId)?.dataUrl ?? null); });
+    void browserAdminClient().listAssets().then((assets: MediaListItem[]) => { if (!cancelled) setPreviewUrl(resolveMediaPreviewUrl(assets.find((asset) => asset.id === assetId)?.dataUrl)); });
     return () => { cancelled = true; };
   }, [assetId]);
   async function onFile(file?: File) {

@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { browserAdminClient } from "@/admin/client/localStore";
+import { sortModelsByPublicationStatus } from "@/admin/domain/catalogSort";
+import { hydrateMissingImageAssetIds } from "@/admin/domain/hydrateWheelPreviewAssets";
 import { slugifyTitle } from "@/admin/domain/slug";
-import type { DocumentStatus, EntityRecord, WheelTypeDraft } from "@/admin/domain/types";
+import type { DocumentStatus, EntityRecord, MediaListItem, WheelTypeDraft } from "@/admin/domain/types";
 import { CatalogFilters } from "@/admin/ui/CatalogFilters";
 import { CatalogRow } from "@/admin/ui/CatalogRow";
 import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
@@ -17,8 +19,9 @@ export function WheelModelList() {
   const router = useRouter();
   const modelDialogRef = useRef<HTMLDialogElement>(null);
   const [types, setTypes] = useState<EntityRecord<WheelTypeDraft>[]>([]);
+  const [assets, setAssets] = useState<MediaListItem[]>([]);
   const [models, setModels] = useState<
-    { id: string; name: string; typeName: string; wheelTypeId: string; status: DocumentStatus; hasUnpublishedDraft: boolean }[]
+    { id: string; name: string; typeName: string; wheelTypeId: string; imageAssetId: string | null; status: DocumentStatus; hasUnpublishedDraft: boolean }[]
   >([]);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -29,9 +32,11 @@ export function WheelModelList() {
 
   async function reload() {
     const client = browserAdminClient();
-    const [nextTypes, nextModels, session] = await Promise.all([client.listWheelTypes(), client.listWheelModels(), client.getSession()]);
+    const [nextTypes, listedModels, nextAssets, session] = await Promise.all([client.listWheelTypes(), client.listWheelModels(), client.listAssets(), client.getSession()]);
+    const nextModels = await hydrateMissingImageAssetIds(listedModels, async (id) => client.getWheelModel(id));
     setTypes(nextTypes);
     setModels(nextModels);
+    setAssets(nextAssets);
     setRole(session.role);
   }
 
@@ -56,11 +61,12 @@ export function WheelModelList() {
     await reload();
   }
 
-  const filteredModels = models.filter((model) => {
+  const matchingModels = models.filter((model) => {
     const matchesQuery = model.name.toLocaleLowerCase("ru-RU").includes(query.trim().toLocaleLowerCase("ru-RU"));
     const matchesStatus = status === "all" || model.status === status;
     return matchesQuery && matchesStatus;
   });
+  const filteredModels = status === "all" ? sortModelsByPublicationStatus(matchingModels) : matchingModels;
 
   function openModelDialog() {
     setName("");
@@ -93,7 +99,7 @@ export function WheelModelList() {
       <div className={styles.pageHead}><h2>Модели дисков</h2><button className="primary" type="button" onClick={openModelDialog}>Добавить модель</button></div>
       <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название модели…" />
       {filteredModels.length === 0 ? <p className={styles.empty}>{models.length > 0 ? "По заданным фильтрам модели не найдены" : "Моделей дисков пока нет"}</p> : <>
-        <ul className={styles.catalogList}>{filteredModels.map((model) => <li key={model.id}><CatalogRow href={`/wheels/${model.id}`} title={model.name} icon="wheels" status={model.status} hasUnpublishedDraft={model.hasUnpublishedDraft} onDelete={role === "admin" ? () => deleteModel(model.id, model.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(model.id, nextStatus) : undefined} /></li>)}</ul>
+        <ul className={styles.catalogList}>{filteredModels.map((model) => <li key={model.id}><CatalogRow href={`/wheels/${model.id}`} title={model.name} icon="wheels" imageUrl={assets.find((asset) => asset.id === model.imageAssetId)?.dataUrl} status={model.status} hasUnpublishedDraft={model.hasUnpublishedDraft} onDelete={role === "admin" ? () => deleteModel(model.id, model.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(model.id, nextStatus) : undefined} /></li>)}</ul>
         <div className={styles.listFoot}>Показано {filteredModels.length} моделей</div>
       </>}
       <CatalogCreateDialog

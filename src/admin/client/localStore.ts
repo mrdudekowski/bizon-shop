@@ -886,6 +886,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         id: record.id,
         name: record.draft.name,
         wheelTypeId: record.draft.wheelTypeId,
+        imageAssetId: record.draft.mainImage?.assetId ?? null,
         typeName: state.wheelTypes.find((item) => item.id === record.draft.wheelTypeId)?.draft.name ?? "",
         status: listStatus(record),
         hasUnpublishedDraft: hasUnpublishedDraft(record),
@@ -1053,6 +1054,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
           id: record.id,
           name: record.draft.name,
           categoryId: record.draft.categoryId,
+          imageAssetId: record.draft.mainImage?.assetId ?? null,
           subcategoryId: record.draft.subcategoryId,
           categoryName: state.shopCategories.find((item) => item.id === record.draft.categoryId)?.draft.name ?? "",
           categoryPublished,
@@ -1158,6 +1160,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         id: record.id,
         title: record.draft.title,
         kind: record.draft.kind,
+        imageAssetId: record.draft.image?.assetId ?? null,
         status: listStatus(record),
         hasUnpublishedDraft: hasUnpublishedDraft(record),
       }));

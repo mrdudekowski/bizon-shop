@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import type { DocumentStatus } from "@/admin/domain/types";
+import { resolveMediaPreviewUrl } from "@/admin/domain/catalogPreviewUrl";
 import { AdminClientError } from "@/admin/client/errors";
 import { Icon, type IconName } from "./Icon";
 import { StatusControl } from "./StatusControl";
@@ -22,6 +23,8 @@ export function CatalogRow({
   meta,
   icon,
   imageUrl,
+  imageOnWhiteBackground = false,
+  largeShopCategory = false,
   status,
   hasUnpublishedDraft = false,
   onDelete,
@@ -32,6 +35,8 @@ export function CatalogRow({
   meta?: string;
   icon: IconName;
   imageUrl?: string | null;
+  imageOnWhiteBackground?: boolean;
+  largeShopCategory?: boolean;
   status?: DocumentStatus;
   hasUnpublishedDraft?: boolean;
   onDelete?: () => Promise<void>;
@@ -42,6 +47,7 @@ export function CatalogRow({
   const [deleteError, setDeleteError] = useState("");
 
   const titleId = useId();
+  const resolvedImageUrl = resolveMediaPreviewUrl(imageUrl);
 
   function openDelete(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -70,8 +76,8 @@ export function CatalogRow({
 
   const rowContent = (
     <>
-      <span className={styles.rowThumb}>
-        {imageUrl ? <Image unoptimized width={48} height={48} src={imageUrl} alt="" /> : <Icon name={icon} size={24} />}
+      <span className={`${styles.rowThumb} ${imageOnWhiteBackground ? styles.rowThumbWhiteImage : ""} ${largeShopCategory ? styles.rowThumbLarge : ""}`}>
+        {resolvedImageUrl ? <Image unoptimized width={48} height={48} src={resolvedImageUrl} alt="" /> : <Icon name={icon} size={24} />}
       </span>
       <span className={styles.rowBody}>
         <strong>{title}</strong>
@@ -82,7 +88,7 @@ export function CatalogRow({
 
   if (!onDelete && !onStatusChange) {
     return (
-      <Link className={styles.catalogRow} href={href}>
+      <Link className={`${styles.catalogRow} ${largeShopCategory ? styles.catalogRowLarge : ""}`} href={href}>
         {rowContent}
         <span className={styles.rowBadges}>
           {status ? onStatusChange ? <StatusControl status={status} title={title} onChange={onStatusChange} /> : <span className={status === "on_site" ? styles.badgeOnSite : styles.badge}>{STATUS_LABEL[status]}</span> : null}
@@ -94,7 +100,7 @@ export function CatalogRow({
   }
 
   return (
-    <div className={`${styles.catalogRow} ${styles.catalogRowActionable}`}>
+    <div className={`${styles.catalogRow} ${styles.catalogRowActionable} ${largeShopCategory ? styles.catalogRowLarge : ""}`}>
       <Link className={styles.rowMainLink} href={href} aria-label={`Открыть: ${title}`}>
         {rowContent}
       </Link>

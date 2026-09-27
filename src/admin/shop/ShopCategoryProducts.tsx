@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
 import { slugifyTitle } from "@/admin/domain/slug";
-import type { DocumentStatus, ShopSubcategoryDraft } from "@/admin/domain/types";
+import type { DocumentStatus, MediaListItem, ShopSubcategoryDraft } from "@/admin/domain/types";
 import { useAdminRole } from "@/admin/ui/DocumentUI";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
@@ -24,6 +24,7 @@ type ShopProductListItem = {
   subcategoryId?: string;
   status: DocumentStatus;
   hasUnpublishedDraft: boolean;
+  imageAssetId: string | null;
 };
 
 export function ShopCategoryProducts({ categoryId, categoryName }: { categoryId: string; categoryName: string }) {
@@ -31,6 +32,7 @@ export function ShopCategoryProducts({ categoryId, categoryName }: { categoryId:
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [products, setProducts] = useState<ShopProductListItem[]>([]);
   const [subcategories, setSubcategories] = useState<ShopSubcategoryDraft[]>([]);
+  const [assets, setAssets] = useState<MediaListItem[]>([]);
   const [role, setRole] = useAdminRole();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | DocumentStatus>("all");
@@ -45,13 +47,15 @@ export function ShopCategoryProducts({ categoryId, categoryName }: { categoryId:
     setError("");
     try {
       const client = browserAdminClient();
-      const [allProducts, options, session] = await Promise.all([
+      const [allProducts, options, media, session] = await Promise.all([
         client.listShopProducts(),
         client.listShopSubcategories(categoryId),
+        client.listAssets(),
         client.getSession(),
       ]);
       setProducts(allProducts.filter((product) => product.categoryId === categoryId));
       setSubcategories(options);
+      setAssets(media);
       setRole(session.role);
     } catch {
       setError("Не удалось загрузить товары этой категории. Проверьте соединение и попробуйте ещё раз.");
@@ -158,6 +162,7 @@ export function ShopCategoryProducts({ categoryId, categoryName }: { categoryId:
                   title={product.name || "Без названия"}
                   meta={`${categoryName}${!product.categoryPublished ? " · доступность ждёт публикации категории" : ""}`}
                   icon="shop"
+                  imageUrl={assets.find((asset) => asset.id === product.imageAssetId)?.dataUrl}
                   status={product.status}
                   hasUnpublishedDraft={product.hasUnpublishedDraft}
                   onDelete={role === "admin" ? () => deleteProduct(product) : undefined}

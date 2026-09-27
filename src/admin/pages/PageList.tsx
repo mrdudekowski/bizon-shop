@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { browserAdminClient } from "@/admin/client/localStore";
-import type { DocumentStatus, EntityRecord, PageDraft } from "@/admin/domain/types";
+import type { DocumentStatus, EntityRecord, MediaListItem, PageDraft } from "@/admin/domain/types";
 
 import { PAGE_LABELS } from "./pageLabels";
 import styles from "@/admin/ui/catalog.module.css";
@@ -25,13 +25,28 @@ function hasDraft(record: EntityRecord<PageDraft>): boolean {
   );
 }
 
+function previewAssetId(draft: PageDraft): string | undefined {
+  if (draft.id === "home") return draft.hero.image?.assetId ?? draft.shopCampaign.image?.assetId;
+  if (draft.id === "shop-home") {
+    return draft.hero.image?.assetId
+      ?? draft.categoryCarousel.find((slide) => slide.desktopImage || slide.mobileImage)?.desktopImage?.assetId
+      ?? draft.categoryCarousel.find((slide) => slide.mobileImage)?.mobileImage?.assetId
+      ?? draft.vehicles.slides.find((slide) => slide.image)?.image?.assetId;
+  }
+  return draft.hero.image?.assetId;
+}
+
 export function PageList() {
   const [role] = useAdminRole();
   const [pages, setPages] = useState<EntityRecord<PageDraft>[]>([]);
+  const [assets, setAssets] = useState<MediaListItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function reload() {
-    setPages(await browserAdminClient().listPages());
+    const client = browserAdminClient();
+    const [nextPages, media] = await Promise.all([client.listPages(), client.listAssets()]);
+    setPages(nextPages);
+    setAssets(media);
     setLoading(false);
   }
 
@@ -50,7 +65,7 @@ export function PageList() {
       {loading ? <AdminLoading label="Загружаем страницы…" /> : <ul className={styles.catalogList}>
         {pages.map((page) => (
           <li key={page.id}>
-            <CatalogRow href={`/pages/${page.draft.id}`} title={PAGE_LABELS[page.draft.id]} icon="pages" status={statusOf(page)} hasUnpublishedDraft={hasDraft(page)} onStatusChange={role === "admin" ? (status) => changeStatus(page.draft.id, status) : undefined} />
+            <CatalogRow href={`/pages/${page.draft.id}`} title={PAGE_LABELS[page.draft.id]} icon="pages" imageUrl={assets.find((asset) => asset.id === previewAssetId(page.draft))?.dataUrl} status={statusOf(page)} hasUnpublishedDraft={hasDraft(page)} onStatusChange={role === "admin" ? (status) => changeStatus(page.draft.id, status) : undefined} />
           </li>
         ))}
       </ul>}

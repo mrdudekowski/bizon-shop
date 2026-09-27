@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { browserAdminClient } from "@/admin/client/localStore";
+import { resolveSiteCatalogPreview } from "@/admin/domain/catalogPreviewUrl";
 import { slugifyTitle } from "@/admin/domain/slug";
 import type { DocumentStatus, TireDirection, MediaListItem } from "@/admin/domain/types";
 import { CatalogFilters } from "@/admin/ui/CatalogFilters";
@@ -76,7 +77,7 @@ export function TireDirectionList() {
       {loading ? <AdminLoading label="Загружаем направления…" /> : <ul className={styles.catalogList}>
         {visibleDirections.map((direction) => (
           <li key={direction.id}>
-            <CatalogRow href={`/tires/directions/${direction.id}`} title={direction.name} meta={`/${direction.slug}`} icon="directions" imageUrl={assets.find((asset) => asset.id === direction.imageAssetId)?.dataUrl} status={direction.status} hasUnpublishedDraft={direction.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeDirectionStatus(direction.id, nextStatus) : undefined} />
+            <CatalogRow href={`/tires/directions/${direction.id}`} title={direction.name} meta={`/${direction.slug}`} icon="directions" imageUrl={assets.find((asset) => asset.id === direction.imageAssetId)?.dataUrl ?? resolveSiteCatalogPreview(direction.slug)} status={direction.status} hasUnpublishedDraft={direction.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeDirectionStatus(direction.id, nextStatus) : undefined} />
           </li>
         ))}
       </ul>}

@@ -17,7 +17,7 @@
 .userActions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; }
 .badge, .badgeOnSite { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 4px 10px; border: 0; border-radius: 999px; background: var(--surface-muted); color: var(--ink-muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
 .badge::before, .badgeOnSite::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.badgeOnSite { background: var(--success-wash); color: var(--success); }
+.badgeOnSite { background: var(--mint-wash); color: var(--mint-ink); }
 .you { font-size: 12px; color: var(--ink-muted); }
 .tableFoot { padding: 12px 4px; color: var(--ink-muted); font-size: 12px; }
 @media (max-width: 840px) { .userRow { grid-template-columns: minmax(0,1fr) minmax(140px,200px); } .userActions { justify-content: flex-start; } }

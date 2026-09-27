@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { slugifyTitle } from "@/admin/domain/slug";
-import type { ArticleDraft, DocumentStatus } from "@/admin/domain/types";
+import type { ArticleDraft, DocumentStatus, MediaListItem } from "@/admin/domain/types";
 
 import styles from "@/admin/ui/catalog.module.css";
 import { Icon } from "@/admin/ui/Icon";
@@ -24,10 +24,12 @@ export function MaterialList() {
       id: string;
       title: string;
       kind: ArticleDraft["kind"];
+      imageAssetId: string | null;
       status: DocumentStatus;
       hasUnpublishedDraft: boolean;
     }[]
   >([]);
+  const [assets, setAssets] = useState<MediaListItem[]>([]);
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
@@ -38,7 +40,10 @@ export function MaterialList() {
 
   async function reload() {
     try {
-      setItems(await browserAdminClient().listMaterials());
+      const client = browserAdminClient();
+      const [materials, media] = await Promise.all([client.listMaterials(), client.listAssets()]);
+      setItems(materials);
+      setAssets(media);
     } finally {
       setLoading(false);
     }
@@ -83,7 +88,7 @@ export function MaterialList() {
       <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название материала…" />
       {loading ? <AdminLoading label="Загружаем материалы…" /> : items.length === 0 ? <div className={styles.empty}><Icon name="materials" size={36} /><h2>Материалов пока нет</h2><p>Создайте статью Tire IQ или историю клиента.</p><button className="primary" type="button" onClick={openCreate}>Добавить материал</button></div> : visibleItems.length === 0 ? <div className={styles.empty}><h2>Ничего не найдено</h2><p>Измените запрос или выберите другой статус.</p></div> : <>
         <ul className={styles.catalogList}>{visibleItems.map((item) => (
-          <li key={item.id}><CatalogRow href={`/materials/${item.id}`} title={item.title} meta={item.kind === "story" ? "История" : "Tire IQ"} icon="materials" status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeStatus(item.id, nextStatus) : undefined} /></li>
+          <li key={item.id}><CatalogRow href={`/materials/${item.id}`} title={item.title} meta={item.kind === "story" ? "История" : "Tire IQ"} icon="materials" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeStatus(item.id, nextStatus) : undefined} /></li>
         ))}</ul>
         <div className={styles.listFoot}>Показано {visibleItems.length} из {items.length} материалов</div>
       </>}
