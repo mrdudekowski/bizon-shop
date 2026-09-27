@@ -1,28 +1,15 @@
-/** HTTP client for backend-app published content. No database access. */
+/** Published content for frontend work. Reads the baked snapshot, not the backend. */
+
+import responses from "./snapshot/responses.json";
+
+const snapshot = responses as Record<string, unknown>;
 
 export function publishedApiEnabled(): boolean {
-  const url = process.env.CONTENT_API_URL;
-  return typeof url === "string" && url.trim().length > 0;
-}
-
-function joinContentApiUrl(path: string): string {
-  const base = (process.env.CONTENT_API_URL ?? "").trim().replace(/\/+$/, "");
-  const suffix = path.startsWith("/") ? path : `/${path}`;
-  return `${base}${suffix}`;
+  return true;
 }
 
 export async function fetchPublishedJson<T>(path: string): Promise<T | null> {
-  if (!publishedApiEnabled()) {
-    return null;
-  }
-
-  try {
-    const response = await fetch(joinContentApiUrl(path), { cache: "no-store" });
-    if (response.status === 404 || !response.ok) {
-      return null;
-    }
-    return (await response.json()) as T;
-  } catch {
-    return null;
-  }
+  const key = path.startsWith("/") ? path : `/${path}`;
+  if (!Object.hasOwn(snapshot, key)) return null;
+  return snapshot[key] as T;
 }
