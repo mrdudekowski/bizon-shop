@@ -15,6 +15,7 @@ import type {
   MediaAsset,
   ShopCategoryDraft,
   ShopProductDraft,
+  ShopSubcategoryDraft,
   TireDirection,
   TireDirectionDraft,
   TireModelDraft,
@@ -51,6 +52,7 @@ type StoreState = {
   wheelTypes: EntityRecord<WheelTypeDraft>[];
   wheelModels: EntityRecord<WheelModelDraft>[];
   shopCategories: EntityRecord<ShopCategoryDraft>[];
+  shopSubcategories: ShopSubcategoryDraft[];
   shopProducts: EntityRecord<ShopProductDraft>[];
   pages: EntityRecord<PageDraft>[];
   materials: EntityRecord<ArticleDraft>[];
@@ -224,6 +226,7 @@ function seed(): StoreState {
     wheelTypes: [],
     wheelModels: [],
     shopCategories: [],
+    shopSubcategories: [],
     shopProducts: [],
     pages: PAGE_KEYS.map(emptyPage),
     materials: [],
@@ -324,16 +327,36 @@ function hideNamed<T extends { id: string }>(
   return record;
 }
 
+function unpublishNamed<T extends { id: string }>(
+  load: () => StoreState,
+  save: (state: StoreState) => void,
+  pick: (state: StoreState) => EntityRecord<T>[],
+  id: string,
+): EntityRecord<T> {
+  const state = load();
+  const record = requireNamed(pick(state), id);
+  record.savedDraft = record.draft;
+  record.publishedSnapshot = null;
+  record.hidden = false;
+  record.slugLocked = false;
+  record.lastSavedBy = state.session.login;
+  save(state);
+  return record;
+}
+
 function deleteNamed<T extends { id: string }>(
   load: () => StoreState,
   save: (state: StoreState) => void,
   pick: (state: StoreState) => EntityRecord<T>[],
   remove: (state: StoreState, id: string) => void,
   id: string,
+  allowHiddenPublished = false,
 ): void {
   const state = load();
   const record = requireNamed(pick(state), id);
-  if (record.publishedSnapshot != null) throw new AdminClientError("publish_blocked");
+  if (record.publishedSnapshot != null && !(allowHiddenPublished && record.hidden)) {
+    throw new AdminClientError("publish_blocked");
+  }
   remove(state, id);
   save(state);
 }
@@ -553,14 +576,105 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
   }
 
   return {
+    async changeDocumentStatus(entity, id, status) {
+      if (entity === "page") {
+        const state = load();
+        const record = requireNamed(state.pages, id);
+        if (status === "on_site") return this.publishPage(id as PageKey);
+        if (status === "hidden") {
+          record.savedDraft = record.draft;
+          record.hidden = true;
+        } else {
+          record.savedDraft = record.draft;
+          record.publishedSnapshot = null;
+          record.hidden = false;
+          record.slugLocked = false;
+        }
+        record.lastSavedBy = state.session.login;
+        save(state);
+        return record;
+      }
+
+      if (entity === "tire-direction") {
+        if (status === "on_site") return this.publishTireDirection(id);
+        if (status === "hidden") {
+          const current = await this.getTireDirection(id);
+          await this.saveTireDirection(id, current.draft);
+          return this.hideTireDirection(id);
+        }
+        return unpublishNamed(load, save, (state) => state.directions, id);
+      }
+      if (entity === "tire-model") {
+        if (status === "on_site") return this.publishTireModel(id);
+        if (status === "hidden") {
+          const current = await this.getTireModel(id);
+          await this.saveTireModel(id, current.draft);
+          return this.hideTireModel(id);
+        }
+        return unpublishNamed(load, save, (state) => state.models, id);
+      }
+      if (entity === "wheel-type") {
+        if (status === "on_site") return this.publishWheelType(id);
+        if (status === "hidden") {
+          const current = await this.getWheelType(id);
+          await this.saveWheelType(id, current.draft);
+          return this.hideWheelType(id);
+        }
+        return unpublishNamed(load, save, (state) => state.wheelTypes, id);
+      }
+      if (entity === "wheel-model") {
+        if (status === "on_site") return this.publishWheelModel(id);
+        if (status === "hidden") {
+          const current = await this.getWheelModel(id);
+          await this.saveWheelModel(id, current.draft);
+          return this.hideWheelModel(id);
+        }
+        return unpublishNamed(load, save, (state) => state.wheelModels, id);
+      }
+      if (entity === "shop-category") {
+        const state = load();
+        if (status !== "on_site" && state.shopProducts.some((product) => product.publishedSnapshot?.categoryId === id && !product.hidden)) {
+          throw new AdminClientError("category_has_published_products");
+        }
+        if (status === "on_site") return this.publishShopCategory(id);
+        if (status === "hidden") {
+          const current = await this.getShopCategory(id);
+          await this.saveShopCategory(id, current.draft);
+          return this.hideShopCategory(id);
+        }
+        return unpublishNamed(load, save, (state) => state.shopCategories, id);
+      }
+      if (entity === "shop-product") {
+        if (status === "on_site") return this.publishShopProduct(id);
+        if (status === "hidden") {
+          const current = await this.getShopProduct(id);
+          await this.saveShopProduct(id, current.draft);
+          return this.hideShopProduct(id);
+        }
+        return unpublishNamed(load, save, (state) => state.shopProducts, id);
+      }
+      if (entity === "material") {
+        if (status === "on_site") return this.publishMaterial(id);
+        if (status === "hidden") {
+          const current = await this.getMaterial(id);
+          await this.saveMaterial(id, current.draft);
+          return this.hideMaterial(id);
+        }
+        return unpublishNamed(load, save, (state) => state.materials, id);
+      }
+      throw new AdminClientError("publish_blocked");
+    },
+
     async getSession() {
       return load().session;
     },
 
-    async setSessionRole(role) {
-      const state = load();
-      state.session = { ...state.session, role };
-      save(state);
+    async login() {
+      throw new AdminClientError("unauthorized");
+    },
+
+    async logout() {
+      return;
     },
 
     async listTireDirections() {
@@ -714,7 +828,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     async deleteTireModel(id) {
       const state = load();
       const record = requireModel(state, id);
-      if (record.publishedSnapshot != null) throw new AdminClientError("publish_blocked");
+      if (record.publishedSnapshot != null && !record.hidden) throw new AdminClientError("publish_blocked");
       state.models = state.models.filter((item) => item.id !== id);
       save(state);
     },
@@ -825,6 +939,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
           state.wheelModels = state.wheelModels.filter((item) => item.id !== modelId);
         },
         id,
+        true,
       );
     },
 
@@ -856,6 +971,10 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async hideShopCategory(id: string) {
+      const state = load();
+      if (state.shopProducts.some((product) => product.publishedSnapshot?.categoryId === id && !product.hidden)) {
+        throw new AdminClientError("category_has_published_products");
+      }
       return hideNamed(load, save, (state) => state.shopCategories, id);
     },
 
@@ -875,16 +994,73 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       );
     },
 
+    async listShopSubcategories(categoryId: string) {
+      return load().shopSubcategories
+        .filter((item) => item.categoryId === categoryId)
+        .sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name, "ru"));
+    },
+
+    async createShopSubcategory(input: { categoryId: string; name: string; slug: string }) {
+      const state = load();
+      if (!state.shopCategories.some((item) => item.id === input.categoryId)) throw new Error("not_found");
+      if (!input.name.trim() || !isValidSlug(input.slug)) throw new AdminClientError("invalid_slug");
+      if (state.shopSubcategories.some((item) => item.categoryId === input.categoryId && (
+        item.slug.toLocaleLowerCase("ru-RU") === input.slug.trim().toLocaleLowerCase("ru-RU") ||
+        item.name.toLocaleLowerCase("ru-RU") === input.name.trim().toLocaleLowerCase("ru-RU")
+      ))) {
+        throw new AdminClientError("slug_taken");
+      }
+      const subcategory = { id: crypto.randomUUID(), categoryId: input.categoryId, name: input.name.trim(), slug: input.slug, sortOrder: state.shopSubcategories.filter((item) => item.categoryId === input.categoryId).length };
+      state.shopSubcategories.push(subcategory);
+      save(state);
+      return subcategory;
+    },
+
+    async saveShopSubcategory(id: string, input: { name: string; slug: string }) {
+      const state = load();
+      const item = state.shopSubcategories.find((subcategory) => subcategory.id === id);
+      if (!item) throw new Error("not_found");
+      if (!input.name.trim() || !isValidSlug(input.slug)) throw new AdminClientError("invalid_slug");
+      if (state.shopSubcategories.some((subcategory) => subcategory.id !== id && subcategory.categoryId === item.categoryId && (
+        subcategory.slug.toLocaleLowerCase("ru-RU") === input.slug.trim().toLocaleLowerCase("ru-RU") ||
+        subcategory.name.toLocaleLowerCase("ru-RU") === input.name.trim().toLocaleLowerCase("ru-RU")
+      ))) {
+        throw new AdminClientError("slug_taken");
+      }
+      item.name = input.name.trim();
+      item.slug = input.slug;
+      save(state);
+      return item;
+    },
+
+    async deleteShopSubcategory(id: string) {
+      const state = load();
+      if (recordUsesParent(state.shopProducts, id, (product) => product.subcategoryId ?? "")) {
+        throw new AdminClientError("publish_blocked");
+      }
+      state.shopSubcategories = state.shopSubcategories.filter((item) => item.id !== id);
+      save(state);
+    },
+
     async listShopProducts() {
       const state = load();
-      return state.shopProducts.map((record) => ({
-        id: record.id,
-        name: record.draft.name,
-        categoryId: record.draft.categoryId,
-        categoryName: state.shopCategories.find((item) => item.id === record.draft.categoryId)?.draft.name ?? "",
-        status: listStatus(record),
-        hasUnpublishedDraft: hasUnpublishedDraft(record),
-      }));
+      return state.shopProducts.map((record) => {
+        const visibleCategoryId = record.publishedSnapshot?.categoryId ?? record.draft.categoryId;
+        const category = state.shopCategories.find((item) => item.id === visibleCategoryId);
+        const categoryPublished = category?.publishedSnapshot != null && !category.hidden;
+        const savedStatus = listStatus(record);
+        return {
+          id: record.id,
+          name: record.draft.name,
+          categoryId: record.draft.categoryId,
+          subcategoryId: record.draft.subcategoryId,
+          categoryName: state.shopCategories.find((item) => item.id === record.draft.categoryId)?.draft.name ?? "",
+          categoryPublished,
+          isPublished: record.publishedSnapshot != null && !record.hidden,
+          status: savedStatus === "on_site" && !categoryPublished ? "draft" : savedStatus,
+          hasUnpublishedDraft: hasUnpublishedDraft(record),
+        };
+      });
     },
 
     async createShopProduct(input: { name: string; categoryId: string }) {
@@ -906,13 +1082,19 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async saveShopProduct(id: string, draft: ShopProductDraft) {
+      if (draft.subcategoryId) {
+        const subcategory = load().shopSubcategories.find((item) => item.id === draft.subcategoryId);
+        if (!subcategory || subcategory.categoryId !== draft.categoryId) throw new AdminClientError("publish_blocked");
+      }
       return saveNamed(load, save, (state) => state.shopProducts, id, draft);
     },
 
     async publishShopProduct(id: string) {
-      return publishNamed(load, save, (state) => state.shopProducts, id, (draft, state) =>
-        shopProductPublishBlockers(draft, state.shopCategories.some((category) => category.id === draft.categoryId)),
-      );
+      return publishNamed(load, save, (state) => state.shopProducts, id, (draft, state) => {
+        const category = state.shopCategories.find((item) => item.id === draft.categoryId);
+        if (category?.publishedSnapshot == null || category.hidden) throw new AdminClientError("category_not_published");
+        return shopProductPublishBlockers(draft, category != null);
+      });
     },
 
     async hideShopProduct(id: string) {
@@ -928,6 +1110,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
           state.shopProducts = state.shopProducts.filter((item) => item.id !== productId);
         },
         id,
+        true,
       );
     },
 
@@ -1092,23 +1275,41 @@ export function browserAdminClient(): AdminClient {
 }
 
 function remoteAdminClient(): AdminClient {
-  const call = (method: string) => async (...args: unknown[]) => {
-    const adminApi = (process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://127.0.0.1:4000").replace(
-      /\/+$/,
-      "",
-    );
-    const response = await fetch(`${adminApi}/v1/admin`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ method, args }),
-    });
+  const adminApi = (process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://127.0.0.1:4000").replace(/\/+$/, "");
+  const request = async (path: string, init: RequestInit) => {
+    const response = await fetch(`${adminApi}${path}`, { ...init, credentials: "include" });
+    if (response.status === 401 && !path.endsWith("/auth/login") && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("bizon-session-expired"));
+    }
     const body = (await response.json()) as { ok: boolean; result?: unknown; code?: AdminClientError["code"] };
     if (!body.ok) throw new AdminClientError(body.code ?? "publish_blocked");
     return body.result;
   };
-  return new Proxy({} as AdminClient, {
-    get(_target, method) {
+  const call = (method: string) => async (...args: unknown[]) => {
+    return request("/v1/admin", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ method, args }),
+    });
+  };
+  return new Proxy({
+    async login(login: string, password: string) {
+      return (await request("/v1/admin/auth/login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ login, password }),
+      })) as AdminSession;
+    },
+    async logout() {
+      await request("/v1/admin/auth/logout", { method: "POST" });
+    },
+    async getSession() {
+      return (await request("/v1/admin/auth/session", { method: "GET" })) as AdminSession;
+    },
+  } as AdminClient, {
+    get(target, method) {
       if (typeof method !== "string") return undefined;
+      if (method in target) return target[method as keyof AdminClient];
       return call(method);
     },
   });

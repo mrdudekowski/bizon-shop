@@ -1,6 +1,8 @@
 "use client";
 
 import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { AdminLoading } from "@/admin/ui/AdminLoading";
+import Link from "next/link";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -27,10 +29,16 @@ const ERROR_TEXT: Record<AdminClientError["code"], string> = {
   slug_taken: "Такой slug уже занят",
   invalid_slug: "Slug нельзя изменить",
   publish_blocked: "Публикация закрыта",
+  category_not_published: "Сначала опубликуйте категорию товара",
+  category_has_published_products: "Сначала снимите с публикации товары этой категории",
   unsaved: "Сначала сохраните черновик",
   media_in_use: "Файл ещё используется",
+  storage_unavailable: "Хранилище S3 не настроено",
   cannot_disable_self: "Нельзя отключить себя",
   last_admin: "Нельзя отключить последнего администратора",
+  invalid_credentials: "Неверный логин или пароль",
+  unauthorized: "Сессия закончилась. Войдите снова",
+  forbidden: "Недостаточно прав для этого действия",
 };
 
 function SectionFields({
@@ -579,7 +587,7 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
     });
   }, [pageKey, setRole]);
 
-  if (record == null) return <main>Загрузка…</main>;
+  if (record == null) return <main><AdminLoading /></main>;
   const draft = record.draft;
   const dirty = JSON.stringify(draft) !== JSON.stringify(record.savedDraft);
 
@@ -617,23 +625,21 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
   }
 
   return (
-    <main className="document">
+    <main className="document" data-unsaved={dirty ? "true" : undefined}>
+      <Link className="backLink" href="/pages">← Назад к страницам</Link>
       <h1>{PAGE_LABELS[pageKey]}</h1>
-      <BlockNav />
-      <label>
-        SEO title
-        <input
-          value={draft.seoTitle}
-          onChange={(event) => setDraft({ ...draft, seoTitle: event.target.value })}
-        />
-      </label>
-      <label>
-        SEO description
-        <textarea
-          value={draft.seoDescription}
-          onChange={(event) => setDraft({ ...draft, seoDescription: event.target.value })}
-        />
-      </label>
+      {draft.id === "home" || draft.id === "shop-home" ? <BlockNav /> : null}
+      <section className={styles.section}>
+        <h2>Для поиска</h2>
+        <label>
+          Заголовок страницы в поиске
+          <input value={draft.seoTitle} onChange={(event) => setDraft({ ...draft, seoTitle: event.target.value })} />
+        </label>
+        <label>
+          Описание страницы в поиске
+          <textarea value={draft.seoDescription} onChange={(event) => setDraft({ ...draft, seoDescription: event.target.value })} />
+        </label>
+      </section>
 
       {draft.id === "home" ? (
         <HomeFields draft={draft} onChange={setDraft} />

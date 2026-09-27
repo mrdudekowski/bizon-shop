@@ -92,6 +92,7 @@ export type PublishBlocker =
   | "duplicateSize";
 
 export type DocumentStatus = "draft" | "on_site" | "hidden";
+export type StatusEntity = "tire-direction" | "tire-model" | "wheel-type" | "wheel-model" | "shop-category" | "shop-product" | "page" | "material";
 
 export type AdminRole = "admin" | "editor";
 
@@ -187,6 +188,14 @@ export type ShopCategoryDraft = {
   showInMenu: boolean;
 };
 
+export type ShopSubcategoryDraft = {
+  id: string;
+  categoryId: string;
+  name: string;
+  slug: string;
+  sortOrder: number;
+};
+
 export type ShopVariantDraft = {
   id: string;
   color: string;
@@ -203,6 +212,7 @@ export type ShopProductDraft = {
   name: string;
   slug: string;
   categoryId: string;
+  subcategoryId?: string;
   descriptionShort: string;
   descriptionLong: string;
   price?: number;
@@ -336,6 +346,7 @@ export type EntityRecord<T> = {
 export type TireModelListItem = {
   id: string;
   name: string;
+  directionId: string;
   directionName: string;
   sizeCount: number;
   status: DocumentStatus;

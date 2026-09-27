@@ -1,99 +1,113 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 
 import { browserAdminClient } from "@/admin/client/localStore";
+import { slugifyTitle } from "@/admin/domain/slug";
 import type { DocumentStatus, EntityRecord, WheelTypeDraft } from "@/admin/domain/types";
-import { Icon } from "@/admin/ui/Icon";
+import { CatalogFilters } from "@/admin/ui/CatalogFilters";
+import { CatalogRow } from "@/admin/ui/CatalogRow";
+import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
+import { useAdminRole } from "@/admin/ui/DocumentUI";
 
 import styles from "@/admin/ui/catalog.module.css";
 
-const STATUS_LABEL: Record<DocumentStatus, string> = {
-  draft: "черновик",
-  on_site: "на сайте",
-  hidden: "скрыто",
-};
-
 export function WheelModelList() {
   const router = useRouter();
+  const modelDialogRef = useRef<HTMLDialogElement>(null);
   const [types, setTypes] = useState<EntityRecord<WheelTypeDraft>[]>([]);
   const [models, setModels] = useState<
     { id: string; name: string; typeName: string; wheelTypeId: string; status: DocumentStatus; hasUnpublishedDraft: boolean }[]
   >([]);
   const [name, setName] = useState("");
-  const [wheelTypeId, setWheelTypeId] = useState("");
-  const [selectedTypeId, setSelectedTypeId] = useState("");
-  const [typeName, setTypeName] = useState("");
-  const [assets, setAssets] = useState<{ id: string; dataUrl: string }[]>([]);
+  const [slug, setSlug] = useState("");
+  const [slugTouched, setSlugTouched] = useState(false);
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<"all" | DocumentStatus>("all");
+  const [role, setRole] = useAdminRole();
 
   async function reload() {
     const client = browserAdminClient();
-    const [nextTypes, nextModels] = await Promise.all([client.listWheelTypes(), client.listWheelModels()]);
-    setAssets(await client.listAssets());
+    const [nextTypes, nextModels, session] = await Promise.all([client.listWheelTypes(), client.listWheelModels(), client.getSession()]);
     setTypes(nextTypes);
     setModels(nextModels);
-    setWheelTypeId((current) => current || nextTypes[0]?.id || "");
-    setSelectedTypeId((current) => current || nextTypes[0]?.id || "");
+    setRole(session.role);
+  }
+
+  const defaultTypeId = types.find((type) => type.draft.slug === "forged")?.id ?? types[0]?.id ?? "";
+
+  async function deleteModel(id: string, status: DocumentStatus) {
+    const client = browserAdminClient();
+    try {
+      if (status === "on_site") await client.hideWheelModel(id);
+      await client.deleteWheelModel(id);
+    } finally {
+      await reload();
+    }
   }
 
   useEffect(() => {
     void reload();
   }, []);
 
+  async function changeModelStatus(id: string, nextStatus: DocumentStatus) {
+    await browserAdminClient().changeDocumentStatus("wheel-model", id, nextStatus);
+    await reload();
+  }
+
+  const filteredModels = models.filter((model) => {
+    const matchesQuery = model.name.toLocaleLowerCase("ru-RU").includes(query.trim().toLocaleLowerCase("ru-RU"));
+    const matchesStatus = status === "all" || model.status === status;
+    return matchesQuery && matchesStatus;
+  });
+
+  function openModelDialog() {
+    setName("");
+    setSlug("");
+    setSlugTouched(false);
+    modelDialogRef.current?.showModal();
+  }
+
+  async function createModel() {
+    if (!name.trim()) return;
+    const client = browserAdminClient();
+    let wheelTypeId = defaultTypeId;
+    if (!wheelTypeId) {
+      const internalType = await client.createWheelType({ name: "Кованые диски" });
+      const savedType = internalType.draft.slug === "forged"
+        ? internalType
+        : await client.saveWheelType(internalType.id, { ...internalType.draft, slug: "forged" });
+      wheelTypeId = savedType.id;
+    }
+    const created = await client.createWheelModel({ name, wheelTypeId });
+    const nextSlug = slugifyTitle(slugTouched ? slug : name);
+    if (nextSlug && nextSlug !== created.draft.slug) await client.saveWheelModel(created.id, { ...created.draft, slug: nextSlug });
+    modelDialogRef.current?.close();
+    router.push(`/wheels/${created.id}`);
+  }
+
   return (
     <main>
-      <div><h1>Диски</h1><p className="subheading">Сначала выберите тип диска, чтобы открыть модели этого типа.</p></div>
-      <form
-        className={styles.createForm}
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!typeName.trim()) return;
-          void browserAdminClient()
-            .createWheelType({ name: typeName })
-            .then((created) => router.push(`/wheels/types/${created.id}`));
-        }}
-      >
-        <label>
-          Новый тип диска
-          <input
-            aria-label="Новый тип диска"
-            value={typeName}
-            onChange={(event) => setTypeName(event.target.value)}
-          />
-        </label>
-        <button className="primary" type="submit">Добавить тип</button>
-      </form>
-      <ul className={styles.grid}>
-        {types.map((type) => (
-          <li key={type.id}>
-            <div className={styles.card}><span className={styles.thumb}>{type.draft.mainImage && assets.find((asset) => asset.id === type.draft.mainImage?.assetId) ? <Image unoptimized width={90} height={100} src={assets.find((asset) => asset.id === type.draft.mainImage?.assetId)!.dataUrl} alt=""/> : <Icon name="wheels" size={34}/>}</span><span className={styles.cardBody}><button className="ghost" type="button" aria-pressed={selectedTypeId === type.id} onClick={() => { setSelectedTypeId(type.id); setWheelTypeId(type.id); }}>{type.draft.name}</button><span className={styles.meta}>/{type.draft.slug}</span><span className={type.hidden ? styles.badge : styles.badgeOnSite}>{STATUS_LABEL[type.hidden ? "hidden" : type.publishedSnapshot == null ? "draft" : "on_site"]}</span><a href={`/wheels/types/${type.id}`} aria-label={`Настроить ${type.draft.name}`}>Настроить <Icon name="arrow" size={14}/></a></span></div>
-          </li>
-        ))}
-      </ul>
-      {selectedTypeId ? <form
-        className={styles.createForm}
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!name.trim() || !wheelTypeId) return;
-          void browserAdminClient()
-            .createWheelModel({ name, wheelTypeId })
-            .then((created) => router.push(`/wheels/${created.id}`));
-        }}
-      >
-        <label>
-          Название модели диска
-          <input
-            aria-label="Название модели диска"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-        </label>
-        <span className={styles.meta}>Тип: {types.find((type) => type.id === selectedTypeId)?.draft.name}</span>
-        <button className="primary" type="submit">Добавить модель</button>
-      </form> : null}
-      {selectedTypeId ? <div className={styles.tableWrap}><table className={styles.table}><thead><tr><th>Модель</th><th>Тип диска</th><th>Статус</th><th>Черновик</th><th></th></tr></thead><tbody>{models.filter((model) => model.wheelTypeId === selectedTypeId).map((model) => <tr key={model.id}><td><a className={styles.nameLink} href={`/wheels/${model.id}`}>{model.name}</a></td><td>{model.typeName}</td><td><span className={model.status === "on_site" ? styles.badgeOnSite : styles.badge}>{STATUS_LABEL[model.status]}</span></td><td>{model.hasUnpublishedDraft ? "Есть изменения" : "—"}</td><td><a className={styles.openLink} href={`/wheels/${model.id}`} aria-label={`Открыть ${model.name}`}><Icon name="arrow" size={17}/></a></td></tr>)}</tbody></table><div className={styles.tableFoot}>{models.filter((model) => model.wheelTypeId === selectedTypeId).length} моделей</div></div> : null}
+      <div className={styles.pageHead}><div><h1>Диски</h1><p className="subheading">Модели кованых дисков, размеры и публикация на сайте.</p></div></div>
+      <div className={styles.pageHead}><h2>Модели дисков</h2><button className="primary" type="button" onClick={openModelDialog}>Добавить модель</button></div>
+      <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название модели…" />
+      {filteredModels.length === 0 ? <p className={styles.empty}>{models.length > 0 ? "По заданным фильтрам модели не найдены" : "Моделей дисков пока нет"}</p> : <>
+        <ul className={styles.catalogList}>{filteredModels.map((model) => <li key={model.id}><CatalogRow href={`/wheels/${model.id}`} title={model.name} icon="wheels" status={model.status} hasUnpublishedDraft={model.hasUnpublishedDraft} onDelete={role === "admin" ? () => deleteModel(model.id, model.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(model.id, nextStatus) : undefined} /></li>)}</ul>
+        <div className={styles.listFoot}>Показано {filteredModels.length} моделей</div>
+      </>}
+      <CatalogCreateDialog
+        dialogRef={modelDialogRef}
+        title="Новая модель диска"
+        nameLabel="Название модели"
+        name={name}
+        slug={slug}
+        context="Все диски в этом каталоге — кованые."
+        onNameChange={(value) => { setName(value); if (!slugTouched) setSlug(slugifyTitle(value)); }}
+        onSlugChange={(value) => { setSlugTouched(true); setSlug(value); }}
+        onCancel={() => modelDialogRef.current?.close()}
+        onSubmit={(event) => { event.preventDefault(); void createModel(); }}
+      />
     </main>
   );
 }

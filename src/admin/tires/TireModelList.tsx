@@ -1,52 +1,71 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { slugifyTitle } from "@/admin/domain/slug";
 import type { DocumentStatus, TireDirection, TireModelListItem, MediaListItem } from "@/admin/domain/types";
 import { Icon } from "@/admin/ui/Icon";
+import { AdminLoading } from "@/admin/ui/AdminLoading";
+import { CatalogRow } from "@/admin/ui/CatalogRow";
+import { useAdminRole } from "@/admin/ui/DocumentUI";
 import styles from "@/admin/ui/catalog.module.css";
-
-const STATUS_LABEL: Record<DocumentStatus, string> = {
-  draft: "черновик",
-  on_site: "на сайте",
-  hidden: "скрыто",
-};
 
 export function TireModelList() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedDirectionId = searchParams.get("direction") ?? "";
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [items, setItems] = useState<TireModelListItem[]>([]);
   const [directions, setDirections] = useState<TireDirection[]>([]);
   const [assets, setAssets] = useState<MediaListItem[]>([]);
-  const [directionFilter, setDirectionFilter] = useState("");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | DocumentStatus>("all");
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
-  const [directionId, setDirectionId] = useState("");
+  const [role, setRole] = useAdminRole();
+  const [loading, setLoading] = useState(true);
 
   async function reload() {
+    try {
+      const client = browserAdminClient();
+      const [models, dirs, media, session] = await Promise.all([client.listTireModels(), client.listTireDirections(), client.listAssets(), client.getSession()]);
+      setAssets(media);
+      setItems(models);
+      setDirections(dirs);
+      setRole(session.role);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function deleteModel(id: string, status: DocumentStatus) {
     const client = browserAdminClient();
-    const [models, dirs, media] = await Promise.all([client.listTireModels(), client.listTireDirections(), client.listAssets()]);
-    setAssets(media);
-    setItems(models);
-    setDirections(dirs);
-    setDirectionId((current) => current || dirs[0]?.id || "");
+    try {
+      if (status === "on_site") await client.hideTireModel(id);
+      await client.deleteTireModel(id);
+    } finally {
+      await reload();
+    }
   }
 
   useEffect(() => {
     void reload();
   }, []);
 
+  async function changeModelStatus(id: string, nextStatus: DocumentStatus) {
+    await browserAdminClient().changeDocumentStatus("tire-model", id, nextStatus);
+    await reload();
+  }
+
   const visible = items.filter((item) => {
     const matchesName = item.name.toLocaleLowerCase("ru-RU").includes(query.trim().toLocaleLowerCase("ru-RU"));
     const matchesStatus = status === "all" || item.status === status;
-    return matchesName && matchesStatus && (!directionFilter || item.directionName === directionFilter);
+    return matchesName && matchesStatus && item.directionId === selectedDirectionId;
   });
 
   function openCreate() {
@@ -57,9 +76,9 @@ export function TireModelList() {
   }
 
   async function createModel() {
-    if (!name.trim() || !directionId) return;
+    if (!name.trim() || !selectedDirectionId) return;
     const client = browserAdminClient();
-    const created = await client.createTireModel({ name, directionId });
+    const created = await client.createTireModel({ name, directionId: selectedDirectionId });
     const nextSlug = slugifyTitle(slugTouched ? slug : name);
     if (nextSlug && nextSlug !== created.draft.slug) {
       await client.saveTireModel(created.id, { ...created.draft, slug: nextSlug });
@@ -70,28 +89,66 @@ export function TireModelList() {
 
   return (
     <main>
+      {!selectedDirectionId ? (
+        <>
+          <div className={styles.pageHead}>
+            <div><h1>Шины</h1><p className="subheading">Сначала выберите направление, чтобы открыть каталог его моделей.</p></div>
+            <Link className={styles.manageDirections} href="/tires/directions">Управление направлениями</Link>
+          </div>
+          {loading ? <AdminLoading label="Загружаем направления…" /> : <ul className={`${styles.grid} ${styles.directionPicker}`}>
+            {directions.map((direction) => {
+              const asset = assets.find((item) => item.id === direction.imageAssetId);
+              const count = items.filter((item) => item.directionId === direction.id).length;
+              return (
+                <li key={direction.id}>
+                  <article className={styles.directionChoice}>
+                    <Link className={styles.card} href={`/?direction=${encodeURIComponent(direction.id)}`}>
+                      <span className={styles.thumb}>{asset ? <Image unoptimized width={52} height={56} src={asset.dataUrl} alt="" /> : <Icon name="directions" size={34} />}</span>
+                      <span className={styles.cardBody}><strong>{direction.name}</strong><span className={styles.meta}>{count} моделей</span></span>
+                      <Icon name="arrow" size={16} />
+                    </Link>
+                    <Link className={styles.directionSettings} href={`/tires/directions/${direction.id}`}>Настроить направление</Link>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>}
+          {!loading && directions.length === 0 ? <div className={styles.empty}><Icon name="directions" size={36} /><h2>Направлений пока нет</h2><p>Создайте первое направление, чтобы начать собирать каталог шин.</p><Link className={styles.manageDirections} href="/tires/directions">Добавить направление</Link></div> : null}
+        </>
+      ) : (
+        <>
       <div className={styles.pageHead}>
-        <div><h1>Шины</h1><p className="subheading">Модели шин, размеры и публикация на сайте.</p></div>
-        <button className="primary" type="button" onClick={openCreate}>
-          <Icon name="plus" /> Добавить модель
-        </button>
+        <div><h1>{directions.find((direction) => direction.id === selectedDirectionId)?.name ?? "Шины"}</h1><p className="subheading">Модели шин, размеры и публикация на сайте.</p></div>
+        <div className={styles.filterGroup}>
+          {directions.some((direction) => direction.id === selectedDirectionId) ? <Link className={styles.manageDirections} href={`/tires/directions/${selectedDirectionId}`}>Настроить направление</Link> : null}
+          <button type="button" className="ghost" onClick={() => router.push("/")}>Все направления</button>
+          <button type="button" className="primary" onClick={openCreate}>
+            <Icon name="plus" /> Добавить модель
+          </button>
+        </div>
       </div>
       <div className={styles.filters}>
         <label>
           Поиск
           <input type="search" placeholder="Поиск по названию модели…" value={query} onChange={(event) => setQuery(event.target.value)} />
         </label>
-        <label>Направление<select value={directionFilter} onChange={(event) => setDirectionFilter(event.target.value)}><option value="">Все направления</option>{directions.map((direction) => <option key={direction.id} value={direction.name}>{direction.name}</option>)}</select></label>
         <label>Статус<select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}><option value="all">Все статусы</option><option value="draft">Черновик</option><option value="on_site">На сайте</option><option value="hidden">Скрыто</option></select></label>
       </div>
-      {items.length === 0 ? (
-        <div className={styles.empty}><Icon name="tires" size={36} /><h2>Добавьте первую модель</h2><p>Укажите название и направление, затем заполните карточку шины.</p><button type="button" className="primary" onClick={openCreate}>Добавить модель</button></div>
+      {loading ? <AdminLoading label="Загружаем модели шин…" /> : visible.length === 0 && !query.trim() && status === "all" ? (
+        <div className={styles.empty}><Icon name="tires" size={36} /><h2>В этом направлении пока нет моделей</h2><p>Добавьте первую шину, чтобы собрать каталог направления.</p><button type="button" className="primary" onClick={openCreate}>Добавить модель</button></div>
       ) : visible.length === 0 ? (
         <p className={styles.empty}>Ничего не найдено</p>
       ) : (
-        <div className={styles.tableWrap}><table className={styles.table}><thead><tr><th>Фото</th><th>Модель</th><th>Направление</th><th>Размеров</th><th>Статус</th><th><span className={styles.srOnly}>Открыть</span></th></tr></thead><tbody>
-          {visible.map((item) => { const asset = assets.find((asset) => asset.id === item.imageAssetId); return <tr key={item.id}><td>{asset ? <Image unoptimized width={52} height={56} className={styles.thumb} src={asset.dataUrl} alt="" /> : <span className={styles.thumb}><Icon name="tires" size={28} /></span>}</td><td><a className={styles.nameLink} href={`/tires/${item.id}`}>{item.name}</a>{item.hasUnpublishedDraft ? <span className={styles.meta}>Есть неопубликованные изменения</span> : null}</td><td>{item.directionName}</td><td>{item.sizeCount}</td><td><span className={item.status === "on_site" ? styles.badgeOnSite : styles.badge}>{STATUS_LABEL[item.status]}</span></td><td><a className={styles.openLink} href={`/tires/${item.id}`} aria-label={`Открыть ${item.name}`}><Icon name="arrow" size={17} /></a></td></tr>; })}
-        </tbody></table><div className={styles.tableFoot}>Показано {visible.length} из {items.length} моделей</div></div>
+        <>
+          <ul className={styles.catalogList}>
+            {visible.map((item) => (
+              <li key={item.id}>
+                <CatalogRow href={`/tires/${item.id}`} title={item.name} meta={`${item.sizeCount} размеров`} icon="tires" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onDelete={role === "admin" ? () => deleteModel(item.id, item.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(item.id, nextStatus) : undefined} />
+              </li>
+            ))}
+          </ul>
+          <div className={styles.listFoot}>Показано {visible.length} из {items.filter((item) => item.directionId === selectedDirectionId).length} моделей направления</div>
+        </>
       )}
       <dialog ref={dialogRef} className={styles.dialog}>
         <form
@@ -123,16 +180,7 @@ export function TireModelList() {
             />
           <span className={styles.hint}>Адрес карточки на сайте. После публикации его нельзя изменить.</span>
           </label>
-          <label>
-            Направление
-            <select value={directionId} onChange={(event) => setDirectionId(event.target.value)}>
-              {directions.map((direction) => (
-                <option key={direction.id} value={direction.id}>
-                  {direction.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <p className={styles.hint}>Направление: {directions.find((direction) => direction.id === selectedDirectionId)?.name}</p>
           <div className={styles.dialogActions}>
             <button type="button" className="ghost" onClick={() => dialogRef.current?.close()}>
               Отмена
@@ -143,6 +191,8 @@ export function TireModelList() {
           </div>
         </form>
       </dialog>
+        </>
+      )}
     </main>
   );
 }

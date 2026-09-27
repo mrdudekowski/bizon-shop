@@ -9,6 +9,8 @@ import type {
   PageKey,
   ShopCategoryDraft,
   ShopProductDraft,
+  ShopSubcategoryDraft,
+  StatusEntity,
   TireDirection,
   TireDirectionDraft,
   TireModelDraft,
@@ -19,8 +21,10 @@ import type {
 } from "@/admin/domain/types";
 
 export type AdminClient = {
+  changeDocumentStatus(entity: StatusEntity, id: string, status: DocumentStatus): Promise<unknown>;
+  login(login: string, password: string): Promise<AdminSession>;
+  logout(): Promise<void>;
   getSession(): Promise<AdminSession>;
-  setSessionRole(role: AdminSession["role"]): Promise<void>;
   listTireDirections(): Promise<TireDirection[]>;
   createTireDirection(input: { name: string }): Promise<EntityRecord<TireDirectionDraft>>;
   getTireDirection(id: string): Promise<EntityRecord<TireDirectionDraft>>;
@@ -59,8 +63,12 @@ export type AdminClient = {
   publishShopCategory(id: string): Promise<EntityRecord<ShopCategoryDraft>>;
   hideShopCategory(id: string): Promise<EntityRecord<ShopCategoryDraft>>;
   deleteShopCategory(id: string): Promise<void>;
+  listShopSubcategories(categoryId: string): Promise<ShopSubcategoryDraft[]>;
+  createShopSubcategory(input: { categoryId: string; name: string; slug: string }): Promise<ShopSubcategoryDraft>;
+  saveShopSubcategory(id: string, input: { name: string; slug: string }): Promise<ShopSubcategoryDraft>;
+  deleteShopSubcategory(id: string): Promise<void>;
   listShopProducts(): Promise<
-    { id: string; name: string; categoryName: string; categoryId: string; status: DocumentStatus; hasUnpublishedDraft: boolean }[]
+    { id: string; name: string; categoryName: string; categoryId: string; categoryPublished: boolean; isPublished: boolean; subcategoryId?: string; status: DocumentStatus; hasUnpublishedDraft: boolean }[]
   >;
   createShopProduct(input: { name: string; categoryId: string }): Promise<EntityRecord<ShopProductDraft>>;
   getShopProduct(id: string): Promise<EntityRecord<ShopProductDraft>>;

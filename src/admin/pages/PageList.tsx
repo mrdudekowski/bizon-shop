@@ -7,13 +7,9 @@ import type { DocumentStatus, EntityRecord, PageDraft } from "@/admin/domain/typ
 
 import { PAGE_LABELS } from "./pageLabels";
 import styles from "@/admin/ui/catalog.module.css";
-import { Icon } from "@/admin/ui/Icon";
-
-const STATUS_LABEL: Record<DocumentStatus, string> = {
-  draft: "черновик",
-  on_site: "на сайте",
-  hidden: "скрыто",
-};
+import { CatalogRow } from "@/admin/ui/CatalogRow";
+import { AdminLoading } from "@/admin/ui/AdminLoading";
+import { useAdminRole } from "@/admin/ui/DocumentUI";
 
 function statusOf(record: EntityRecord<PageDraft>): DocumentStatus {
   if (record.hidden) return "hidden";
@@ -30,20 +26,35 @@ function hasDraft(record: EntityRecord<PageDraft>): boolean {
 }
 
 export function PageList() {
+  const [role] = useAdminRole();
   const [pages, setPages] = useState<EntityRecord<PageDraft>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  async function reload() {
+    setPages(await browserAdminClient().listPages());
+    setLoading(false);
+  }
 
   useEffect(() => {
-    void browserAdminClient().listPages().then(setPages);
+    void reload();
   }, []);
+
+  async function changeStatus(id: string, status: DocumentStatus) {
+    await browserAdminClient().changeDocumentStatus("page", id, status);
+    await reload();
+  }
 
   return (
     <main>
       <div><h1>Страницы</h1><p className="subheading">Девять страниц сайта. Откройте страницу, чтобы изменить её содержимое.</p></div>
-      <div className={styles.tableWrap}><table className={styles.table}><thead><tr><th>Страница</th><th>Статус публикации</th><th>Черновик</th><th><span className={styles.srOnly}>Открыть</span></th></tr></thead><tbody>
+      {loading ? <AdminLoading label="Загружаем страницы…" /> : <ul className={styles.catalogList}>
         {pages.map((page) => (
-          <tr key={page.id}><td><a className={styles.nameLink} href={`/pages/${page.draft.id}`}>{PAGE_LABELS[page.draft.id]}</a></td><td><span className={statusOf(page) === "on_site" ? styles.badgeOnSite : styles.badge}>{STATUS_LABEL[statusOf(page)]}</span></td><td><span className={styles.meta}>{hasDraft(page) ? "Есть изменения" : "—"}</span></td><td><a className={styles.openLink} href={`/pages/${page.draft.id}`} aria-label={`Открыть ${PAGE_LABELS[page.draft.id]}`}><Icon name="arrow" size={17} /></a></td></tr>
+          <li key={page.id}>
+            <CatalogRow href={`/pages/${page.draft.id}`} title={PAGE_LABELS[page.draft.id]} icon="pages" status={statusOf(page)} hasUnpublishedDraft={hasDraft(page)} onStatusChange={role === "admin" ? (status) => changeStatus(page.draft.id, status) : undefined} />
+          </li>
         ))}
-      </tbody></table><div className={styles.tableFoot}>{pages.length} страниц · состав раздела фиксирован</div></div>
+      </ul>}
+      <div className={styles.listFoot}>{pages.length} страниц · состав раздела фиксирован</div>
     </main>
   );
 }

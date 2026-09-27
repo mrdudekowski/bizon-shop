@@ -11,6 +11,9 @@
 .numbers { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; width: min(100%, 720px); }
 .numbers > label { font-size: 12px; }
 .caption { color: var(--ink-muted); font-size: 12px; font-weight: 400; }
+.cropDetails { width: min(100%,720px); border-top: 1px solid var(--line); padding-top: 12px; }
+.cropDetails summary { width: fit-content; color: var(--ink-muted); cursor: pointer; font-size: 13px; }
+.cropDetails[open] summary { margin-bottom: 12px; color: var(--ink); }
 @media (min-width: 800px) { .numbers { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 .focusPoint { width: 32px; height: 32px; min-height: 32px; padding: 0; border: 0; background: transparent; box-shadow: none; }
 .focusPoint::after { content: ''; display: block; width: 12px; height: 12px; margin: auto; border: 2px solid white; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px #17212e; }

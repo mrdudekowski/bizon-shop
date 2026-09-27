@@ -1,15 +1,16 @@
 "use client";
 
 import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { AdminLoading } from "@/admin/ui/AdminLoading";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
 import { wheelModelPublishBlockers } from "@/admin/domain/publishRules";
 import type {
-  DocumentLink,
   EntityRecord,
   WheelModelDraft,
   WheelTypeDraft,
@@ -23,16 +24,22 @@ const ERROR_TEXT: Record<AdminClientError["code"], string> = {
   slug_taken: "Этот адрес страницы уже занят",
   invalid_slug: "Нельзя изменить адрес страницы",
   publish_blocked: "Публикация закрыта",
+  category_not_published: "Сначала опубликуйте категорию товара",
+  category_has_published_products: "Сначала снимите с публикации товары этой категории",
   unsaved: "Сначала сохраните черновик",
   media_in_use: "Файл ещё используется",
+  storage_unavailable: "Хранилище S3 не настроено",
   cannot_disable_self: "Нельзя отключить себя",
   last_admin: "Нельзя отключить последнего администратора",
+  invalid_credentials: "Неверный логин или пароль",
+  unauthorized: "Сессия закончилась. Войдите снова",
+  forbidden: "Недостаточно прав для этого действия",
 };
 
 const BLOCKER_TEXT: Record<string, string> = {
   name: "Укажите название",
   slug: "Укажите адрес страницы",
-  direction: "Выберите тип диска",
+  direction: "Не найдена служебная категория дисков",
   mainImage: "Добавьте главное фото",
   size: "Укажите читаемый размер",
   price: "Укажите цену или «по запросу»",
@@ -54,15 +61,6 @@ function emptyVariant(): WheelVariantDraft {
     priceOnRequest: true,
     available: true,
   };
-}
-
-function readFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
 }
 
 export function WheelModelEditor({ id }: { id: string }) {
@@ -87,7 +85,7 @@ export function WheelModelEditor({ id }: { id: string }) {
     );
   }, [id, setRole]);
 
-  if (draft == null || record == null) return <main className={styles.page}>Загрузка…</main>;
+  if (draft == null || record == null) return <main className={styles.page}><AdminLoading /></main>;
   const model = draft;
   const stored = record;
 
@@ -111,18 +109,6 @@ export function WheelModelEditor({ id }: { id: string }) {
     patch({ variants });
   }
 
-
-  async function onDocumentFile(file: File | undefined) {
-    if (file == null) return;
-    const dataUrl = await readFile(file);
-    const asset = await browserAdminClient().createAsset({
-      name: file.name,
-      mimeType: file.type || "application/pdf",
-      dataUrl,
-    });
-    const documents: DocumentLink[] = [...model.documents, { assetId: asset.id, title: file.name }];
-    patch({ documents });
-  }
 
   async function onSave() {
     setSaving(true);
@@ -153,32 +139,23 @@ export function WheelModelEditor({ id }: { id: string }) {
   }
 
   return (
-    <main className="document">
+    <main className="document" data-unsaved={dirty ? "true" : undefined}>
+      <Link className="backLink" href="/wheels">← Назад к моделям дисков</Link>
       <h1>{draft.name || "Модель диска"}</h1>
       <BlockNav />
       <section className={styles.section}>
-        <h2>Основные данные</h2>
+        <h2>Карточка</h2>
         <label className={styles.field}>
           Название
           <input value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
         </label>
         <label className={styles.field}>
-          Адрес страницы
+          Адрес
           <input
             value={draft.slug}
             disabled={record.slugLocked}
             onChange={(event) => patch({ slug: event.target.value })}
           />
-        </label>
-        <label className={styles.field}>
-          Тип
-          <select value={draft.wheelTypeId} onChange={(event) => patch({ wheelTypeId: event.target.value })}>
-            {types.map((type) => (
-              <option key={type.id} value={type.id}>
-                {type.draft.name}
-              </option>
-            ))}
-          </select>
         </label>
         <label className={styles.field}>
           Серия
@@ -318,38 +295,6 @@ export function WheelModelEditor({ id }: { id: string }) {
           onChange={(mainImage) => patch({ mainImage })}
         />
         </section>
-      <section className={styles.section}>
-        <h2>PDF</h2>
-        {draft.documents.map((doc, index) => (
-          <div key={`${doc.assetId}-${index}`} className={styles.row}>
-            <label className={styles.field}>
-              Название PDF
-              <input
-                value={doc.title}
-                onChange={(event) => {
-                  const documents = draft.documents.slice();
-                  documents[index] = { ...doc, title: event.target.value };
-                  patch({ documents });
-                }}
-              />
-            </label>
-            <div className={styles.rowActions}>
-              <button
-                type="button"
-                onClick={() => patch({ documents: draft.documents.filter((_, i) => i !== index) })}
-              >
-                Убрать
-              </button>
-            </div>
-          </div>
-        ))}
-        <input
-          aria-label="Загрузить PDF"
-          type="file"
-          accept="application/pdf"
-          onChange={(event) => void onDocumentFile(event.target.files?.[0])}
-        />
-      </section>
       <DocumentActions>
         <p>Сохранил: {record.lastSavedBy ?? "—"}</p>
         <p>Опубликовал: {record.lastPublishedBy ?? "—"}</p>

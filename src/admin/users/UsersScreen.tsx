@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AdminClientError } from "@/admin/client/errors";
 import { browserAdminClient } from "@/admin/client/localStore";
@@ -8,6 +8,7 @@ import type { AdminRole, AdminSession, AdminUser } from "@/admin/domain/types";
 
 import styles from "./UsersScreen.module.css";
 import { Icon } from "@/admin/ui/Icon";
+import { AdminLoading } from "@/admin/ui/AdminLoading";
 
 const ERROR_TEXT: Partial<Record<string, string>> = {
   cannot_disable_self: "Нельзя отключить свою учётную запись",
@@ -17,6 +18,7 @@ const ERROR_TEXT: Partial<Record<string, string>> = {
 };
 
 export function UsersScreen() {
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const [session, setSession] = useState<AdminSession | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [login, setLogin] = useState("");
@@ -38,7 +40,7 @@ export function UsersScreen() {
       });
   }, []);
 
-  if (session == null) return <main className={styles.screen}>Загрузка…</main>;
+  if (session == null) return <main className={styles.screen}><AdminLoading /></main>;
   if (session.role === "editor") {
     return (
       <main className={styles.screen}>
@@ -53,9 +55,19 @@ export function UsersScreen() {
     setMessage(ERROR_TEXT[code] ?? code);
   }
 
+  function openCreate() {
+    setLogin("");
+    setRole("editor");
+    setPassword("");
+    setMessage("");
+    dialogRef.current?.showModal();
+  }
+
   return (
     <main className={styles.screen}>
-      <div><h1>Пользователи</h1><p className="subheading">Управление доступом к редактору BIZON.</p></div>
+      <div className={styles.pageHead}><div><h1>Пользователи</h1><p className="subheading">Управление доступом к редактору BIZON.</p></div><button className="primary" type="button" onClick={openCreate}><Icon name="plus" size={18}/> Добавить пользователя</button></div>
+      {message ? <p role="status">{message}</p> : null}
+      <dialog ref={dialogRef} className={styles.dialog}>
       <form
         className={styles.form}
         onSubmit={(event) => {
@@ -64,8 +76,7 @@ export function UsersScreen() {
           void browserAdminClient()
             .createUser({ login, role, password })
             .then(() => {
-              setLogin("");
-              setPassword("");
+              dialogRef.current?.close();
               return reload();
             })
             .catch(showError);
@@ -83,15 +94,16 @@ export function UsersScreen() {
           required
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-        /><span className={styles.hint}>Пароль применяется при создании и не хранится в CMS.</span></label>
-        <button className="primary" type="submit"><Icon name="plus" size={18}/> Добавить пользователя</button>
+        /><span className={styles.hint}>Пароль сразу хешируется на сервере. Посмотреть его позже нельзя.</span></label>
+        {message ? <p role="alert">{message}</p> : null}
+        <div className={styles.actions}><button type="button" className="ghost" onClick={() => dialogRef.current?.close()}>Отмена</button><button className="primary" type="submit"><Icon name="plus" size={18}/> Добавить</button></div>
       </form>
-      {message ? <p>{message}</p> : null}
-      <div className={styles.tableWrap}><table className={styles.table}><thead><tr><th>Логин</th><th>Роль</th><th>Доступ</th><th>Действие</th></tr></thead><tbody>
+      </dialog>
+      <ul className={styles.userList}>
         {users.map((user) => (
-          <tr key={user.id}>
-            <td>{user.login}{user.login === session.login ? <span className={styles.you}> · Вы</span> : null}</td>
-            <td>
+          <li className={styles.userRow} key={user.id}>
+            <div className={styles.identity}><strong>{user.login}</strong>{user.login === session.login ? <span className={styles.you}>Вы</span> : null}</div>
+            <label className={styles.roleField}>Роль
             <select
               aria-label={`Роль ${user.login}`}
               value={user.role}
@@ -113,23 +125,25 @@ export function UsersScreen() {
               <option value="editor">Редактор</option>
               <option value="admin">Администратор</option>
             </select>
-            </td>
-            <td><span className={user.disabled ? styles.badge : styles.badgeOnSite}>{user.disabled ? "Отключён" : "Активен"}</span></td>
-            <td>{user.disabled ? <span className={styles.hint}>Доступ отключён</span> : user.login === session.login ? <span className={styles.hint}>Нельзя отключить себя</span> : user.role === "admin" && activeAdmins < 2 ? <span className={styles.hint}>Последний администратор</span> : (
+            </label>
+            <span className={user.disabled ? styles.badge : styles.badgeOnSite}>{user.disabled ? "Отключён" : "Активен"}</span>
+            <div className={styles.userActions}>{user.disabled ? <span className={styles.hint}>Доступ отключён</span> : user.login === session.login ? <span className={styles.hint}>Нельзя отключить себя</span> : user.role === "admin" && activeAdmins < 2 ? <span className={styles.hint}>Последний администратор</span> : (
               <button
                 type="button"
                 className="ghost"
                 onClick={() => {
+                  if (!window.confirm("Отключить доступ пользователя " + user.login + "? Он больше не сможет войти в админку.")) return;
                   setMessage("");
                   void browserAdminClient().disableUser(user.id).then(reload).catch(showError);
                 }}
               >
                 Отключить
               </button>
-            )}</td>
-          </tr>
+            )}</div>
+          </li>
         ))}
-      </tbody></table><div className={styles.tableFoot}>{users.filter((user) => !user.disabled).length} активных из {users.length}</div></div>
+      </ul>
+      <div className={styles.tableFoot}>{users.filter((user) => !user.disabled).length} активных из {users.length}</div>
     </main>
   );
 }

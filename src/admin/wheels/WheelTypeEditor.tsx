@@ -1,9 +1,11 @@
 "use client";
 
-import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { AdminLoading } from "@/admin/ui/AdminLoading";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
@@ -17,10 +19,16 @@ const ERROR_TEXT: Record<AdminClientError["code"], string> = {
   slug_taken: "Этот адрес страницы уже занят",
   invalid_slug: "Нельзя изменить адрес страницы",
   publish_blocked: "Публикация закрыта",
+  category_not_published: "Сначала опубликуйте категорию товара",
+  category_has_published_products: "Сначала снимите с публикации товары этой категории",
   unsaved: "Сначала сохраните черновик",
   media_in_use: "Файл ещё используется",
+  storage_unavailable: "Хранилище S3 не настроено",
   cannot_disable_self: "Нельзя отключить себя",
   last_admin: "Нельзя отключить последнего администратора",
+  invalid_credentials: "Неверный логин или пароль",
+  unauthorized: "Сессия закончилась. Войдите снова",
+  forbidden: "Недостаточно прав для этого действия",
 };
 
 const BLOCKER_TEXT: Record<string, string> = {
@@ -51,7 +59,7 @@ export function WheelTypeEditor({ id }: { id: string }) {
   }, [id, setRole]);
 
   if (missing) return <main className={styles.page}>Тип не найден</main>;
-  if (draft == null || record == null) return <main className={styles.page}>Загрузка…</main>;
+  if (draft == null || record == null) return <main className={styles.page}><AdminLoading /></main>;
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(record.savedDraft) || record.savedDraft == null;
   const savedBlockers = record.savedDraft == null ? [] : wheelTypePublishBlockers(record.savedDraft);
@@ -102,17 +110,17 @@ export function WheelTypeEditor({ id }: { id: string }) {
   }
 
   return (
-    <main className="document">
+    <main className="document" data-unsaved={dirty ? "true" : undefined}>
+      <Link className="backLink" href="/wheels">← Назад к типам дисков</Link>
       <h1>{draft.name || "Тип диска"}</h1>
-      <BlockNav />
       <section className={styles.section}>
-        <h2>Основные данные</h2>
+        <h2>Карточка</h2>
         <label className={styles.field}>
           Название
           <input value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
         </label>
         <label className={styles.field}>
-          Адрес страницы
+          Адрес
           <input
             value={draft.slug}
             disabled={record.slugLocked}

@@ -1,109 +1,148 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 
 import { browserAdminClient } from "@/admin/client/localStore";
-import type { DocumentStatus, EntityRecord, ShopCategoryDraft } from "@/admin/domain/types";
+import { slugifyTitle } from "@/admin/domain/slug";
+import type { EntityRecord, ShopCategoryDraft } from "@/admin/domain/types";
 import { Icon } from "@/admin/ui/Icon";
+import { CatalogRow } from "@/admin/ui/CatalogRow";
+import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
+import { AdminLoading } from "@/admin/ui/AdminLoading";
+import { useAdminRole } from "@/admin/ui/DocumentUI";
 
 import styles from "@/admin/ui/catalog.module.css";
 
-const STATUS_LABEL: Record<DocumentStatus, string> = {
-  draft: "черновик",
-  on_site: "на сайте",
-  hidden: "скрыто",
-};
-
 export function ShopProductList() {
   const router = useRouter();
+  const [role] = useAdminRole();
+  const categoryDialogRef = useRef<HTMLDialogElement>(null);
   const [categories, setCategories] = useState<EntityRecord<ShopCategoryDraft>[]>([]);
-  const [products, setProducts] = useState<
-    {
-      id: string;
-      name: string;
-      categoryName: string;
-      categoryId: string;
-      status: DocumentStatus;
-      hasUnpublishedDraft: boolean;
-    }[]
-  >([]);
+  const [productCounts, setProductCounts] = useState<Record<string, number>>({});
   const [categoryName, setCategoryName] = useState("");
-  const [name, setName] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [categorySlug, setCategorySlug] = useState("");
+  const [categorySlugTouched, setCategorySlugTouched] = useState(false);
   const [assets, setAssets] = useState<{ id: string; dataUrl: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   async function reload() {
-    const client = browserAdminClient();
-    const [nextCategories, nextProducts] = await Promise.all([
-      client.listShopCategories(),
-      client.listShopProducts(),
-    ]);
-    setAssets(await client.listAssets());
-    setCategories(nextCategories);
-    setProducts(nextProducts);
-    setCategoryId((current) => current || nextCategories[0]?.id || "");
-    setSelectedCategoryId((current) => current || nextCategories[0]?.id || "");
+    setError("");
+    try {
+      const client = browserAdminClient();
+      const [nextCategories, nextProducts, nextAssets] = await Promise.all([
+        client.listShopCategories(),
+        client.listShopProducts(),
+        client.listAssets(),
+      ]);
+      const counts = nextProducts.reduce<Record<string, number>>((total, product) => {
+        total[product.categoryId] = (total[product.categoryId] ?? 0) + 1;
+        return total;
+      }, {});
+      setCategories(nextCategories);
+      setProductCounts(counts);
+      setAssets(nextAssets);
+    } catch {
+      setError("Не удалось загрузить категории. Проверьте соединение и попробуйте ещё раз.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     void reload();
   }, []);
 
+  async function changeCategoryStatus(id: string, status: "draft" | "on_site" | "hidden") {
+    await browserAdminClient().changeDocumentStatus("shop-category", id, status);
+    await reload();
+  }
+
+  function openCategoryDialog() {
+    setCategoryName("");
+    setCategorySlug("");
+    setCategorySlugTouched(false);
+    categoryDialogRef.current?.showModal();
+  }
+
+  async function createCategory() {
+    if (!categoryName.trim()) return;
+    const client = browserAdminClient();
+    const created = await client.createShopCategory({ name: categoryName.trim() });
+    const nextSlug = slugifyTitle(categorySlugTouched ? categorySlug : categoryName);
+    if (nextSlug && nextSlug !== created.draft.slug) {
+      await client.saveShopCategory(created.id, { ...created.draft, slug: nextSlug });
+    }
+    categoryDialogRef.current?.close();
+    router.push(`/shop/categories/${created.id}`);
+  }
+
+  function imageUrl(category: EntityRecord<ShopCategoryDraft>) {
+    const assetId = category.draft.mainImage?.assetId;
+    return assets.find((asset) => asset.id === assetId)?.dataUrl ?? null;
+  }
+
   return (
     <main>
-      <div><h1>Shop</h1><p className="subheading">Категории каталога и товары с ценами и вариантами.</p></div>
-      <form
-        className={styles.createForm}
+      <div className={styles.pageHead}>
+        <div>
+          <h1>Shop</h1>
+          <p className="subheading">Категории каталога и товары с ценами и вариантами.</p>
+        </div>
+        <button className="primary" type="button" onClick={openCategoryDialog}>Добавить категорию</button>
+      </div>
+
+      {loading ? <AdminLoading label="Загружаем категории…" /> : null}
+      {error ? <p role="alert">{error}</p> : null}
+
+      {!loading && !error && categories.length === 0 ? (
+        <div className={styles.empty}>
+          <Icon name="shop" size={36} />
+          <h2>Категорий пока нет</h2>
+          <p>Создайте категорию каталога. Товары добавляются внутри неё, когда будут готовы их характеристики.</p>
+          <button className="primary" type="button" onClick={openCategoryDialog}>Добавить категорию</button>
+        </div>
+      ) : null}
+
+      {!loading && !error && categories.length > 0 ? (
+        <ul className={styles.catalogList} aria-label="Категории Shop">
+          {categories.map((category) => (
+            <li key={category.id}>
+              <CatalogRow
+                href={`/shop/categories/${category.id}`}
+                title={category.draft.name || "Без названия"}
+                meta={`/${category.draft.slug} · ${productCounts[category.id] ?? 0} товаров`}
+                icon="shop"
+                imageUrl={imageUrl(category)}
+                status={category.hidden ? "hidden" : category.publishedSnapshot == null ? "draft" : "on_site"}
+                onStatusChange={role === "admin" ? (status) => changeCategoryStatus(category.id, status) : undefined}
+              />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      <CatalogCreateDialog
+        dialogRef={categoryDialogRef}
+        title="Новая категория"
+        nameLabel="Название категории"
+        name={categoryName}
+        slug={categorySlug}
+        onNameChange={(value) => {
+          setCategoryName(value);
+          if (!categorySlugTouched) setCategorySlug(slugifyTitle(value));
+        }}
+        onSlugChange={(value) => {
+          setCategorySlugTouched(true);
+          setCategorySlug(value);
+        }}
+        onCancel={() => categoryDialogRef.current?.close()}
         onSubmit={(event) => {
           event.preventDefault();
-          if (!categoryName.trim()) return;
-          void browserAdminClient()
-            .createShopCategory({ name: categoryName })
-            .then((created) => router.push(`/shop/categories/${created.id}`));
+          void createCategory().catch(() => setError("Не удалось создать категорию. Проверьте название и адрес страницы."));
         }}
-      >
-        <label>
-          Новая категория
-          <input
-            aria-label="Новая категория"
-            value={categoryName}
-            onChange={(event) => setCategoryName(event.target.value)}
-          />
-        </label>
-        <button className="primary" type="submit">Добавить категорию</button>
-      </form>
-      <ul className={styles.grid}>
-        {categories.map((category) => (
-          <li key={category.id}>
-            <div className={styles.card}><span className={styles.thumb}>{category.draft.mainImage && assets.find((asset) => asset.id === category.draft.mainImage?.assetId) ? <Image unoptimized width={90} height={100} src={assets.find((asset) => asset.id === category.draft.mainImage?.assetId)!.dataUrl} alt=""/> : <Icon name="shop" size={34}/>}</span><span className={styles.cardBody}><button type="button" className="ghost" aria-pressed={selectedCategoryId === category.id} onClick={() => { setSelectedCategoryId(category.id); setCategoryId(category.id); }}>{category.draft.name}</button><span className={styles.meta}>/{category.draft.slug}</span><span className={category.hidden ? styles.badge : styles.badgeOnSite}>{STATUS_LABEL[category.hidden ? "hidden" : category.publishedSnapshot == null ? "draft" : "on_site"]}</span><a href={`/shop/categories/${category.id}`} aria-label={`Настроить ${category.draft.name}`}>Настроить <Icon name="arrow" size={14}/></a></span></div>
-          </li>
-        ))}
-      </ul>
-      {selectedCategoryId ? <form
-        className={styles.createForm}
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!name.trim() || !categoryId) return;
-          void browserAdminClient()
-            .createShopProduct({ name, categoryId })
-            .then((created) => router.push(`/shop/${created.id}`));
-        }}
-      >
-        <label>
-          Название товара
-          <input
-            aria-label="Название товара"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-        </label>
-        <span className={styles.meta}>Категория: {categories.find((category) => category.id === selectedCategoryId)?.draft.name}</span>
-        <button className="primary" type="submit">Добавить товар</button>
-      </form> : null}
-      {selectedCategoryId ? <div className={styles.tableWrap}><table className={styles.table}><thead><tr><th>Товар</th><th>Категория</th><th>Статус</th><th>Черновик</th><th></th></tr></thead><tbody>{products.filter((product) => product.categoryId === selectedCategoryId).map((product) => <tr key={product.id}><td><a className={styles.nameLink} href={`/shop/${product.id}`}>{product.name}</a></td><td>{product.categoryName}</td><td><span className={product.status === "on_site" ? styles.badgeOnSite : styles.badge}>{STATUS_LABEL[product.status]}</span></td><td>{product.hasUnpublishedDraft ? "Есть изменения" : "—"}</td><td><a className={styles.openLink} href={`/shop/${product.id}`} aria-label={`Открыть ${product.name}`}><Icon name="arrow" size={17}/></a></td></tr>)}</tbody></table><div className={styles.tableFoot}>{products.filter((product) => product.categoryId === selectedCategoryId).length} товаров</div></div> : null}
+      />
     </main>
   );
 }

@@ -1,15 +1,18 @@
 "use client";
 
-import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { AdminLoading } from "@/admin/ui/AdminLoading";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
 import { wheelTypePublishBlockers } from "@/admin/domain/publishRules";
 import type { EntityRecord, ShopCategoryDraft } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
+import { ShopCategoryProducts } from "./ShopCategoryProducts";
 
 import styles from "./ShopDocument.module.css";
 
@@ -17,10 +20,16 @@ const ERROR_TEXT: Record<AdminClientError["code"], string> = {
   slug_taken: "Этот адрес страницы уже занят",
   invalid_slug: "Нельзя изменить адрес страницы",
   publish_blocked: "Публикация закрыта",
+  category_not_published: "Сначала опубликуйте категорию товара",
+  category_has_published_products: "Сначала снимите с публикации товары этой категории",
   unsaved: "Сначала сохраните черновик",
   media_in_use: "Файл ещё используется",
+  storage_unavailable: "Хранилище S3 не настроено",
   cannot_disable_self: "Нельзя отключить себя",
   last_admin: "Нельзя отключить последнего администратора",
+  invalid_credentials: "Неверный логин или пароль",
+  unauthorized: "Сессия закончилась. Войдите снова",
+  forbidden: "Недостаточно прав для этого действия",
 };
 
 const BLOCKER_TEXT: Record<string, string> = {
@@ -31,9 +40,11 @@ const BLOCKER_TEXT: Record<string, string> = {
 
 export function ShopCategoryEditor({ id }: { id: string }) {
   const router = useRouter();
+  const tabsRef = useRef<HTMLElement>(null);
   const [record, setRecord] = useState<EntityRecord<ShopCategoryDraft> | null>(null);
   const [draft, setDraft] = useState<ShopCategoryDraft | null>(null);
   const [role, setRole] = useAdminRole();
+  const [activeTab, setActiveTab] = useState<"products" | "settings">("products");
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
@@ -51,13 +62,27 @@ export function ShopCategoryEditor({ id }: { id: string }) {
   }, [id, setRole]);
 
   if (missing) return <main className={styles.page}>Категория не найдена</main>;
-  if (draft == null || record == null) return <main className={styles.page}>Загрузка…</main>;
+  if (draft == null || record == null) return <main className={styles.page}><AdminLoading /></main>;
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(record.savedDraft) || record.savedDraft == null;
   const savedBlockers = record.savedDraft == null ? [] : wheelTypePublishBlockers(record.savedDraft);
 
   function patch(next: Partial<ShopCategoryDraft>) {
     setDraft((current) => (current == null ? current : { ...current, ...next }));
+  }
+
+  function selectTab(tab: "products" | "settings") {
+    setActiveTab(tab);
+  }
+
+  function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "Home" && event.key !== "End") return;
+    event.preventDefault();
+    const tabs = Array.from(tabsRef.current?.querySelectorAll<HTMLButtonElement>("[role='tab']") ?? []);
+    const currentIndex = tabs.indexOf(event.currentTarget);
+    const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (currentIndex + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length;
+    tabs[nextIndex]?.focus();
+    setActiveTab(nextIndex === 0 ? "products" : "settings");
   }
 
   async function onSave() {
@@ -101,88 +126,103 @@ export function ShopCategoryEditor({ id }: { id: string }) {
     }
   }
 
+  async function onHideCategory() {
+    setMessage("");
+    try {
+      setRecord(await browserAdminClient().hideShopCategory(id));
+    } catch (error) {
+      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось скрыть категорию");
+    }
+  }
+
   return (
-    <main className="document">
+    <main className="document" data-unsaved={dirty ? "true" : undefined}>
+      <Link className="backLink" href="/shop">← Назад к категориям</Link>
       <h1>{draft.name || "Категория shop"}</h1>
-      <BlockNav />
-      <section className={styles.section}>
-        <h2>Основные данные</h2>
-        <label className={styles.field}>
-          Название
-          <input value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
-        </label>
-        <label className={styles.field}>
-          Адрес страницы
-          <input
-            value={draft.slug}
-            disabled={record.slugLocked}
-            onChange={(event) => patch({ slug: event.target.value })}
+      <nav ref={tabsRef} className="blockNav" role="tablist" aria-label="Разделы категории">
+        <button id="shop-category-products-tab" type="button" role="tab" aria-selected={activeTab === "products"} aria-controls="shop-category-products-panel" tabIndex={activeTab === "products" ? 0 : -1} onClick={() => selectTab("products")} onKeyDown={onTabKeyDown}>Товары</button>
+        <button id="shop-category-settings-tab" type="button" role="tab" aria-selected={activeTab === "settings"} aria-controls="shop-category-settings-panel" tabIndex={activeTab === "settings" ? 0 : -1} onClick={() => selectTab("settings")} onKeyDown={onTabKeyDown}>Настройки категории</button>
+      </nav>
+
+      <div id="shop-category-products-panel" role="tabpanel" aria-labelledby="shop-category-products-tab" tabIndex={0} hidden={activeTab !== "products"}>
+        <ShopCategoryProducts categoryId={id} categoryName={draft.name || "Без названия"} />
+      </div>
+
+      <div id="shop-category-settings-panel" role="tabpanel" aria-labelledby="shop-category-settings-tab" tabIndex={0} hidden={activeTab !== "settings"}>
+        <section className={styles.section}>
+          <h2>Карточка категории</h2>
+          <label className={styles.field}>
+            Название
+            <input value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
+          </label>
+          <label className={styles.field}>
+            Адрес
+            <input
+              value={draft.slug}
+              disabled={record.slugLocked}
+              onChange={(event) => patch({ slug: event.target.value })}
+            />
+          </label>
+          <label className={styles.field}>
+            Описание
+            <textarea value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
+          </label>
+          <label className={styles.field}>
+            Порядок
+            <input
+              type="number"
+              value={draft.sortOrder}
+              onChange={(event) => patch({ sortOrder: Number(event.target.value) || 0 })}
+            />
+          </label>
+          <label className={styles.check}>
+            <input
+              type="checkbox"
+              checked={draft.showInMenu}
+              onChange={(event) => patch({ showInMenu: event.target.checked })}
+            />
+            Показывать в меню
+          </label>
+        </section>
+        <section className={styles.section}>
+          <h2>Фото</h2>
+          <PlacementFields
+            label="Главное фото"
+            value={draft.mainImage}
+            onChange={(mainImage) => patch({ mainImage })}
           />
-        </label>
-        <label className={styles.field}>
-          Описание
-          <textarea value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
-        </label>
-        <label className={styles.field}>
-          Порядок
-          <input
-            type="number"
-            value={draft.sortOrder}
-            onChange={(event) => patch({ sortOrder: Number(event.target.value) || 0 })}
-          />
-        </label>
-        <label className={styles.check}>
-          <input
-            type="checkbox"
-            checked={draft.showInMenu}
-            onChange={(event) => patch({ showInMenu: event.target.checked })}
-          />
-          Показывать в меню
-        </label>
-      </section>
-      <section className={styles.section}>
-        <h2>Фото</h2>
-        <PlacementFields
-          label="Главное фото"
-          value={draft.mainImage}
-          onChange={(mainImage) => patch({ mainImage })}
-        />
-      </section>
-      <DocumentActions>
-        <p>Сохранил: {record.lastSavedBy ?? "—"}</p>
-        <p>Опубликовал: {record.lastPublishedBy ?? "—"}</p>
-        {message ? <p>{message}</p> : null}
-        {savedBlockers.map((code) => (
-          <p key={code}>{BLOCKER_TEXT[code] ?? code}</p>
-        ))}
-        {dirty ? <p>Есть несохранённые правки</p> : null}
-        <button type="button" disabled={saving} onClick={() => void onSave()}>
-          {saving ? "Сохраняем…" : "Сохранить"}
-        </button>
-        {role === "admin" ? (
-          <>
-            <button
-              type="button"
-              disabled={dirty || publishing || savedBlockers.length > 0}
-              onClick={() => void onPublish()}
-            >
-              {publishing ? "Публикуем…" : "Опубликовать"}
-            </button>
-            {record.publishedSnapshot != null ? (
-              <button type="button" onClick={() => void browserAdminClient().hideShopCategory(id).then(setRecord)}>
-                Скрыть с сайта
-              </button>
-            ) : (
+        </section>
+        <DocumentActions>
+          <p>Сохранил: {record.lastSavedBy ?? "—"}</p>
+          <p>Опубликовал: {record.lastPublishedBy ?? "—"}</p>
+          {message ? <p>{message}</p> : null}
+          {savedBlockers.map((code) => (
+            <p key={code}>{BLOCKER_TEXT[code] ?? code}</p>
+          ))}
+          {dirty ? <p>Есть несохранённые правки</p> : null}
+          <button type="button" disabled={saving} onClick={() => void onSave()}>
+            {saving ? "Сохраняем…" : "Сохранить"}
+          </button>
+          {role === "admin" ? (
+            <>
               <button
                 type="button"
-                onClick={() => void onDelete()}
+                disabled={dirty || publishing || savedBlockers.length > 0}
+                onClick={() => void onPublish()}
               >
-                Удалить
+                {publishing ? "Публикуем…" : "Опубликовать"}
               </button>
-            )}
-          </>
-        ) : null}
-      </DocumentActions>
+              {record.publishedSnapshot != null ? (
+                <button type="button" onClick={() => void onHideCategory()}>
+                  Скрыть с сайта
+                </button>
+              ) : (
+                <button type="button" onClick={() => void onDelete()}>Удалить</button>
+              )}
+            </>
+          ) : null}
+        </DocumentActions>
+      </div>
     </main>
   );
 }

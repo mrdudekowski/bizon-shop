@@ -23,7 +23,7 @@
 }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; }
-html { scroll-behavior: smooth; scroll-padding-top: 152px; }
+html { scroll-behavior: smooth; scroll-padding-top: 152px; scroll-padding-bottom: 160px; }
 body { font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.5; color: var(--ink); background: var(--canvas); -webkit-font-smoothing: antialiased; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { min-height: var(--control); padding: 0 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); font-weight: 600; cursor: pointer; transition: background-color 140ms ease; }
@@ -34,7 +34,7 @@ button[aria-pressed="true"], .primary { background: var(--accent); border-color:
 .primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .primary:disabled { background: var(--surface-muted); border-color: var(--surface-muted); color: #89919e; }
 .ghost { border-color: transparent; background: transparent; }
-input, select, textarea { width: 100%; max-width: 100%; min-width: 0; min-height: var(--control); padding: 10px 12px; border: 1px solid #cfd5df; border-radius: 6px; background: var(--surface); font-weight: 400; }
+input, select, textarea { width: 100%; max-width: 100%; min-width: 0; min-height: var(--control); padding: 10px 12px; border: 1px solid #cfd5df; border-radius: var(--radius); background: var(--surface); font-weight: 400; }
 input::placeholder, textarea::placeholder { color: #8992a1; }
 input:disabled, select:disabled, textarea:disabled { background: var(--surface-muted); color: var(--ink-muted); }
 textarea { min-height: 110px; resize: vertical; }
@@ -55,17 +55,18 @@ dialog { border: 1px solid var(--line); border-radius: 12px; padding: 24px; box-
 dialog::backdrop { background: #141b2766; backdrop-filter: blur(3px); }
 .subheading { color: var(--ink-muted); font-size: 14px; margin-top: 7px; font-weight: 400; }
 .document { gap: 22px !important; }
-.document > section, .document > fieldset { padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; display: grid; gap: 18px; min-width: 0; }
+.document > section, .document > fieldset { padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: grid; gap: 18px; min-width: 0; }
 .document > section > h2 { padding-bottom: 14px; border-bottom: 1px solid var(--line); }
 .document > section > button { justify-self: start; }
 .document > section > div:has(> input), .document > section > div:has(> textarea) { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--line); border-radius: 8px; }
 .document > section > label:has(textarea) { grid-column: 1 / -1; }
 .document > label { background: var(--surface); padding: 16px 24px; border-radius: var(--radius); }
-.blockNav { position: sticky; top: 76px; z-index: 15; display: flex; overflow-x: auto; gap: 16px; min-width: 0; background: var(--canvas); border-bottom: 1px solid #dbe0e7; padding-top: 4px; }
+.blockNav { position: sticky; top: 76px; z-index: 15; display: flex; overflow-x: auto; overflow-y: hidden; gap: 8px; min-width: 0; background: var(--canvas); border-bottom: 1px solid #dbe0e7; padding-top: 4px; scrollbar-width: thin; scrollbar-color: #aab2bf transparent; scroll-snap-type: x proximity; }
 .blockNav:empty { display: none; }
-.blockNav a { flex-shrink: 0; padding: 13px 14px; text-decoration: none; border-bottom: 3px solid transparent; color: var(--ink-muted); }
-.blockNav a:hover { color: var(--ink); }
-.blockNav a[aria-current] { border-color: var(--accent); color: var(--ink); font-weight: 600; }
+.blockNav button { flex-shrink: 0; min-height: 44px; padding: 10px 14px; border: 0; border-bottom: 3px solid transparent; border-radius: 8px 8px 0 0; background: transparent; color: var(--ink-muted); }
+.blockNav button:hover { background: var(--surface-muted); color: var(--ink); }
+.blockNav button[aria-selected="true"] { border-bottom-color: var(--accent); background: var(--surface); color: var(--ink); font-weight: 650; }
+.document [data-document-tab-panel][hidden] { display: none !important; }
 .documentActions { position: sticky; bottom: 0; z-index: 18; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 10px 10px 0 0; background: var(--surface); box-shadow: 0 -4px 18px #17212e06; }
 .documentFeedback { display: flex; flex-wrap: wrap; gap: 2px 16px; flex: 1 1 260px; font-size: 12px; color: var(--ink-muted); }
 .documentFeedback p:last-child { color: var(--ink); }
@@ -73,6 +74,26 @@ dialog::backdrop { background: #141b2766; backdrop-filter: blur(3px); }
 .documentButtons > button:first-child { background: var(--accent); border-color: var(--accent); min-width: 132px; }
 .documentButtons > button:first-child:disabled { background: var(--surface-muted); border-color: var(--surface-muted); }
 .documentButtons > button:last-child:not(:first-child) { font-weight: 400; }
+.backLink { display: inline-flex; min-height: 32px; align-items: center; margin: 0 0 8px; color: var(--ink-muted); font-size: 13px; text-decoration: none; }
+.backLink:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.advantageList { display: grid; gap: 12px; }
+.advantageItem { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.advantageChoice { display: flex !important; align-items: center; gap: 10px; font-weight: 650 !important; }
+.advantageChoice img { width: 40px; height: 40px; border-radius: 8px; background: #111; object-fit: cover; }
+.tireSize { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; gap: 14px; }
+.tireSize > label:has(> input[type="checkbox"]) { align-self: center; min-height: 44px; }
+.choiceGroup { display: grid; gap: 12px; }
+.fieldHint { color: var(--ink-muted); font-size: 12px; font-weight: 400; }
 @media (min-width: 1000px) { .document > section:has(> label) { grid-template-columns: repeat(2, minmax(0, 1fr)); } .document > section > h2, .document > section > fieldset, .document > section > div, .document > section > section { grid-column: 1 / -1; } }
-@media (max-width: 720px) { h1 { font-size: 28px; } .blockNav { top: 64px; gap: 3px; } .blockNav a { padding: 13px 10px; font-size: 12px; } .document > section, .document > fieldset { padding: 18px; } .documentActions { padding: 12px; } .documentButtons { width: 100%; } .documentButtons button { flex: 1 1 auto; font-size: 12px; } }
+@media (max-width: 720px) {
+  h1 { font-size: 28px; }
+  .blockNav { top: 64px; gap: 3px; }
+  .blockNav button { padding: 10px; font-size: 12px; }
+  .document > section, .document > fieldset { padding: 18px; }
+  .tireSize { grid-template-columns: minmax(0,1fr); }
+  .documentActions { padding: 8px 10px; gap: 6px; }
+  .documentFeedback { flex-basis: 100%; font-size: 12px; line-height: 1.4; }
+  .documentButtons { width: 100%; gap: 6px; }
+  .documentButtons button { flex: 1 1 140px; min-height: 44px; padding-inline: 10px; font-size: 13px; }
+}
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } button { transition: none; } }

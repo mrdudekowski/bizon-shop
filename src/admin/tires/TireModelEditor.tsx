@@ -1,15 +1,18 @@
 "use client";
 
 import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { AdminLoading } from "@/admin/ui/AdminLoading";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
 import {
   AXLE_OPTIONS,
   OPERATING_CONDITION_OPTIONS,
+  TIRE_ADVANTAGE_OPTIONS,
   TIRE_CATEGORIES,
   VEHICLE_TYPE_OPTIONS,
   type CatalogAxle,
@@ -17,8 +20,6 @@ import {
 } from "@/admin/domain/options";
 import { tireModelPublishBlockers } from "@/admin/domain/publishRules";
 import type {
-  AdvantageItem,
-  DocumentLink,
   TireDirection,
   TireModelDraft,
   TireModelRecord,
@@ -30,10 +31,16 @@ const ERROR_TEXT: Record<AdminClientError["code"], string> = {
   slug_taken: "Этот адрес страницы уже занят",
   invalid_slug: "Нельзя изменить адрес страницы",
   publish_blocked: "Публикация закрыта",
+  category_not_published: "Сначала опубликуйте категорию товара",
+  category_has_published_products: "Сначала снимите с публикации товары этой категории",
   unsaved: "Сначала сохраните черновик",
   media_in_use: "Файл ещё используется",
+  storage_unavailable: "Хранилище S3 не настроено",
   cannot_disable_self: "Нельзя отключить себя",
   last_admin: "Нельзя отключить последнего администратора",
+  invalid_credentials: "Неверный логин или пароль",
+  unauthorized: "Сессия закончилась. Войдите снова",
+  forbidden: "Недостаточно прав для этого действия",
 };
 
 const BLOCKER_TEXT: Record<string, string> = {
@@ -65,15 +72,6 @@ const SIZE_TEXT_FIELDS: { key: keyof TireSizeDraft; label: string }[] = [
   { key: "recommendedRim", label: "Рекомендуемый обод" },
 ];
 
-function readFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-
 function optionalNumber(raw: string): number | undefined {
   if (raw === "") return undefined;
   const next = Number(raw);
@@ -84,8 +82,70 @@ function emptySize(): TireSizeDraft {
   return { id: crypto.randomUUID(), size: "", priceOnRequest: false, available: true };
 }
 
-function emptyAdvantage(): AdvantageItem {
-  return { id: crypto.randomUUID(), title: "", description: "" };
+type TireFeature = NonNullable<TireModelDraft["features"]>[number];
+
+const LISTED_PROPERTIES = /\s*Основные заявленные свойства:[^."]*(?:\.[^"]*)?/;
+
+function withoutListedProperties(text: string): string {
+  return text.replace(LISTED_PROPERTIES, "").replace(/[ \t]{2,}/g, " ").trim();
+}
+
+function featuresForEditor(draft: TireModelDraft): TireFeature[] {
+  const byKey = new Map<string, TireFeature>();
+  for (const feature of draft.features ?? []) {
+    if (!feature.key || byKey.has(feature.key)) continue;
+    byKey.set(feature.key, feature);
+  }
+  for (const item of draft.advantages) {
+    const option = TIRE_ADVANTAGE_OPTIONS.find((entry) => entry.label === item.title.trim());
+    if (option == null || byKey.has(option.value)) continue;
+    byKey.set(option.value, {
+      id: `model-feature-${option.value}-${item.id}`,
+      key: option.value,
+      title: item.title,
+      description: item.description,
+    });
+  }
+  const known = TIRE_ADVANTAGE_OPTIONS.flatMap((option) => {
+    const feature = byKey.get(option.value);
+    return feature == null ? [] : [feature];
+  });
+  const extra = [...byKey.values()].filter(
+    (feature) => !TIRE_ADVANTAGE_OPTIONS.some((option) => option.value === feature.key),
+  );
+  return [...known, ...extra];
+}
+
+function editorDraft(draft: TireModelDraft): TireModelDraft {
+  return {
+    ...draft,
+    descriptionShort: withoutListedProperties(draft.descriptionShort),
+    descriptionLong: withoutListedProperties(draft.descriptionLong),
+    features: featuresForEditor(draft),
+    advantages: [],
+  };
+}
+
+function setFeature(
+  draft: TireModelDraft,
+  option: (typeof TIRE_ADVANTAGE_OPTIONS)[number],
+  next: { checked: boolean; title?: string; description?: string },
+): Pick<TireModelDraft, "features" | "advantages"> {
+  const current = (draft.features ?? []).find((feature) => feature.key === option.value);
+  const rest = (draft.features ?? []).filter((feature) => feature.key !== option.value);
+  if (!next.checked) return { features: rest, advantages: [] };
+  const feature: TireFeature = {
+    id: current?.id ?? `model-feature-${option.value}-${crypto.randomUUID()}`,
+    key: option.value,
+    title: next.title ?? current?.title ?? option.label,
+    description: next.description ?? current?.description ?? "",
+  };
+  const ordered = TIRE_ADVANTAGE_OPTIONS.flatMap((entry) => {
+    if (entry.value === option.value) return [feature];
+    const existing = rest.find((item) => item.key === entry.value);
+    return existing == null ? [] : [existing];
+  });
+  return { features: ordered, advantages: [] };
 }
 
 export function TireModelEditor({ id }: { id: string }) {
@@ -103,18 +163,19 @@ export function TireModelEditor({ id }: { id: string }) {
     void Promise.all([client.getTireModel(id), client.listTireDirections(), client.getSession()]).then(
       ([nextRecord, nextDirections, session]) => {
         setRecord(nextRecord);
-        setDraft(nextRecord.draft);
+        setDraft(editorDraft(nextRecord.draft));
         setDirections(nextDirections);
         setRole(session.role);
       },
     );
   }, [id, setRole]);
 
-  if (draft == null || record == null) return <main>Загрузка…</main>;
+  if (draft == null || record == null) return <main><AdminLoading /></main>;
   const model = draft;
   const stored = record;
 
-  const dirty = JSON.stringify(model) !== JSON.stringify(stored.savedDraft) || stored.savedDraft == null;
+  const dirty =
+    stored.savedDraft == null || JSON.stringify(model) !== JSON.stringify(editorDraft(stored.savedDraft));
   const saved = stored.savedDraft;
   const savedBlockers =
     saved == null
@@ -177,24 +238,13 @@ export function TireModelEditor({ id }: { id: string }) {
   }
 
 
-  async function onDocumentFile(file: File | undefined) {
-    if (file == null) return;
-    const dataUrl = await readFile(file);
-    const asset = await browserAdminClient().createAsset({
-      name: file.name,
-      mimeType: file.type || "application/pdf",
-      dataUrl,
-    });
-    const documents: DocumentLink[] = [...model.documents, { assetId: asset.id, title: file.name }];
-    patch({ documents });
-  }
-
   return (
-    <main className="document">
+    <main className="document" data-unsaved={dirty ? "true" : undefined}>
+      <Link className="backLink" href={`/?direction=${encodeURIComponent(draft.directionId)}`}>← Назад к моделям</Link>
       <h1>{draft.name || "Модель шины"}</h1>
       <BlockNav />
       <section>
-        <h2>Основные данные</h2>
+        <h2>Карточка</h2>
         <label>
           Название
           <input value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
@@ -204,7 +254,7 @@ export function TireModelEditor({ id }: { id: string }) {
           <input value={draft.modelCode ?? ""} onChange={(event) => patch({ modelCode: event.target.value })} />
         </label>
         <label>
-          Адрес страницы
+          Адрес
           <input
             value={draft.slug}
             disabled={record.slugLocked}
@@ -234,108 +284,107 @@ export function TireModelEditor({ id }: { id: string }) {
           <textarea value={draft.descriptionLong} onChange={(event) => patch({ descriptionLong: event.target.value })} />
         </label>
         <label>
-          Категория применения
-          <select
-            value={draft.applicationCategory}
-            onChange={(event) => patch({ applicationCategory: event.target.value as TireModelDraft["applicationCategory"] })}
-          >
-            <option value="">Не выбрана</option>
-            {TIRE_CATEGORIES.map((category) => (
-              <option key={category.value} value={category.value}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
           Тип протектора
           <input value={draft.treadType} onChange={(event) => patch({ treadType: event.target.value })} />
         </label>
-        <label>
-          Типы применения
-          <input
-            value={(draft.applicationTypes ?? []).join(", ")}
-            onChange={(event) =>
-              patch({
-                applicationTypes: event.target.value
-                  .split(",")
-                  .map((item) => item.trim())
-                  .filter((item) => item.length > 0),
-              })
-            }
-          />
-        </label>
-        {(draft.features ?? []).map((feature, index) => (
-          <label key={feature.id || feature.key}>
-            {feature.title || feature.key}
-            <input
-              value={feature.description}
-              onChange={(event) => {
-                const features = (draft.features ?? []).slice();
-                features[index] = { ...feature, description: event.target.value };
-                patch({ features });
-              }}
-            />
-          </label>
-        ))}
+        <fieldset className="choiceGroup">
+          <legend>Применение шины</legend>
+          <p>Выберите все подходящие условия. Эти отметки управляют фильтрами каталога на сайте.</p>
+          {TIRE_CATEGORIES.map((category) => (
+            <label key={category.value}>
+              <input
+                type="checkbox"
+                checked={(draft.applicationTypes ?? []).includes(category.value)}
+                onChange={() => patch({ applicationTypes: toggle(draft.applicationTypes ?? [], category.value) })}
+              />
+              {category.name}
+            </label>
+          ))}
+          {(draft.applicationTypes ?? []).filter((value) => !TIRE_CATEGORIES.some((category) => category.value === value)).map((value) => (
+            <label key={value}>
+              <input
+                type="checkbox"
+                checked
+                onChange={() => patch({ applicationTypes: (draft.applicationTypes ?? []).filter((item) => item !== value) })}
+              />
+              {value} <span>(старое значение)</span>
+            </label>
+          ))}
+        </fieldset>
       </section>
       <section>
         <h2>Подбор</h2>
         <p>Направление — запасной совет, если ни одна модель не подошла. Галочки модели задают саму модель.</p>
-        {VEHICLE_TYPE_OPTIONS.map((option) => (
-          <label key={option.value}>
-            <input
-              type="checkbox"
-              checked={draft.selectionVehicleTypes.includes(option.value)}
-              onChange={() => patch({ selectionVehicleTypes: toggle(draft.selectionVehicleTypes, option.value) })}
-            />
-            {option.label}
-          </label>
-        ))}
-        {OPERATING_CONDITION_OPTIONS.map((option) => (
-          <label key={option.value}>
-            <input
-              type="checkbox"
-              checked={draft.selectionConditions.includes(option.value)}
-              onChange={() =>
-                patch({ selectionConditions: toggle<OperatingCondition>(draft.selectionConditions, option.value) })
-              }
-            />
-            {option.label}
-          </label>
-        ))}
-        {AXLE_OPTIONS.map((option) => (
-          <label key={option.value}>
-            <input
-              type="checkbox"
-              checked={draft.selectionAxles.includes(option.value)}
-              onChange={() => patch({ selectionAxles: toggle<CatalogAxle>(draft.selectionAxles, option.value) })}
-            />
-            {option.label}
-          </label>
-        ))}
+        <fieldset className="choiceGroup">
+          <legend>Тип техники</legend>
+          {VEHICLE_TYPE_OPTIONS.map((option) => (
+            <label key={option.value}>
+              <input
+                type="checkbox"
+                checked={draft.selectionVehicleTypes.includes(option.value)}
+                onChange={() => patch({ selectionVehicleTypes: toggle(draft.selectionVehicleTypes, option.value) })}
+              />
+              {option.label}
+            </label>
+          ))}
+        </fieldset>
+        <fieldset className="choiceGroup">
+          <legend>Условия эксплуатации</legend>
+          {OPERATING_CONDITION_OPTIONS.map((option) => (
+            <label key={option.value}>
+              <input
+                type="checkbox"
+                checked={draft.selectionConditions.includes(option.value)}
+                onChange={() =>
+                  patch({ selectionConditions: toggle<OperatingCondition>(draft.selectionConditions, option.value) })
+                }
+              />
+              {option.label}
+            </label>
+          ))}
+        </fieldset>
+        <fieldset className="choiceGroup">
+          <legend>Оси</legend>
+          {AXLE_OPTIONS.map((option) => (
+            <label key={option.value}>
+              <input
+                type="checkbox"
+                checked={draft.selectionAxles.includes(option.value)}
+                onChange={() => patch({ selectionAxles: toggle<CatalogAxle>(draft.selectionAxles, option.value) })}
+              />
+              {option.label}
+            </label>
+          ))}
+        </fieldset>
       </section>
       <section>
         <h2>Размеры</h2>
         {draft.sizes.map((size, index) => (
-          <div key={size.id}>
-            <input
-              aria-label="Размер"
-              value={size.size}
-              onChange={(event) => patchSize(index, { size: event.target.value })}
-            />
-            <input
-              aria-label="Цена"
-              value={size.price ?? ""}
-              onChange={(event) => patchSize(index, { price: optionalNumber(event.target.value) })}
-            />
+          <fieldset key={size.id} className="tireSize">
+            <legend>Размер {index + 1}</legend>
+            <label>
+              Типоразмер
+              <input
+                aria-label="Размер"
+                value={size.size}
+                onChange={(event) => patchSize(index, { size: event.target.value })}
+              />
+            </label>
+            <label>
+              Цена
+              <input
+                aria-label="Цена"
+                value={size.price ?? ""}
+                onChange={(event) => patchSize(index, { price: optionalNumber(event.target.value) })}
+              />
+            </label>
             <label>
               <input
                 type="checkbox"
                 checked={size.priceOnRequest}
                 onChange={(event) => patchSize(index, { priceOnRequest: event.target.checked })}
               />
-              по запросу
+              Цена по запросу
             </label>
             <label>
               <input
@@ -343,14 +392,17 @@ export function TireModelEditor({ id }: { id: string }) {
                 checked={size.available}
                 onChange={(event) => patchSize(index, { available: event.target.checked })}
               />
-              в наличии
+              В наличии
             </label>
-            <input
-              aria-label="SKU"
-              value={size.sku ?? ""}
-              onChange={(event) => patchSize(index, { sku: event.target.value })}
-            />
-            {!(size.sku ?? "").trim() ? <span>SKU не заполнен</span> : null}
+            <label>
+              Артикул (SKU)
+              <input
+                aria-label="SKU"
+                value={size.sku ?? ""}
+                onChange={(event) => patchSize(index, { sku: event.target.value })}
+              />
+              {!(size.sku ?? "").trim() ? <span className="fieldHint">Для публикации заполните артикул.</span> : null}
+            </label>
             {SIZE_TEXT_FIELDS.map((field) => (
               <label key={field.key}>
                 {field.label}
@@ -372,10 +424,10 @@ export function TireModelEditor({ id }: { id: string }) {
                 />
               </label>
             ))}
-            <button type="button" onClick={() => patch({ sizes: draft.sizes.filter((item) => item.id !== size.id) })}>
-              Убрать
+            <button type="button" aria-label={`Убрать размер ${index + 1}`} onClick={() => patch({ sizes: draft.sizes.filter((item) => item.id !== size.id) })}>
+              Убрать размер
             </button>
-          </div>
+          </fieldset>
         ))}
         <button type="button" onClick={() => patch({ sizes: [...draft.sizes, emptySize()] })}>
           Добавить размер
@@ -391,70 +443,52 @@ export function TireModelEditor({ id }: { id: string }) {
         </section>
       <section>
         <h2>Преимущества</h2>
-        {draft.advantages.map((item, index) => (
-          <div key={item.id}>
-            <input
-              aria-label="Заголовок преимущества"
-              value={item.title}
-              onChange={(event) => {
-                const advantages = draft.advantages.slice();
-                advantages[index] = { ...item, title: event.target.value };
-                patch({ advantages });
-              }}
-            />
-            <textarea
-              aria-label="Описание преимущества"
-              value={item.description}
-              onChange={(event) => {
-                const advantages = draft.advantages.slice();
-                advantages[index] = { ...item, description: event.target.value };
-                patch({ advantages });
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => patch({ advantages: draft.advantages.filter((row) => row.id !== item.id) })}
-            >
-              Убрать
-            </button>
-          </div>
-        ))}
-        <button type="button" onClick={() => patch({ advantages: [...draft.advantages, emptyAdvantage()] })}>
-          Добавить преимущество
-        </button>
+        <p>Отмеченные пункты попадают в карусель на странице модели. Заголовок и текст можно поправить.</p>
+        <div className="advantageList">
+          {TIRE_ADVANTAGE_OPTIONS.map((option) => {
+            const feature = (draft.features ?? []).find((item) => item.key === option.value);
+            return (
+              <div key={option.value} className="advantageItem">
+                <label className="advantageChoice">
+                  <img src={`/images/catalog/features/${option.value}.png`} alt="" width={40} height={40} />
+                  <input
+                    type="checkbox"
+                    checked={feature != null}
+                    onChange={(event) => patch(setFeature(draft, option, { checked: event.target.checked }))}
+                  />
+                  {option.label}
+                </label>
+                {feature != null ? (
+                  <>
+                    <label>
+                      Заголовок
+                      <input
+                        value={feature.title}
+                        onChange={(event) =>
+                          patch(setFeature(draft, option, { checked: true, title: event.target.value }))
+                        }
+                      />
+                    </label>
+                    <label>
+                      Текст
+                      <textarea
+                        value={feature.description}
+                        onChange={(event) =>
+                          patch(setFeature(draft, option, { checked: true, description: event.target.value }))
+                        }
+                      />
+                    </label>
+                  </>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
       </section>
       <section>
         <h2>Меню</h2>
         <label><input type="checkbox" checked={draft.showInMenu} onChange={(event) => patch({ showInMenu: event.target.checked })} />Показывать в меню</label>
         <label>Порядок в меню<input type="number" value={draft.menuOrder} onChange={(event) => patch({ menuOrder: Number(event.target.value) || 0 })} /></label>
-      </section>
-      <section>
-        <h2>PDF</h2>
-        {draft.documents.map((doc, index) => (
-          <div key={`${doc.assetId}-${index}`}>
-            <input
-              aria-label="Название PDF"
-              value={doc.title}
-              onChange={(event) => {
-                const documents = draft.documents.slice();
-                documents[index] = { ...doc, title: event.target.value };
-                patch({ documents });
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => patch({ documents: draft.documents.filter((_, i) => i !== index) })}
-            >
-              Убрать
-            </button>
-          </div>
-        ))}
-        <input
-          aria-label="Загрузить PDF"
-          type="file"
-          accept="application/pdf"
-          onChange={(event) => void onDocumentFile(event.target.files?.[0])}
-        />
       </section>
       <DocumentActions>
         <p>Сохранил: {record.lastSavedBy ?? "—"}</p>

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import Image from "next/image";
 import type { ImagePlacement, MediaListItem } from "@/admin/domain/types";
+import { AdminClientError } from "@/admin/client/errors";
 import { browserAdminClient } from "@/admin/client/localStore";
 import styles from "./PlacementFields.module.css";
 function readFile(file: File): Promise<string> { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file); }); }
@@ -28,7 +29,13 @@ export function PlacementFields({ value, onChange, label = "Фото" }: Props) 
       const asset = await browserAdminClient().createAsset({ name: file.name, mimeType: file.type || "image/*", dataUrl });
       setPreviewUrl(dataUrl);
       onChange(emptyPlacement(asset.id));
-    } catch { setUploadError("Не удалось загрузить фото. Попробуйте другой файл."); }
+    } catch (error) {
+      setUploadError(
+        error instanceof AdminClientError && error.code === "storage_unavailable"
+          ? "Хранилище S3 не настроено. Добавьте ключи бакета и повторите загрузку."
+          : "Не удалось загрузить фото. Попробуйте другой файл.",
+      );
+    }
   }
   function patch(next: Partial<ImagePlacement>) { if (value) onChange({ ...value, ...next }); }
   function patchCrop(next: Partial<ImagePlacement["crop"]>) {
@@ -53,7 +60,7 @@ export function PlacementFields({ value, onChange, label = "Фото" }: Props) 
   }
   const placementStyle = value ? ({ "--crop-x": `${value.crop.x * 100}%`, "--crop-y": `${value.crop.y * 100}%`, "--crop-w": `${value.crop.width * 100}%`, "--crop-h": `${value.crop.height * 100}%`, "--focus-x": `${value.focalX * 100}%`, "--focus-y": `${value.focalY * 100}%` } as React.CSSProperties) : undefined;
   return <fieldset className={styles.fields}><legend>{label}</legend>
-    <label>Загрузить фото<input aria-label={`${label}: файл`} type="file" accept="image/*" onChange={(event) => void onFile(event.target.files?.[0])} /></label>
+    <label>{value ? "Заменить фото" : "Загрузить фото"}<input aria-label={`${label}: файл`} type="file" accept="image/*" onChange={(event) => void onFile(event.target.files?.[0])} /></label>
     {uploadError ? <p role="alert">{uploadError}</p> : null}
     {previewUrl && value ? <>
       <div ref={frame} className={styles.previewFrame} style={placementStyle} onPointerDown={pointAt} aria-label="Предпросмотр кадра и точки фокуса">
@@ -63,15 +70,16 @@ export function PlacementFields({ value, onChange, label = "Фото" }: Props) 
       </div>
       <p className={styles.caption}>Нажмите на фото, чтобы указать фокус. Перемещайте точку стрелками; рамка показывает сохраняемый кадр.</p>
       <label>Подпись к фото<input value={value.alt} onChange={(event) => patch({ alt: event.target.value })} /></label>
-      <div className={styles.numbers}>
-        <label>Рамка: левый край<input type="number" min="0" max="1" step=".01" value={value.crop.x} onChange={(event) => patchCrop({ x: number(event.target.value, value.crop.x) })} /></label>
-        <label>Рамка: верхний край<input type="number" min="0" max="1" step=".01" value={value.crop.y} onChange={(event) => patchCrop({ y: number(event.target.value, value.crop.y) })} /></label>
-        <label>Рамка: ширина<input type="number" min="0" max="1" step=".01" value={value.crop.width} onChange={(event) => patchCrop({ width: number(event.target.value, value.crop.width) })} /></label>
-        <label>Рамка: высота<input type="number" min="0" max="1" step=".01" value={value.crop.height} onChange={(event) => patchCrop({ height: number(event.target.value, value.crop.height) })} /></label>
-      </div>
+      <details className={styles.cropDetails}>
+        <summary>Точная настройка кадрирования</summary>
+        <div className={styles.numbers}>
+          <label>Рамка: левый край<input type="number" min="0" max="1" step=".01" value={value.crop.x} onChange={(event) => patchCrop({ x: number(event.target.value, value.crop.x) })} /></label>
+          <label>Рамка: верхний край<input type="number" min="0" max="1" step=".01" value={value.crop.y} onChange={(event) => patchCrop({ y: number(event.target.value, value.crop.y) })} /></label>
+          <label>Рамка: ширина<input type="number" min="0" max="1" step=".01" value={value.crop.width} onChange={(event) => patchCrop({ width: number(event.target.value, value.crop.width) })} /></label>
+          <label>Рамка: высота<input type="number" min="0" max="1" step=".01" value={value.crop.height} onChange={(event) => patchCrop({ height: number(event.target.value, value.crop.height) })} /></label>
+        </div>
+      </details>
       <button type="button" className="ghost" onClick={() => { onChange(undefined); setPreviewUrl(null); }}>Убрать фото</button>
     </> : null}
   </fieldset>;
 }
-
-

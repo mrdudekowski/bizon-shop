@@ -1,9 +1,11 @@
 "use client";
 
-import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { AdminLoading } from "@/admin/ui/AdminLoading";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
@@ -21,10 +23,16 @@ const ERROR_TEXT: Record<AdminClientError["code"], string> = {
   slug_taken: "Этот адрес страницы уже занят",
   invalid_slug: "Нельзя изменить адрес страницы",
   publish_blocked: "Публикация закрыта",
+  category_not_published: "Сначала опубликуйте категорию товара",
+  category_has_published_products: "Сначала снимите с публикации товары этой категории",
   unsaved: "Сначала сохраните черновик",
   media_in_use: "Файл ещё используется",
+  storage_unavailable: "Хранилище S3 не настроено",
   cannot_disable_self: "Нельзя отключить себя",
   last_admin: "Нельзя отключить последнего администратора",
+  invalid_credentials: "Неверный логин или пароль",
+  unauthorized: "Сессия закончилась. Войдите снова",
+  forbidden: "Недостаточно прав для этого действия",
 };
 
 const BLOCKER_TEXT: Record<string, string> = {
@@ -51,7 +59,7 @@ export function TireDirectionEditor({ id }: { id: string }) {
     });
   }, [id, setRole]);
 
-  if (draft == null || record == null) return <main>Загрузка…</main>;
+  if (draft == null || record == null) return <main><AdminLoading /></main>;
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(record.savedDraft) || record.savedDraft == null;
   const savedBlockers = record.savedDraft == null ? [] : tireDirectionPublishBlockers(record.savedDraft);
@@ -111,17 +119,17 @@ export function TireDirectionEditor({ id }: { id: string }) {
   }
 
   return (
-    <main className="document">
+    <main className="document" data-unsaved={dirty ? "true" : undefined}>
+      <Link className="backLink" href="/tires/directions">← Назад к направлениям</Link>
       <h1>{draft.name || "Направление шины"}</h1>
-      <BlockNav />
       <section>
-        <h2>Основные данные</h2>
+        <h2>Карточка</h2>
         <label>
           Название
           <input value={draft.name} onChange={(event) => patch({ name: event.target.value })} />
         </label>
         <label>
-          Адрес страницы
+          Адрес
           <input
             value={draft.slug}
             disabled={record.slugLocked}
@@ -159,30 +167,36 @@ export function TireDirectionEditor({ id }: { id: string }) {
       <section>
         <h2>Подбор</h2>
         <p>Направление — запасной совет, если ни одна модель не подошла. Галочки модели задают саму модель.</p>
-        {VEHICLE_TYPE_OPTIONS.map((option) => (
-          <label key={option.value}>
-            <input
-              type="checkbox"
-              checked={draft.selectionVehicleTypes.includes(option.value)}
-              onChange={() =>
-                patch({ selectionVehicleTypes: toggle<VehicleType>(draft.selectionVehicleTypes, option.value) })
-              }
-            />
-            {option.label}
-          </label>
-        ))}
-        {OPERATING_CONDITION_OPTIONS.map((option) => (
-          <label key={option.value}>
-            <input
-              type="checkbox"
-              checked={draft.selectionConditions.includes(option.value)}
-              onChange={() =>
-                patch({ selectionConditions: toggle<OperatingCondition>(draft.selectionConditions, option.value) })
-              }
-            />
-            {option.label}
-          </label>
-        ))}
+        <fieldset className="choiceGroup">
+          <legend>Тип техники</legend>
+          {VEHICLE_TYPE_OPTIONS.map((option) => (
+            <label key={option.value}>
+              <input
+                type="checkbox"
+                checked={draft.selectionVehicleTypes.includes(option.value)}
+                onChange={() =>
+                  patch({ selectionVehicleTypes: toggle<VehicleType>(draft.selectionVehicleTypes, option.value) })
+                }
+              />
+              {option.label}
+            </label>
+          ))}
+        </fieldset>
+        <fieldset className="choiceGroup">
+          <legend>Условия эксплуатации</legend>
+          {OPERATING_CONDITION_OPTIONS.map((option) => (
+            <label key={option.value}>
+              <input
+                type="checkbox"
+                checked={draft.selectionConditions.includes(option.value)}
+                onChange={() =>
+                  patch({ selectionConditions: toggle<OperatingCondition>(draft.selectionConditions, option.value) })
+                }
+              />
+              {option.label}
+            </label>
+          ))}
+        </fieldset>
       </section>
       <section>
         <h2>Фото</h2>

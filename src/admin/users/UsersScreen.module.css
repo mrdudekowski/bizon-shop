@@ -1,19 +1,24 @@
 .screen { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; width: 100%; max-width: 1440px; min-width: 0; }
-.form { display: grid; grid-template-columns: minmax(160px,1fr) minmax(140px,.8fr) minmax(200px,1.2fr) auto; gap: 16px; align-items: end; padding: 22px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.pageHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.pageHead button { display: inline-flex; align-items: center; gap: 8px; }
+.dialog { width: min(520px, calc(100% - 32px)); }
+.form { display: grid; grid-template-columns: minmax(0,1fr); gap: 16px; padding: 22px; }
 .form button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
 .hint { display: block; max-width: 290px; color: var(--ink-muted); font-size: 11px; font-weight: 400; }
 .notice { display: flex; align-items: flex-start; gap: 16px; padding: 22px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink-muted); }
 .notice svg { color: var(--ink); flex-shrink: 0; }
 .notice strong { color: var(--ink); }
-.tableWrap { overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
-.table { width: 100%; border-collapse: collapse; text-align: left; }
-.table th { padding: 16px 20px; background: #fafbfc; color: var(--ink-muted); font-size: 12px; font-weight: 600; border-bottom: 1px solid var(--line); }
-.table td { padding: 14px 20px; border-bottom: 1px solid var(--line); }
-.table tbody tr:last-child td { border-bottom: 0; }
-.table td select { max-width: 200px; }
-.badge, .badgeOnSite { display: inline-flex; align-items: center; min-height: 26px; padding: 3px 9px; border: 0; border-radius: 6px; background: var(--surface-muted); color: var(--ink-muted); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.userList { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.userRow { display: grid; grid-template-columns: minmax(180px,1fr) minmax(140px,200px) minmax(90px,120px) minmax(150px,220px); align-items: center; gap: 14px; min-width: 0; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.identity { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; min-width: 0; overflow-wrap: anywhere; }
+.roleField { display: grid; gap: 4px; color: var(--ink-muted); font-size: 11px; }
+.roleField select { width: 100%; }
+.userActions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; }
+.badge, .badgeOnSite { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 4px 10px; border: 0; border-radius: 999px; background: var(--surface-muted); color: var(--ink-muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.badge::before, .badgeOnSite::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .badgeOnSite { background: var(--success-wash); color: var(--success); }
 .you { font-size: 12px; color: var(--ink-muted); }
-.tableFoot { padding: 16px 20px; border-top: 1px solid var(--line); color: var(--ink-muted); font-size: 12px; }
-@media (max-width: 840px) { .form { grid-template-columns: repeat(2,minmax(0,1fr)); } }
-@media (max-width: 600px) { .form { grid-template-columns: minmax(0,1fr); padding: 16px; } .form button { width: 100%; } .table th, .table td { padding: 12px; } }
+.tableFoot { padding: 12px 4px; color: var(--ink-muted); font-size: 12px; }
+@media (max-width: 840px) { .userRow { grid-template-columns: minmax(0,1fr) minmax(140px,200px); } .userActions { justify-content: flex-start; } }
+@media (max-width: 600px) { .form { padding: 18px; } .actions { flex-wrap: wrap; } .actions button { flex: 1 1 140px; } .userRow { grid-template-columns: minmax(0,1fr); } .userActions { justify-content: flex-start; } .userActions button { width: auto; max-width: 100%; } }

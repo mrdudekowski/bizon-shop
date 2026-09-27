@@ -290,6 +290,7 @@ describe("createLocalAdminClient", () => {
       crop: { x: 0, y: 0, width: 1, height: 1 },
     };
     await client.saveShopCategory(category.id, { ...category.draft, mainImage: image });
+    await client.publishShopCategory(category.id);
     const product = await client.createShopProduct({ name: "Колпак", categoryId: category.id });
     await client.saveShopProduct(product.id, {
       ...product.draft,
@@ -312,6 +313,7 @@ describe("createLocalAdminClient", () => {
       crop: { x: 0, y: 0, width: 1, height: 1 },
     };
     await client.saveShopCategory(category.id, { ...category.draft, mainImage: image });
+    await client.publishShopCategory(category.id);
     const product = await client.createShopProduct({ name: "Колпак", categoryId: category.id });
     await client.saveShopProduct(product.id, {
       ...product.draft,
@@ -323,5 +325,31 @@ describe("createLocalAdminClient", () => {
       ],
     });
     await expect(client.publishShopProduct(product.id)).rejects.toMatchObject({ code: "publish_blocked" });
+  });
+
+  it("requires a published category for shop products and prevents hiding their parent", async () => {
+    const client = createLocalAdminClient(memory());
+    const category = await client.createShopCategory({ name: "Аксессуары" });
+    await client.saveShopCategory(category.id, category.draft);
+    const asset = await client.createAsset({ name: "p.png", mimeType: "image/png", dataUrl: "data:image/png,x" });
+    const product = await client.createShopProduct({ name: "Очки", categoryId: category.id });
+    await client.saveShopProduct(product.id, {
+      ...product.draft,
+      mainImage: {
+        assetId: asset.id,
+        alt: "",
+        focalX: 0.5,
+        focalY: 0.5,
+        crop: { x: 0, y: 0, width: 1, height: 1 },
+      },
+    });
+
+    await expect(client.publishShopProduct(product.id)).rejects.toMatchObject({ code: "category_not_published" });
+    await client.publishShopCategory(category.id);
+    await client.publishShopProduct(product.id);
+    await expect(client.hideShopCategory(category.id)).rejects.toMatchObject({ code: "category_has_published_products" });
+
+    const productRow = (await client.listShopProducts())[0];
+    expect(productRow).toMatchObject({ status: "on_site", categoryPublished: true, isPublished: true });
   });
 });
