@@ -1277,10 +1277,24 @@ export function browserAdminClient(): AdminClient {
   return remoteAdminClient();
 }
 
+/**
+ * The browser stays on the CMS origin. Next.js forwards /v1/* to backend-app, so a
+ * session cookie set at login is sent on the next request instead of being treated
+ * as a different site (localhost versus 127.0.0.1, or a different port).
+ */
+function adminApiBase(): string {
+  return (process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "").replace(/\/+$/, "");
+}
+
 function remoteAdminClient(): AdminClient {
-  const adminApi = (process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://127.0.0.1:4000").replace(/\/+$/, "");
+  const adminApi = adminApiBase();
   const request = async (path: string, init: RequestInit) => {
-    const response = await fetch(`${adminApi}${path}`, { ...init, credentials: "include" });
+    let response: Response;
+    try {
+      response = await fetch(`${adminApi}${path}`, { ...init, credentials: "include" });
+    } catch {
+      throw new AdminClientError("storage_unavailable");
+    }
     if (response.status === 401 && !path.endsWith("/auth/login") && typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("bizon-session-expired"));
     }

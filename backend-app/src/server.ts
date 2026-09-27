@@ -35,7 +35,8 @@ import {
   type ReadDatabase,
 } from "./publishedRead";
 
-const HOST = "127.0.0.1";
+/** Only used to turn a request path into a URL; the request never leaves this process. */
+const URL_BASE = "http://localhost";
 const PORT = 4000;
 
 type JsonBody = unknown;
@@ -149,7 +150,7 @@ async function handleRequest(
   res: http.ServerResponse,
 ): Promise<void> {
   const method = req.method ?? "GET";
-  const url = new URL(req.url ?? "/", `http://${HOST}:${PORT}`);
+  const url = new URL(req.url ?? "/", URL_BASE);
   const path = url.pathname;
 
   const originHeaders = localOriginHeaders(req.headers.origin);
@@ -497,19 +498,35 @@ async function handleRequest(
   }
 }
 
-const server = http.createServer((req, res) => {
-  void handleRequest(req, res);
-});
+/**
+ * Both loopback addresses, so the CMS reaches the API on whichever hostname the page
+ * was opened with. Staying on loopback keeps the port off the network.
+ */
+const LOOPBACK_HOSTS = ["127.0.0.1", "::1"];
+
+const servers = LOOPBACK_HOSTS.map(() =>
+  http.createServer((req, res) => {
+    void handleRequest(req, res);
+  }),
+);
 
 async function prepareAuth(): Promise<void> {
   await ensureAuthSchema(authQuery());
   await bootstrapAccounts(authQuery(), process.env);
 }
 
-server.listen(PORT, HOST, () => {
-  console.log(`backend-app listening on http://${HOST}:${PORT}`);
-  prepareAuth().then(
-    () => console.log("CMS accounts ready"),
-    (error: unknown) => console.error("CMS accounts unavailable:", (error as Error).message),
-  );
+servers.forEach((server, index) => {
+  const host = LOOPBACK_HOSTS[index];
+  server.on("error", (error: NodeJS.ErrnoException) => {
+    // A machine without IPv6 loopback still serves fine on the other address.
+    console.error(`backend-app cannot listen on ${host}:${PORT}:`, error.message);
+  });
+  server.listen(PORT, host, () => {
+    console.log(`backend-app listening on http://${host === "::1" ? "localhost" : host}:${PORT}`);
+  });
 });
+
+prepareAuth().then(
+  () => console.log("CMS accounts ready"),
+  (error: unknown) => console.error("CMS accounts unavailable:", (error as Error).message),
+);
