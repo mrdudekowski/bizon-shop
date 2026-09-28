@@ -9,7 +9,9 @@ import { PAGE_LABELS } from "./pageLabels";
 import styles from "@/admin/ui/catalog.module.css";
 import { CatalogRow } from "@/admin/ui/CatalogRow";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
-import { useAdminRole } from "@/admin/ui/DocumentUI";
+import { useAdminRole, useAdminSession } from "@/admin/ui/DocumentUI";
+import { canEditorPerform } from "@/admin/domain/editorPermissions";
+import { SectionAccessNotice } from "@/admin/ui/SectionAccessNotice";
 
 function statusOf(record: EntityRecord<PageDraft>): DocumentStatus {
   if (record.hidden) return "hidden";
@@ -37,6 +39,7 @@ function previewAssetId(draft: PageDraft): string | undefined {
 }
 
 export function PageList() {
+  const session = useAdminSession();
   const [role] = useAdminRole();
   const [pages, setPages] = useState<EntityRecord<PageDraft>[]>([]);
   const [assets, setAssets] = useState<MediaListItem[]>([]);
@@ -58,6 +61,9 @@ export function PageList() {
     await browserAdminClient().changeDocumentStatus("page", id, status);
     await reload();
   }
+
+  if (session == null) return <main><AdminLoading label="Проверяем доступ…" /></main>;
+  if (!canEditorPerform(session, "edit_site_pages")) return <SectionAccessNotice title="Страницы" icon="pages" />;
 
   return (
     <main>

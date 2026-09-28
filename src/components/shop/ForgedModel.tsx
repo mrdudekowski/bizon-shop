@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ForgedConfigurator } from "./ForgedConfigurator";
+import { ForgedGallery } from "./ForgedGallery";
 import { metaLine, type ForgedWheelView } from "./forgedView";
 import styles from "./ForgedModel.module.css";
 
@@ -46,19 +47,7 @@ export function ForgedModel({ model }: { model: ForgedWheelView }) {
         </div>
       </section>
 
-      <section className={styles.gallery} data-shop-chrome-tone="dark" aria-label={`Виды ${model.name}`}>
-        {model.gallery.map((image, index) => (
-          <figure className={index === 0 ? styles.galleryFeature : styles.galleryCard} key={image.src}>
-            <Image
-              src={image.src}
-              alt={image.alt}
-              fill
-              sizes={index === 0 ? "(max-width: 760px) 100vw, 66vw" : "(max-width: 760px) 100vw, 34vw"}
-            />
-            <figcaption>{image.label}</figcaption>
-          </figure>
-        ))}
-      </section>
+      <ForgedGallery model={model} />
 
       <section className={styles.selection} data-shop-chrome-tone="light">
         <div className={styles.selectionInner}>

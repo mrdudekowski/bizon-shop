@@ -12,8 +12,7 @@
 
 .bodyCollapsed { grid-template-columns: 72px minmax(0, 1fr); }
 
-.nav,
-.navOpen {
+.nav {
   position: sticky;
   top: 0;
   display: flex;
@@ -42,8 +41,7 @@
 .sidebarBrand a { display: flex; align-items: center; justify-content: center; width: 100%; }
 .fullMark { display: block; width: 176px; height: auto; }
 
-.collapseButton,
-.mobileCloseButton {
+.collapseButton {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -57,7 +55,7 @@
   text-align: left;
   font: inherit;
 }
-.collapseButton:hover,.mobileCloseButton:hover { background: #30373b; }
+.collapseButton:hover { background: #30373b; }
 .collapseButton { margin-top: auto; }
 .collapseButton svg { transform: rotate(180deg); }
 .navCollapsed .collapseButton { justify-content: center; padding: 0; }
@@ -77,9 +75,9 @@
   text-decoration: none;
   font-size: 16px;
 }
-.nav > a:hover,.navOpen > a:hover { background: #30373b; }
-.nav > a[aria-current="page"],.navOpen > a[aria-current="page"] { background: var(--mint); color: #1f2427; font-weight: 650; }
-.nav > a svg,.navOpen > a svg { flex: 0 0 auto; }
+.nav > a:hover { background: #30373b; }
+.nav > a[aria-current="page"] { background: var(--mint); color: #1f2427; font-weight: 650; }
+.nav > a svg { flex: 0 0 auto; }
 .navCollapsed > a { justify-content: center; padding: 0; }
 .navCollapsed > a span { display: none; }
 
@@ -93,11 +91,159 @@
 .logout:hover { background: #30373b; color: #fff; }
 .avatar { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border-radius: 50%; background: #30373b; }
 .navCollapsed .roles { justify-content: center; padding-inline: 0; }
-.mobileCloseButton,.menuButton { display: none; }
 
 .content { min-width: 0; padding: 32px 32px 0; }
 .notice { margin: 0 0 20px; padding: 12px 16px; border: 1px solid #f1d88a; border-radius: 12px; background: #fff7dc; color: #604b0b; }
 .authLoading { min-height: 100dvh; display: grid; place-items: center; color: #687586; }
+
+.topbar,
+.tabbar,
+.moreSheet,
+.profileSheet,
+.sheetBackdrop { display: none; }
+
+.topbar {
+  position: fixed;
+  z-index: 32;
+  top: 0;
+  right: 0;
+  left: auto;
+  justify-content: flex-end;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 8px;
+}
+
+.profileButton {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--sidebar);
+  color: #fff;
+  box-shadow: 0 2px 10px #191f2814;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  min-height: 40px;
+  padding: 0;
+}
+.profileButton[aria-expanded="true"] {
+  outline: 3px solid var(--mint);
+  outline-offset: 2px;
+}
+
+.tabbar {
+  position: fixed;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: var(--mobile-tabbar);
+  padding: 4px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -8px 24px #191f2808;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 48px;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-muted);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+.tab svg { width: 22px; height: 22px; flex: 0 0 auto; }
+.tab[aria-current="page"] {
+  background: var(--mint);
+  color: #1f2427;
+}
+
+.sheetBackdrop {
+  position: fixed;
+  z-index: 35;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #141b2766;
+}
+
+.moreSheet {
+  position: fixed;
+  z-index: 40;
+  left: 8px;
+  right: 8px;
+  bottom: calc(var(--mobile-tabbar) + 8px + env(safe-area-inset-bottom, 0px));
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 16px 40px #191f2820;
+}
+.moreSheet a {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  border-radius: 10px;
+  text-decoration: none;
+}
+.moreSheet a[aria-current="page"] {
+  background: var(--mint);
+  color: #1f2427;
+  font-weight: 650;
+}
+
+.profileSheet {
+  position: fixed;
+  z-index: 40;
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  right: 12px;
+  width: min(280px, calc(100vw - 24px));
+  max-width: 100%;
+  min-width: 0;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 16px 40px #191f2820;
+}
+.profileSheet strong { display: block; font-size: 14px; }
+.profileSheet small { color: var(--ink-muted); font-size: 12px; }
+.profileSheet button { width: 100%; max-width: 100%; min-width: 0; }
 
 @media (max-width: 1000px) {
   .body { grid-template-columns: 208px minmax(0, 1fr); }
@@ -106,15 +252,16 @@
 }
 
 @media (max-width: 720px) {
-  .body,.bodyCollapsed { display: block; }
-  .content { padding: 70px 16px 0; }
-  .menuButton { position: fixed; z-index: 30; top: 12px; left: 12px; display: inline-flex; min-height: 40px; align-items: center; padding: 0 14px; border: 1px solid #dce1e7; border-radius: 9px; background: white; color: #20262b; font: inherit; }
-  .nav { display: none; }
-  .navOpen { position: fixed; z-index: 40; inset: 0 auto 0 0; display: flex; width: min(280px, 86vw); height: 100dvh; overflow-y: auto; overscroll-behavior: contain; box-shadow: 12px 0 36px #0003; }
-  .navOpen .mobileCloseButton { display: flex; }
-  .navOpen .collapseButton { display: none; }
-  .navOpen .account { display: grid; }
-  .navOpen .logout { display: block; }
+  .body, .bodyCollapsed { display: block; }
+  .nav, .navCollapsed, .collapseButton { display: none !important; }
+  .content {
+    padding: calc(56px + env(safe-area-inset-top, 0px)) 16px calc(var(--mobile-tabbar) + 16px + env(safe-area-inset-bottom, 0px));
+  }
+  .topbar { display: flex; }
+  .tabbar { display: grid; }
+  .moreSheet[data-open="true"],
+  .profileSheet[data-open="true"] { display: grid; }
+  .sheetBackdrop[data-open="true"] { display: block; }
 }
 
 @media (prefers-reduced-motion: reduce) { .body { transition: none; } }

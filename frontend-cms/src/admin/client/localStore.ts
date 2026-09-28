@@ -10,6 +10,9 @@ import { isValidSlug, slugifyTitle } from "@/admin/domain/slug";
 import { PAGE_KEYS } from "@/admin/domain/types";
 import type {
   AdminSession,
+  AdminUser,
+  ChangeSet,
+  ChangeEntry,
   DocumentStatus,
   ImagePlacement,
   MediaAsset,
@@ -29,13 +32,21 @@ import type {
   PageKey,
   PageSectionCopy,
   MediaListItem,
-  AdminUser,
   EntityRecord,
   DocumentLink,
+  EditorCapability,
+  StatusEntity,
 } from "@/admin/domain/types";
 
 import type { AdminClient } from "./adminClient";
 import { AdminClientError } from "./errors";
+import { actorSession, cancelOverlappingPacks, currentUser, recordEditorMutation, requirePermission } from "./applyChangeSet";
+import {
+  assertCanCancelChangeSet,
+  assertCanPublishChangeSet,
+  assertCanReturnChangeSet,
+  assertCanSubmitChangeSet,
+} from "@/admin/domain/changeSetTransitions";
 
 export const LOCAL_STORAGE_KEY = "bizon.frontend-cms";
 
@@ -57,6 +68,7 @@ type StoreState = {
   pages: EntityRecord<PageDraft>[];
   materials: EntityRecord<ArticleDraft>[];
   users: AdminUser[];
+  changeSets: ChangeSet[];
 };
 
 function clamp01(value: number): number {
@@ -219,7 +231,7 @@ function emptyPage(key: PageKey): EntityRecord<PageDraft> {
 
 function seed(): StoreState {
   return {
-    session: { login: "admin", role: "admin" },
+    session: { login: "admin", role: "admin", capabilities: [] },
     directions: [wrapDirection({ id: "dir-long-haul", name: "Магистральные", slug: "long-haul" })],
     assets: [],
     models: [],
@@ -230,7 +242,8 @@ function seed(): StoreState {
     shopProducts: [],
     pages: PAGE_KEYS.map(emptyPage),
     materials: [],
-    users: [{ id: "user-admin", login: "admin", role: "admin", disabled: false }],
+    users: [{ id: "user-admin", login: "admin", role: "admin", disabled: false, capabilities: [] }],
+    changeSets: [],
   };
 }
 
@@ -261,22 +274,26 @@ function requireNamed<T extends { id: string }>(records: EntityRecord<T>[], id: 
   return record;
 }
 
-function createNamed<T extends { id: string; slug: string }>(
+function createNamed<T extends { id: string; slug: string; name?: string; title?: string }>(
   load: () => StoreState,
   save: (state: StoreState) => void,
   pick: (state: StoreState) => EntityRecord<T>[],
   name: string,
   build: (id: string, slug: string) => T,
+  entityType: StatusEntity,
+  permission: "create_catalog_structure" | "create_catalog_items" | "edit_site_pages",
 ): EntityRecord<T> {
   const state = load();
+  requirePermission(state, permission);
   const slug = slugifyTitle(name);
   if (!isValidSlug(slug)) throw new AdminClientError("invalid_slug");
   const records = pick(state);
   if (records.some((item) => item.draft.slug === slug)) throw new AdminClientError("slug_taken");
   const id = crypto.randomUUID();
+  const draft = build(id, slug);
   const record: EntityRecord<T> = {
     id,
-    draft: build(id, slug),
+    draft,
     savedDraft: null,
     publishedSnapshot: null,
     hidden: false,
@@ -285,18 +302,29 @@ function createNamed<T extends { id: string; slug: string }>(
     lastPublishedBy: null,
   };
   records.push(record);
+  recordEditorMutation(state, {
+    entityType,
+    entityId: id,
+    entityTitle: name.trim(),
+    operation: "create",
+    before: null,
+    after: draft,
+  });
   save(state);
   return record;
 }
 
-function saveNamed<T extends { id: string; slug: string }>(
+function saveNamed<T extends { id: string; slug: string; name?: string; title?: string }>(
   load: () => StoreState,
   save: (state: StoreState) => void,
   pick: (state: StoreState) => EntityRecord<T>[],
   id: string,
   draft: T,
+  entityType: StatusEntity,
+  permission: "edit_catalog" | "edit_site_pages" = "edit_catalog",
 ): EntityRecord<T> {
   const state = load();
+  requirePermission(state, permission);
   const records = pick(state);
   const record = requireNamed(records, id);
   if (record.slugLocked && draft.slug !== record.draft.slug) throw new AdminClientError("invalid_slug");
@@ -305,10 +333,19 @@ function saveNamed<T extends { id: string; slug: string }>(
     (item) => item.id !== id && (item.draft.slug === draft.slug || item.savedDraft?.slug === draft.slug),
   );
   if (taken) throw new AdminClientError("slug_taken");
+  const before = record.savedDraft ?? record.publishedSnapshot;
   const next = clampDeep({ ...draft, id });
   record.draft = next;
   record.savedDraft = next;
   record.lastSavedBy = state.session.login;
+  recordEditorMutation(state, {
+    entityType,
+    entityId: id,
+    entityTitle: (typeof next.name === "string" && next.name) || (typeof next.title === "string" && next.title) || id,
+    operation: record.publishedSnapshot == null && before == null ? "create" : "update",
+    before,
+    after: next,
+  });
   save(state);
   return record;
 }
@@ -320,6 +357,7 @@ function hideNamed<T extends { id: string }>(
   id: string,
 ): EntityRecord<T> {
   const state = load();
+  requirePermission(state, "hide");
   const record = requireNamed(pick(state), id);
   if (record.publishedSnapshot == null) throw new AdminClientError("publish_blocked");
   record.hidden = true;
@@ -334,6 +372,7 @@ function unpublishNamed<T extends { id: string }>(
   id: string,
 ): EntityRecord<T> {
   const state = load();
+  requirePermission(state, "publish");
   const record = requireNamed(pick(state), id);
   record.savedDraft = record.draft;
   record.publishedSnapshot = null;
@@ -353,6 +392,7 @@ function deleteNamed<T extends { id: string }>(
   allowHiddenPublished = false,
 ): void {
   const state = load();
+  requirePermission(state, "delete");
   const record = requireNamed(pick(state), id);
   if (record.publishedSnapshot != null && !(allowHiddenPublished && record.hidden)) {
     throw new AdminClientError("publish_blocked");
@@ -379,8 +419,10 @@ function publishNamed<T extends { id: string; slug: string }>(
   pick: (state: StoreState) => EntityRecord<T>[],
   id: string,
   blockers: (draft: T, state: StoreState) => unknown[],
+  entityType: StatusEntity,
 ): EntityRecord<T> {
   const state = load();
+  requirePermission(state, "publish");
   const record = requireNamed(pick(state), id);
   if (record.savedDraft == null || !sameJson(record.draft, record.savedDraft)) {
     throw new AdminClientError("unsaved");
@@ -390,8 +432,112 @@ function publishNamed<T extends { id: string; slug: string }>(
   record.slugLocked = true;
   record.hidden = false;
   record.lastPublishedBy = state.session.login;
+  cancelOverlappingPacks(state, entityType, id, new Date(), state.session.login);
   save(state);
   return record;
+}
+
+function recordsFor(state: StoreState, entityType: StatusEntity): EntityRecord<unknown>[] {
+  switch (entityType) {
+    case "tire-direction":
+      return state.directions;
+    case "tire-model":
+      return state.models;
+    case "wheel-type":
+      return state.wheelTypes;
+    case "wheel-model":
+      return state.wheelModels;
+    case "shop-category":
+      return state.shopCategories;
+    case "shop-product":
+      return state.shopProducts;
+    case "page":
+      return state.pages;
+    case "material":
+      return state.materials;
+  }
+}
+
+function changeSetBlockers(state: StoreState, entityType: StatusEntity, entityId: string): string[] {
+  const record = recordsFor(state, entityType).find((item) => item.id === entityId);
+  if (record?.savedDraft == null) return ["unsaved"];
+  const draft = record.savedDraft;
+  switch (entityType) {
+    case "tire-model":
+      return tireModelPublishBlockers(
+        draft as TireModelDraft,
+        state.directions.some((direction) => direction.id === (draft as TireModelDraft).directionId),
+      );
+    case "tire-direction":
+      return tireDirectionPublishBlockers(draft as TireDirectionDraft);
+    case "wheel-type":
+      return wheelTypePublishBlockers(draft as WheelTypeDraft);
+    case "wheel-model":
+      return wheelModelPublishBlockers(
+        draft as WheelModelDraft,
+        state.wheelTypes.some((type) => type.id === (draft as WheelModelDraft).wheelTypeId),
+      );
+    case "shop-category":
+      return wheelTypePublishBlockers(draft as ShopCategoryDraft);
+    case "shop-product": {
+      const product = draft as ShopProductDraft;
+      const category = state.shopCategories.find((item) => item.id === product.categoryId);
+      if (category?.publishedSnapshot == null || category.hidden) return ["direction"];
+      return shopProductPublishBlockers(product, category != null);
+    }
+    case "material":
+      return articlePublishBlockers(draft as ArticleDraft);
+    case "page":
+      return [];
+  }
+}
+
+function publishRecord(state: StoreState, entityType: StatusEntity, entityId: string): void {
+  const record = recordsFor(state, entityType).find((item) => item.id === entityId);
+  if (record?.savedDraft == null) throw new AdminClientError("unsaved");
+  record.publishedSnapshot = record.savedDraft;
+  record.slugLocked = entityType !== "page";
+  record.hidden = false;
+  record.lastPublishedBy = state.session.login;
+}
+
+function restoreChangeEntry(state: StoreState, entry: ChangeEntry): void {
+  const records = recordsFor(state, entry.entityType);
+  const record = records.find((item) => item.id === entry.entityId);
+  if (entry.operation === "create" && (record == null || record.publishedSnapshot == null)) {
+    const filtered = records.filter((item) => item.id !== entry.entityId);
+    switch (entry.entityType) {
+      case "tire-direction":
+        state.directions = filtered as StoreState["directions"];
+        break;
+      case "tire-model":
+        state.models = filtered as StoreState["models"];
+        break;
+      case "wheel-type":
+        state.wheelTypes = filtered as StoreState["wheelTypes"];
+        break;
+      case "wheel-model":
+        state.wheelModels = filtered as StoreState["wheelModels"];
+        break;
+      case "shop-category":
+        state.shopCategories = filtered as StoreState["shopCategories"];
+        break;
+      case "shop-product":
+        state.shopProducts = filtered as StoreState["shopProducts"];
+        break;
+      case "material":
+        state.materials = filtered as StoreState["materials"];
+        break;
+      case "page":
+        break;
+    }
+    return;
+  }
+  if (record == null) return;
+  const restored = entry.rollbackDraft ?? record.publishedSnapshot;
+  if (restored == null) return;
+  record.draft = clampDeep(restored) as typeof record.draft;
+  record.savedDraft = clampDeep(restored) as typeof record.savedDraft;
 }
 
 function noteAsset(used: Map<string, string[]>, placement: ImagePlacement | undefined, label: string): void {
@@ -508,14 +654,24 @@ function isPageWithHero(value: unknown): value is EntityRecord<PageDraft> {
   return draft != null && typeof draft === "object" && "hero" in draft;
 }
 
+function withCapabilities(session: AdminSession): AdminSession {
+  return { ...session, capabilities: session.capabilities ?? [] };
+}
+
+function withUserCapabilities(user: AdminUser): AdminUser {
+  return { ...user, capabilities: user.capabilities ?? [] };
+}
+
 function normalizeLoaded(parsed: Partial<StoreState>): StoreState {
   const initial = seed();
   const merged: StoreState = {
     ...initial,
     ...parsed,
-    session: parsed.session ?? initial.session,
+    session: withCapabilities(parsed.session ?? initial.session),
     directions: initial.directions,
     pages: initial.pages,
+    users: Array.isArray(parsed.users) ? parsed.users.map(withUserCapabilities) : initial.users,
+    changeSets: Array.isArray(parsed.changeSets) ? parsed.changeSets : [],
   };
 
   if (Array.isArray(parsed.directions)) {
@@ -578,9 +734,10 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
   return {
     async changeDocumentStatus(entity, id, status) {
       if (entity === "page") {
-        const state = load();
-        const record = requireNamed(state.pages, id);
         if (status === "on_site") return this.publishPage(id as PageKey);
+        const state = load();
+        requirePermission(state, status === "hidden" ? "hide" : "publish");
+        const record = requireNamed(state.pages, id);
         if (status === "hidden") {
           record.savedDraft = record.draft;
           record.hidden = true;
@@ -666,7 +823,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async getSession() {
-      return load().session;
+      return actorSession(load());
     },
 
     async login() {
@@ -689,8 +846,14 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async createTireDirection(input) {
-      return createNamed(load, save, (state) => state.directions, input.name, (id, slug) =>
-        emptyDirectionDraft(id, input.name.trim(), slug),
+      return createNamed(
+        load,
+        save,
+        (state) => state.directions,
+        input.name,
+        (id, slug) => emptyDirectionDraft(id, input.name.trim(), slug),
+        "tire-direction",
+        "create_catalog_structure",
       );
     },
 
@@ -699,11 +862,11 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async saveTireDirection(id, draft) {
-      return saveNamed(load, save, (state) => state.directions, id, draft);
+      return saveNamed(load, save, (state) => state.directions, id, draft, "tire-direction");
     },
 
     async publishTireDirection(id) {
-      return publishNamed(load, save, (state) => state.directions, id, tireDirectionPublishBlockers);
+      return publishNamed(load, save, (state) => state.directions, id, tireDirectionPublishBlockers, "tire-direction");
     },
 
     async hideTireDirection(id) {
@@ -733,7 +896,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         id,
         name: file.name,
         mimeType: file.mimeType,
-        dataUrl: file.dataUrl ?? "blob:local-preview",
+        dataUrl: file.dataUrl ?? "",
       });
       save(state);
       return { id };
@@ -762,6 +925,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async createTireModel(input) {
       const state = load();
+      requirePermission(state, "create_catalog_items");
       const slug = slugifyTitle(input.name);
       if (!isValidSlug(slug)) throw new AdminClientError("invalid_slug");
       if (state.models.some((item) => item.draft.slug === slug || item.savedDraft?.slug === slug)) {
@@ -780,12 +944,21 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         lastPublishedBy: null,
       };
       state.models.push(record);
+      recordEditorMutation(state, {
+        entityType: "tire-model",
+        entityId: id,
+        entityTitle: draft.name,
+        operation: "create",
+        before: null,
+        after: draft,
+      });
       save(state);
       return record;
     },
 
     async saveTireModel(id, draft) {
       const state = load();
+      requirePermission(state, "edit_catalog");
       const record = requireModel(state, id);
       if (record.slugLocked && draft.slug !== record.draft.slug) {
         throw new AdminClientError("invalid_slug");
@@ -795,16 +968,26 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         (item) => item.id !== id && (item.savedDraft?.slug === draft.slug || item.draft.slug === draft.slug),
       );
       if (taken) throw new AdminClientError("slug_taken");
+      const before = record.savedDraft ?? record.publishedSnapshot;
       const next = clampDeep({ ...draft, id });
       record.draft = next;
       record.savedDraft = next;
       record.lastSavedBy = state.session.login;
+      recordEditorMutation(state, {
+        entityType: "tire-model",
+        entityId: id,
+        entityTitle: next.name,
+        operation: "update",
+        before,
+        after: next,
+      });
       save(state);
       return record;
     },
 
     async publishTireModel(id) {
       const state = load();
+      requirePermission(state, "publish");
       const record = requireModel(state, id);
       if (record.savedDraft == null || !sameJson(record.draft, record.savedDraft)) {
         throw new AdminClientError("unsaved");
@@ -817,12 +1000,14 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       record.slugLocked = true;
       record.hidden = false;
       record.lastPublishedBy = state.session.login;
+      cancelOverlappingPacks(state, "tire-model", id, new Date(), state.session.login);
       save(state);
       return record;
     },
 
     async hideTireModel(id) {
       const state = load();
+      requirePermission(state, "hide");
       const record = requireModel(state, id);
       if (record.publishedSnapshot == null) throw new AdminClientError("publish_blocked");
       record.hidden = true;
@@ -832,6 +1017,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async deleteTireModel(id) {
       const state = load();
+      requirePermission(state, "delete");
       const record = requireModel(state, id);
       if (record.publishedSnapshot != null && !record.hidden) throw new AdminClientError("publish_blocked");
       state.models = state.models.filter((item) => item.id !== id);
@@ -854,15 +1040,15 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         description: "",
         sortOrder: 0,
         showInMenu: false,
-      }));
+      }), "wheel-type", "create_catalog_structure");
     },
 
     async saveWheelType(id: string, draft: WheelTypeDraft) {
-      return saveNamed(load, save, (state) => state.wheelTypes, id, draft);
+      return saveNamed(load, save, (state) => state.wheelTypes, id, draft, "wheel-type");
     },
 
     async publishWheelType(id: string) {
-      return publishNamed(load, save, (state) => state.wheelTypes, id, wheelTypePublishBlockers);
+      return publishNamed(load, save, (state) => state.wheelTypes, id, wheelTypePublishBlockers, "wheel-type");
     },
 
     async hideWheelType(id: string) {
@@ -915,7 +1101,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         showInMenu: false,
         menuOrder: 0,
         variants: [],
-      }));
+      }), "wheel-model", "create_catalog_items");
     },
 
     async getWheelModel(id: string) {
@@ -923,13 +1109,13 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async saveWheelModel(id: string, draft: WheelModelDraft) {
-      return saveNamed(load, save, (state) => state.wheelModels, id, draft);
+      return saveNamed(load, save, (state) => state.wheelModels, id, draft, "wheel-model");
     },
 
     async publishWheelModel(id: string) {
       return publishNamed(load, save, (state) => state.wheelModels, id, (draft, state) =>
         wheelModelPublishBlockers(draft, state.wheelTypes.some((type) => type.id === draft.wheelTypeId)),
-      );
+      "wheel-model");
     },
 
     async hideWheelModel(id: string) {
@@ -965,15 +1151,15 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         description: "",
         sortOrder: 0,
         showInMenu: false,
-      }));
+      }), "shop-category", "create_catalog_structure");
     },
 
     async saveShopCategory(id: string, draft: ShopCategoryDraft) {
-      return saveNamed(load, save, (state) => state.shopCategories, id, draft);
+      return saveNamed(load, save, (state) => state.shopCategories, id, draft, "shop-category");
     },
 
     async publishShopCategory(id: string) {
-      return publishNamed(load, save, (state) => state.shopCategories, id, wheelTypePublishBlockers);
+      return publishNamed(load, save, (state) => state.shopCategories, id, wheelTypePublishBlockers, "shop-category");
     },
 
     async hideShopCategory(id: string) {
@@ -1008,6 +1194,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async createShopSubcategory(input: { categoryId: string; name: string; slug: string }) {
       const state = load();
+      requirePermission(state, "create_catalog_structure");
       if (!state.shopCategories.some((item) => item.id === input.categoryId)) throw new Error("not_found");
       if (!input.name.trim() || !isValidSlug(input.slug)) throw new AdminClientError("invalid_slug");
       if (state.shopSubcategories.some((item) => item.categoryId === input.categoryId && (
@@ -1024,6 +1211,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async saveShopSubcategory(id: string, input: { name: string; slug: string }) {
       const state = load();
+      requirePermission(state, "create_catalog_structure");
       const item = state.shopSubcategories.find((subcategory) => subcategory.id === id);
       if (!item) throw new Error("not_found");
       if (!input.name.trim() || !isValidSlug(input.slug)) throw new AdminClientError("invalid_slug");
@@ -1041,6 +1229,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async deleteShopSubcategory(id: string) {
       const state = load();
+      requirePermission(state, "delete");
       if (recordUsesParent(state.shopProducts, id, (product) => product.subcategoryId ?? "")) {
         throw new AdminClientError("publish_blocked");
       }
@@ -1081,7 +1270,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         priceOnRequest: true,
         gallery: [],
         variants: [],
-      }));
+      }), "shop-product", "create_catalog_items");
     },
 
     async getShopProduct(id: string) {
@@ -1093,7 +1282,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         const subcategory = load().shopSubcategories.find((item) => item.id === draft.subcategoryId);
         if (!subcategory || subcategory.categoryId !== draft.categoryId) throw new AdminClientError("publish_blocked");
       }
-      return saveNamed(load, save, (state) => state.shopProducts, id, draft);
+      return saveNamed(load, save, (state) => state.shopProducts, id, draft, "shop-product");
     },
 
     async publishShopProduct(id: string) {
@@ -1101,7 +1290,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         const category = state.shopCategories.find((item) => item.id === draft.categoryId);
         if (category?.publishedSnapshot == null || category.hidden) throw new AdminClientError("category_not_published");
         return shopProductPublishBlockers(draft, category != null);
-      });
+      }, "shop-product");
     },
 
     async hideShopProduct(id: string) {
@@ -1131,29 +1320,42 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async savePage(key: PageKey, draft: PageDraft) {
       const state = load();
+      requirePermission(state, "edit_site_pages");
       const record = requireNamed(state.pages, key);
+      const before = record.savedDraft ?? record.publishedSnapshot;
       const next = clampDeep({ ...draft, id: key } as PageDraft);
       record.draft = next;
       record.savedDraft = next;
       record.lastSavedBy = state.session.login;
+      recordEditorMutation(state, {
+        entityType: "page",
+        entityId: key,
+        entityTitle: key,
+        operation: "update",
+        before,
+        after: next,
+      });
       save(state);
       return record;
     },
 
     async publishPage(key: PageKey) {
       const state = load();
+      requirePermission(state, "publish");
       const record = requireNamed(state.pages, key);
       if (record.savedDraft == null || !sameJson(record.draft, record.savedDraft)) {
         throw new AdminClientError("unsaved");
       }
       record.publishedSnapshot = record.savedDraft;
       record.lastPublishedBy = state.session.login;
+      cancelOverlappingPacks(state, "page", key, new Date(), state.session.login);
       save(state);
       return record;
     },
 
     async resetPage(key: PageKey) {
       const state = load();
+      requirePermission(state, "publish");
       const record = requireNamed(state.pages, key);
       record.publishedSnapshot = null;
       save(state);
@@ -1188,15 +1390,15 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         menuOrder: 0,
         clientName: "",
         industry: "",
-      }));
+      }), "material", "edit_site_pages");
     },
 
     async saveMaterial(id: string, draft: ArticleDraft) {
-      return saveNamed(load, save, (state) => state.materials, id, draft);
+      return saveNamed(load, save, (state) => state.materials, id, draft, "material", "edit_site_pages");
     },
 
     async publishMaterial(id: string) {
-      return publishNamed<ArticleDraft>(load, save, (state) => state.materials, id, articlePublishBlockers);
+      return publishNamed<ArticleDraft>(load, save, (state) => state.materials, id, articlePublishBlockers, "material");
     },
 
     async hideMaterial(id: string) {
@@ -1232,15 +1434,23 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async listUsers() {
+      requirePermission(load(), "manage_users");
       return load().users;
     },
 
-    async createUser(input: { login: string; role: AdminUser["role"]; password: string }) {
+    async createUser(input: { login: string; role: AdminUser["role"]; password: string; capabilities?: AdminUser["capabilities"] }) {
+      requirePermission(load(), "manage_users");
       const login = input.login.trim();
       if (login.length === 0) throw new AdminClientError("invalid_slug");
       const state = load();
       if (state.users.some((user) => user.login === login)) throw new AdminClientError("slug_taken");
-      const user: AdminUser = { id: crypto.randomUUID(), login, role: input.role, disabled: false };
+      const user: AdminUser = {
+        id: crypto.randomUUID(),
+        login,
+        role: input.role,
+        disabled: false,
+        capabilities: input.role === "editor" ? input.capabilities ?? [] : [],
+      };
       state.users.push(user);
       save(state);
       return user;
@@ -1248,6 +1458,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async disableUser(id: string) {
       const state = load();
+      requirePermission(state, "manage_users");
       const user = state.users.find((item) => item.id === id);
       if (user == null) throw new Error("not_found");
       if (user.login === state.session.login) throw new AdminClientError("cannot_disable_self");
@@ -1259,14 +1470,110 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async setUserRole(id: string, role: AdminUser["role"]) {
       const state = load();
+      requirePermission(state, "manage_users");
       const user = state.users.find((item) => item.id === id);
       if (user == null) throw new Error("not_found");
       if (user.role === "admin" && role !== "admin" && !user.disabled && enabledAdmins(state).length <= 1) {
         throw new AdminClientError("last_admin");
       }
       user.role = role;
+      if (role === "admin") user.capabilities = [];
       save(state);
       return user;
+    },
+
+    async setUserCapabilities(userId, capabilities) {
+      const state = load();
+      requirePermission(state, "manage_users");
+      const user = state.users.find((item) => item.id === userId);
+      if (user == null) throw new Error("not_found");
+      user.capabilities = user.role === "admin" ? [] : [...new Set(capabilities)];
+      save(state);
+      return user;
+    },
+
+    async listChangeSets(filter) {
+      const state = load();
+      const session = actorSession(state);
+      let packs = state.changeSets;
+      if (session.role !== "admin") {
+        const user = currentUser(state);
+        packs = packs.filter((pack) => pack.authorUserId === user.id);
+      } else {
+        requirePermission(state, "review_queue");
+      }
+      if (filter?.status) packs = packs.filter((pack) => pack.status === filter.status);
+      if (filter?.authorUserId) packs = packs.filter((pack) => pack.authorUserId === filter.authorUserId);
+      return packs.slice().sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+    },
+
+    async getChangeSet(id) {
+      const state = load();
+      const pack = state.changeSets.find((item) => item.id === id);
+      if (pack == null) throw new Error("not_found");
+      const session = actorSession(state);
+      if (session.role !== "admin" && pack.authorUserId !== currentUser(state).id) throw new AdminClientError("forbidden");
+      return pack;
+    },
+
+    async submitChangeSet(id) {
+      const state = load();
+      const pack = state.changeSets.find((item) => item.id === id);
+      if (pack == null) throw new Error("not_found");
+      assertCanSubmitChangeSet(pack, currentUser(state).id);
+      pack.status = "pending_review";
+      pack.submittedAt = new Date().toISOString();
+      pack.reviewComment = null;
+      save(state);
+      return pack;
+    },
+
+    async publishChangeSet(id) {
+      const state = load();
+      requirePermission(state, "review_queue");
+      const pack = state.changeSets.find((item) => item.id === id);
+      if (pack == null) throw new Error("not_found");
+      assertCanPublishChangeSet(pack);
+      for (const entry of pack.entries) {
+        const blockers = changeSetBlockers(state, entry.entityType, entry.entityId);
+        if (blockers.length > 0) throw new AdminClientError("publish_blocked");
+      }
+      for (const entry of pack.entries) {
+        publishRecord(state, entry.entityType, entry.entityId);
+      }
+      pack.status = "published";
+      pack.reviewedAt = new Date().toISOString();
+      pack.reviewedByLogin = state.session.login;
+      save(state);
+      return pack;
+    },
+
+    async returnChangeSet(id, comment) {
+      const state = load();
+      requirePermission(state, "review_queue");
+      const pack = state.changeSets.find((item) => item.id === id);
+      if (pack == null) throw new Error("not_found");
+      assertCanReturnChangeSet(pack, comment);
+      pack.status = "returned";
+      pack.reviewComment = comment.trim();
+      pack.reviewedAt = new Date().toISOString();
+      pack.reviewedByLogin = state.session.login;
+      save(state);
+      return pack;
+    },
+
+    async cancelChangeSet(id) {
+      const state = load();
+      requirePermission(state, "review_queue");
+      const pack = state.changeSets.find((item) => item.id === id);
+      if (pack == null) throw new Error("not_found");
+      assertCanCancelChangeSet(pack);
+      for (const entry of pack.entries) restoreChangeEntry(state, entry);
+      pack.status = "cancelled";
+      pack.reviewedAt = new Date().toISOString();
+      pack.reviewedByLogin = state.session.login;
+      save(state);
+      return pack;
     },
 
     async storageNotice() {
@@ -1316,17 +1623,17 @@ function remoteAdminClient(): AdminClient {
   };
   return new Proxy({
     async login(login: string, password: string) {
-      return (await request("/v1/admin/auth/login", {
+      return withCapabilities((await request("/v1/admin/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ login, password }),
-      })) as AdminSession;
+      })) as AdminSession);
     },
     async logout() {
       await request("/v1/admin/auth/logout", { method: "POST" });
     },
     async getSession() {
-      return (await request("/v1/admin/auth/session", { method: "GET" })) as AdminSession;
+      return withCapabilities((await request("/v1/admin/auth/session", { method: "GET" })) as AdminSession);
     },
     async createAsset(file: { name: string; mimeType: string; body?: Blob; dataUrl?: string }) {
       const params = new URLSearchParams({ name: file.name, type: file.mimeType });

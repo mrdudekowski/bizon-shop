@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { marketplaceShown } from "@/components/catalog/marketplaceGallery";
 import { LexicalContent } from "@/components/content/LexicalContent";
 import { resolveCatalogImageSrc } from "@/constants/images";
 import { useCart } from "@/hooks/useCart";
@@ -40,7 +41,8 @@ export function ShopProductConfigurator({ product }: { product: CmsProduct }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const cart = useCart();
-  const [activeImage, setActiveImage] = useState("");
+  const [pinned, setPinned] = useState(0);
+  const [hovered, setHovered] = useState<number | null>(null);
   const [missingGroup, setMissingGroup] = useState<OptionKey | null>(null);
   const groupRefs = useRef<Partial<Record<OptionKey, HTMLFieldSetElement | null>>>({});
 
@@ -112,8 +114,19 @@ export function ShopProductConfigurator({ product }: { product: CmsProduct }) {
   );
 
   useEffect(() => {
-    if (!resolvedGallery.includes(activeImage)) setActiveImage(resolvedGallery[0] ?? "");
-  }, [activeImage, resolvedGallery]);
+    setPinned((current) => {
+      if (resolvedGallery.length === 0) return 0;
+      return Math.min(current, resolvedGallery.length - 1);
+    });
+    setHovered(null);
+  }, [resolvedGallery]);
+  const shown = marketplaceShown(pinned, hovered);
+  const currentImage = resolvedGallery[shown] ?? resolvedGallery[0];
+  const canSwitch = resolvedGallery.length > 1;
+  function pin(index: number) {
+    setPinned(index);
+    setHovered(null);
+  }
 
   const price = selectedVariant?.price ?? product.price;
   const oldPrice = selectedVariant?.oldPrice ?? product.oldPrice;
@@ -194,25 +207,35 @@ export function ShopProductConfigurator({ product }: { product: CmsProduct }) {
 
       <div className={styles.layout}>
         <section className={styles.gallery} aria-label={`Галерея ${product.name}`}>
-          <div className={styles.mainImage}>
+          <button
+            type="button"
+            className={styles.mainImage}
+            disabled={!canSwitch}
+            onClick={() => pin(shown)}
+            aria-label={canSwitch ? "Закрепить это фото" : product.name}
+          >
             <Image
-              src={activeImage || resolvedGallery[0]}
+              src={currentImage}
               alt={product.name}
               fill
               priority
               sizes="(max-width: 900px) 100vw, 62vw"
             />
-          </div>
-          {resolvedGallery.length > 1 ? (
-            <div className={styles.thumbnails} aria-label="Выбор изображения">
-              {resolvedGallery.map((image) => (
+          </button>
+          {canSwitch ? (
+            <div
+              className={styles.thumbnails} aria-label="Выбор изображения"
+              onMouseLeave={() => setHovered(null)}
+            >
+              {resolvedGallery.map((image, index) => (
                 <button
                   key={image}
                   type="button"
-                  className={image === activeImage ? styles.thumbnailActive : ""}
-                  onClick={() => setActiveImage(image)}
-                  aria-label="Показать изображение товара"
-                  aria-pressed={image === activeImage}
+                  className={index === pinned ? styles.thumbnailActive : ""}
+                  onMouseEnter={() => setHovered(index)}
+                  onClick={() => pin(index)}
+                  aria-label={`Показать изображение ${index + 1}`}
+                  aria-pressed={index === pinned}
                 >
                   <Image src={image} alt="" fill sizes="96px" />
                 </button>

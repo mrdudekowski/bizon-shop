@@ -35,7 +35,7 @@
 .confirmDelete:hover { background: #8d2d25; }
 .confirmDelete:disabled,.rowDelete:disabled { cursor: wait; opacity: .65; }
 .rowThumb { display: grid; width: 48px; height: 48px; flex: 0 0 48px; place-items: center; overflow: hidden; border-radius: 7px; background: var(--surface-muted); color: var(--ink-muted); }
-.rowThumb img { width: 100%; height: 100%; object-fit: cover; }
+.rowThumb img { width: 100%; height: 100%; object-fit: contain; }
 .rowThumbWhiteImage { background: #fff; }
 .rowThumbWhiteImage img { object-fit: contain; }
 .rowThumbLarge { width: 58px; height: 58px; flex-basis: 58px; }
@@ -53,7 +53,7 @@
 .card { display: flex; gap: 18px; min-width: 0; padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); text-decoration: none; transition: border-color 140ms; }
 .card:hover { border-color: var(--accent); }
 .thumb { display: inline-grid; place-items: center; width: 52px; height: 56px; border-radius: 6px; background: var(--canvas); color: var(--ink-muted); object-fit: contain; flex-shrink: 0; }
-.thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.thumb img { width: 100%; height: 100%; object-fit: contain; border-radius: inherit; }
 .card .thumb { width: 90px; height: 100px; }
 .cardBody { display: grid; align-content: center; gap: 8px; min-width: 0; flex: 1; }
 .cardBody strong { font-size: 17px; }

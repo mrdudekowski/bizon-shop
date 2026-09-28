@@ -2,7 +2,10 @@ import type {
   AdminSession,
   AdminUser,
   ArticleDraft,
+  ChangeSet,
+  ChangeSetStatus,
   DocumentStatus,
+  EditorCapability,
   EntityRecord,
   MediaListItem,
   PageDraft,
@@ -92,8 +95,15 @@ export type AdminClient = {
   listAssets(): Promise<MediaListItem[]>;
   deleteAsset(id: string): Promise<void>;
   listUsers(): Promise<AdminUser[]>;
-  createUser(input: { login: string; role: AdminUser["role"]; password: string }): Promise<AdminUser>;
+  createUser(input: { login: string; role: AdminUser["role"]; password: string; capabilities?: EditorCapability[] }): Promise<AdminUser>;
   disableUser(id: string): Promise<AdminUser>;
   setUserRole(id: string, role: AdminUser["role"]): Promise<AdminUser>;
+  setUserCapabilities(userId: string, capabilities: EditorCapability[]): Promise<AdminUser>;
+  listChangeSets(filter?: { status?: ChangeSetStatus; authorUserId?: string }): Promise<ChangeSet[]>;
+  getChangeSet(id: string): Promise<ChangeSet>;
+  submitChangeSet(id: string): Promise<ChangeSet>;
+  publishChangeSet(id: string): Promise<ChangeSet>;
+  returnChangeSet(id: string, comment: string): Promise<ChangeSet>;
+  cancelChangeSet(id: string): Promise<ChangeSet>;
   storageNotice(): Promise<string | null>;
 };

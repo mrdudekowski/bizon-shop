@@ -13,9 +13,13 @@ import { CatalogFilters } from "@/admin/ui/CatalogFilters";
 import { CatalogRow } from "@/admin/ui/CatalogRow";
 import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
-import { useAdminRole } from "@/admin/ui/DocumentUI";
+import { useAdminRole, useAdminSession, useCanPerform } from "@/admin/ui/DocumentUI";
+import { canEditorPerform } from "@/admin/domain/editorPermissions";
+import { SectionAccessNotice } from "@/admin/ui/SectionAccessNotice";
 
 export function MaterialList() {
+  const session = useAdminSession();
+  const canCreate = useCanPerform("edit_site_pages");
   const router = useRouter();
   const [role] = useAdminRole();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -82,11 +86,14 @@ export function MaterialList() {
     router.push(`/materials/${created.id}`);
   }
 
+  if (session == null) return <main><AdminLoading label="Проверяем доступ…" /></main>;
+  if (!canEditorPerform(session, "edit_site_pages")) return <SectionAccessNotice title="Материалы" icon="materials" />;
+
   return (
     <main>
-      <div className={styles.pageHead}><div><h1>Материалы</h1><p className="subheading">Экспертные статьи Tire IQ и истории клиентов.</p></div><button className="primary" type="button" onClick={openCreate}>Добавить материал</button></div>
+      <div className={styles.pageHead}><div><h1>Материалы</h1><p className="subheading">Экспертные статьи Tire IQ и истории клиентов.</p></div>{canCreate ? <button className="primary" type="button" onClick={openCreate}>Добавить материал</button> : null}</div>
       <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название материала…" />
-      {loading ? <AdminLoading label="Загружаем материалы…" /> : items.length === 0 ? <div className={styles.empty}><Icon name="materials" size={36} /><h2>Материалов пока нет</h2><p>Создайте статью Tire IQ или историю клиента.</p><button className="primary" type="button" onClick={openCreate}>Добавить материал</button></div> : visibleItems.length === 0 ? <div className={styles.empty}><h2>Ничего не найдено</h2><p>Измените запрос или выберите другой статус.</p></div> : <>
+      {loading ? <AdminLoading label="Загружаем материалы…" /> : items.length === 0 ? <div className={styles.empty}><Icon name="materials" size={36} /><h2>Материалов пока нет</h2><p>Создайте статью Tire IQ или историю клиента.</p>{canCreate ? <button className="primary" type="button" onClick={openCreate}>Добавить материал</button> : null}</div> : visibleItems.length === 0 ? <div className={styles.empty}><h2>Ничего не найдено</h2><p>Измените запрос или выберите другой статус.</p></div> : <>
         <ul className={styles.catalogList}>{visibleItems.map((item) => (
           <li key={item.id}><CatalogRow href={`/materials/${item.id}`} title={item.title} meta={item.kind === "story" ? "История" : "Tire IQ"} icon="materials" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeStatus(item.id, nextStatus) : undefined} /></li>
         ))}</ul>

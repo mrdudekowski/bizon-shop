@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { CatalogBuyPanel } from "@/components/catalog/CatalogBuyPanel";
 import { LexicalContent } from "@/components/content/LexicalContent";
-import { CatalogImage } from "@/components/catalog/CatalogImage";
+import { CatalogProductGallery } from "@/components/catalog/CatalogProductGallery";
 import { ModelAdvantagesCarousel } from "@/components/catalog/ModelAdvantagesCarousel";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { TireVariantsTable } from "@/components/catalog/TireVariantsTable";
@@ -50,16 +50,11 @@ export function TireModelStage({
         />
 
         <section className={styles.productStage} aria-labelledby="product-stage-title">
-          <div className={styles.productMedia}>
-            <CatalogImage
-              src={gallery[0]}
-              fallbackKey={model.slug}
-              alt={`${model.name} — грузовая шина`}
-              fill
-              priority
-              sizes="(max-width: 899px) 100vw, 58vw"
-            />
-          </div>
+          <CatalogProductGallery
+            images={gallery}
+            fallbackKey={model.slug}
+            alt={`${model.name} — грузовая шина`}
+          />
 
           <div className={styles.productPanel}>
             <p className={styles.eyebrow}>{model.brand || "BIZON TBR"}</p>

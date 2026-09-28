@@ -10,12 +10,13 @@ import { CatalogFilters } from "@/admin/ui/CatalogFilters";
 import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
 import { CatalogRow } from "@/admin/ui/CatalogRow";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
-import { useAdminRole } from "@/admin/ui/DocumentUI";
+import { useAdminRole, useCanPerform } from "@/admin/ui/DocumentUI";
 import styles from "@/admin/ui/catalog.module.css";
 
 export function TireDirectionList() {
   const router = useRouter();
   const [role] = useAdminRole();
+  const canCreate = useCanPerform("create_catalog_structure");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [directions, setDirections] = useState<TireDirection[]>([]);
   const [assets, setAssets] = useState<MediaListItem[]>([]);
@@ -72,7 +73,7 @@ export function TireDirectionList() {
 
   return (
     <main>
-      <div className={styles.pageHead}><div><h1>Направления</h1><p className="subheading">Техника, дороги и условия работы для подбора шин.</p></div><button className="primary" type="button" onClick={openCreate}>Добавить направление</button></div>
+      <div className={styles.pageHead}><div><h1>Направления</h1><p className="subheading">Техника, дороги и условия работы для подбора шин.</p></div>{canCreate ? <button className="primary" type="button" onClick={openCreate}>Добавить направление</button> : null}</div>
       <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название направления…" />
       {loading ? <AdminLoading label="Загружаем направления…" /> : <ul className={styles.catalogList}>
         {visibleDirections.map((direction) => (
@@ -81,7 +82,7 @@ export function TireDirectionList() {
           </li>
         ))}
       </ul>}
-      {!loading && visibleDirections.length === 0 ? <div className={styles.empty}><h2>{directions.length === 0 ? "Направлений пока нет" : "Ничего не найдено"}</h2><p>{directions.length === 0 ? "Создайте направление, чтобы начать собирать каталог шин." : "Измените запрос или выберите другой статус."}</p>{directions.length === 0 ? <button className="primary" type="button" onClick={openCreate}>Добавить направление</button> : null}</div> : null}
+      {!loading && visibleDirections.length === 0 ? <div className={styles.empty}><h2>{directions.length === 0 ? "Направлений пока нет" : "Ничего не найдено"}</h2><p>{directions.length === 0 ? "Создайте направление, чтобы начать собирать каталог шин." : "Измените запрос или выберите другой статус."}</p>{directions.length === 0 && canCreate ? <button className="primary" type="button" onClick={openCreate}>Добавить направление</button> : null}</div> : null}
       <CatalogCreateDialog
         dialogRef={dialogRef}
         title="Новое направление"

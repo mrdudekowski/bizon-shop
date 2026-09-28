@@ -24,10 +24,23 @@
   --radius: 8px;
   --control: 44px;
   --space: 24px;
+  --mobile-tabbar: 56px;
+  --cms-sticky-top: 0px;
+  --cms-sticky-tabs: 3.25rem;
+  --cms-preview-controls: 16.25rem;
+  --cms-chrome-bottom: 5.5rem;
+  --cms-chrome-top: calc(var(--cms-sticky-top) + var(--cms-sticky-tabs) + var(--cms-preview-controls));
+  --cms-preview-max: calc(100vh - var(--cms-chrome-top) - var(--cms-chrome-bottom));
+  --cms-preview-max: calc(100dvh - var(--cms-chrome-top) - var(--cms-chrome-bottom));
+  --cms-preview-max: calc(100svh - var(--cms-chrome-top) - var(--cms-chrome-bottom));
 }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; }
-html { scroll-behavior: smooth; scroll-padding-top: 152px; scroll-padding-bottom: 160px; }
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--cms-sticky-top) + var(--cms-sticky-tabs));
+  scroll-padding-bottom: var(--cms-chrome-bottom);
+}
 body { font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.5; color: var(--ink); background: var(--canvas); -webkit-font-smoothing: antialiased; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { min-height: var(--control); padding: 0 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); font-weight: 600; cursor: pointer; transition: background-color 140ms ease; }
@@ -49,7 +62,7 @@ label:has(> input[type="checkbox"]) { display: flex !important; flex-direction: 
 main { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space); width: 100%; max-width: 1440px; min-width: 0; margin: 0 auto; padding-bottom: 32px; }
 h1, h2, h3 { margin: 0; line-height: 1.25; }
 h1 { font-size: 34px; font-weight: 750; letter-spacing: -1.2px; }
-h2 { font-size: 18px; font-weight: 650; scroll-margin-top: 150px; }
+h2 { font-size: 18px; font-weight: 650; scroll-margin-top: calc(var(--cms-sticky-top) + var(--cms-sticky-tabs) + 8px); }
 h3 { font-size: 15px; }
 p { margin: 0; }
 a { color: inherit; }
@@ -59,6 +72,9 @@ legend { padding: 0 6px; font-weight: 600; }
 dialog { border: 1px solid var(--line); border-radius: 12px; padding: 24px; box-shadow: 0 24px 80px #17212e33; }
 dialog::backdrop { background: #141b2766; backdrop-filter: blur(3px); }
 .subheading { color: var(--ink-muted); font-size: 14px; margin-top: 7px; font-weight: 400; }
+.notice { display: flex; align-items: flex-start; gap: 16px; padding: 22px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink-muted); }
+.notice svg { color: var(--ink); flex-shrink: 0; }
+.notice strong { color: var(--ink); }
 .document { gap: 22px !important; }
 .document > section, .document > fieldset { padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: grid; gap: 18px; min-width: 0; }
 .document > section > h2 { padding-bottom: 14px; border-bottom: 1px solid var(--line); }
@@ -66,7 +82,7 @@ dialog::backdrop { background: #141b2766; backdrop-filter: blur(3px); }
 .document > section > div:has(> input), .document > section > div:has(> textarea) { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--line); border-radius: 8px; }
 .document > section > label:has(textarea) { grid-column: 1 / -1; }
 .document > label { background: var(--surface); padding: 16px 24px; border-radius: var(--radius); }
-.blockNav { position: sticky; top: 76px; z-index: 15; display: flex; overflow-x: auto; overflow-y: hidden; gap: 8px; min-width: 0; background: var(--canvas); border-bottom: 1px solid #dbe0e7; padding-top: 4px; scrollbar-width: thin; scrollbar-color: #aab2bf transparent; scroll-snap-type: x proximity; }
+.blockNav { position: sticky; top: var(--cms-sticky-top); z-index: 15; display: flex; overflow-x: auto; overflow-y: hidden; gap: 8px; min-width: 0; background: var(--canvas); border-bottom: 1px solid #dbe0e7; padding-top: 4px; scrollbar-width: thin; scrollbar-color: #aab2bf transparent; scroll-snap-type: x proximity; }
 .blockNav:empty { display: none; }
 .blockNav button { flex-shrink: 0; min-height: 44px; padding: 10px 14px; border: 0; border-bottom: 3px solid transparent; border-radius: 8px 8px 0 0; background: transparent; color: var(--ink-muted); }
 .blockNav button:hover { background: var(--surface-muted); color: var(--ink); }
@@ -85,19 +101,30 @@ dialog::backdrop { background: #141b2766; backdrop-filter: blur(3px); }
 .advantageList { display: grid; gap: 12px; }
 .advantageItem { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .advantageChoice { display: flex !important; align-items: center; gap: 10px; font-weight: 650 !important; }
-.advantageChoice img { width: 40px; height: 40px; border-radius: 8px; background: #111; object-fit: cover; }
+.advantageChoice img { width: 40px; height: 40px; border-radius: 8px; background: #111; object-fit: contain; }
+.document > section:has([data-cms-image-fields]) { gap: 10px; padding: 12px 16px 16px; }
+.document > section:has([data-cms-image-fields]) > h2 { padding-bottom: 0; border-bottom: 0; font-size: 15px; }
 .tireSize { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; gap: 14px; }
 .tireSize > label:has(> input[type="checkbox"]) { align-self: center; min-height: 44px; }
 .choiceGroup { display: grid; gap: 12px; }
 .fieldHint { color: var(--ink-muted); font-size: 12px; font-weight: 400; }
 @media (min-width: 1000px) { .document > section:has(> label) { grid-template-columns: repeat(2, minmax(0, 1fr)); } .document > section > h2, .document > section > fieldset, .document > section > div, .document > section > section { grid-column: 1 / -1; } }
 @media (max-width: 720px) {
+  :root {
+    --cms-sticky-top: calc(56px + env(safe-area-inset-top, 0px));
+    --cms-preview-controls: 13.5rem;
+    --cms-chrome-bottom: calc(5.5rem + var(--mobile-tabbar) + 8px + env(safe-area-inset-bottom, 0px));
+  }
   h1 { font-size: 28px; }
-  .blockNav { top: 64px; gap: 3px; }
+  .blockNav { gap: 3px; }
   .blockNav button { padding: 10px; font-size: 12px; }
   .document > section, .document > fieldset { padding: 18px; }
-  .tireSize { grid-template-columns: minmax(0,1fr); }
-  .documentActions { padding: 8px 10px; gap: 6px; }
+  .tireSize { grid-template-columns: minmax(0, 1fr); }
+  .documentActions {
+    bottom: calc(var(--mobile-tabbar) + 8px + env(safe-area-inset-bottom, 0px));
+    padding: 8px 10px;
+    gap: 6px;
+  }
   .documentFeedback { flex-basis: 100%; font-size: 12px; line-height: 1.4; }
   .documentButtons { width: 100%; gap: 6px; }
   .documentButtons button { flex: 1 1 140px; min-height: 44px; padding-inline: 10px; font-size: 13px; }

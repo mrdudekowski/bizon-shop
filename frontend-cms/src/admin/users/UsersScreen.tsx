@@ -3,18 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 
 import { AdminClientError } from "@/admin/client/errors";
+import { ERROR_TEXT } from "@/admin/client/errorText";
 import { browserAdminClient } from "@/admin/client/localStore";
-import type { AdminRole, AdminSession, AdminUser } from "@/admin/domain/types";
+import type { AdminRole, AdminSession, AdminUser, EditorCapability } from "@/admin/domain/types";
 
 import styles from "./UsersScreen.module.css";
 import { Icon } from "@/admin/ui/Icon";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 
-const ERROR_TEXT: Partial<Record<string, string>> = {
+const USER_ERROR_TEXT: Partial<Record<string, string>> = {
+  ...ERROR_TEXT,
   cannot_disable_self: "Нельзя отключить свою учётную запись",
-  last_admin: "Нельзя отключить последнего администратора",
   slug_taken: "Такой логин уже есть",
   invalid_slug: "Укажите логин",
+};
+
+const CAPABILITY_LABEL: Record<EditorCapability, string> = {
+  create_catalog_items: "Новые модели шин, дисков и товаров",
+  edit_site_pages: "Контент и тексты на страницах",
 };
 
 export function UsersScreen() {
@@ -24,6 +30,7 @@ export function UsersScreen() {
   const [login, setLogin] = useState("");
   const [role, setRole] = useState<AdminRole>("editor");
   const [password, setPassword] = useState("");
+  const [createCapabilities, setCreateCapabilities] = useState<EditorCapability[]>([]);
   const [message, setMessage] = useState("");
   const activeAdmins = users.filter((user) => user.role === "admin" && !user.disabled).length;
 
@@ -52,15 +59,25 @@ export function UsersScreen() {
 
   function showError(error: unknown) {
     const code = error instanceof AdminClientError ? error.code : "error";
-    setMessage(ERROR_TEXT[code] ?? code);
+    setMessage(USER_ERROR_TEXT[code] ?? code);
   }
 
   function openCreate() {
     setLogin("");
     setRole("editor");
     setPassword("");
+    setCreateCapabilities([]);
     setMessage("");
     dialogRef.current?.showModal();
+  }
+
+  function toggleCapability(current: EditorCapability[], capability: EditorCapability, checked: boolean) {
+    return checked ? [...current, capability] : current.filter((item) => item !== capability);
+  }
+
+  function saveCapabilities(userId: string, capabilities: EditorCapability[]) {
+    setMessage("");
+    void browserAdminClient().setUserCapabilities(userId, capabilities).then(reload).catch(showError);
   }
 
   return (
@@ -74,7 +91,7 @@ export function UsersScreen() {
           event.preventDefault();
           setMessage("");
           void browserAdminClient()
-            .createUser({ login, role, password })
+            .createUser({ login, role, password, capabilities: role === "editor" ? createCapabilities : [] })
             .then(() => {
               dialogRef.current?.close();
               return reload();
@@ -87,6 +104,21 @@ export function UsersScreen() {
           <option value="editor">Редактор</option>
           <option value="admin">Администратор</option>
         </select></label>
+        {role === "editor" ? (
+          <fieldset className={styles.capabilitySet}>
+            <legend>Права редактора</legend>
+            {(Object.keys(CAPABILITY_LABEL) as EditorCapability[]).map((capability) => (
+              <label key={capability}>
+                <input
+                  type="checkbox"
+                  checked={createCapabilities.includes(capability)}
+                  onChange={(event) => setCreateCapabilities(toggleCapability(createCapabilities, capability, event.target.checked))}
+                />
+                {CAPABILITY_LABEL[capability]}
+              </label>
+            ))}
+          </fieldset>
+        ) : <p className={styles.hint}>Полный доступ</p>}
         <label>Пароль при создании<input
           aria-label="Пароль"
           type="password"
@@ -126,8 +158,23 @@ export function UsersScreen() {
               <option value="admin">Администратор</option>
             </select>
             </label>
+            {user.role === "admin" ? <p className={styles.fullAccess}>Полный доступ</p> : (
+              <fieldset className={styles.capabilitySet} disabled={user.disabled}>
+                <legend>Права</legend>
+                {(Object.keys(CAPABILITY_LABEL) as EditorCapability[]).map((capability) => (
+                  <label key={capability}>
+                    <input
+                      type="checkbox"
+                      checked={(user.capabilities ?? []).includes(capability)}
+                      onChange={(event) => saveCapabilities(user.id, toggleCapability(user.capabilities ?? [], capability, event.target.checked))}
+                    />
+                    {CAPABILITY_LABEL[capability]}
+                  </label>
+                ))}
+              </fieldset>
+            )}
             <span className={user.disabled ? styles.badge : styles.badgeOnSite}>{user.disabled ? "Отключён" : "Активен"}</span>
-            <div className={styles.userActions}>{user.disabled ? <span className={styles.hint}>Доступ отключён</span> : user.login === session.login ? <span className={styles.hint}>Нельзя отключить себя</span> : user.role === "admin" && activeAdmins < 2 ? <span className={styles.hint}>Последний администратор</span> : (
+            <div className={styles.userActions}>{user.disabled ? <span className={styles.hint}>Доступ отключён</span> : user.login === session.login ? <span className={styles.hint}>Нельзя отключить себя</span> : user.role === "admin" && activeAdmins < 2 ? <span className={styles.hint}>Администратора нельзя удалить</span> : (
               <button
                 type="button"
                 className="ghost"
@@ -140,6 +187,7 @@ export function UsersScreen() {
                 Отключить
               </button>
             )}</div>
+            {user.role === "editor" ? <p className={styles.crmNote}>Скоро: работа с лидами и CRM. Эти права появятся вместе с модулем.</p> : null}
           </li>
         ))}
       </ul>

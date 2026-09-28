@@ -8,14 +8,18 @@ import Image from "next/image";
 import { browserAdminClient } from "@/admin/client/localStore";
 import type { AdminSession } from "@/admin/domain/types";
 import { Icon, type IconName } from "@/admin/ui/Icon";
+import { isMoreCurrent, isNavCurrent, profileInitials, splitNav } from "./mobileNav";
 
 import styles from "./AdminShell.module.css";
 import { LoginScreen } from "@/admin/auth/LoginScreen";
 
-const NAV = [
+const CATALOG_NAV = [
   { href: "/", label: "Шины", icon: "tires" },
   { href: "/wheels", label: "Диски", icon: "wheels" },
   { href: "/shop", label: "Shop", icon: "shop" },
+] as const satisfies readonly { href: string; label: string; icon: IconName }[];
+
+const CONTENT_NAV = [
   { href: "/pages", label: "Страницы", icon: "pages" },
   { href: "/materials", label: "Материалы", icon: "materials" },
 ] as const satisfies readonly { href: string; label: string; icon: IconName }[];
@@ -37,6 +41,8 @@ const ADMIN_SCREEN_ROUTES = [
   "/pages/about",
   "/materials",
   "/materials/_",
+  "/publications",
+  "/publications/_",
   "/users",
 ] as const;
 
@@ -61,23 +67,19 @@ function warmAdminScreens(currentPath: string): () => void {
   };
 }
 
-function isCurrent(pathname: string, href: string): boolean {
-  if (href === "/") return pathname === "/" || (pathname.startsWith("/tires/") && !pathname.startsWith("/tires/directions"));
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
 export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [session, setSession] = useState<AdminSession | null>(null);
   const [authLoaded, setAuthLoaded] = useState(false);
-  const [navOpen, setNavOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     const client = browserAdminClient();
     void client.getSession().then((next) => {
-      setSession(next);
+      setSession({ ...next, capabilities: next.capabilities ?? [] });
       return client.storageNotice();
     }).then((text) => {
       if (text != null) setNotice(text);
@@ -98,6 +100,23 @@ export function AdminShell({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    setMoreOpen(false);
+    setProfileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!moreOpen && !profileOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMoreOpen(false);
+        setProfileOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [moreOpen, profileOpen]);
+
   async function logOut() {
     try {
       await browserAdminClient().logout();
@@ -107,15 +126,27 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }
 
   if (!authLoaded) return <div className={styles.authLoading} role="status">Проверяем доступ…</div>;
-  if (!session) return <LoginScreen onLogin={setSession} />;
+  if (!session) return <LoginScreen onLogin={(next) => setSession({ ...next, capabilities: next.capabilities ?? [] })} />;
 
   const role = session.role;
-  const items = role === "admin" ? [...NAV, { href: "/users", label: "Пользователи", icon: "users" as const }] : [...NAV];
+  const capabilities = session.capabilities ?? [];
+  const canEditPages = role === "admin" || capabilities.includes("edit_site_pages");
+  const items = [
+    ...CATALOG_NAV,
+    ...(canEditPages ? CONTENT_NAV : []),
+    ...(role === "admin"
+      ? [
+          { href: "/publications", label: "Публикации", icon: "publications" as const },
+          { href: "/users", label: "Пользователи", icon: "users" as const },
+        ]
+      : []),
+  ];
+  const { primary, more } = splitNav(items);
 
   return (
     <div className={styles.shell}>
       <div className={`${styles.body} ${collapsed ? styles.bodyCollapsed : ""}`}>
-        <nav id="admin-nav" className={`${navOpen ? styles.navOpen : styles.nav} ${collapsed ? styles.navCollapsed : ""}`} aria-label="Разделы">
+        <nav id="admin-nav" className={`${styles.nav} ${collapsed ? styles.navCollapsed : ""}`} aria-label="Разделы">
           <div className={styles.sidebarBrand}>
             <Link href="/" aria-label="BIZON — на главную" title="BIZON — на главную">
               <Image
@@ -129,11 +160,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
               />
             </Link>
           </div>
-          <button className={styles.mobileCloseButton} type="button" onClick={() => setNavOpen(false)}>
-            Закрыть меню
-          </button>
           {items.map((item) => (
-            <Link key={item.href} href={item.href} title={item.label} aria-label={item.label} onClick={() => setNavOpen(false)} aria-current={isCurrent(pathname, item.href) ? "page" : undefined}>
+            <Link key={item.href} href={item.href} title={item.label} aria-label={item.label} aria-current={isNavCurrent(pathname, item.href) ? "page" : undefined}>
               <Icon name={item.icon} />
               <span>{item.label}</span>
             </Link>
@@ -159,11 +187,112 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </button>
         </nav>
         <div className={styles.content}>
-          <button className={styles.menuButton} type="button" aria-expanded={navOpen} aria-controls="admin-nav" onClick={() => { setNavOpen((open) => !open); setCollapsed(false); }}>
-            Меню
-          </button>
           {notice ? <p className={styles.notice}>{notice}</p> : null}
           {children}
+        </div>
+
+        <header className={styles.topbar}>
+          <button
+            className={styles.profileButton}
+            type="button"
+            aria-label={`Профиль ${session.login}`}
+            aria-expanded={profileOpen}
+            aria-controls="admin-profile-sheet"
+            onClick={() => {
+              setProfileOpen((open) => !open);
+              setMoreOpen(false);
+            }}
+          >
+            {profileInitials(session.login)}
+          </button>
+        </header>
+
+        {profileOpen || moreOpen ? (
+          <button
+            className={styles.sheetBackdrop}
+            type="button"
+            data-open="true"
+            aria-label="Закрыть"
+            onClick={() => {
+              setProfileOpen(false);
+              setMoreOpen(false);
+            }}
+          />
+        ) : null}
+
+        <div
+          id="admin-profile-sheet"
+          className={styles.profileSheet}
+          data-open={profileOpen ? "true" : undefined}
+          hidden={!profileOpen}
+          role="dialog"
+          aria-label="Профиль"
+        >
+          <div>
+            <strong>{session.login}</strong>
+            <small>{role === "admin" ? "Администратор" : "Редактор"}</small>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setProfileOpen(false);
+              void logOut();
+            }}
+          >
+            Войти другим профилем
+          </button>
+          <button type="button" onClick={() => void logOut()}>
+            Выйти
+          </button>
+        </div>
+
+        <nav className={styles.tabbar} aria-label="Разделы">
+          {primary.map((item) => (
+            <Link
+              key={item.href}
+              className={styles.tab}
+              href={item.href}
+              aria-current={isNavCurrent(pathname, item.href) ? "page" : undefined}
+            >
+              <Icon name={item.icon} />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+          <button
+            className={styles.tab}
+            type="button"
+            aria-current={isMoreCurrent(pathname, more) ? "page" : undefined}
+            aria-expanded={moreOpen}
+            aria-controls="admin-more-sheet"
+            onClick={() => {
+              setMoreOpen((open) => !open);
+              setProfileOpen(false);
+            }}
+          >
+            <Icon name="more" />
+            <span>Прочее</span>
+          </button>
+        </nav>
+
+        <div
+          id="admin-more-sheet"
+          className={styles.moreSheet}
+          data-open={moreOpen ? "true" : undefined}
+          hidden={!moreOpen}
+          role="dialog"
+          aria-label="Прочее"
+        >
+          {more.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={isNavCurrent(pathname, item.href) ? "page" : undefined}
+              onClick={() => setMoreOpen(false)}
+            >
+              <Icon name={item.icon} />
+              <span>{item.label}</span>
+            </Link>
+          ))}
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
-import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { BlockNav, useAdminRole } from "@/admin/ui/DocumentUI";
+import { DocumentReviewFooter } from "@/admin/ui/DocumentReviewFooter";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 
 import { useEffect, useState } from "react";
@@ -9,6 +10,7 @@ import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
+import { ERROR_TEXT } from "@/admin/client/errorText";
 import {
   AXLE_OPTIONS,
   OPERATING_CONDITION_OPTIONS,
@@ -25,23 +27,7 @@ import type {
   TireModelRecord,
   TireSizeDraft,
 } from "@/admin/domain/types";
-import { PlacementFields } from "@/admin/media/PlacementFields";
-
-const ERROR_TEXT: Record<AdminClientError["code"], string> = {
-  slug_taken: "Этот адрес страницы уже занят",
-  invalid_slug: "Нельзя изменить адрес страницы",
-  publish_blocked: "Публикация закрыта",
-  category_not_published: "Сначала опубликуйте категорию товара",
-  category_has_published_products: "Сначала снимите с публикации товары этой категории",
-  unsaved: "Сначала сохраните черновик",
-  media_in_use: "Файл ещё используется",
-  storage_unavailable: "Хранилище S3 не настроено",
-  cannot_disable_self: "Нельзя отключить себя",
-  last_admin: "Нельзя отключить последнего администратора",
-  invalid_credentials: "Неверный логин или пароль",
-  unauthorized: "Сессия закончилась. Войдите снова",
-  forbidden: "Недостаточно прав для этого действия",
-};
+import { ProductPhotoFields } from "@/admin/media/PlacementFields";
 
 const BLOCKER_TEXT: Record<string, string> = {
   name: "Укажите название",
@@ -435,10 +421,11 @@ export function TireModelEditor({ id }: { id: string }) {
       </section>
       <section>
         <h2>Фото</h2>
-        <PlacementFields
-          label="Главное фото"
-          value={draft.mainImage}
-          onChange={(mainImage) => patch({ mainImage })}
+        <ProductPhotoFields
+          cover={draft.mainImage}
+          gallery={draft.gallery}
+          onCoverChange={(mainImage) => patch({ mainImage })}
+          onGalleryChange={(gallery) => patch({ gallery })}
         />
         </section>
       <section>
@@ -490,18 +477,17 @@ export function TireModelEditor({ id }: { id: string }) {
         <label><input type="checkbox" checked={draft.showInMenu} onChange={(event) => patch({ showInMenu: event.target.checked })} />Показывать в меню</label>
         <label>Порядок в меню<input type="number" value={draft.menuOrder} onChange={(event) => patch({ menuOrder: Number(event.target.value) || 0 })} /></label>
       </section>
-      <DocumentActions>
-        <p>Сохранил: {record.lastSavedBy ?? "—"}</p>
-        <p>Опубликовал: {record.lastPublishedBy ?? "—"}</p>
-        {message ? <p>{message}</p> : null}
-        {savedBlockers.map((code) => (
-          <p key={code}>{BLOCKER_TEXT[code] ?? code}</p>
-        ))}
-        {dirty ? <p>Есть несохранённые правки</p> : null}
-        <button type="button" disabled={saving} onClick={() => void onSave()}>
-          {saving ? "Сохраняем…" : "Сохранить"}
-        </button>
-        {role === "admin" ? (
+      <DocumentReviewFooter
+        entityType="tire-model"
+        entityId={id}
+        dirty={dirty}
+        saving={saving}
+        message={message}
+        blockers={savedBlockers.map((code) => BLOCKER_TEXT[code] ?? code)}
+        lastSavedBy={record.lastSavedBy}
+        lastPublishedBy={record.lastPublishedBy}
+        onSave={onSave}
+        adminActions={
           <>
             <button
               type="button"
@@ -520,8 +506,8 @@ export function TireModelEditor({ id }: { id: string }) {
               </button>
             )}
           </>
-        ) : null}
-      </DocumentActions>
+        }
+      />
     </main>
   );
 }

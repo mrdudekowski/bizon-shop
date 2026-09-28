@@ -29,14 +29,23 @@
 
 .mainImage {
   position: relative;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: min(760px, 68vw);
+  padding: 0;
   overflow: hidden;
+  border: 0;
   border-radius: var(--radius-panel);
   background: var(--bizon-neutral-100);
+  cursor: zoom-in;
 }
 
+.mainImage:disabled { cursor: default; }
+
 .mainImage img {
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .thumbnails {

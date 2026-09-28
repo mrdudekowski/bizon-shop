@@ -95,10 +95,12 @@ export type DocumentStatus = "draft" | "on_site" | "hidden";
 export type StatusEntity = "tire-direction" | "tire-model" | "wheel-type" | "wheel-model" | "shop-category" | "shop-product" | "page" | "material";
 
 export type AdminRole = "admin" | "editor";
+export type EditorCapability = "create_catalog_items" | "edit_site_pages";
 
 export type AdminSession = {
   login: string;
   role: AdminRole;
+  capabilities: EditorCapability[];
 };
 
 /** Flat list row for pickers; document methods use EntityRecord<TireDirectionDraft>. */
@@ -123,6 +125,63 @@ export type AdminUser = {
   login: string;
   role: AdminRole;
   disabled: boolean;
+  capabilities: EditorCapability[];
+};
+
+export type ChangeSetId = string;
+
+export type ChangeSetStatus = "open" | "pending_review" | "returned" | "published" | "cancelled";
+
+export type FieldValue =
+  | { kind: "text"; value: string }
+  | { kind: "number"; value: number | null }
+  | { kind: "boolean"; value: boolean }
+  | { kind: "image"; assetId: string | null; previewUrl: string | null; alt?: string }
+  | { kind: "empty" };
+
+export type FieldLocation = {
+  section: string;
+  document: string;
+  tab: string;
+  field: string;
+  itemLabel?: string;
+};
+
+export type FieldChange = {
+  path: string;
+  location: FieldLocation;
+  before: FieldValue;
+  after: FieldValue;
+};
+
+export type ChangeEntry = {
+  id: string;
+  entityType: StatusEntity;
+  entityId: string;
+  entityTitle: string;
+  operation: "create" | "update" | "delete";
+  fieldChanges: FieldChange[];
+  rollbackDraft: unknown;
+};
+
+export type ChangeSet = {
+  id: ChangeSetId;
+  authorUserId: string;
+  authorLogin: string;
+  status: ChangeSetStatus;
+  createdAt: string;
+  updatedAt: string;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  reviewedByLogin: string | null;
+  reviewComment: string | null;
+  entries: ChangeEntry[];
+};
+
+export type DocumentReviewLock = {
+  changeSetId: string;
+  authorLogin: string;
+  status: Extract<ChangeSetStatus, "open" | "returned" | "pending_review">;
 };
 
 export type TireModelRecord = {

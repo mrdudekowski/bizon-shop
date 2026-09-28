@@ -11,7 +11,10 @@ export type AdminErrorCode =
   | "last_admin"
   | "invalid_credentials"
   | "unauthorized"
-  | "forbidden";
+  | "forbidden"
+  | "pending_review_exists"
+  | "changeset_not_pending"
+  | "review_comment_required";
 
 export class AdminClientError extends Error {
   constructor(readonly code: AdminErrorCode) {

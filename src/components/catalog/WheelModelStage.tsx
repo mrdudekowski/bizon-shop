@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { CatalogBuyPanel } from "@/components/catalog/CatalogBuyPanel";
 import { LexicalContent } from "@/components/content/LexicalContent";
-import { CatalogImage } from "@/components/catalog/CatalogImage";
+import { CatalogProductGallery } from "@/components/catalog/CatalogProductGallery";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { WheelVariantsTable } from "@/components/catalog/WheelVariantsTable";
 import { getWheelConstructionMethodLabel } from "@/lib/content/wheelConstructionMethod";
@@ -50,16 +50,11 @@ export function WheelModelStage({
         />
 
         <section className={styles.productStage} aria-labelledby="wheel-stage-title">
-          <div className={styles.productMedia}>
-            <CatalogImage
-              src={gallery[0]}
-              fallbackKey={model.slug}
-              alt={`${model.name} — диск BIZON`}
-              fill
-              priority
-              sizes="(max-width: 899px) 100vw, 58vw"
-            />
-          </div>
+          <CatalogProductGallery
+            images={gallery}
+            fallbackKey={model.slug}
+            alt={`${model.name} — диск BIZON`}
+          />
 
           <div className={styles.productPanel}>
             <p className={styles.eyebrow}>{model.series || wheelType.name}</p>

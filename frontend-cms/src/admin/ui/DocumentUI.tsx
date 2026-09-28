@@ -1,7 +1,8 @@
 "use client";
 import { Children, Fragment, cloneElement, isValidElement, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { browserAdminClient } from "@/admin/client/localStore";
-import type { AdminRole } from "@/admin/domain/types";
+import { canEditorPerform, type EditorAction } from "@/admin/domain/editorPermissions";
+import type { AdminRole, AdminSession } from "@/admin/domain/types";
 
 export function useAdminRole() {
   const state = useState<AdminRole>("editor");
@@ -17,6 +18,31 @@ export function useAdminRole() {
   }, [setRole]);
   return state;
 }
+
+export function useAdminSession() {
+  const [session, setSession] = useState<AdminSession | null>(null);
+  useEffect(() => {
+    let active = true;
+    void browserAdminClient()
+      .getSession()
+      .then((next) => {
+        if (active) setSession({ ...next, capabilities: next.capabilities ?? [] });
+      })
+      .catch(() => {
+        if (active) setSession({ login: "", role: "editor", capabilities: [] });
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+  return session;
+}
+
+export function useCanPerform(action: EditorAction): boolean {
+  const session = useAdminSession();
+  return session != null && canEditorPerform(session, action);
+}
+
 export function BlockNav() {
   const nav = useRef<HTMLElement>(null);
   const [blocks, setBlocks] = useState<{ id: string; label: string; elements: HTMLElement[] }[]>([]);
@@ -52,6 +78,7 @@ export function BlockNav() {
   function activate(id: string) {
     setActive(id);
     blocks.forEach((block) => block.elements.forEach((element) => { element.hidden = block.id !== id; }));
+    window.dispatchEvent(new Event("resize"));
   }
 
   function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {

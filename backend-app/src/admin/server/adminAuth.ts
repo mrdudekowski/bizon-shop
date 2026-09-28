@@ -1,5 +1,5 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import type { AdminSession } from "../client/adminClient";
+import type { AdminSession, EditorCapability } from "../domain/types";
 
 export type Query = (sql: string, params?: unknown[]) => Promise<Record<string, unknown>[]>;
 
@@ -7,7 +7,13 @@ export type AuthenticatedAccount = {
   id: string;
   login: string;
   role: AdminSession["role"];
+  capabilities: EditorCapability[];
 };
+
+export function parseCapabilities(value: unknown): EditorCapability[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is EditorCapability => item === "create_catalog_items" || item === "edit_site_pages");
+}
 
 export const SESSION_COOKIE_NAME = "bizon-cms-session";
 
@@ -85,6 +91,11 @@ export async function ensureAuthSchema(query: Query): Promise<void> {
   )`);
   await query(`CREATE INDEX IF NOT EXISTS cms_auth_sessions_user_expiry_idx
     ON cms_auth_sessions (user_id, expires_at)`);
+  await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cms_capabilities jsonb NOT NULL DEFAULT '[]'::jsonb`);
+  await query(`CREATE TABLE IF NOT EXISTS cms_change_sets (
+    id text PRIMARY KEY,
+    pack jsonb NOT NULL
+  )`);
 }
 
 export type BootstrapEnv = Record<string, string | undefined>;
@@ -131,14 +142,19 @@ export async function authenticate(
   login: string,
   password: string,
 ): Promise<AuthenticatedAccount | null> {
-  const rows = await query("SELECT id, email, role, status, hash FROM users WHERE email = $1", [
+  const rows = await query("SELECT id, email, role, status, hash, cms_capabilities FROM users WHERE email = $1", [
     login.trim(),
   ]);
   const row = rows[0];
   if (row == null || String(row.status) !== "active") return null;
   if (!verifyPassword(password, row.hash == null ? null : String(row.hash))) return null;
 
-  return { id: String(row.id), login: String(row.email), role: sessionRole(row.role) };
+  return {
+    id: String(row.id),
+    login: String(row.email),
+    role: sessionRole(row.role),
+    capabilities: parseCapabilities(row.cms_capabilities),
+  };
 }
 
 export async function startSession(query: Query, userId: string, now = new Date()): Promise<string> {
@@ -158,7 +174,7 @@ export async function readSession(
   now = new Date(),
 ): Promise<AuthenticatedAccount | null> {
   const rows = await query(
-    `SELECT u.id, u.email, u.role, u.status
+    `SELECT u.id, u.email, u.role, u.status, u.cms_capabilities
      FROM cms_auth_sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = $1 AND s.expires_at > $2`,
@@ -167,7 +183,12 @@ export async function readSession(
   const row = rows[0];
   if (row == null || String(row.status) !== "active") return null;
 
-  return { id: String(row.id), login: String(row.email), role: sessionRole(row.role) };
+  return {
+    id: String(row.id),
+    login: String(row.email),
+    role: sessionRole(row.role),
+    capabilities: parseCapabilities(row.cms_capabilities),
+  };
 }
 
 export async function endSession(query: Query, token: string): Promise<void> {

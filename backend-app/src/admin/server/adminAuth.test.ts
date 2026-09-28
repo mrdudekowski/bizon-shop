@@ -145,6 +145,29 @@ describe("authenticate", () => {
       id: "7",
       login: "chief",
       role: "admin",
+      capabilities: [],
+    });
+  });
+
+  it("returns editor capabilities from the user row", async () => {
+    const { query } = recordingQuery({
+      "FROM users WHERE email": [
+        {
+          id: 8,
+          email: "writer",
+          role: "content_manager",
+          status: "active",
+          hash: encoded,
+          cms_capabilities: ["create_catalog_items", "edit_site_pages"],
+        },
+      ],
+    });
+
+    await expect(authenticate(query, "writer", "right")).resolves.toEqual({
+      id: "8",
+      login: "writer",
+      role: "editor",
+      capabilities: ["create_catalog_items", "edit_site_pages"],
     });
   });
 

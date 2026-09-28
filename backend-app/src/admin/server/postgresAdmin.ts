@@ -2,7 +2,7 @@ import { Pool, type PoolClient } from "pg";
 
 import { AdminClientError } from "../client/errors";
 import type { AdminClient } from "../client/adminClient";
-import { hashPassword, storedRole, type AuthenticatedAccount } from "./adminAuth";
+import { hashPassword, parseCapabilities, storedRole, type AuthenticatedAccount } from "./adminAuth";
 import {
   articlePublishBlockers,
   shopProductPublishBlockers,
@@ -17,6 +17,7 @@ import type {
   AdminSession,
   AdminUser,
   ArticleDraft,
+  ChangeSet,
   DocumentLink,
   EntityRecord,
   ImagePlacement,
@@ -25,6 +26,7 @@ import type {
   ShopCategoryDraft,
   ShopProductDraft,
   ShopVariantDraft,
+  StatusEntity,
   TireDirection,
   TireDirectionDraft,
   TireModelDraft,
@@ -36,6 +38,18 @@ import type {
   WheelVariantDraft,
 } from "../domain/types";
 import { PAGE_KEYS } from "../domain/types";
+import { canEditorPerform, type EditorAction } from "../domain/editorPermissions";
+import {
+  cancelOverlappingPacks,
+  recordEditorMutation,
+  type ChangeSetState,
+} from "../domain/applyChangeSet";
+import {
+  assertCanCancelChangeSet,
+  assertCanPublishChangeSet,
+  assertCanReturnChangeSet,
+  assertCanSubmitChangeSet,
+} from "../domain/changeSetTransitions";
 import { getObjectStore } from "../../storage/objectStore";
 import { MediaRejected, putMedia } from "../../storage/putMedia";
 
@@ -126,6 +140,103 @@ function ensureDrafts(): Promise<void> {
     )`)
     .then(() => undefined);
   return draftsReady;
+}
+
+function collectionOf(entityType: StatusEntity): string {
+  switch (entityType) {
+    case "tire-direction":
+      return "tire-directions";
+    case "tire-model":
+      return "tire-models";
+    case "wheel-type":
+      return "wheel-types";
+    case "wheel-model":
+      return "wheel-models";
+    case "shop-category":
+      return "shop-categories";
+    case "shop-product":
+      return "shop-products";
+    case "page":
+      return "pages";
+    case "material":
+      return "materials";
+  }
+}
+
+function entityTitle(draft: unknown, fallback: string): string {
+  if (draft == null || typeof draft !== "object") return fallback;
+  const record = draft as { name?: unknown; title?: unknown };
+  if (typeof record.name === "string" && record.name.trim()) return record.name;
+  if (typeof record.title === "string" && record.title.trim()) return record.title;
+  return fallback;
+}
+
+async function publishEntry(client: AdminClient, entityType: StatusEntity, entityId: string): Promise<void> {
+  switch (entityType) {
+    case "tire-direction":
+      await client.publishTireDirection(entityId);
+      return;
+    case "tire-model":
+      await client.publishTireModel(entityId);
+      return;
+    case "wheel-type":
+      await client.publishWheelType(entityId);
+      return;
+    case "wheel-model":
+      await client.publishWheelModel(entityId);
+      return;
+    case "shop-category":
+      await client.publishShopCategory(entityId);
+      return;
+    case "shop-product":
+      await client.publishShopProduct(entityId);
+      return;
+    case "page":
+      await client.publishPage(entityId as PageKey);
+      return;
+    case "material":
+      await client.publishMaterial(entityId);
+  }
+}
+
+async function restoreEntry(client: AdminClient, entry: { entityType: StatusEntity; entityId: string; operation: string; rollbackDraft: unknown }): Promise<void> {
+  if (entry.operation === "create") {
+    try {
+      switch (entry.entityType) {
+        case "tire-direction":
+          await client.deleteTireDirection(entry.entityId);
+          break;
+        case "tire-model":
+          await client.deleteTireModel(entry.entityId);
+          break;
+        case "wheel-type":
+          await client.deleteWheelType(entry.entityId);
+          break;
+        case "wheel-model":
+          await client.deleteWheelModel(entry.entityId);
+          break;
+        case "shop-category":
+          await client.deleteShopCategory(entry.entityId);
+          break;
+        case "shop-product":
+          await client.deleteShopProduct(entry.entityId);
+          break;
+        case "material":
+          await client.deleteMaterial(entry.entityId);
+          break;
+        case "page":
+          break;
+      }
+    } catch {
+      if (entry.rollbackDraft != null) {
+        await writeOverlay(collectionOf(entry.entityType), entry.entityId, entry.rollbackDraft);
+      }
+    }
+    return;
+  }
+  if (entry.rollbackDraft != null) {
+    await writeOverlay(collectionOf(entry.entityType), entry.entityId, entry.rollbackDraft);
+  }
 }
 
 async function readOverlay<T>(collection: string, id: string): Promise<T | null> {
@@ -347,7 +458,10 @@ function mapWheelType(row: Row): WheelTypeDraft {
 }
 
 async function mapProduct(row: Row): Promise<ShopProductDraft> {
-  const variants = await query("SELECT * FROM products_variants WHERE _parent_id = $1 ORDER BY _order, id", [row.id]);
+  const [variants, gallery] = await Promise.all([
+    query("SELECT * FROM products_variants WHERE _parent_id = $1 ORDER BY _order, id", [row.id]),
+    query(`SELECT media_id FROM products_rels WHERE parent_id = $1 AND path = 'gallery' ORDER BY "order", id`, [row.id]),
+  ]);
   return {
     id: str(row.id),
     name: str(row.name),
@@ -358,7 +472,7 @@ async function mapProduct(row: Row): Promise<ShopProductDraft> {
     price: num(row.price),
     priceOnRequest: Boolean(row.price_on_request),
     mainImage: placement(row.main_image_id),
-    gallery: [],
+    gallery: gallery.map((item) => placement(item.media_id)!).filter(Boolean),
     variants: variants.map(
       (variant): ShopVariantDraft => ({
         id: str(variant.id),
@@ -531,19 +645,20 @@ export const TIRE_MODEL_PUBLISH_COLUMNS = [
 ] as const;
 
 async function replaceGallery(
-  client: PoolClient,
-  table: "tire_models_rels" | "wheel_models_rels",
+  table: "tire_models_rels" | "wheel_models_rels" | "products_rels",
   parentId: number,
   images: { assetId: string }[],
+  client?: PoolClient,
 ) {
-  await client.query(`DELETE FROM ${table} WHERE parent_id = $1 AND path = 'gallery'`, [parentId]);
+  await query(`DELETE FROM ${table} WHERE parent_id = $1 AND path = 'gallery'`, [parentId], client);
   let order = 0;
   for (const image of images) {
     const mediaId = numericId(image.assetId);
     if (mediaId == null) continue;
-    await client.query(
+    await query(
       `INSERT INTO ${table} ("order", parent_id, path, media_id) VALUES ($1, $2, 'gallery', $3)`,
       [order, parentId, mediaId],
+      client,
     );
     order += 1;
   }
@@ -653,7 +768,7 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
       [id, keptFeatureIds],
     );
   }
-  await replaceGallery(client, "tire_models_rels", id, draft.gallery);
+  await replaceGallery("tire_models_rels", id, draft.gallery, client);
   await replaceValues(client, "tire_models_positions", "parent_id", id, draft.selectionAxles);
   await replaceValues(client, "tire_models_application_types", "parent_id", id, draft.applicationTypes ?? []);
 }
@@ -663,11 +778,61 @@ async function publishStatus(table: string, id: string, status: "published" | "a
 }
 
 export function createPostgresAdminClient(account: AuthenticatedAccount): AdminClient {
-  const session: AdminSession = { login: account.login, role: account.role };
+  const session: AdminSession = {
+    login: account.login,
+    role: account.role,
+    capabilities: account.capabilities ?? [],
+  };
+  const actor: AdminUser = {
+    id: account.id,
+    login: account.login,
+    role: account.role,
+    disabled: false,
+    capabilities: session.capabilities,
+  };
 
-  /** Managing accounts is an administrator action, whatever the caller asks for. */
-  function requireAdmin(): void {
-    if (session.role !== "admin") throw new AdminClientError("forbidden");
+  function requirePermission(action: EditorAction): void {
+    if (!canEditorPerform(session, action)) throw new AdminClientError("forbidden");
+  }
+
+  async function loadPacks(): Promise<ChangeSet[]> {
+    const rows = await query("SELECT pack FROM cms_change_sets");
+    return rows.map((row) => row.pack as ChangeSet);
+  }
+
+  async function upsertPack(pack: ChangeSet): Promise<void> {
+    await query(
+      `INSERT INTO cms_change_sets (id, pack) VALUES ($1, $2::jsonb)
+       ON CONFLICT (id) DO UPDATE SET pack = EXCLUDED.pack`,
+      [pack.id, JSON.stringify(pack)],
+    );
+  }
+
+  async function mutatePacks(fn: (state: ChangeSetState) => void): Promise<ChangeSetState> {
+    const state: ChangeSetState = {
+      session,
+      users: [actor],
+      changeSets: await loadPacks(),
+      assets: [],
+    };
+    fn(state);
+    for (const pack of state.changeSets) await upsertPack(pack);
+    return state;
+  }
+
+  async function rememberMutation(input: Parameters<typeof recordEditorMutation>[1]): Promise<void> {
+    await mutatePacks((state) => recordEditorMutation(state, input));
+  }
+
+  async function releaseLocks(entityType: StatusEntity, entityId: string): Promise<void> {
+    await mutatePacks((state) => cancelOverlappingPacks(state, entityType, entityId, new Date(), session.login));
+  }
+
+  async function requirePack(id: string): Promise<ChangeSet> {
+    const rows = await query("SELECT pack FROM cms_change_sets WHERE id = $1", [id]);
+    const pack = rows[0]?.pack as ChangeSet | undefined;
+    if (pack == null) throw new AdminClientError("publish_blocked");
+    return pack;
   }
 
   return {
@@ -694,24 +859,46 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return items;
     },
     async createTireDirection(input) {
+      requirePermission("create_catalog_structure");
       const slug = slugifyTitle(input.name);
       if (!isValidSlug(slug)) throw new AdminClientError("invalid_slug");
       const rows = await query(
         "INSERT INTO tire_types (name, slug, status) VALUES ($1, $2, 'draft') RETURNING *",
         [input.name.trim(), slug],
       );
-      return present("tire-directions", str(rows[0].id), await mapDirection(rows[0]), "draft");
+      const record = await present("tire-directions", str(rows[0].id), await mapDirection(rows[0]), "draft");
+      await rememberMutation({
+        entityType: "tire-direction",
+        entityId: record.id,
+        entityTitle: input.name.trim(),
+        operation: "create",
+        before: null,
+        after: record.draft,
+      });
+      return record;
     },
     async getTireDirection(id) {
       const row = await requireRow("tire_types", id);
       return present("tire-directions", id, await mapDirection(row), str(row.status));
     },
     async saveTireDirection(id, draft) {
+      requirePermission("edit_catalog");
       if (!isValidSlug(draft.slug)) throw new AdminClientError("invalid_slug");
-      await writeOverlay("tire-directions", id, { ...draft, id });
+      const current = await this.getTireDirection(id);
+      const next = { ...draft, id };
+      await writeOverlay("tire-directions", id, next);
+      await rememberMutation({
+        entityType: "tire-direction",
+        entityId: id,
+        entityTitle: entityTitle(next, id),
+        operation: current.publishedSnapshot == null ? "create" : "update",
+        before: current.savedDraft ?? current.publishedSnapshot,
+        after: next,
+      });
       return this.getTireDirection(id);
     },
     async publishTireDirection(id) {
+      requirePermission("publish");
       const current = await this.getTireDirection(id);
       const draft = assertSaved(current);
       if (tireDirectionPublishBlockers(draft).length > 0) throw new AdminClientError("publish_blocked");
@@ -741,13 +928,16 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         client.release();
       }
       await clearOverlay("tire-directions", id);
+      await releaseLocks("tire-direction", id);
       return this.getTireDirection(id);
     },
     async hideTireDirection(id) {
+      requirePermission("hide");
       await publishStatus("tire_types", id, "archived");
       return this.getTireDirection(id);
     },
     async deleteTireDirection(id) {
+      requirePermission("delete");
       const children = await query("SELECT id FROM tire_models WHERE tire_type_id = $1 LIMIT 1", [Number(id)]);
       if (children.length > 0) throw new AdminClientError("publish_blocked");
       const row = await requireRow("tire_types", id);
@@ -763,6 +953,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         items.push({
           id: record.id,
           name: record.draft.name,
+          directionId: record.draft.directionId,
           directionName: str(direction[0]?.name),
           sizeCount: record.draft.sizes.length,
           status: documentStatus(record),
@@ -777,22 +968,44 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return present("tire-models", id, await mapTireModel(row), str(row.status)) as Promise<TireModelRecord>;
     },
     async createTireModel(input) {
+      requirePermission("create_catalog_items");
       const slug = slugifyTitle(input.name);
       if (!isValidSlug(slug)) throw new AdminClientError("invalid_slug");
       const rows = await query(
         "INSERT INTO tire_models (name, slug, tire_type_id, status) VALUES ($1, $2, $3, 'draft') RETURNING *",
         [input.name.trim(), slug, Number(input.directionId)],
       );
-      return present("tire-models", str(rows[0].id), await mapTireModel(rows[0]), "draft") as Promise<TireModelRecord>;
+      const record = await present("tire-models", str(rows[0].id), await mapTireModel(rows[0]), "draft") as TireModelRecord;
+      await rememberMutation({
+        entityType: "tire-model",
+        entityId: record.id,
+        entityTitle: input.name.trim(),
+        operation: "create",
+        before: null,
+        after: record.draft,
+      });
+      return record;
     },
     async saveTireModel(id, draft) {
-      const current = await requireRow("tire_models", id);
-      if (str(current.status) === "published" && draft.slug !== str(current.slug)) throw new AdminClientError("invalid_slug");
+      requirePermission("edit_catalog");
+      const currentRow = await requireRow("tire_models", id);
+      if (str(currentRow.status) === "published" && draft.slug !== str(currentRow.slug)) throw new AdminClientError("invalid_slug");
       if (!isValidSlug(draft.slug)) throw new AdminClientError("invalid_slug");
-      await writeOverlay("tire-models", id, { ...draft, id });
+      const current = await this.getTireModel(id);
+      const next = { ...draft, id };
+      await writeOverlay("tire-models", id, next);
+      await rememberMutation({
+        entityType: "tire-model",
+        entityId: id,
+        entityTitle: entityTitle(next, id),
+        operation: current.publishedSnapshot == null ? "create" : "update",
+        before: current.savedDraft ?? current.publishedSnapshot,
+        after: next,
+      });
       return this.getTireModel(id);
     },
     async publishTireModel(id) {
+      requirePermission("publish");
       const current = await this.getTireModel(id);
       const draft = assertSaved(current);
       const directions = await query("SELECT id FROM tire_types WHERE id = $1", [Number(draft.directionId)]);
@@ -809,18 +1022,22 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         client.release();
       }
       await clearOverlay("tire-models", id);
+      await releaseLocks("tire-model", id);
       return this.getTireModel(id);
     },
     async hideTireModel(id) {
+      requirePermission("hide");
       await publishStatus("tire_models", id, "archived");
       return this.getTireModel(id);
     },
     async deleteTireModel(id) {
+      requirePermission("delete");
       const row = await requireRow("tire_models", id);
       if (str(row.status) === "published") throw new AdminClientError("publish_blocked");
       await query("DELETE FROM tire_models WHERE id = $1", [Number(id)]);
     },
     async createAsset(file) {
+      requirePermission("edit_catalog");
       const body = bufferFromUpload(file);
       try {
         const stored = await putMedia(getObjectStore(), {
@@ -849,6 +1066,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       }));
     },
     async deleteAsset(id) {
+      requirePermission("delete");
       const used = await query(
         `SELECT id FROM tire_types WHERE tire_types.cover_image_id = $1
          UNION ALL SELECT id FROM tire_models WHERE main_image_id = $1
@@ -881,20 +1099,42 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return present("wheel-types", id, mapWheelType(row), str(row.status));
     },
     async createWheelType(input) {
+      requirePermission("create_catalog_structure");
       const slug = slugifyTitle(input.name);
       if (!isValidSlug(slug)) throw new AdminClientError("invalid_slug");
       const rows = await query("INSERT INTO wheel_types (name, slug, status) VALUES ($1, $2, 'draft') RETURNING *", [
         input.name.trim(),
         slug,
       ]);
-      return present("wheel-types", str(rows[0].id), mapWheelType(rows[0]), "draft");
+      const record = await present("wheel-types", str(rows[0].id), mapWheelType(rows[0]), "draft");
+      await rememberMutation({
+        entityType: "wheel-type",
+        entityId: record.id,
+        entityTitle: input.name.trim(),
+        operation: "create",
+        before: null,
+        after: record.draft,
+      });
+      return record;
     },
     async saveWheelType(id, draft) {
+      requirePermission("edit_catalog");
       if (!isValidSlug(draft.slug)) throw new AdminClientError("invalid_slug");
-      await writeOverlay("wheel-types", id, { ...draft, id });
+      const current = await this.getWheelType(id);
+      const next = { ...draft, id };
+      await writeOverlay("wheel-types", id, next);
+      await rememberMutation({
+        entityType: "wheel-type",
+        entityId: id,
+        entityTitle: entityTitle(next, id),
+        operation: current.publishedSnapshot == null ? "create" : "update",
+        before: current.savedDraft ?? current.publishedSnapshot,
+        after: next,
+      });
       return this.getWheelType(id);
     },
     async publishWheelType(id) {
+      requirePermission("publish");
       const current = await this.getWheelType(id);
       const draft = assertSaved(current);
       if (wheelTypePublishBlockers(draft).length > 0) throw new AdminClientError("publish_blocked");
@@ -903,13 +1143,16 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         [Number(id), draft.name, draft.slug, draft.description, draft.sortOrder, draft.mainImage ? Number(draft.mainImage.assetId) : null],
       );
       await clearOverlay("wheel-types", id);
+      await releaseLocks("wheel-type", id);
       return this.getWheelType(id);
     },
     async hideWheelType(id) {
+      requirePermission("hide");
       await publishStatus("wheel_types", id, "archived");
       return this.getWheelType(id);
     },
     async deleteWheelType(id) {
+      requirePermission("delete");
       const children = await query("SELECT id FROM wheel_models WHERE wheel_type_id = $1 LIMIT 1", [Number(id)]);
       if (children.length > 0) throw new AdminClientError("publish_blocked");
       const row = await requireRow("wheel_types", id);
@@ -935,24 +1178,46 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return items;
     },
     async createWheelModel(input) {
+      requirePermission("create_catalog_items");
       const slug = slugifyTitle(input.name);
       if (!isValidSlug(slug)) throw new AdminClientError("invalid_slug");
       const rows = await query(
         "INSERT INTO wheel_models (name, slug, wheel_type_id, status) VALUES ($1, $2, $3, 'draft') RETURNING *",
         [input.name.trim(), slug, Number(input.wheelTypeId)],
       );
-      return present("wheel-models", str(rows[0].id), await mapWheelModel(rows[0]), "draft");
+      const record = await present("wheel-models", str(rows[0].id), await mapWheelModel(rows[0]), "draft");
+      await rememberMutation({
+        entityType: "wheel-model",
+        entityId: record.id,
+        entityTitle: input.name.trim(),
+        operation: "create",
+        before: null,
+        after: record.draft,
+      });
+      return record;
     },
     async getWheelModel(id) {
       const row = await requireRow("wheel_models", id);
       return present("wheel-models", id, await mapWheelModel(row), str(row.status));
     },
     async saveWheelModel(id, draft) {
+      requirePermission("edit_catalog");
       if (!isValidSlug(draft.slug)) throw new AdminClientError("invalid_slug");
-      await writeOverlay("wheel-models", id, { ...draft, id });
+      const current = await this.getWheelModel(id);
+      const next = { ...draft, id };
+      await writeOverlay("wheel-models", id, next);
+      await rememberMutation({
+        entityType: "wheel-model",
+        entityId: id,
+        entityTitle: entityTitle(next, id),
+        operation: current.publishedSnapshot == null ? "create" : "update",
+        before: current.savedDraft ?? current.publishedSnapshot,
+        after: next,
+      });
       return this.getWheelModel(id);
     },
     async publishWheelModel(id) {
+      requirePermission("publish");
       const current = await this.getWheelModel(id);
       const draft = assertSaved(current);
       const types = await query("SELECT id FROM wheel_types WHERE id = $1", [Number(draft.wheelTypeId)]);
@@ -1015,7 +1280,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
             [Number(id), keptVariantIds],
           );
         }
-        await replaceGallery(client, "wheel_models_rels", Number(id), draft.gallery);
+        await replaceGallery("wheel_models_rels", Number(id), draft.gallery, client);
         await client.query("COMMIT");
       } catch (error) {
         await client.query("ROLLBACK");
@@ -1024,13 +1289,16 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         client.release();
       }
       await clearOverlay("wheel-models", id);
+      await releaseLocks("wheel-model", id);
       return this.getWheelModel(id);
     },
     async hideWheelModel(id) {
+      requirePermission("hide");
       await publishStatus("wheel_models", id, "archived");
       return this.getWheelModel(id);
     },
     async deleteWheelModel(id) {
+      requirePermission("delete");
       const row = await requireRow("wheel_models", id);
       if (str(row.status) === "published") throw new AdminClientError("publish_blocked");
       await query("DELETE FROM wheel_models WHERE id = $1", [Number(id)]);
@@ -1046,20 +1314,42 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return present("shop-categories", id, mapCategory(row), str(row.status));
     },
     async createShopCategory(input) {
+      requirePermission("create_catalog_structure");
       const slug = slugifyTitle(input.name);
       if (!isValidSlug(slug)) throw new AdminClientError("invalid_slug");
       const rows = await query("INSERT INTO shop_categories (name, slug, status) VALUES ($1, $2, 'draft') RETURNING *", [
         input.name.trim(),
         slug,
       ]);
-      return present("shop-categories", str(rows[0].id), mapCategory(rows[0]), "draft");
+      const record = await present("shop-categories", str(rows[0].id), mapCategory(rows[0]), "draft");
+      await rememberMutation({
+        entityType: "shop-category",
+        entityId: record.id,
+        entityTitle: input.name.trim(),
+        operation: "create",
+        before: null,
+        after: record.draft,
+      });
+      return record;
     },
     async saveShopCategory(id, draft) {
+      requirePermission("edit_catalog");
       if (!isValidSlug(draft.slug)) throw new AdminClientError("invalid_slug");
-      await writeOverlay("shop-categories", id, { ...draft, id });
+      const current = await this.getShopCategory(id);
+      const next = { ...draft, id };
+      await writeOverlay("shop-categories", id, next);
+      await rememberMutation({
+        entityType: "shop-category",
+        entityId: id,
+        entityTitle: entityTitle(next, id),
+        operation: current.publishedSnapshot == null ? "create" : "update",
+        before: current.savedDraft ?? current.publishedSnapshot,
+        after: next,
+      });
       return this.getShopCategory(id);
     },
     async publishShopCategory(id) {
+      requirePermission("publish");
       const current = await this.getShopCategory(id);
       const draft = assertSaved(current);
       if (wheelTypePublishBlockers(draft).length > 0) throw new AdminClientError("publish_blocked");
@@ -1068,13 +1358,16 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         [Number(id), draft.name, draft.slug, draft.description, draft.sortOrder, draft.showInMenu, draft.mainImage ? Number(draft.mainImage.assetId) : null],
       );
       await clearOverlay("shop-categories", id);
+      await releaseLocks("shop-category", id);
       return this.getShopCategory(id);
     },
     async hideShopCategory(id) {
+      requirePermission("hide");
       await publishStatus("shop_categories", id, "archived");
       return this.getShopCategory(id);
     },
     async deleteShopCategory(id) {
+      requirePermission("delete");
       const children = await query("SELECT id FROM products WHERE shop_category_id = $1 LIMIT 1", [Number(id)]);
       if (children.length > 0) throw new AdminClientError("publish_blocked");
       const row = await requireRow("shop_categories", id);
@@ -1100,24 +1393,46 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return items;
     },
     async createShopProduct(input) {
+      requirePermission("create_catalog_items");
       const slug = slugifyTitle(input.name);
       if (!isValidSlug(slug)) throw new AdminClientError("invalid_slug");
       const rows = await query(
         "INSERT INTO products (name, slug, shop_category_id, status) VALUES ($1, $2, $3, 'draft') RETURNING *",
         [input.name.trim(), slug, Number(input.categoryId)],
       );
-      return present("shop-products", str(rows[0].id), await mapProduct(rows[0]), "draft");
+      const record = await present("shop-products", str(rows[0].id), await mapProduct(rows[0]), "draft");
+      await rememberMutation({
+        entityType: "shop-product",
+        entityId: record.id,
+        entityTitle: input.name.trim(),
+        operation: "create",
+        before: null,
+        after: record.draft,
+      });
+      return record;
     },
     async getShopProduct(id) {
       const row = await requireRow("products", id);
       return present("shop-products", id, await mapProduct(row), str(row.status));
     },
     async saveShopProduct(id, draft) {
+      requirePermission("edit_catalog");
       if (!isValidSlug(draft.slug)) throw new AdminClientError("invalid_slug");
-      await writeOverlay("shop-products", id, { ...draft, id });
+      const current = await this.getShopProduct(id);
+      const next = { ...draft, id };
+      await writeOverlay("shop-products", id, next);
+      await rememberMutation({
+        entityType: "shop-product",
+        entityId: id,
+        entityTitle: entityTitle(next, id),
+        operation: current.publishedSnapshot == null ? "create" : "update",
+        before: current.savedDraft ?? current.publishedSnapshot,
+        after: next,
+      });
       return this.getShopProduct(id);
     },
     async publishShopProduct(id) {
+      requirePermission("publish");
       const current = await this.getShopProduct(id);
       const draft = assertSaved(current);
       const categories = await query("SELECT id FROM shop_categories WHERE id = $1", [Number(draft.categoryId)]);
@@ -1163,14 +1478,18 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           [Number(id), keptVariantIds],
         );
       }
+      await replaceGallery("products_rels", Number(id), draft.gallery ?? []);
       await clearOverlay("shop-products", id);
+      await releaseLocks("shop-product", id);
       return this.getShopProduct(id);
     },
     async hideShopProduct(id) {
+      requirePermission("hide");
       await publishStatus("products", id, "archived");
       return this.getShopProduct(id);
     },
     async deleteShopProduct(id) {
+      requirePermission("delete");
       const row = await requireRow("products", id);
       if (str(row.status) === "published") throw new AdminClientError("publish_blocked");
       await query("DELETE FROM products WHERE id = $1", [Number(id)]);
@@ -1193,17 +1512,30 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return present("pages", key, await mapPage(row), str(row.status));
     },
     async savePage(key, draft) {
+      requirePermission("edit_site_pages");
+      const current = await this.getPage(key);
       await writeOverlay("pages", key, draft);
+      await rememberMutation({
+        entityType: "page",
+        entityId: key,
+        entityTitle: entityTitle(draft, key),
+        operation: current.publishedSnapshot == null ? "create" : "update",
+        before: current.savedDraft ?? current.publishedSnapshot,
+        after: draft,
+      });
       return this.getPage(key);
     },
     async publishPage(key) {
+      requirePermission("publish");
       const current = await this.getPage(key);
       const draft = assertSaved(current);
       await writePage(draft);
       await clearOverlay("pages", key);
+      await releaseLocks("page", key);
       return this.getPage(key);
     },
     async resetPage(key) {
+      requirePermission("publish");
       await query("UPDATE pages SET status = 'draft', updated_at = now() WHERE key = $1", [key]);
       await clearOverlay("pages", key);
       return this.getPage(key);
@@ -1243,6 +1575,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return present("materials", id, await mapArticle(row, kind), str(row.status));
     },
     async createMaterial(input) {
+      requirePermission("edit_site_pages");
       const slug = slugifyTitle(input.title);
       if (!isValidSlug(slug)) throw new AdminClientError("invalid_slug");
       const table = input.kind === "story" ? "people_stories" : "tire_iq_articles";
@@ -1252,14 +1585,35 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         JSON.stringify(lexical("")),
       ]);
       const id = `${input.kind}-${rows[0].id}`;
-      return present("materials", id, await mapArticle(rows[0], input.kind), "draft");
+      const record = await present("materials", id, await mapArticle(rows[0], input.kind), "draft");
+      await rememberMutation({
+        entityType: "material",
+        entityId: record.id,
+        entityTitle: input.title.trim(),
+        operation: "create",
+        before: null,
+        after: record.draft,
+      });
+      return record;
     },
     async saveMaterial(id, draft) {
+      requirePermission("edit_site_pages");
       if (!isValidSlug(draft.slug)) throw new AdminClientError("invalid_slug");
-      await writeOverlay("materials", id, { ...draft, id });
+      const current = await this.getMaterial(id);
+      const next = { ...draft, id };
+      await writeOverlay("materials", id, next);
+      await rememberMutation({
+        entityType: "material",
+        entityId: id,
+        entityTitle: entityTitle(next, id),
+        operation: current.publishedSnapshot == null ? "create" : "update",
+        before: current.savedDraft ?? current.publishedSnapshot,
+        after: next,
+      });
       return this.getMaterial(id);
     },
     async publishMaterial(id) {
+      requirePermission("publish");
       const current = await this.getMaterial(id);
       const draft = assertSaved(current);
       if (articlePublishBlockers(draft).length > 0) throw new AdminClientError("publish_blocked");
@@ -1270,44 +1624,55 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         [Number(rawId), draft.title, draft.slug, draft.excerpt, JSON.stringify(lexical(draft.body)), draft.image ? Number(draft.image.assetId) : null],
       );
       await clearOverlay("materials", id);
+      await releaseLocks("material", id);
       return this.getMaterial(id);
     },
     async hideMaterial(id) {
+      requirePermission("hide");
       const current = await this.getMaterial(id);
       const table = current.draft.kind === "story" ? "people_stories" : "tire_iq_articles";
       await publishStatus(table, id.split("-").slice(1).join("-"), "archived");
       return this.getMaterial(id);
     },
     async deleteMaterial(id) {
+      requirePermission("delete");
       const current = await this.getMaterial(id);
       if (current.publishedSnapshot != null) throw new AdminClientError("publish_blocked");
       const table = current.draft.kind === "story" ? "people_stories" : "tire_iq_articles";
       await query(`DELETE FROM ${table} WHERE id = $1`, [Number(id.split("-").slice(1).join("-"))]);
     },
     async listUsers() {
-      requireAdmin();
-      const rows = await query("SELECT id, email, name, role, status FROM users ORDER BY email");
+      requirePermission("manage_users");
+      const rows = await query("SELECT id, email, name, role, status, cms_capabilities FROM users ORDER BY email");
       return rows.map(
         (row): AdminUser => ({
           id: str(row.id),
           login: str(row.email || row.name),
           role: str(row.role) === "admin" ? "admin" : "editor",
           disabled: str(row.status) !== "active",
+          capabilities: parseCapabilities(row.cms_capabilities),
         }),
       );
     },
     async createUser(input) {
-      requireAdmin();
+      requirePermission("manage_users");
+      const capabilities = input.role === "admin" ? [] : parseCapabilities(input.capabilities ?? []);
       const rows = await query(
-        `INSERT INTO users (name, email, role, status, hash, created_at, updated_at)
-         VALUES ($1, $1, $2, 'active', $3, now(), now())
-         RETURNING id, email, role, status`,
-        [input.login, storedRole(input.role), hashPassword(input.password)],
+        `INSERT INTO users (name, email, role, status, hash, cms_capabilities, created_at, updated_at)
+         VALUES ($1, $1, $2, 'active', $3, $4::jsonb, now(), now())
+         RETURNING id, email, role, status, cms_capabilities`,
+        [input.login, storedRole(input.role), hashPassword(input.password), JSON.stringify(capabilities)],
       );
-      return { id: str(rows[0].id), login: str(rows[0].email), role: input.role, disabled: false };
+      return {
+        id: str(rows[0].id),
+        login: str(rows[0].email),
+        role: input.role,
+        disabled: false,
+        capabilities,
+      };
     },
     async disableUser(id) {
-      requireAdmin();
+      requirePermission("manage_users");
       const users = await this.listUsers();
       const user = users.find((item) => item.id === id);
       if (user == null) throw new AdminClientError("publish_blocked");
@@ -1318,17 +1683,106 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return { ...user, disabled: true };
     },
     async setUserRole(id, role) {
-      requireAdmin();
+      requirePermission("manage_users");
       const users = await this.listUsers();
       const user = users.find((item) => item.id === id);
       if (user == null) throw new AdminClientError("publish_blocked");
       const admins = users.filter((item) => item.role === "admin" && !item.disabled);
       if (user.role === "admin" && role !== "admin" && admins.length <= 1) throw new AdminClientError("last_admin");
-      await query("UPDATE users SET role = $2, updated_at = now() WHERE id = $1", [
+      const capabilities = role === "admin" ? [] : user.capabilities;
+      await query("UPDATE users SET role = $2, cms_capabilities = $3::jsonb, updated_at = now() WHERE id = $1", [
         Number(id),
         storedRole(role),
+        JSON.stringify(capabilities),
       ]);
-      return { ...user, role };
+      return { ...user, role, capabilities };
+    },
+    async setUserCapabilities(userId, capabilities) {
+      requirePermission("manage_users");
+      const users = await this.listUsers();
+      const user = users.find((item) => item.id === userId);
+      if (user == null) throw new AdminClientError("publish_blocked");
+      const next = user.role === "admin" ? [] : parseCapabilities(capabilities);
+      await query("UPDATE users SET cms_capabilities = $2::jsonb, updated_at = now() WHERE id = $1", [
+        Number(userId),
+        JSON.stringify(next),
+      ]);
+      return { ...user, capabilities: next };
+    },
+    async listChangeSets(filter) {
+      const packs = await loadPacks();
+      let visible = packs;
+      if (session.role !== "admin") {
+        visible = packs.filter((pack) => pack.authorUserId === actor.id);
+      } else {
+        requirePermission("review_queue");
+      }
+      if (filter?.status) visible = visible.filter((pack) => pack.status === filter.status);
+      if (filter?.authorUserId) visible = visible.filter((pack) => pack.authorUserId === filter.authorUserId);
+      return visible.slice().sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+    },
+    async getChangeSet(id) {
+      const pack = await requirePack(id);
+      if (session.role !== "admin" && pack.authorUserId !== actor.id) throw new AdminClientError("forbidden");
+      return pack;
+    },
+    async submitChangeSet(id) {
+      const pack = await requirePack(id);
+      assertCanSubmitChangeSet(pack, actor.id);
+      const next = {
+        ...pack,
+        status: "pending_review" as const,
+        submittedAt: new Date().toISOString(),
+        reviewComment: null,
+      };
+      await upsertPack(next);
+      return next;
+    },
+    async publishChangeSet(id) {
+      requirePermission("review_queue");
+      const pack = await requirePack(id);
+      assertCanPublishChangeSet(pack);
+      const published = {
+        ...pack,
+        status: "published" as const,
+        reviewedAt: new Date().toISOString(),
+        reviewedByLogin: session.login,
+      };
+      await upsertPack(published);
+      for (const entry of pack.entries) {
+        await publishEntry(this, entry.entityType, entry.entityId);
+      }
+      return published;
+    },
+    async returnChangeSet(id, comment) {
+      requirePermission("review_queue");
+      const pack = await requirePack(id);
+      assertCanReturnChangeSet(pack, comment);
+      const next = {
+        ...pack,
+        status: "returned" as const,
+        reviewComment: comment.trim(),
+        reviewedAt: new Date().toISOString(),
+        reviewedByLogin: session.login,
+      };
+      await upsertPack(next);
+      return next;
+    },
+    async cancelChangeSet(id) {
+      requirePermission("review_queue");
+      const pack = await requirePack(id);
+      assertCanCancelChangeSet(pack);
+      for (const entry of pack.entries) {
+        await restoreEntry(this, entry);
+      }
+      const next = {
+        ...pack,
+        status: "cancelled" as const,
+        reviewedAt: new Date().toISOString(),
+        reviewedByLogin: session.login,
+      };
+      await upsertPack(next);
+      return next;
     },
   };
 }

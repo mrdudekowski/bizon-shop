@@ -140,8 +140,8 @@ function isSecureRequest(req: http.IncomingMessage): boolean {
   return req.headers["x-forwarded-proto"] === "https";
 }
 
-function sessionOf(account: AuthenticatedAccount): { login: string; role: AuthenticatedAccount["role"] } {
-  return { login: account.login, role: account.role };
+function sessionOf(account: AuthenticatedAccount) {
+  return { login: account.login, role: account.role, capabilities: account.capabilities };
 }
 
 async function currentAccount(req: http.IncomingMessage): Promise<AuthenticatedAccount | null> {

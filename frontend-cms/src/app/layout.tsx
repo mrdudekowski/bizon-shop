@@ -8,6 +8,10 @@ export const metadata = {
   title: "BIZON",
 };
 
+export const viewport = {
+  viewportFit: "cover" as const,
+};
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ru">

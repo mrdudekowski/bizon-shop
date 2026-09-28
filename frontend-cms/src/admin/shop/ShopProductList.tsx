@@ -10,13 +10,14 @@ import { Icon } from "@/admin/ui/Icon";
 import { CatalogRow } from "@/admin/ui/CatalogRow";
 import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
-import { useAdminRole } from "@/admin/ui/DocumentUI";
+import { useAdminRole, useCanPerform } from "@/admin/ui/DocumentUI";
 
 import styles from "@/admin/ui/catalog.module.css";
 
 export function ShopProductList() {
   const router = useRouter();
   const [role] = useAdminRole();
+  const canCreate = useCanPerform("create_catalog_structure");
   const categoryDialogRef = useRef<HTMLDialogElement>(null);
   const [categories, setCategories] = useState<EntityRecord<ShopCategoryDraft>[]>([]);
   const [productCounts, setProductCounts] = useState<Record<string, number>>({});
@@ -90,7 +91,7 @@ export function ShopProductList() {
           <h1>Shop</h1>
           <p className="subheading">Категории каталога и товары с ценами и вариантами.</p>
         </div>
-        <button className="primary" type="button" onClick={openCategoryDialog}>Добавить категорию</button>
+        {canCreate ? <button className="primary" type="button" onClick={openCategoryDialog}>Добавить категорию</button> : null}
       </div>
 
       {loading ? <AdminLoading label="Загружаем категории…" /> : null}
@@ -101,7 +102,7 @@ export function ShopProductList() {
           <Icon name="shop" size={36} />
           <h2>Категорий пока нет</h2>
           <p>Создайте категорию каталога. Товары добавляются внутри неё, когда будут готовы их характеристики.</p>
-          <button className="primary" type="button" onClick={openCategoryDialog}>Добавить категорию</button>
+          {canCreate ? <button className="primary" type="button" onClick={openCategoryDialog}>Добавить категорию</button> : null}
         </div>
       ) : null}
 

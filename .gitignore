@@ -68,6 +68,9 @@ Desktop.ini
 # Catalog (generated PDF, models, use-cases) — repo root only, not src/components/catalog/
 /catalog/
 
+# Local site assets (images, directions, disks) — not shipped from git
+/assets/
+
 # Project documentation (local only, not in repo)
 docs/
 !docs/implementation/
