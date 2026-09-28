@@ -12,8 +12,13 @@ tsconfig.tsbuildinfo
 
 # Scratch space for one-off scripts, agent notes and tool output. Never shipped,
 # and some of it holds local credentials, so it must stay out of history.
+.cursor/
+.codex/
+cursor/
+codex/
 .codex-temp/
 .superpowers/
+.agents/
 .npm-cache/
 outputs/
 reports/

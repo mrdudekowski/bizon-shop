@@ -81,10 +81,18 @@ docs/
 payload-bizon/
 
 # Local agent / import artifacts (not the product)
+.cursor/
+.codex/
+cursor/
+codex/
 .codex-temp/
 .superpowers/
+.agents/
+.git-worktrees/
+frontend-dev-sasha/
 outputs/
 reports/
+AUDIT.md
 ~$*
 
 # Excel lock files
