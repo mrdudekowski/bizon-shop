@@ -14,5 +14,6 @@ describe("Tire IQ jobs", () => {
       "diagnosis",
     ]);
     expect(TIRE_IQ_JOBS.every((job) => job.href.startsWith("/"))).toBe(true);
+    expect(TIRE_IQ_JOBS.every((job) => !job.href.startsWith("/selection"))).toBe(true);
   });
 });

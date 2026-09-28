@@ -9,10 +9,10 @@ export const HOME_PAGE_DEFAULTS: HomePageContent = {
   hero: {
     eyebrow: "BIZON TIRES · PROFESSIONAL SERIES",
     title: "Грузовые шины под условия работы вашего парка",
-    lead: "Подберём модель по технике, оси, нагрузке и маршруту — затем подтвердим типоразмер, совместимость и наличие.",
+    lead: "Модель выбирается по технике, оси, нагрузке и маршруту — затем подтверждаем типоразмер, совместимость и наличие.",
     imageUrl: PREMIUM_MEDIA.hero,
     imageAlt: "Грузовой автопарк на магистрали",
-    primaryCta: { label: "Начать подбор", href: "/#solutions" },
+    primaryCta: { label: "Открыть каталог", href: "/models" },
     secondaryCta: { label: "Открыть модели и размеры", href: "/models" },
     metricLabel: "01",
     metricText: "От задачи автопарка — к проверяемой рекомендации",
@@ -25,9 +25,9 @@ export const HOME_PAGE_DEFAULTS: HomePageContent = {
     imageAlt: "Грузовой автомобиль на дороге в горном ландшафте",
   },
   directions: {
-    eyebrow: "BIZON TIRES",
-    title: "Выберите условия эксплуатации",
-    lead: "Посмотрите модели по сценарию работы, затем подтвердим типоразмер и наличие под вашу задачу.",
+    eyebrow: "Популярные модели",
+    title: "Ключевые модели шин",
+    lead: "Проверенные решения для любых задач. Максимальный ресурс и стабильная эффективность в реальных условиях эксплуатации.",
   },
   expertise: {
     eyebrow: "Практика и опыт",
@@ -44,9 +44,9 @@ export const HOME_PAGE_DEFAULTS: HomePageContent = {
   },
   resume: {
     eyebrow: "Готовы начать?",
-    title: "Три ответа до предварительной рекомендации",
-    lead: "Подбор не заменяет инженерную проверку — он помогает передать специалисту уже структурированную задачу.",
-    primaryCta: { label: "Подобрать шины", href: "/#solutions" },
+    title: "Готовы обсудить задачу",
+    lead: "Опишите технику и условия — специалист BIZON проверит совместимость и наличие.",
+    primaryCta: { label: "Связаться", href: "/contact" },
     secondaryCta: { label: "Связаться напрямую", href: "/contact" },
   },
 };

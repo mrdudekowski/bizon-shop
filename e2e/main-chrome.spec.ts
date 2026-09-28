@@ -18,9 +18,7 @@ test("main site uses the premium floating chrome", async ({ page }, testInfo) =>
     await expect(catalogLink).toBeVisible();
     await expect(tireIqLink).toBeVisible();
   }
-  await expect(
-    nav.getByRole("link", { name: "Подобрать шины", exact: true }),
-  ).toHaveAttribute("href", "/selection");
+  await expect(nav.getByRole("link", { name: "Решения" })).toHaveCount(0);
   await expect(nav.getByRole("button", { name: "Корзина", exact: true })).toHaveCount(1);
   await expect(page.locator('[aria-controls="burger-menu"]')).toHaveCount(1);
 
@@ -32,12 +30,12 @@ test("main site uses the premium floating chrome", async ({ page }, testInfo) =>
   await expect(page.locator('[data-main-chrome][data-compact="true"]')).toBeVisible();
 });
 
-test("main burger exposes the primary flow and unified cart", async ({ page }) => {
+test("main burger exposes the catalog and unified cart", async ({ page }) => {
   await page.goto("/");
   await page.locator('[aria-controls="burger-menu"]').click();
 
   const dialog = page.getByRole("dialog", { name: "Меню BIZON Tires", exact: true });
-  await expect(dialog.getByRole("link", { name: "Подобрать шины" })).toHaveAttribute("href", "/selection");
+  await expect(dialog.getByRole("link", { name: "Открыть каталог" })).toHaveAttribute("href", "/models");
   await expect(dialog.getByRole("link", { name: /^Корзина/ })).toHaveAttribute("href", "/cart");
 });
 
@@ -46,6 +44,7 @@ test("main footer uses the shared shell with main content", async ({ page }) => 
 
   const footer = page.locator('[data-site-footer="main"]');
   await expect(footer).toHaveCount(1);
-  await expect(footer.getByRole("link", { name: "Подобрать шины" })).toHaveAttribute("href", "/selection");
+  await expect(footer.getByRole("link", { name: "Каталог шин" }).first()).toHaveAttribute("href", "/models");
   await expect(footer.getByRole("link", { name: "BIZON Shop" })).toHaveAttribute("href", "/shop");
+  await expect(footer.getByRole("link", { name: "Подбор" })).toHaveCount(0);
 });

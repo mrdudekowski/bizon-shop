@@ -1,10 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-test("consultation result appears when no published model matches", async ({ page }) => {
-  await page.goto("/selection?vehicle=quarry-special&condition=off-road&axle=unknown&sizeKnown=false&step=result");
-  await expect(page.getByRole("heading", { name: "Нужна инженерная проверка" })).toBeVisible();
-  await expect(page.getByText("Точного совпадения в опубликованном каталоге нет")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Предварительная рекомендация" })).toBeVisible();
+test("legacy selection URL redirects to the catalog", async ({ page }) => {
+  await page.goto("/selection");
+  await expect(page).toHaveURL(/\/models\/?$/);
 });
 
 test("reduced motion disables decorative transitions", async ({ page }) => {

@@ -1,18 +1,13 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 
 import { AssortmentCarousel } from "@/components/main/AssortmentCarousel";
-import type { TireCatalogModel, TireCatalogReadModel } from "@/lib/catalog/tireReadModel";
+import { pickAssortmentModels } from "@/lib/catalog/featuredAssortment";
+import type { TireCatalogReadModel } from "@/lib/catalog/tireReadModel";
 import type { PageShell } from "@/lib/content/pages/types";
+import { PREMIUM_MEDIA } from "@/constants/images";
 
 import styles from "./MainHome.module.css";
-
-const ASSORTMENT_PREVIEW_COUNT = 6;
-
-function assortmentModels(catalog: TireCatalogReadModel): TireCatalogModel[] {
-  const models = catalog.directions.flatMap((direction) => direction.models);
-  const withImage = models.filter((model) => model.imageUrl || model.gallery[0]);
-  return (withImage.length > 0 ? withImage : models).slice(0, ASSORTMENT_PREVIEW_COUNT);
-}
 
 export function TireDirectionShowcase({
   catalog,
@@ -21,7 +16,7 @@ export function TireDirectionShowcase({
   catalog: TireCatalogReadModel;
   content: PageShell;
 }) {
-  const models = assortmentModels(catalog);
+  const models = pickAssortmentModels(catalog);
 
   return (
     <section
@@ -29,21 +24,26 @@ export function TireDirectionShowcase({
       data-home-tone="dark"
       data-main-chrome-tone="dark"
       aria-labelledby="home-assortment-title"
+      style={{ "--assortment-bg": `url("${PREMIUM_MEDIA.inspection}")` } as CSSProperties}
     >
+      <p className={styles.assortmentWatermark} aria-hidden="true">
+        BIZON
+      </p>
       <div className={styles.assortmentContent}>
         <div className={styles.assortmentIntro}>
           <p className={styles.assortmentKicker}>{content.eyebrow}</p>
           <h2 id="home-assortment-title">{content.title}</h2>
           <p>{content.lead}</p>
-        </div>
-
-        <AssortmentCarousel models={models} />
-
-        <div className={styles.assortmentActions}>
-          <Link className="btn-accent" href="/models">
-            Все модели
+          <Link className={`btn-accent ${styles.assortmentCta}`} href="/models">
+            Перейти в каталог <span aria-hidden="true">→</span>
           </Link>
         </div>
+
+        {models.length > 0 ? (
+          <AssortmentCarousel models={models} />
+        ) : (
+          <p className={styles.assortmentEmpty}>Модели появятся после публикации каталога.</p>
+        )}
       </div>
     </section>
   );

@@ -54,8 +54,8 @@ export default async function AboutPage() {
         text: "Предварительный подбор помогает сузить направление. Финальную совместимость и наличие подтверждает специалист BIZON.",
       }}
       cta={{
-        href: ROUTES.selectionEntry,
-        label: "Подобрать шины",
+        href: ROUTES.models,
+        label: "Открыть каталог",
         secondaryHref: ROUTES.contact,
         secondaryLabel: "Связаться напрямую",
       }}

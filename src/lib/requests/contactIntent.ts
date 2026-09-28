@@ -45,11 +45,11 @@ const SUBJECT_MAP: Record<ContactSubject, Omit<ContactIntent, "subject">> = {
   },
   "tire-selection": {
     sourceForm: "tire_selection",
-    title: "Передать подбор специалисту",
-    description: "Параметры подбора уже можно приложить — осталось указать удобный способ связи.",
-    formEyebrow: "Подбор шин",
+    title: "Запросить предложение по шинам",
+    description: "Опишите технику и условия — специалист BIZON проверит модели, совместимость и наличие.",
+    formEyebrow: "Заявка по шинам",
     formHeading: "Оставьте контакт для проверки",
-    summaryLabel: "Подбор шин",
+    summaryLabel: "Заявка по шинам",
   },
   procurement: {
     sourceForm: "procurement",
@@ -72,7 +72,7 @@ const SUBJECT_MAP: Record<ContactSubject, Omit<ContactIntent, "subject">> = {
 const GENERIC_INTENT: ContactIntent = {
   sourceForm: "contact",
   title: "Контакты",
-  description: "Расчёт, подбор шин и консультация для fleet-операторов.",
+  description: "Расчёт, консультация по шинам и вопросы для fleet-операторов.",
   formEyebrow: "Связаться с BIZON",
   formHeading: "Обсудим вашу задачу",
 };
@@ -84,16 +84,10 @@ function asSubject(value: string | null | undefined): ContactSubject | undefined
 }
 
 /** Parse contact intent from URL search params. Unknown subjects fall back to generic contact. */
-export function resolveContactIntent(
-  source: Pick<URLSearchParams, "get">,
-  options: { hasSelectionContext?: boolean } = {},
-): ContactIntent {
+export function resolveContactIntent(source: Pick<URLSearchParams, "get">): ContactIntent {
   const subject = asSubject(source.get("subject"));
   if (subject) {
     return { subject, ...SUBJECT_MAP[subject] };
-  }
-  if (options.hasSelectionContext) {
-    return { subject: "tire-selection", ...SUBJECT_MAP["tire-selection"] };
   }
   return GENERIC_INTENT;
 }

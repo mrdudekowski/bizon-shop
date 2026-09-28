@@ -31,7 +31,6 @@ export function MainChrome({
       }
       navigation={
         <>
-          <Link href="/#solutions">Решения</Link>
           <Link href={ROUTES.models}>Каталог</Link>
           <Link href={ROUTES.tireIq}>Tire IQ</Link>
         </>

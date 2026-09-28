@@ -186,7 +186,7 @@ export function CartPage() {
         </section>
       ) : (
         <>
-          <CartItemsGroup title="Подбор шин" items={tireItems} onRemove={cart.removeItem} onQuantityChange={cart.setQuantity} />
+          <CartItemsGroup title="Шины" items={tireItems} onRemove={cart.removeItem} onQuantityChange={cart.setQuantity} />
           <CartItemsGroup title="Кованые диски" items={wheelItems} onRemove={cart.removeItem} onQuantityChange={cart.setQuantity} />
           <CartItemsGroup title="Товары BIZON Shop" items={shopItems} onRemove={cart.removeItem} onQuantityChange={cart.setQuantity} />
 

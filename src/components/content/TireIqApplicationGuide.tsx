@@ -30,7 +30,7 @@ const GUIDE_GROUPS = [
   {
     title: "Приоритет",
     options: [
-      { label: "Подбор решения", href: "/selection" },
+      { label: "Каталог моделей", href: "/models" },
       { label: "Контроль износа", href: "/tire-iq#knowledge" },
       { label: "Проверка задачи", href: "/contact" },
     ],

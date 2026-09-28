@@ -29,8 +29,8 @@ type FooterConfig = {
 const FOOTER_CONFIG: Record<FooterSurface, FooterConfig> = {
   main: {
     wordmark: "BIZON",
-    description: "Инженерный подбор шин для коммерческого транспорта и тяжёлой техники.",
-    primaryLink: { href: ROUTES.selectionEntry, label: "Подобрать шины" },
+    description: "Шины для коммерческого транспорта и тяжёлой техники.",
+    primaryLink: { href: ROUTES.models, label: "Каталог шин" },
     sections: [
       {
         label: "Компания",
@@ -45,7 +45,6 @@ const FOOTER_CONFIG: Record<FooterSurface, FooterConfig> = {
         label: "Сервисы",
         links: [
           { href: ROUTES.models, label: "Каталог шин" },
-          { href: ROUTES.selectionEntry, label: "Подбор" },
           { href: ROUTES.branding, label: "Брендирование" },
           { href: ROUTES.shop, label: "BIZON Shop" },
         ],

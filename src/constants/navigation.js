@@ -4,8 +4,6 @@
 export const ROUTES = {
   home: "/",
   models: "/models",
-  selection: "/selection",
-  selectionEntry: "/#solutions",
   shop: "/shop",
   tireIq: "/tire-iq",
   peopleStories: "/people-stories",
@@ -31,7 +29,6 @@ export const HEADER_NAV = [
 export const SITEMAP_STATIC_ROUTES = [
   ROUTES.home,
   ROUTES.models,
-  ROUTES.selection,
   ROUTES.shop,
   ROUTES.contact,
   ROUTES.warranty,

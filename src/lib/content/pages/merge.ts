@@ -13,13 +13,25 @@ export function pickText(value: unknown, fallback: string): string {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
+function retireSelectionHref(href: string): string {
+  if (href === "/selection" || href.startsWith("/selection?") || href === "/#solutions" || href.endsWith("#solutions")) {
+    return "/models";
+  }
+  return href;
+}
+
 export function pickCta(
   value: { label?: string | null; href?: string | null } | null | undefined,
   fallback: PageCta,
 ): PageCta {
+  const href = retireSelectionHref(pickText(value?.href, fallback.href));
+  const label = pickText(value?.label, fallback.label);
   return {
-    label: pickText(value?.label, fallback.label),
-    href: pickText(value?.href, fallback.href),
+    label:
+      href === "/models" && (label === "Начать подбор" || label === "Подобрать шины")
+        ? "Открыть каталог"
+        : label,
+    href,
   };
 }
 

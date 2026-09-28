@@ -13,14 +13,23 @@ describe("mergeHomeContent", () => {
     const merged = mergeHomeContent(HOME_PAGE_DEFAULTS, {
       hero: {
         title: "Новый заголовок",
-        primaryCta: { label: "Старт", href: "/#solutions" },
+        primaryCta: { label: "Старт", href: "/models" },
       },
     });
     expect(merged.hero.title).toBe("Новый заголовок");
     expect(merged.hero.primaryCta.label).toBe("Старт");
-    expect(merged.hero.primaryCta.href).toBe("/#solutions");
+    expect(merged.hero.primaryCta.href).toBe("/models");
     expect(merged.hero.imageUrl).toBe(HOME_PAGE_DEFAULTS.hero.imageUrl);
     expect(merged.hero.secondaryCta).toEqual(HOME_PAGE_DEFAULTS.hero.secondaryCta);
+  });
+
+  it("rewrites published selection CTAs to the catalog", () => {
+    const merged = mergeHomeContent(HOME_PAGE_DEFAULTS, {
+      hero: {
+        primaryCta: { label: "Начать подбор", href: "/#solutions" },
+      },
+    });
+    expect(merged.hero.primaryCta).toEqual({ label: "Открыть каталог", href: "/models" });
   });
 
   it("overrides shop campaign imageUrl from CMS", () => {

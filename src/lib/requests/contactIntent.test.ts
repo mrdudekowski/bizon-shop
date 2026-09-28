@@ -27,18 +27,10 @@ describe("resolveContactIntent", () => {
     });
   });
 
-  it("uses tire selection intent when selection context is present", () => {
-    expect(resolveContactIntent(new URLSearchParams(), { hasSelectionContext: true })).toMatchObject({
+  it("maps tire enquiry subject without a wizard context", () => {
+    expect(resolveContactIntent(new URLSearchParams("subject=tire-selection"))).toMatchObject({
       subject: "tire-selection",
       sourceForm: "tire_selection",
     });
-  });
-
-  it("prefers explicit subject over selection flag", () => {
-    expect(
-      resolveContactIntent(new URLSearchParams("subject=branding"), {
-        hasSelectionContext: true,
-      }).sourceForm,
-    ).toBe("branding");
   });
 });

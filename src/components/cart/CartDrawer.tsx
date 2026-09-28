@@ -80,7 +80,7 @@ export function CartDrawer({
         <div className={styles.body}>
           <p className={styles.context}>Единая заявка BIZON</p>
           {items.length === 0 ? (
-            <p className={styles.empty}>Корзина пуста. Добавьте подбор шин, конфигурацию дисков или товар.</p>
+            <p className={styles.empty}>Корзина пуста. Добавьте шины, конфигурацию дисков или товар.</p>
           ) : (
             <ul className={styles.list}>
               {items.map((item) => {

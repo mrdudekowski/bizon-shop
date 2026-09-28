@@ -3,16 +3,16 @@ export type TireIqJob = {
   label: string;
   outcome: string;
   href: string;
-  destination: "selection" | "knowledge" | "contact";
+  destination: "catalog" | "knowledge" | "contact";
 };
 
 export const TIRE_IQ_JOBS: readonly TireIqJob[] = [
   {
     key: "selection",
-    label: "Подобрать",
-    outcome: "Сформулировать задачу для подбора шины.",
-    href: "/selection",
-    destination: "selection",
+    label: "Каталог",
+    outcome: "Посмотреть модели под вашу задачу.",
+    href: "/models",
+    destination: "catalog",
   },
   {
     key: "understanding",

@@ -57,14 +57,14 @@ describe("trackEventWithCounter", () => {
     const ym = vi.fn();
     trackEventWithCounter(42, ANALYTICS_EVENTS.tireIqJobClick, {
       job_key: "selection",
-      destination: "selection",
+      destination: "catalog",
     }, ym);
 
     expect(ym).toHaveBeenCalledWith(
       42,
       "reachGoal",
       "tire_iq_job_click",
-      { job_key: "selection", destination: "selection" },
+      { job_key: "selection", destination: "catalog" },
     );
   });
 });

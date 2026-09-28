@@ -76,7 +76,6 @@ export function ArticleLayout({
           <p>Каталог помогает изучить доступные направления, а специалист проверит решение по вашей технике и условиям эксплуатации.</p>
           <div className={styles.actions}>
             <Link href="/models" className="btn-secondary">Посмотреть каталог</Link>
-            <Link href="/selection" className="btn-secondary">Начать подбор</Link>
             <Link href="/contact?subject=tire-selection" className="btn-accent">Передать задачу специалисту</Link>
           </div>
         </section>

@@ -4,9 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-import { RequestContextSummary } from "@/components/selection/RequestContextSummary";
 import type { ContactIntent } from "@/lib/requests/contactIntent";
-import type { NormalizedSelectionContext } from "@/lib/requests/selectionContext";
 import { submitRequest } from "@/lib/requests/submitRequest";
 import { HONEYPOT_FIELD } from "@/lib/requests/validateRequest";
 
@@ -40,16 +38,14 @@ const EMPTY_VALUES: FormValues = {
 const DEFAULT_INTENT: ContactIntent = {
   sourceForm: "contact",
   title: "Контакты",
-  description: "Расчёт, подбор шин и консультация для fleet-операторов.",
+  description: "Расчёт, консультация по шинам и вопросы для fleet-операторов.",
   formEyebrow: "Связаться с BIZON",
   formHeading: "Обсудим вашу задачу",
 };
 
 export function ContextualContactForm({
-  context,
   intent = DEFAULT_INTENT,
 }: {
-  context?: NormalizedSelectionContext;
   intent?: ContactIntent;
 }) {
   const pathname = usePathname();
@@ -90,7 +86,6 @@ export function ContextualContactForm({
                 ].join("\n"),
               }
             : {}),
-          ...(context ? { selectionContext: context } : {}),
         },
       });
       setRequestId(result.requestId);
@@ -135,11 +130,6 @@ export function ContextualContactForm({
           )}
         </dl>
         <div className={styles.confirmationLinks}>
-          {context?.modelSlugs.map((slug) => (
-            <Link key={slug} href={`/models/tbr/${slug}`}>
-              Модель {slug}
-            </Link>
-          ))}
           <Link href="/models">Вернуться в каталог</Link>
         </div>
       </div>
@@ -148,8 +138,7 @@ export function ContextualContactForm({
 
   return (
     <div className={styles.layout}>
-      {context ? <RequestContextSummary context={context} /> : null}
-      {!context && intent.summaryLabel ? (
+      {intent.summaryLabel ? (
         <aside className={styles.intentSummary} aria-label="Контекст заявки">
           <p className={styles.eyebrow}>Контекст</p>
           <p>

@@ -69,7 +69,7 @@ export function SiteShell({ children, mainMenu, shopMenu }) {
         homeLabel={isShop ? "BIZON SHOP" : "BIZON"}
         featuredItem={isShop
           ? { name: "Выбрать диски", link: "/shop#wheels" }
-          : { name: "Подобрать шины", link: "/#solutions" }}
+          : { name: "Открыть каталог", link: ROUTES.models }}
         cartItem={{
           name: `Корзина${cart.count > 0 ? ` · ${cart.count}` : ""}`,
           link: "/cart",
