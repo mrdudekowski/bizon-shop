@@ -31,16 +31,16 @@
 
 .formHead p {
   color: var(--bizon-mint-700);
-  font-size: 0.7rem;
-  font-weight: 750;
-  letter-spacing: 0.14em;
+  font-size: var(--type-kicker);
+  font-weight: var(--weight-kicker);
+  letter-spacing: var(--tracking-kicker);
   text-transform: uppercase;
 }
 
 .formHead h3 {
-  font-size: clamp(2rem, 4vw, 3.5rem);
-  font-weight: 550;
-  letter-spacing: -0.05em;
+  font-size: var(--type-title);
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-display);
 }
 
 .formHead > span {

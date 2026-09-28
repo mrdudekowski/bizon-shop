@@ -1,5 +1,5 @@
 .page {
-  margin-top: -96px;
+  margin-top: calc(var(--header-height) * -1);
   background: var(--color-surface-muted);
   color: var(--color-foreground);
 }
@@ -28,7 +28,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--color-on-dark-subtle);
   font-size: 0.78rem;
 }
 
@@ -41,8 +41,8 @@
   margin: 0;
   color: var(--bizon-mint-300);
   font-size: 0.75rem;
-  font-weight: 750;
-  letter-spacing: 0.18em;
+  font-weight: var(--weight-kicker);
+  letter-spacing: var(--tracking-kicker);
   text-transform: uppercase;
 }
 
@@ -50,8 +50,8 @@
 .sectionHead h2 {
   margin: 0;
   font-weight: 500;
-  letter-spacing: -0.065em;
-  line-height: 0.92;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
   text-wrap: balance;
 }
 
@@ -63,9 +63,9 @@
 .lead {
   max-width: 680px;
   margin: 0;
-  color: rgba(255, 255, 255, 0.68);
+  color: var(--color-on-dark-muted);
   font-size: clamp(1.05rem, 1.6vw, 1.35rem);
-  line-height: 1.55;
+  line-height: var(--leading-body);
 }
 
 .catalog {
@@ -81,7 +81,7 @@
 }
 
 .sectionHead h2 {
-  font-size: clamp(3rem, 7vw, 7rem);
+  font-size: var(--type-display);
 }
 
 .grid {
@@ -111,7 +111,7 @@
 }
 
 .media img {
-  object-fit: cover;
+  object-fit: var(--media-fit-cover);
   transition: transform var(--transition-media);
 }
 
@@ -131,8 +131,8 @@
 .cardContent > span:first-child {
   color: var(--bizon-mint-300);
   font-size: 0.75rem;
-  font-weight: 750;
-  letter-spacing: 0.16em;
+  font-weight: var(--weight-kicker);
+  letter-spacing: var(--tracking-kicker);
   text-transform: uppercase;
 }
 
@@ -140,8 +140,8 @@
   max-width: 10ch;
   font-size: clamp(2.4rem, 5vw, 5.5rem);
   font-weight: 500;
-  letter-spacing: -0.06em;
-  line-height: 0.94;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
 }
 
 .arrow {
@@ -152,7 +152,7 @@
   width: 48px;
   height: 48px;
   place-items: center;
-  border-radius: 50%;
+  border-radius: var(--radius-circle);
   background: var(--bizon-white);
   color: var(--bizon-black);
 }

@@ -41,9 +41,9 @@
   background: var(--color-surface-muted);
 }
 
-.directionMedia img { object-fit: cover; }
+.directionMedia img { object-fit: var(--media-fit-cover); }
 .directionBody { display: grid; gap: 1rem; padding: clamp(1.5rem, 3vw, 2.5rem); }
-.directionBody h2 { margin: 0; font-size: clamp(2rem, 4vw, 3.75rem); font-weight: 550; letter-spacing: -.045em; }
+.directionBody h2 { margin: 0; font-size: var(--type-title); font-weight: var(--weight-display); letter-spacing: var(--tracking-display); }
 .directionBody p { max-width: 35rem; margin: 0; color: var(--color-muted); line-height: 1.6; }
 .directionLink { width: fit-content; min-height: 44px; display: inline-flex; align-items: center; color: var(--color-link); font-weight: 650; }
 
@@ -65,7 +65,7 @@
   color: var(--color-muted);
   font-size: 0.75rem;
   font-weight: 650;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
 
@@ -81,7 +81,7 @@
   font: inherit;
   font-size: 0.9375rem;
   font-weight: 500;
-  letter-spacing: normal;
+  letter-spacing: var(--tracking-body);
   text-transform: none;
 }
 
@@ -111,7 +111,7 @@
 }
 
 .resultHeader p { margin: 0; }
-.resultHeader p:first-child { font-size: clamp(1.5rem, 3vw, 2.5rem); font-weight: 560; }
+.resultHeader p:first-child { font-size: clamp(1.5rem, 3vw, 2.5rem); font-weight: var(--weight-display); }
 .resultHeader p:last-child { align-self: end; color: var(--color-muted); font-size: 0.875rem; }
 
 .modelGrid {
@@ -143,15 +143,15 @@
   background: var(--color-surface-muted);
 }
 
-.modelMedia img { object-fit: contain; padding: clamp(1.25rem, 3vw, 2.75rem); transition: transform 600ms cubic-bezier(.2,.7,.2,1); }
+.modelMedia img { object-fit: var(--media-fit-contain); padding: clamp(1.25rem, 3vw, 2.75rem); transition: transform 600ms cubic-bezier(.2,.7,.2,1); }
 .modelCard:hover .modelMedia img { transform: scale(1.035); }
 
 .modelBody { display: grid; gap: 1rem; padding: clamp(1.25rem, 2vw, 1.75rem); }
 .modelMeta { display: flex; flex-wrap: wrap; gap: 0.35rem 0.6rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--color-border); }
-.modelMeta span { color: var(--color-muted); font-size: 0.75rem; font-weight: 650; letter-spacing: 0.02em; }
+.modelMeta span { color: var(--color-muted); font-size: 0.75rem; font-weight: 650; letter-spacing: var(--tracking-body); }
 .modelMeta span + span::before { content: "·"; margin-right: 0.6rem; color: var(--color-border-strong); }
-.modelBrand { margin: 0 0 0.25rem; color: var(--color-muted); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; }
-.modelTitle { margin: 0; font-size: clamp(1.75rem, 3vw, 2.4rem); font-weight: 580; letter-spacing: -0.035em; }
+.modelBrand { margin: 0 0 0.25rem; color: var(--color-muted); font-size: 0.75rem; letter-spacing: var(--tracking-label); text-transform: uppercase; }
+.modelTitle { margin: 0; font-size: var(--type-subtitle); font-weight: 580; letter-spacing: var(--tracking-display); }
 .modelDescription { min-height: 3em; margin: 0; color: var(--color-muted); line-height: 1.5; }
 .modelFooter { display: flex; justify-content: space-between; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border); font-size: 0.8125rem; }
 .modelFooter > span { color: var(--color-muted); }
@@ -165,10 +165,10 @@
   border-radius: var(--radius-card);
   background: var(--color-surface-muted);
 }
-.emptyState h2 { max-width: 18ch; margin: 0; font-size: clamp(2rem, 5vw, 4rem); line-height: 1.02; letter-spacing: -0.045em; }
+.emptyState h2 { max-width: 18ch; margin: 0; font-size: var(--type-title); line-height: 1.02; letter-spacing: var(--tracking-display); }
 .emptyState > p:not(.eyebrow) { max-width: 42rem; margin: 0; color: var(--color-muted); line-height: 1.6; }
 .emptyActions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem; }
-.eyebrow { margin: 0; color: var(--color-kicker); font-size: 0.72rem; font-weight: 750; letter-spacing: 0.16em; text-transform: uppercase; }
+.eyebrow { margin: 0; color: var(--color-kicker); font-size: var(--type-kicker); font-weight: var(--weight-kicker); letter-spacing: var(--tracking-kicker); text-transform: uppercase; }
 
 .productStage {
   display: grid;
@@ -193,7 +193,7 @@
   cursor: zoom-in;
 }
 .productMedia:disabled { cursor: default; }
-.productMedia img { object-fit: contain; padding: clamp(2rem, 6vw, 6rem); }
+.productMedia img { object-fit: var(--media-fit-contain); padding: clamp(2rem, 6vw, 6rem); }
 
 .productGallery {
   display: grid;
@@ -232,13 +232,13 @@
   cursor: pointer;
 }
 
-.productThumbs img { object-fit: cover; padding: 0; }
+.productThumbs img { object-fit: var(--media-fit-cover); padding: 0; }
 
 .productThumbActive { border-color: var(--color-border-strong); }
 
 .productPanel { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1.25rem; padding: clamp(1rem, 3vw, 2.5rem) 0; }
-.productPanel h2 { max-width: 11ch; margin: 0; font-size: clamp(2.4rem, 5vw, 4.75rem); font-weight: 540; line-height: 0.98; letter-spacing: -0.055em; }
-.productPanel > p:not(.eyebrow, .disclaimer) { margin: 0; color: var(--color-muted); line-height: 1.65; }
+.productPanel h2 { max-width: 11ch; margin: 0; font-size: var(--type-display); font-weight: var(--weight-display); line-height: var(--leading-display); letter-spacing: var(--tracking-display); }
+.productPanel > p:not(.eyebrow, .disclaimer) { margin: 0; color: var(--color-muted); line-height: var(--leading-body); }
 .productFacts { width: 100%; margin: 0; border-top: 1px solid var(--color-border); }
 .productFacts div { display: grid; grid-template-columns: 7.5rem 1fr; gap: 1rem; padding: 0.9rem 0; border-bottom: 1px solid var(--color-border); }
 .productFacts dt { color: var(--color-muted); font-size: 0.8125rem; }
@@ -258,7 +258,7 @@
   margin: 0;
 }
 
-.documents h2, .finalCta h2 { margin: .75rem 0 0; font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 550; line-height: 1.05; letter-spacing: -.04em; }
+.documents h2, .finalCta h2 { margin: .75rem 0 0; font-size: var(--type-title); font-weight: var(--weight-display); line-height: 1.05; letter-spacing: var(--tracking-display); }
 
 .documents { display: grid; grid-template-columns: .65fr 1.35fr; gap: 2rem; margin-top: var(--section-space); padding-top: clamp(2rem, 5vw, 4rem); border-top: 1px solid var(--color-border); }
 .documents > div { border-top: 1px solid var(--color-border); }

@@ -22,8 +22,8 @@
 
 .empty h2,
 .empty p { margin: 0; }
-.empty h2 { font-size: clamp(2rem, 4vw, 3.5rem); letter-spacing: -0.05em; }
-.empty p { color: var(--color-text-subtle); line-height: 1.55; }
+.empty h2 { font-size: var(--type-title); letter-spacing: var(--tracking-display); }
+.empty p { color: var(--color-text-subtle); line-height: var(--leading-body); }
 
 .back {
   margin: 32px 0 0;

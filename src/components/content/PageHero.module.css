@@ -55,19 +55,19 @@
 .kicker {
   margin: 0;
   color: var(--color-kicker);
-  font-size: 0.72rem;
-  font-weight: 750;
-  letter-spacing: 0.16em;
+  font-size: var(--type-kicker);
+  font-weight: var(--weight-kicker);
+  letter-spacing: var(--tracking-kicker);
   text-transform: uppercase;
 }
 
 .copy h1 {
   max-width: 16ch;
   margin: 0;
-  font-size: clamp(2.5rem, 6vw, 4.75rem);
-  font-weight: 520;
-  line-height: 0.95;
-  letter-spacing: -0.055em;
+  font-size: var(--type-display);
+  font-weight: var(--weight-display);
+  line-height: var(--leading-display);
+  letter-spacing: var(--tracking-display);
   text-wrap: balance;
   overflow-wrap: anywhere;
 }
@@ -76,8 +76,8 @@
   max-width: 40rem;
   margin: 0;
   color: var(--color-muted);
-  font-size: clamp(1rem, 1.5vw, 1.15rem);
-  line-height: 1.65;
+  font-size: var(--type-lead);
+  line-height: var(--leading-body);
 }
 
 .actions {
@@ -99,7 +99,7 @@
 }
 
 .media img {
-  object-fit: cover;
+  object-fit: var(--media-fit-cover);
 }
 
 @media (max-width: 767px) {

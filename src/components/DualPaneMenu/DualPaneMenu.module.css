@@ -68,7 +68,7 @@
   width: 44px;
   height: 44px;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--radius-circle);
   background: color-mix(in srgb, var(--color-foreground) 72%, transparent);
   color: var(--color-surface);
   font-size: 28px;
@@ -91,7 +91,7 @@
   color: var(--color-foreground);
   font-size: 18px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-label);
   text-decoration: none;
 }
 
@@ -103,7 +103,7 @@
   cursor: pointer;
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: var(--radius-circle);
   color: var(--color-foreground);
 }
 
@@ -279,7 +279,7 @@
   text-align: left;
   font: inherit;
   font-size: 1.05rem;
-  font-weight: 550;
+  font-weight: var(--weight-display);
   padding: 14px 12px;
   cursor: pointer;
   transition: background-color var(--transition-fast), color var(--transition-fast);
@@ -324,7 +324,7 @@
 .galleryTitle {
   font-size: 1.25rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-display);
 }
 
 .galleryMedia {
@@ -333,13 +333,13 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: var(--aspect-wide);
   overflow: hidden;
   background: color-mix(in srgb, var(--color-surface) 70%, var(--color-surface-muted));
 }
 
 .galleryImage {
-  object-fit: contain;
+  object-fit: var(--media-fit-contain);
   object-position: center;
 }
 
@@ -353,12 +353,12 @@
   display: inline-flex;
   align-items: center;
   padding: 0.3rem 0.65rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-surface);
   color: var(--color-muted);
-  font-size: 0.7rem;
+  font-size: var(--type-kicker);
   font-weight: 650;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-body);
   text-transform: uppercase;
 }
 

@@ -10,8 +10,8 @@
 .article h2 {
   margin: 0;
   font-size: clamp(1.75rem, 3.5vw, 2.75rem);
-  font-weight: 520;
-  letter-spacing: -0.04em;
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-display);
 }
 
 .article h3 {
@@ -23,7 +23,7 @@
 .article p {
   margin: 0 0 0.75rem;
   color: var(--color-muted);
-  line-height: 1.65;
+  line-height: var(--leading-body);
 }
 
 .article section:last-child p:last-child {

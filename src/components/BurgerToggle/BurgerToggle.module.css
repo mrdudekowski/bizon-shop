@@ -29,7 +29,7 @@
 }
 
 .inverted .bar {
-  background-color: #fff;
+  background-color: var(--color-on-dark);
 }
 
 .barMiddle {
