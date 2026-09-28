@@ -1,12 +1,16 @@
 "use client";
 
-import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { BlockNav, useAdminRole, useAdminSession } from "@/admin/ui/DocumentUI";
+import { DocumentReviewFooter } from "@/admin/ui/DocumentReviewFooter";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
+import { SectionAccessNotice } from "@/admin/ui/SectionAccessNotice";
+import { canEditorPerform } from "@/admin/domain/editorPermissions";
 import Link from "next/link";
 
 import { useEffect, useRef, useState } from "react";
 
 import { AdminClientError } from "@/admin/client/errors";
+import { ERROR_TEXT } from "@/admin/client/errorText";
 import { browserAdminClient } from "@/admin/client/localStore";
 import {
   LEGAL_PAGE_KEYS,
@@ -24,22 +28,6 @@ import { PlacementFields } from "@/admin/media/PlacementFields";
 
 import { PAGE_LABELS } from "./pageLabels";
 import styles from "./PageEditor.module.css";
-
-const ERROR_TEXT: Record<AdminClientError["code"], string> = {
-  slug_taken: "Такой slug уже занят",
-  invalid_slug: "Slug нельзя изменить",
-  publish_blocked: "Публикация закрыта",
-  category_not_published: "Сначала опубликуйте категорию товара",
-  category_has_published_products: "Сначала снимите с публикации товары этой категории",
-  unsaved: "Сначала сохраните черновик",
-  media_in_use: "Файл ещё используется",
-  storage_unavailable: "Хранилище S3 не настроено",
-  cannot_disable_self: "Нельзя отключить себя",
-  last_admin: "Нельзя отключить последнего администратора",
-  invalid_credentials: "Неверный логин или пароль",
-  unauthorized: "Сессия закончилась. Войдите снова",
-  forbidden: "Недостаточно прав для этого действия",
-};
 
 function SectionFields({
   value,
@@ -99,15 +87,6 @@ function CtaFields({
   );
 }
 
-function readPdfFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-
 function moveDocument(documents: DocumentLink[], index: number, delta: number): DocumentLink[] {
   const target = index + delta;
   if (target < 0 || target >= documents.length) return documents;
@@ -130,11 +109,10 @@ function StubFields({
 }) {
   async function onDocumentFile(file: File | undefined) {
     if (file == null) return;
-    const dataUrl = await readPdfFile(file);
     const asset = await browserAdminClient().createAsset({
       name: file.name,
       mimeType: file.type || "application/pdf",
-      dataUrl,
+      body: file,
     });
     onChange({ ...draft, documents: [...draft.documents, { assetId: asset.id, title: file.name }] });
   }
@@ -244,7 +222,12 @@ function HomeFields({
       <SectionFields
         title="Подбор"
         value={draft.selectionEntry}
-        onChange={(selectionEntry) => onChange({ ...draft, selectionEntry })}
+        onChange={(selectionEntry) => onChange({ ...draft, selectionEntry: { ...draft.selectionEntry, ...selectionEntry } })}
+      />
+      <PlacementFields
+        label="Фон секции подбора"
+        value={draft.selectionEntry.image}
+        onChange={(image) => onChange({ ...draft, selectionEntry: { ...draft.selectionEntry, image } })}
       />
       <SectionFields
         title="Направления"
@@ -572,6 +555,7 @@ function ShopHomeFields({
 }
 
 export function PageEditor({ pageKey }: { pageKey: PageKey }) {
+  const session = useAdminSession();
   const [record, setRecord] = useState<EntityRecord<PageDraft> | null>(null);
   const [role, setRole] = useAdminRole();
   const [message, setMessage] = useState("");
@@ -587,7 +571,8 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
     });
   }, [pageKey, setRole]);
 
-  if (record == null) return <main><AdminLoading /></main>;
+  if (session == null || record == null) return <main><AdminLoading /></main>;
+  if (!canEditorPerform(session, "edit_site_pages")) return <SectionAccessNotice title="Страницы" icon="pages" />;
   const draft = record.draft;
   const dirty = JSON.stringify(draft) !== JSON.stringify(record.savedDraft);
 
@@ -649,13 +634,16 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
         <StubFields draft={draft} onChange={setDraft} />
       )}
 
-      <DocumentActions>
-        {message ? <p>{message}</p> : null}
-        {dirty ? <p>Есть несохранённые правки</p> : null}
-        <button type="button" disabled={saving} onClick={() => void onSave()}>
-          {saving ? "Сохраняем…" : "Сохранить"}
-        </button>
-        {role === "admin" ? (
+      <DocumentReviewFooter
+        entityType="page"
+        entityId={pageKey}
+        dirty={dirty}
+        saving={saving}
+        message={message}
+        lastSavedBy={record.lastSavedBy}
+        lastPublishedBy={record.lastPublishedBy}
+        onSave={onSave}
+        adminActions={
           <>
             <button type="button" disabled={dirty || publishing} onClick={() => void onPublish()}>
               {publishing ? "Публикуем…" : "Опубликовать"}
@@ -675,8 +663,8 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
               </div>
             </dialog>
           </>
-        ) : null}
-      </DocumentActions>
+        }
+      />
     </main>
   );
 }

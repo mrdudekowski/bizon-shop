@@ -1,6 +1,7 @@
 "use client";
 
-import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { BlockNav, useAdminRole } from "@/admin/ui/DocumentUI";
+import { DocumentReviewFooter } from "@/admin/ui/DocumentReviewFooter";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 
 import { useEffect, useState } from "react";
@@ -9,6 +10,7 @@ import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
+import { ERROR_TEXT } from "@/admin/client/errorText";
 import { wheelModelPublishBlockers } from "@/admin/domain/publishRules";
 import type {
   EntityRecord,
@@ -16,35 +18,24 @@ import type {
   WheelTypeDraft,
   WheelVariantDraft,
 } from "@/admin/domain/types";
-import { PlacementFields } from "@/admin/media/PlacementFields";
+import { ProductPhotoFields } from "@/admin/media/PlacementFields";
+import type { PublishBlockerHint } from "@/admin/ui/documentTabs";
 
 import styles from "./WheelDocument.module.css";
 
-const ERROR_TEXT: Record<AdminClientError["code"], string> = {
-  slug_taken: "Этот адрес страницы уже занят",
-  invalid_slug: "Нельзя изменить адрес страницы",
-  publish_blocked: "Публикация закрыта",
-  category_not_published: "Сначала опубликуйте категорию товара",
-  category_has_published_products: "Сначала снимите с публикации товары этой категории",
-  unsaved: "Сначала сохраните черновик",
-  media_in_use: "Файл ещё используется",
-  storage_unavailable: "Хранилище S3 не настроено",
-  cannot_disable_self: "Нельзя отключить себя",
-  last_admin: "Нельзя отключить последнего администратора",
-  invalid_credentials: "Неверный логин или пароль",
-  unauthorized: "Сессия закончилась. Войдите снова",
-  forbidden: "Недостаточно прав для этого действия",
+const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
+  name: { text: "Укажите название", tab: "Карточка", field: "Название" },
+  slug: { text: "Укажите адрес страницы", tab: "Карточка", field: "Адрес" },
+  direction: { text: "Не найдена служебная категория дисков" },
+  mainImage: { text: "Добавьте главное фото", tab: "Фото", anchor: "main" },
+  size: { text: "Укажите читаемый размер", tab: "Варианты", field: "Размер" },
+  price: { text: "Укажите цену или «по запросу»", tab: "Варианты", field: "Цена" },
+  duplicateSize: { text: "Размер повторяется", tab: "Варианты" },
 };
 
-const BLOCKER_TEXT: Record<string, string> = {
-  name: "Укажите название",
-  slug: "Укажите адрес страницы",
-  direction: "Не найдена служебная категория дисков",
-  mainImage: "Добавьте главное фото",
-  size: "Укажите читаемый размер",
-  price: "Укажите цену или «по запросу»",
-  duplicateSize: "Размер повторяется",
-};
+const VARIANT_COLUMNS = {
+  "--collection-columns": "minmax(120px,1.4fr) minmax(100px,1fr) 104px 92px 84px 136px",
+} as React.CSSProperties;
 
 function optionalNumber(raw: string): number | undefined {
   if (raw === "") return undefined;
@@ -72,6 +63,7 @@ export function WheelModelEditor({ id }: { id: string }) {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
+  const [expandedVariantId, setExpandedVariantId] = useState<string | null>(null);
 
   useEffect(() => {
     const client = browserAdminClient();
@@ -213,100 +205,130 @@ export function WheelModelEditor({ id }: { id: string }) {
       </section>
       <section className={styles.section}>
         <h2>Варианты</h2>
-        {draft.variants.map((variant, index) => (
-          <div key={variant.id} className={styles.row}>
-            <label className={styles.field}>
-              Размер
-              <input
-                value={variant.sizeLabel}
-                onChange={(event) => patchVariant(index, { sizeLabel: event.target.value })}
-              />
-            </label>
-            <label className={styles.field}>
-              PCD
-              <input value={variant.pcd} onChange={(event) => patchVariant(index, { pcd: event.target.value })} />
-            </label>
-            <label className={styles.field}>
-              Вылет ET
-              <input
-                type="number"
-                value={variant.offsetET ?? ""}
-                onChange={(event) => patchVariant(index, { offsetET: optionalNumber(event.target.value) })}
-              />
-            </label>
-            <label className={styles.field}>
-              Центральное отверстие
-              <input
-                type="number"
-                value={variant.centerBore ?? ""}
-                onChange={(event) => patchVariant(index, { centerBore: optionalNumber(event.target.value) })}
-              />
-            </label>
-            <label className={styles.field}>
-              Цвет
-              <input
-                value={variant.color}
-                onChange={(event) => patchVariant(index, { color: event.target.value })}
-              />
-            </label>
-            <label className={styles.field}>
-              Цена
-              <input
-                type="number"
-                value={variant.price ?? ""}
-                onChange={(event) => patchVariant(index, { price: optionalNumber(event.target.value) })}
-              />
-            </label>
-            <label className={styles.check}>
-              <input
-                type="checkbox"
-                checked={variant.priceOnRequest}
-                onChange={(event) => patchVariant(index, { priceOnRequest: event.target.checked })}
-              />
-              по запросу
-            </label>
-            <label className={styles.check}>
-              <input
-                type="checkbox"
-                checked={variant.available}
-                onChange={(event) => patchVariant(index, { available: event.target.checked })}
-              />
-              в наличии
-            </label>
-            <div className={styles.rowActions}>
-              <button
-                type="button"
-                onClick={() => patch({ variants: draft.variants.filter((item) => item.id !== variant.id) })}
-              >
-                Убрать
-              </button>
+        <div className="collection" style={VARIANT_COLUMNS}>
+          {draft.variants.length > 0 ? (
+            <div className="collectionHead" aria-hidden="true">
+              <span>Размер</span>
+              <span>Цвет</span>
+              <span>Цена</span>
+              <span>По запросу</span>
+              <span>В наличии</span>
+              <span />
             </div>
-          </div>
-        ))}
-        <button type="button" onClick={() => patch({ variants: [...draft.variants, emptyVariant()] })}>
-          Добавить вариант
-        </button>
+          ) : null}
+          {draft.variants.map((variant, index) => (
+            <fieldset key={variant.id} className="collectionRow">
+              <legend className="visuallyHidden">Вариант {index + 1}</legend>
+              <label>
+                <span className="collectionFieldName">Размер</span>
+                <input
+                  value={variant.sizeLabel}
+                  onChange={(event) => patchVariant(index, { sizeLabel: event.target.value })}
+                />
+              </label>
+              <label>
+                <span className="collectionFieldName">Цвет</span>
+                <input
+                  value={variant.color}
+                  onChange={(event) => patchVariant(index, { color: event.target.value })}
+                />
+              </label>
+              <label>
+                <span className="collectionFieldName">Цена</span>
+                <input
+                  type="number"
+                  value={variant.price ?? ""}
+                  onChange={(event) => patchVariant(index, { price: optionalNumber(event.target.value) })}
+                />
+              </label>
+              <label className="collectionCheck">
+                <input
+                  type="checkbox"
+                  checked={variant.priceOnRequest}
+                  onChange={(event) => patchVariant(index, { priceOnRequest: event.target.checked })}
+                />
+                <span className="collectionFieldName">Цена по запросу</span>
+              </label>
+              <label className="collectionCheck">
+                <input
+                  type="checkbox"
+                  checked={variant.available}
+                  onChange={(event) => patchVariant(index, { available: event.target.checked })}
+                />
+                <span className="collectionFieldName">В наличии</span>
+              </label>
+              <div className="collectionRowActions">
+                <button
+                  type="button"
+                  className="collectionToggle"
+                  aria-expanded={expandedVariantId === variant.id}
+                  aria-controls={`variant-details-${variant.id}`}
+                  title="Посадочные размеры"
+                  onClick={() => setExpandedVariantId(expandedVariantId === variant.id ? null : variant.id)}
+                >
+                  {expandedVariantId === variant.id ? "Свернуть" : "Ещё"}
+                </button>
+                <button
+                  type="button"
+                  className="collectionRemove"
+                  aria-label={`Убрать вариант ${index + 1}`}
+                  title="Убрать вариант"
+                  onClick={() => patch({ variants: draft.variants.filter((item) => item.id !== variant.id) })}
+                >
+                  ✕
+                </button>
+              </div>
+              {expandedVariantId === variant.id ? (
+                <div id={`variant-details-${variant.id}`} className="collectionExtraGrid">
+                  <label>
+                    PCD
+                    <input value={variant.pcd} onChange={(event) => patchVariant(index, { pcd: event.target.value })} />
+                  </label>
+                  <label>
+                    Вылет ET
+                    <input
+                      type="number"
+                      value={variant.offsetET ?? ""}
+                      onChange={(event) => patchVariant(index, { offsetET: optionalNumber(event.target.value) })}
+                    />
+                  </label>
+                  <label>
+                    Центральное отверстие
+                    <input
+                      type="number"
+                      value={variant.centerBore ?? ""}
+                      onChange={(event) => patchVariant(index, { centerBore: optionalNumber(event.target.value) })}
+                    />
+                  </label>
+                </div>
+              ) : null}
+            </fieldset>
+          ))}
+          <button type="button" className="collectionAdd" onClick={() => patch({ variants: [...draft.variants, emptyVariant()] })}>
+            Добавить вариант
+          </button>
+        </div>
       </section>
       <section className={styles.section}>
         <h2>Фото</h2>
-        <PlacementFields
-          label="Главное фото"
-          value={draft.mainImage}
-          onChange={(mainImage) => patch({ mainImage })}
+        <ProductPhotoFields
+          cover={draft.mainImage}
+          gallery={draft.gallery}
+          onCoverChange={(mainImage) => patch({ mainImage })}
+          onGalleryChange={(gallery) => patch({ gallery })}
         />
         </section>
-      <DocumentActions>
-        <p>Сохранил: {record.lastSavedBy ?? "—"}</p>
-        <p>Опубликовал: {record.lastPublishedBy ?? "—"}</p>
-        {message ? <p>{message}</p> : null}
-        {savedBlockers.map((code) => (
-          <p key={code}>{BLOCKER_TEXT[code] ?? code}</p>
-        ))}
-        {dirty ? <p>Есть несохранённые правки</p> : null}
-        <button type="button" disabled={saving} onClick={() => void onSave()}>
-          {saving ? "Сохраняем…" : "Сохранить"}
-        </button>
-        {role === "admin" ? (
+      <DocumentReviewFooter
+        entityType="wheel-model"
+        entityId={id}
+        dirty={dirty}
+        saving={saving}
+        message={message}
+        blockers={savedBlockers.map((code) => BLOCKER_TEXT[code] ?? { text: code })}
+        lastSavedBy={record.lastSavedBy}
+        lastPublishedBy={record.lastPublishedBy}
+        onSave={onSave}
+        adminActions={
           <>
             <button
               type="button"
@@ -328,8 +350,8 @@ export function WheelModelEditor({ id }: { id: string }) {
               </button>
             )}
           </>
-        ) : null}
-      </DocumentActions>
+        }
+      />
     </main>
   );
 }

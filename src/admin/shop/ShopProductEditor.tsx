@@ -1,6 +1,7 @@
 "use client";
 
-import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { BlockNav, useAdminRole } from "@/admin/ui/DocumentUI";
+import { DocumentReviewFooter } from "@/admin/ui/DocumentReviewFooter";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 
 import { useEffect, useRef, useState } from "react";
@@ -9,6 +10,7 @@ import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
+import { ERROR_TEXT } from "@/admin/client/errorText";
 import { shopProductPublishBlockers } from "@/admin/domain/publishRules";
 import type {
   EntityRecord,
@@ -17,37 +19,26 @@ import type {
   ShopSubcategoryDraft,
   ShopVariantDraft,
 } from "@/admin/domain/types";
-import { PlacementFields } from "@/admin/media/PlacementFields";
+import { ProductPhotoFields } from "@/admin/media/PlacementFields";
 import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
+import type { PublishBlockerHint } from "@/admin/ui/documentTabs";
 import { slugifyTitle } from "@/admin/domain/slug";
 
 import styles from "./ShopDocument.module.css";
 
-const ERROR_TEXT: Record<AdminClientError["code"], string> = {
-  slug_taken: "Этот адрес страницы уже занят",
-  invalid_slug: "Нельзя изменить адрес страницы",
-  publish_blocked: "Публикация закрыта",
-  category_not_published: "Сначала опубликуйте категорию товара",
-  category_has_published_products: "Сначала снимите с публикации товары категории",
-  unsaved: "Сначала сохраните черновик",
-  media_in_use: "Файл ещё используется",
-  storage_unavailable: "Хранилище S3 не настроено",
-  cannot_disable_self: "Нельзя отключить себя",
-  last_admin: "Нельзя отключить последнего администратора",
-  invalid_credentials: "Неверный логин или пароль",
-  unauthorized: "Сессия закончилась. Войдите снова",
-  forbidden: "Недостаточно прав для этого действия",
+const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
+  name: { text: "Укажите название", tab: "Карточка", field: "Название" },
+  slug: { text: "Укажите адрес страницы", tab: "Карточка", field: "Адрес" },
+  direction: { text: "Выберите категорию", tab: "Карточка", field: "Категория" },
+  mainImage: { text: "Добавьте главное фото", tab: "Фото", anchor: "main" },
+  size: { text: "Укажите размер варианта", tab: "Варианты", field: "Размер" },
+  price: { text: "Укажите цену или «по запросу»", tab: "Карточка", field: "Цена" },
+  duplicateSize: { text: "Размер повторяется", tab: "Варианты" },
 };
 
-const BLOCKER_TEXT: Record<string, string> = {
-  name: "Укажите название",
-  slug: "Укажите адрес страницы",
-  direction: "Выберите категорию",
-  mainImage: "Добавьте главное фото",
-  size: "Укажите размер варианта",
-  price: "Укажите цену или «по запросу»",
-  duplicateSize: "Размер повторяется",
-};
+const VARIANT_COLUMNS = {
+  "--collection-columns": "minmax(110px,1.2fr) minmax(100px,1fr) minmax(110px,1fr) 104px 92px 84px 84px",
+} as React.CSSProperties;
 
 function optionalNumber(raw: string): number | undefined {
   if (raw === "") return undefined;
@@ -316,91 +307,110 @@ export function ShopProductEditor({ id }: { id: string }) {
       </section>
       <section className={styles.section}>
         <h2>Варианты</h2>
-        {draft.variants.map((variant, index) => (
-          <div key={variant.id} className={styles.row}>
-            <label className={styles.field}>
-              Цвет
-              <input
-                value={variant.color}
-                onChange={(event) => patchVariant(index, { color: event.target.value })}
-              />
-            </label>
-            <label className={styles.field}>
-              Размер
-              <input
-                value={variant.size}
-                onChange={(event) => patchVariant(index, { size: event.target.value })}
-              />
-            </label>
-            <label className={styles.field}>
-              SKU
-              <input value={variant.sku} onChange={(event) => patchVariant(index, { sku: event.target.value })} />
-            </label>
-            {!variant.sku.trim() ? <span>SKU не заполнен</span> : null}
-            <label className={styles.field}>
-              Цена
-              <input
-                type="number"
-                value={variant.price ?? ""}
-                onChange={(event) => patchVariant(index, { price: optionalNumber(event.target.value) })}
-              />
-            </label>
-            <label className={styles.check}>
-              <input
-                type="checkbox"
-                checked={variant.priceOnRequest}
-                onChange={(event) => patchVariant(index, { priceOnRequest: event.target.checked })}
-              />
-              по запросу
-            </label>
-            <label className={styles.check}>
-              <input
-                type="checkbox"
-                checked={variant.available}
-                onChange={(event) => patchVariant(index, { available: event.target.checked })}
-              />
-              в наличии
-            </label>
-            <div className={styles.rowActions}>
-              <button
-                type="button"
-                onClick={() => patch({ variants: draft.variants.filter((item) => item.id !== variant.id) })}
-              >
-                Убрать
-              </button>
+        <div className="collection" style={VARIANT_COLUMNS}>
+          {draft.variants.length > 0 ? (
+            <div className="collectionHead" aria-hidden="true">
+              <span>Размер</span>
+              <span>Цвет</span>
+              <span>SKU</span>
+              <span>Цена</span>
+              <span>По запросу</span>
+              <span>В наличии</span>
+              <span />
             </div>
-          </div>
-        ))}
-        <button type="button" onClick={() => patch({ variants: [...draft.variants, emptyVariant()] })}>
-          Добавить вариант
-        </button>
+          ) : null}
+          {draft.variants.map((variant, index) => (
+            <fieldset key={variant.id} className="collectionRow">
+              <legend className="visuallyHidden">Вариант {index + 1}</legend>
+              <label>
+                <span className="collectionFieldName">Размер</span>
+                <input
+                  value={variant.size}
+                  onChange={(event) => patchVariant(index, { size: event.target.value })}
+                />
+              </label>
+              <label>
+                <span className="collectionFieldName">Цвет</span>
+                <input
+                  value={variant.color}
+                  onChange={(event) => patchVariant(index, { color: event.target.value })}
+                />
+              </label>
+              <label>
+                <span className="collectionFieldName">SKU</span>
+                <input value={variant.sku} onChange={(event) => patchVariant(index, { sku: event.target.value })} />
+                {!variant.sku.trim() ? <span className="fieldHint">Заполните для публикации</span> : null}
+              </label>
+              <label>
+                <span className="collectionFieldName">Цена</span>
+                <input
+                  type="number"
+                  value={variant.price ?? ""}
+                  onChange={(event) => patchVariant(index, { price: optionalNumber(event.target.value) })}
+                />
+              </label>
+              <label className="collectionCheck">
+                <input
+                  type="checkbox"
+                  checked={variant.priceOnRequest}
+                  onChange={(event) => patchVariant(index, { priceOnRequest: event.target.checked })}
+                />
+                <span className="collectionFieldName">Цена по запросу</span>
+              </label>
+              <label className="collectionCheck">
+                <input
+                  type="checkbox"
+                  checked={variant.available}
+                  onChange={(event) => patchVariant(index, { available: event.target.checked })}
+                />
+                <span className="collectionFieldName">В наличии</span>
+              </label>
+              <div className="collectionRowActions">
+                <button
+                  type="button"
+                  className="collectionRemove"
+                  aria-label={`Убрать вариант ${index + 1}`}
+                  title="Убрать вариант"
+                  onClick={() => patch({ variants: draft.variants.filter((item) => item.id !== variant.id) })}
+                >
+                  ✕
+                </button>
+              </div>
+            </fieldset>
+          ))}
+          <button type="button" className="collectionAdd" onClick={() => patch({ variants: [...draft.variants, emptyVariant()] })}>
+            Добавить вариант
+          </button>
+        </div>
       </section>
       <section className={styles.section}>
         <h2>Фото</h2>
-        <PlacementFields
-          label="Главное фото"
-          value={draft.mainImage}
-          onChange={(mainImage) => patch({ mainImage })}
+        <ProductPhotoFields
+          cover={draft.mainImage}
+          gallery={draft.gallery}
+          onCoverChange={(mainImage) => patch({ mainImage })}
+          onGalleryChange={(gallery) => patch({ gallery })}
         />
         </section>
-      <DocumentActions>
-        <p>Сохранил: {record.lastSavedBy ?? "—"}</p>
-        <p>Опубликовал: {record.lastPublishedBy ?? "—"}</p>
-        {message ? <p>{message}</p> : null}
-        {savedBlockers.map((code) => (
-          <p key={code}>{BLOCKER_TEXT[code] ?? code}</p>
-        ))}
-        {parentPublicationBlocked ? (
-          <p role="status">
-            Категория «{selectedCategory?.draft.name ?? "товара"}» не опубликована. Сначала опубликуйте ее в{" "}
-            <Link href={`/shop/categories/${encodeURIComponent(product.categoryId)}`}>настройках категории</Link>.
-          </p>
-        ) : null}
-        {dirty ? <p>Есть несохранённые правки</p> : null}
-        <button type="button" disabled={saving} onClick={() => void onSave()}>
-          {saving ? "Сохраняем…" : "Сохранить"}
-        </button>
-        {role === "admin" ? (
+      <DocumentReviewFooter
+        entityType="shop-product"
+        entityId={id}
+        dirty={dirty}
+        saving={saving}
+        message={message}
+        blockers={savedBlockers.map((code) => BLOCKER_TEXT[code] ?? { text: code })}
+        extraFeedback={
+          parentPublicationBlocked ? (
+            <p role="status">
+              Категория «{selectedCategory?.draft.name ?? "товара"}» не опубликована. Сначала опубликуйте ее в{" "}
+              <Link href={`/shop/categories/${encodeURIComponent(product.categoryId)}`}>настройках категории</Link>.
+            </p>
+          ) : null
+        }
+        lastSavedBy={record.lastSavedBy}
+        lastPublishedBy={record.lastPublishedBy}
+        onSave={onSave}
+        adminActions={
           <>
             <button
               type="button"
@@ -422,8 +432,8 @@ export function ShopProductEditor({ id }: { id: string }) {
               </button>
             )}
           </>
-        ) : null}
-      </DocumentActions>
+        }
+      />
       <CatalogCreateDialog
         dialogRef={subcategoryDialogRef}
         title={editingSubcategoryId ? "Переименовать подкатегорию" : "Новая подкатегория"}

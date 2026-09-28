@@ -1,43 +1,33 @@
 "use client";
 
-import { DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { useAdminRole, useAdminSession } from "@/admin/ui/DocumentUI";
+import { DocumentReviewFooter } from "@/admin/ui/DocumentReviewFooter";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
+import { SectionAccessNotice } from "@/admin/ui/SectionAccessNotice";
+import { canEditorPerform } from "@/admin/domain/editorPermissions";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { AdminClientError } from "@/admin/client/errors";
+import { ERROR_TEXT } from "@/admin/client/errorText";
 import { browserAdminClient } from "@/admin/client/localStore";
 import { articlePublishBlockers } from "@/admin/domain/publishRules";
 import type { ArticleDraft, EntityRecord } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
+import type { PublishBlockerHint } from "@/admin/ui/documentTabs";
 
 import styles from "./MaterialEditor.module.css";
 
-const ERROR_TEXT: Record<AdminClientError["code"], string> = {
-  slug_taken: "Этот адрес страницы уже занят",
-  invalid_slug: "Нельзя изменить адрес страницы",
-  publish_blocked: "Публикация закрыта",
-  category_not_published: "Сначала опубликуйте категорию товара",
-  category_has_published_products: "Сначала снимите с публикации товары этой категории",
-  unsaved: "Сначала сохраните черновик",
-  media_in_use: "Файл ещё используется",
-  storage_unavailable: "Хранилище S3 не настроено",
-  cannot_disable_self: "Нельзя отключить себя",
-  last_admin: "Нельзя отключить последнего администратора",
-  invalid_credentials: "Неверный логин или пароль",
-  unauthorized: "Сессия закончилась. Войдите снова",
-  forbidden: "Недостаточно прав для этого действия",
-};
-
-const BLOCKER_TEXT: Record<string, string> = {
-  title: "Укажите название",
-  slug: "Укажите адрес страницы",
-  body: "Добавьте текст",
+const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
+  title: { text: "Укажите название", tab: "Карточка", field: "Название" },
+  slug: { text: "Укажите адрес страницы", tab: "Карточка", field: "Адрес" },
+  body: { text: "Добавьте текст", tab: "Карточка", field: "Текст" },
 };
 
 export function MaterialEditor({ id }: { id: string }) {
+  const session = useAdminSession();
   const router = useRouter();
   const [record, setRecord] = useState<EntityRecord<ArticleDraft> | null>(null);
   const [role, setRole] = useAdminRole();
@@ -53,7 +43,8 @@ export function MaterialEditor({ id }: { id: string }) {
     });
   }, [id, setRole]);
 
-  if (record == null) return <main><AdminLoading /></main>;
+  if (session == null || record == null) return <main><AdminLoading /></main>;
+  if (!canEditorPerform(session, "edit_site_pages")) return <SectionAccessNotice title="Материалы" icon="materials" />;
   const draft = record.draft;
   const dirty = JSON.stringify(draft) !== JSON.stringify(record.savedDraft);
   const blockers = articlePublishBlockers(draft);
@@ -139,16 +130,20 @@ export function MaterialEditor({ id }: { id: string }) {
           onChange={(image) => patch({ image })}
         />
       </section>
-      <DocumentActions>
-        {message ? <p>{message}</p> : null}
-        {savedBlockers.map((code) => (
-          <p key={code}>{BLOCKER_TEXT[code] ?? code}</p>
-        ))}
-        {dirty ? <p>Есть несохранённые правки</p> : null}
-        <button type="button" disabled={saving} onClick={() => void onSave()}>
-          {saving ? "Сохраняем…" : "Сохранить"}
-        </button>
-        {role === "admin" ? (
+      <DocumentReviewFooter
+        entityType="material"
+        entityId={id}
+        dirty={dirty}
+        saving={saving}
+        message={message}
+        blockers={[
+          ...savedBlockers.map((code) => BLOCKER_TEXT[code] ?? { text: code }),
+          ...(blockers.length > 0 && record.savedDraft == null ? [{ text: "Сначала сохраните черновик" }] : []),
+        ]}
+        lastSavedBy={record.lastSavedBy}
+        lastPublishedBy={record.lastPublishedBy}
+        onSave={onSave}
+        adminActions={
           <>
             <button
               type="button"
@@ -170,9 +165,8 @@ export function MaterialEditor({ id }: { id: string }) {
               </button>
             )}
           </>
-        ) : null}
-        {blockers.length > 0 && record.savedDraft == null ? <p>Сначала сохраните черновик</p> : null}
-      </DocumentActions>
+        }
+      />
     </main>
   );
 }

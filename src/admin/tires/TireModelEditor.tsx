@@ -1,6 +1,7 @@
 "use client";
 
-import { BlockNav, DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { BlockNav, useAdminRole } from "@/admin/ui/DocumentUI";
+import { DocumentReviewFooter } from "@/admin/ui/DocumentReviewFooter";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 
 import { useEffect, useState } from "react";
@@ -9,6 +10,7 @@ import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
+import { ERROR_TEXT } from "@/admin/client/errorText";
 import {
   AXLE_OPTIONS,
   OPERATING_CONDITION_OPTIONS,
@@ -25,32 +27,17 @@ import type {
   TireModelRecord,
   TireSizeDraft,
 } from "@/admin/domain/types";
-import { PlacementFields } from "@/admin/media/PlacementFields";
+import { ProductPhotoFields } from "@/admin/media/PlacementFields";
+import type { PublishBlockerHint } from "@/admin/ui/documentTabs";
 
-const ERROR_TEXT: Record<AdminClientError["code"], string> = {
-  slug_taken: "Этот адрес страницы уже занят",
-  invalid_slug: "Нельзя изменить адрес страницы",
-  publish_blocked: "Публикация закрыта",
-  category_not_published: "Сначала опубликуйте категорию товара",
-  category_has_published_products: "Сначала снимите с публикации товары этой категории",
-  unsaved: "Сначала сохраните черновик",
-  media_in_use: "Файл ещё используется",
-  storage_unavailable: "Хранилище S3 не настроено",
-  cannot_disable_self: "Нельзя отключить себя",
-  last_admin: "Нельзя отключить последнего администратора",
-  invalid_credentials: "Неверный логин или пароль",
-  unauthorized: "Сессия закончилась. Войдите снова",
-  forbidden: "Недостаточно прав для этого действия",
-};
-
-const BLOCKER_TEXT: Record<string, string> = {
-  name: "Укажите название",
-  slug: "Укажите адрес страницы",
-  direction: "Выберите направление",
-  mainImage: "Добавьте главное фото",
-  size: "Укажите читаемый размер",
-  price: "Укажите цену или «по запросу»",
-  duplicateSize: "Размер повторяется",
+const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
+  name: { text: "Укажите название", tab: "Карточка", field: "Название" },
+  slug: { text: "Укажите адрес страницы", tab: "Карточка", field: "Адрес" },
+  direction: { text: "Выберите направление", tab: "Карточка", field: "Направление" },
+  mainImage: { text: "Добавьте главное фото", tab: "Фото", anchor: "main" },
+  size: { text: "Укажите читаемый размер", tab: "Размеры", field: "Типоразмер" },
+  price: { text: "Укажите цену или «по запросу»", tab: "Размеры", field: "Цена" },
+  duplicateSize: { text: "Размер повторяется", tab: "Размеры" },
 };
 
 const SIZE_NUMBER_FIELDS: { key: keyof TireSizeDraft; label: string }[] = [
@@ -157,6 +144,7 @@ export function TireModelEditor({ id }: { id: string }) {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
+  const [expandedSizeId, setExpandedSizeId] = useState<string | null>(null);
 
   useEffect(() => {
     const client = browserAdminClient();
@@ -359,86 +347,121 @@ export function TireModelEditor({ id }: { id: string }) {
       </section>
       <section>
         <h2>Размеры</h2>
-        {draft.sizes.map((size, index) => (
-          <fieldset key={size.id} className="tireSize">
-            <legend>Размер {index + 1}</legend>
-            <label>
-              Типоразмер
-              <input
-                aria-label="Размер"
-                value={size.size}
-                onChange={(event) => patchSize(index, { size: event.target.value })}
-              />
-            </label>
-            <label>
-              Цена
-              <input
-                aria-label="Цена"
-                value={size.price ?? ""}
-                onChange={(event) => patchSize(index, { price: optionalNumber(event.target.value) })}
-              />
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={size.priceOnRequest}
-                onChange={(event) => patchSize(index, { priceOnRequest: event.target.checked })}
-              />
-              Цена по запросу
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={size.available}
-                onChange={(event) => patchSize(index, { available: event.target.checked })}
-              />
-              В наличии
-            </label>
-            <label>
-              Артикул (SKU)
-              <input
-                aria-label="SKU"
-                value={size.sku ?? ""}
-                onChange={(event) => patchSize(index, { sku: event.target.value })}
-              />
-              {!(size.sku ?? "").trim() ? <span className="fieldHint">Для публикации заполните артикул.</span> : null}
-            </label>
-            {SIZE_TEXT_FIELDS.map((field) => (
-              <label key={field.key}>
-                {field.label}
+        <div className="collection">
+          {draft.sizes.length > 0 ? (
+            <div className="collectionHead" aria-hidden="true">
+              <span>Типоразмер</span>
+              <span>Цена</span>
+              <span>По запросу</span>
+              <span>В наличии</span>
+              <span>Артикул (SKU)</span>
+              <span />
+            </div>
+          ) : null}
+          {draft.sizes.map((size, index) => (
+            <fieldset key={size.id} className="collectionRow">
+              <legend className="visuallyHidden">Размер {index + 1}</legend>
+              <label>
+                <span className="collectionFieldName">Типоразмер</span>
                 <input
-                  value={(size[field.key] as string | undefined) ?? ""}
-                  onChange={(event) => patchSize(index, { [field.key]: event.target.value } as Partial<TireSizeDraft>)}
+                  aria-label="Размер"
+                  value={size.size}
+                  onChange={(event) => patchSize(index, { size: event.target.value })}
                 />
               </label>
-            ))}
-            {SIZE_NUMBER_FIELDS.map((field) => (
-              <label key={field.key}>
-                {field.label}
+              <label>
+                <span className="collectionFieldName">Цена</span>
                 <input
-                  type="number"
-                  value={(size[field.key] as number | undefined) ?? ""}
-                  onChange={(event) =>
-                    patchSize(index, { [field.key]: optionalNumber(event.target.value) } as Partial<TireSizeDraft>)
-                  }
+                  aria-label="Цена"
+                  value={size.price ?? ""}
+                  onChange={(event) => patchSize(index, { price: optionalNumber(event.target.value) })}
                 />
               </label>
-            ))}
-            <button type="button" aria-label={`Убрать размер ${index + 1}`} onClick={() => patch({ sizes: draft.sizes.filter((item) => item.id !== size.id) })}>
-              Убрать размер
-            </button>
-          </fieldset>
-        ))}
-        <button type="button" onClick={() => patch({ sizes: [...draft.sizes, emptySize()] })}>
-          Добавить размер
-        </button>
+              <label className="collectionCheck">
+                <input
+                  type="checkbox"
+                  checked={size.priceOnRequest}
+                  onChange={(event) => patchSize(index, { priceOnRequest: event.target.checked })}
+                />
+                <span className="collectionFieldName">Цена по запросу</span>
+              </label>
+              <label className="collectionCheck">
+                <input
+                  type="checkbox"
+                  checked={size.available}
+                  onChange={(event) => patchSize(index, { available: event.target.checked })}
+                />
+                <span className="collectionFieldName">В наличии</span>
+              </label>
+              <label>
+                <span className="collectionFieldName">Артикул (SKU)</span>
+                <input
+                  aria-label="SKU"
+                  value={size.sku ?? ""}
+                  onChange={(event) => patchSize(index, { sku: event.target.value })}
+                />
+                {!(size.sku ?? "").trim() ? <span className="fieldHint">Заполните для публикации</span> : null}
+              </label>
+              <div className="collectionRowActions">
+                <button
+                  type="button"
+                  className="collectionToggle"
+                  aria-expanded={expandedSizeId === size.id}
+                  aria-controls={`size-details-${size.id}`}
+                  title="Технические характеристики"
+                  onClick={() => setExpandedSizeId(expandedSizeId === size.id ? null : size.id)}
+                >
+                  {expandedSizeId === size.id ? "Свернуть" : "Ещё"}
+                </button>
+                <button
+                  type="button"
+                  className="collectionRemove"
+                  aria-label={`Убрать размер ${index + 1}`}
+                  title="Убрать размер"
+                  onClick={() => patch({ sizes: draft.sizes.filter((item) => item.id !== size.id) })}
+                >
+                  ✕
+                </button>
+              </div>
+              {expandedSizeId === size.id ? (
+                <div id={`size-details-${size.id}`} className="collectionExtraGrid">
+                  {SIZE_TEXT_FIELDS.map((field) => (
+                    <label key={field.key}>
+                      {field.label}
+                      <input
+                        value={(size[field.key] as string | undefined) ?? ""}
+                        onChange={(event) => patchSize(index, { [field.key]: event.target.value } as Partial<TireSizeDraft>)}
+                      />
+                    </label>
+                  ))}
+                  {SIZE_NUMBER_FIELDS.map((field) => (
+                    <label key={field.key}>
+                      {field.label}
+                      <input
+                        type="number"
+                        value={(size[field.key] as number | undefined) ?? ""}
+                        onChange={(event) =>
+                          patchSize(index, { [field.key]: optionalNumber(event.target.value) } as Partial<TireSizeDraft>)
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+            </fieldset>
+          ))}
+          <button type="button" className="collectionAdd" onClick={() => patch({ sizes: [...draft.sizes, emptySize()] })}>
+            Добавить размер
+          </button>
+        </div>
       </section>
       <section>
         <h2>Фото</h2>
-        <PlacementFields
-          label="Главное фото"
-          value={draft.mainImage}
-          onChange={(mainImage) => patch({ mainImage })}
+        <ProductPhotoFields
+          cover={draft.mainImage}
+          gallery={draft.gallery}
+          onCoverChange={(mainImage) => patch({ mainImage })}
+          onGalleryChange={(gallery) => patch({ gallery })}
         />
         </section>
       <section>
@@ -490,18 +513,17 @@ export function TireModelEditor({ id }: { id: string }) {
         <label><input type="checkbox" checked={draft.showInMenu} onChange={(event) => patch({ showInMenu: event.target.checked })} />Показывать в меню</label>
         <label>Порядок в меню<input type="number" value={draft.menuOrder} onChange={(event) => patch({ menuOrder: Number(event.target.value) || 0 })} /></label>
       </section>
-      <DocumentActions>
-        <p>Сохранил: {record.lastSavedBy ?? "—"}</p>
-        <p>Опубликовал: {record.lastPublishedBy ?? "—"}</p>
-        {message ? <p>{message}</p> : null}
-        {savedBlockers.map((code) => (
-          <p key={code}>{BLOCKER_TEXT[code] ?? code}</p>
-        ))}
-        {dirty ? <p>Есть несохранённые правки</p> : null}
-        <button type="button" disabled={saving} onClick={() => void onSave()}>
-          {saving ? "Сохраняем…" : "Сохранить"}
-        </button>
-        {role === "admin" ? (
+      <DocumentReviewFooter
+        entityType="tire-model"
+        entityId={id}
+        dirty={dirty}
+        saving={saving}
+        message={message}
+        blockers={savedBlockers.map((code) => BLOCKER_TEXT[code] ?? { text: code })}
+        lastSavedBy={record.lastSavedBy}
+        lastPublishedBy={record.lastPublishedBy}
+        onSave={onSave}
+        adminActions={
           <>
             <button
               type="button"
@@ -520,8 +542,8 @@ export function TireModelEditor({ id }: { id: string }) {
               </button>
             )}
           </>
-        ) : null}
-      </DocumentActions>
+        }
+      />
     </main>
   );
 }

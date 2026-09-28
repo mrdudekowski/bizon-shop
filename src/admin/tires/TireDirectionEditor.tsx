@@ -1,6 +1,7 @@
 "use client";
 
-import { DocumentActions, useAdminRole } from "@/admin/ui/DocumentUI";
+import { useAdminRole } from "@/admin/ui/DocumentUI";
+import { DocumentReviewFooter } from "@/admin/ui/DocumentReviewFooter";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 
 import { useEffect, useState } from "react";
@@ -9,6 +10,7 @@ import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
+import { ERROR_TEXT } from "@/admin/client/errorText";
 import {
   OPERATING_CONDITION_OPTIONS,
   VEHICLE_TYPE_OPTIONS,
@@ -18,27 +20,12 @@ import {
 import { tireDirectionPublishBlockers } from "@/admin/domain/publishRules";
 import type { EntityRecord, TireDirectionDraft } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
+import type { PublishBlockerHint } from "@/admin/ui/documentTabs";
 
-const ERROR_TEXT: Record<AdminClientError["code"], string> = {
-  slug_taken: "Этот адрес страницы уже занят",
-  invalid_slug: "Нельзя изменить адрес страницы",
-  publish_blocked: "Публикация закрыта",
-  category_not_published: "Сначала опубликуйте категорию товара",
-  category_has_published_products: "Сначала снимите с публикации товары этой категории",
-  unsaved: "Сначала сохраните черновик",
-  media_in_use: "Файл ещё используется",
-  storage_unavailable: "Хранилище S3 не настроено",
-  cannot_disable_self: "Нельзя отключить себя",
-  last_admin: "Нельзя отключить последнего администратора",
-  invalid_credentials: "Неверный логин или пароль",
-  unauthorized: "Сессия закончилась. Войдите снова",
-  forbidden: "Недостаточно прав для этого действия",
-};
-
-const BLOCKER_TEXT: Record<string, string> = {
-  name: "Укажите название",
-  slug: "Укажите адрес страницы",
-  mainImage: "Добавьте главное фото",
+const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
+  name: { text: "Укажите название", tab: "Карточка", field: "Название" },
+  slug: { text: "Укажите адрес страницы", tab: "Карточка", field: "Адрес" },
+  mainImage: { text: "Добавьте главное фото", tab: "Фото", anchor: "main" },
 };
 
 export function TireDirectionEditor({ id }: { id: string }) {
@@ -206,18 +193,17 @@ export function TireDirectionEditor({ id }: { id: string }) {
           onChange={(mainImage) => patch({ mainImage })}
         />
       </section>
-      <DocumentActions>
-        <p>Сохранил: {record.lastSavedBy ?? "—"}</p>
-        <p>Опубликовал: {record.lastPublishedBy ?? "—"}</p>
-        {message ? <p>{message}</p> : null}
-        {savedBlockers.map((code) => (
-          <p key={code}>{BLOCKER_TEXT[code] ?? code}</p>
-        ))}
-        {dirty ? <p>Есть несохранённые правки</p> : null}
-        <button type="button" disabled={saving} onClick={() => void onSave()}>
-          {saving ? "Сохраняем…" : "Сохранить"}
-        </button>
-        {role === "admin" ? (
+      <DocumentReviewFooter
+        entityType="tire-direction"
+        entityId={id}
+        dirty={dirty}
+        saving={saving}
+        message={message}
+        blockers={savedBlockers.map((code) => BLOCKER_TEXT[code] ?? { text: code })}
+        lastSavedBy={record.lastSavedBy}
+        lastPublishedBy={record.lastPublishedBy}
+        onSave={onSave}
+        adminActions={
           <>
             <button
               type="button"
@@ -236,8 +222,8 @@ export function TireDirectionEditor({ id }: { id: string }) {
               </button>
             )}
           </>
-        ) : null}
-      </DocumentActions>
+        }
+      />
     </main>
   );
 }
