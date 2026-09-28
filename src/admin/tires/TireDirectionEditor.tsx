@@ -11,12 +11,6 @@ import Link from "next/link";
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
 import { ERROR_TEXT } from "@/admin/client/errorText";
-import {
-  OPERATING_CONDITION_OPTIONS,
-  VEHICLE_TYPE_OPTIONS,
-  type OperatingCondition,
-  type VehicleType,
-} from "@/admin/domain/options";
 import { tireDirectionPublishBlockers } from "@/admin/domain/publishRules";
 import type { EntityRecord, TireDirectionDraft } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
@@ -53,10 +47,6 @@ export function TireDirectionEditor({ id }: { id: string }) {
 
   function patch(next: Partial<TireDirectionDraft>) {
     setDraft((current) => (current == null ? current : { ...current, ...next }));
-  }
-
-  function toggle<T extends string>(list: T[], value: T): T[] {
-    return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
   }
 
   async function onSave() {
@@ -150,40 +140,6 @@ export function TireDirectionEditor({ id }: { id: string }) {
           />
           Показывать в меню
         </label>
-      </section>
-      <section>
-        <h2>Подбор</h2>
-        <p>Направление — запасной совет, если ни одна модель не подошла. Галочки модели задают саму модель.</p>
-        <fieldset className="choiceGroup">
-          <legend>Тип техники</legend>
-          {VEHICLE_TYPE_OPTIONS.map((option) => (
-            <label key={option.value}>
-              <input
-                type="checkbox"
-                checked={draft.selectionVehicleTypes.includes(option.value)}
-                onChange={() =>
-                  patch({ selectionVehicleTypes: toggle<VehicleType>(draft.selectionVehicleTypes, option.value) })
-                }
-              />
-              {option.label}
-            </label>
-          ))}
-        </fieldset>
-        <fieldset className="choiceGroup">
-          <legend>Условия эксплуатации</legend>
-          {OPERATING_CONDITION_OPTIONS.map((option) => (
-            <label key={option.value}>
-              <input
-                type="checkbox"
-                checked={draft.selectionConditions.includes(option.value)}
-                onChange={() =>
-                  patch({ selectionConditions: toggle<OperatingCondition>(draft.selectionConditions, option.value) })
-                }
-              />
-              {option.label}
-            </label>
-          ))}
-        </fieldset>
       </section>
       <section>
         <h2>Фото</h2>

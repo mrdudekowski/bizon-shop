@@ -72,7 +72,7 @@ export function TireDirectionList() {
 
   return (
     <main>
-      <div className={styles.pageHead}><div><h1>Направления</h1><p className="subheading">Техника, дороги и условия работы для подбора шин.</p></div><button className="primary" type="button" onClick={openCreate}>Добавить направление</button></div>
+      <div className={styles.pageHead}><div><h1>Направления</h1><p className="subheading">Направления каталога шин.</p></div><button className="primary" type="button" onClick={openCreate}>Добавить направление</button></div>
       <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название направления…" />
       {loading ? <AdminLoading label="Загружаем направления…" /> : <ul className={styles.catalogList}>
         {visibleDirections.map((direction) => (

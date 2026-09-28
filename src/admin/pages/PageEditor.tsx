@@ -220,16 +220,6 @@ function HomeFields({
         />
       </label>
       <SectionFields
-        title="Подбор"
-        value={draft.selectionEntry}
-        onChange={(selectionEntry) => onChange({ ...draft, selectionEntry: { ...draft.selectionEntry, ...selectionEntry } })}
-      />
-      <PlacementFields
-        label="Фон секции подбора"
-        value={draft.selectionEntry.image}
-        onChange={(image) => onChange({ ...draft, selectionEntry: { ...draft.selectionEntry, image } })}
-      />
-      <SectionFields
         title="Направления"
         value={draft.directions}
         onChange={(directions) => onChange({ ...draft, directions })}
@@ -253,21 +243,6 @@ function HomeFields({
         label="Кнопка кампании"
         value={draft.shopCampaign.cta}
         onChange={(cta) => onChange({ ...draft, shopCampaign: { ...draft.shopCampaign, cta } })}
-      />
-      <SectionFields
-        title="Резюме"
-        value={draft.resume}
-        onChange={(resume) => onChange({ ...draft, resume: { ...draft.resume, ...resume } })}
-      />
-      <CtaFields
-        label="Основная кнопка резюме"
-        value={draft.resume.primaryCta}
-        onChange={(primaryCta) => onChange({ ...draft, resume: { ...draft.resume, primaryCta } })}
-      />
-      <CtaFields
-        label="Вторая кнопка резюме"
-        value={draft.resume.secondaryCta}
-        onChange={(secondaryCta) => onChange({ ...draft, resume: { ...draft.resume, secondaryCta } })}
       />
     </>
   );

@@ -28,7 +28,7 @@ function hasDraft(record: EntityRecord<PageDraft>): boolean {
 }
 
 function previewAssetId(draft: PageDraft): string | undefined {
-  if (draft.id === "home") return draft.hero.image?.assetId ?? draft.selectionEntry.image?.assetId ?? draft.shopCampaign.image?.assetId;
+  if (draft.id === "home") return draft.hero.image?.assetId ?? draft.shopCampaign.image?.assetId;
   if (draft.id === "shop-home") {
     return draft.hero.image?.assetId
       ?? draft.categoryCarousel.find((slide) => slide.desktopImage || slide.mobileImage)?.desktopImage?.assetId

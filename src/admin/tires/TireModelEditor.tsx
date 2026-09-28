@@ -13,12 +13,9 @@ import { AdminClientError } from "@/admin/client/errors";
 import { ERROR_TEXT } from "@/admin/client/errorText";
 import {
   AXLE_OPTIONS,
-  OPERATING_CONDITION_OPTIONS,
   TIRE_ADVANTAGE_OPTIONS,
   TIRE_CATEGORIES,
-  VEHICLE_TYPE_OPTIONS,
   type CatalogAxle,
-  type OperatingCondition,
 } from "@/admin/domain/options";
 import { tireModelPublishBlockers } from "@/admin/domain/publishRules";
 import type {
@@ -296,38 +293,6 @@ export function TireModelEditor({ id }: { id: string }) {
                 onChange={() => patch({ applicationTypes: (draft.applicationTypes ?? []).filter((item) => item !== value) })}
               />
               {value} <span>(старое значение)</span>
-            </label>
-          ))}
-        </fieldset>
-      </section>
-      <section>
-        <h2>Подбор</h2>
-        <p>Направление — запасной совет, если ни одна модель не подошла. Галочки модели задают саму модель.</p>
-        <fieldset className="choiceGroup">
-          <legend>Тип техники</legend>
-          {VEHICLE_TYPE_OPTIONS.map((option) => (
-            <label key={option.value}>
-              <input
-                type="checkbox"
-                checked={draft.selectionVehicleTypes.includes(option.value)}
-                onChange={() => patch({ selectionVehicleTypes: toggle(draft.selectionVehicleTypes, option.value) })}
-              />
-              {option.label}
-            </label>
-          ))}
-        </fieldset>
-        <fieldset className="choiceGroup">
-          <legend>Условия эксплуатации</legend>
-          {OPERATING_CONDITION_OPTIONS.map((option) => (
-            <label key={option.value}>
-              <input
-                type="checkbox"
-                checked={draft.selectionConditions.includes(option.value)}
-                onChange={() =>
-                  patch({ selectionConditions: toggle<OperatingCondition>(draft.selectionConditions, option.value) })
-                }
-              />
-              {option.label}
             </label>
           ))}
         </fieldset>
