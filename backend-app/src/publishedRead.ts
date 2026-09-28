@@ -1,5 +1,5 @@
 import { mapArticle, type CmsArticle } from "./mapArticle";
-import { mapHomePatch, mapStubPatch, type HomePatch, type StubPatch } from "./mapPage";
+import { mapHomePatch, mapShopHomePatch, mapStubPatch, type HomePatch, type ShopHomePatch, type StubPatch } from "./mapPage";
 import {
   mapShopCategory,
   mapShopProduct,
@@ -216,13 +216,59 @@ export async function readHomePatch(db: ReadDatabase): Promise<HomePatch | null>
     SELECT pages.seo_seo_title, pages.seo_seo_description, pages.home_hero_eyebrow, pages.home_hero_title,
       pages.home_hero_lead, pages.home_hero_primary_cta_label, pages.home_hero_primary_cta_href,
       pages.home_hero_secondary_cta_label, pages.home_hero_secondary_cta_href, pages.home_hero_metric_label,
-      pages.home_hero_metric_text, media.url AS home_hero_image_url
+      pages.home_hero_metric_text, hero_media.url AS home_hero_image_url,
+      pages.home_shop_campaign_eyebrow, pages.home_shop_campaign_title, pages.home_shop_campaign_lead,
+      pages.home_shop_campaign_image_alt, pages.home_shop_campaign_cta_label, pages.home_shop_campaign_cta_href,
+      campaign_media.url AS home_shop_campaign_image_url
     FROM pages
-    LEFT JOIN media ON media.id = pages.home_hero_image_id
+    LEFT JOIN media AS hero_media ON hero_media.id = pages.home_hero_image_id
+    LEFT JOIN media AS campaign_media ON campaign_media.id = pages.home_shop_campaign_image_id
     WHERE pages.key = 'home' AND pages.status = 'published'
   `);
 
   return homeRow ? mapHomePatch(homeRow as Parameters<typeof mapHomePatch>[0]) : null;
+}
+
+export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch | null> {
+  const [row] = await db.query(`
+    SELECT pages.id, pages.seo_seo_title, pages.seo_seo_description, pages.shop_hero_eyebrow, pages.shop_hero_title,
+      pages.shop_hero_lead, pages.shop_hero_cta_label, pages.shop_hero_cta_href, pages.shop_hero_image_alt,
+      media.url AS shop_hero_image_url
+    FROM pages
+    LEFT JOIN media ON media.id = pages.shop_hero_image_id
+    WHERE pages.key = 'shop-home' AND pages.status = 'published'
+  `);
+  if (!row) return null;
+  const parentId = row.id;
+  const [carousel, vehicles] = await Promise.all([
+    db.query(
+      `
+        SELECT slides.id, slides.kicker, slides.title, slides.action, slides.href, slides.alt,
+          desktop.url AS desktop_image_url, mobile.url AS mobile_image_url
+        FROM pages_shop_category_carousel slides
+        LEFT JOIN media AS desktop ON desktop.id = slides.desktop_image_id
+        LEFT JOIN media AS mobile ON mobile.id = slides.mobile_image_id
+        WHERE slides._parent_id = $1
+        ORDER BY slides._order
+      `,
+      [parentId],
+    ),
+    db.query(
+      `
+        SELECT slides.title, slides.alt, media.url AS image_url
+        FROM pages_shop_vehicles_slides slides
+        LEFT JOIN media ON media.id = slides.image_id
+        WHERE slides._parent_id = $1
+        ORDER BY slides._order
+      `,
+      [parentId],
+    ),
+  ]);
+  return mapShopHomePatch({
+    row: row as Parameters<typeof mapShopHomePatch>[0]["row"],
+    carousel,
+    vehicles,
+  });
 }
 
 export async function readArticles(db: ReadDatabase): Promise<CmsArticle[]> {

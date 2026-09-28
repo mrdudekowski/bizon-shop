@@ -22,6 +22,15 @@ describe("mergeHomeContent", () => {
     expect(merged.hero.imageUrl).toBe(HOME_PAGE_DEFAULTS.hero.imageUrl);
     expect(merged.hero.secondaryCta).toEqual(HOME_PAGE_DEFAULTS.hero.secondaryCta);
   });
+
+  it("overrides shop campaign imageUrl from CMS", () => {
+    const merged = mergeHomeContent(HOME_PAGE_DEFAULTS, {
+      shopCampaign: {
+        imageUrl: "https://s3.twcstorage.ru/bucket/bizon/media/uuid.png",
+      },
+    });
+    expect(merged.shopCampaign.imageUrl).toBe("https://s3.twcstorage.ru/bucket/bizon/media/uuid.png");
+  });
 });
 
 describe("mergeShopHomeContent", () => {

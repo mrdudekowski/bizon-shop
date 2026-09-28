@@ -15,10 +15,15 @@ import {
 } from "./admin/server/adminAuth";
 import { deleteCartSession, readCartSession, saveCartSession } from "./cartSession";
 import { insertRequest, type StoredRequestInput } from "./insertRequest";
+import { AdminClientError } from "./admin/client/errors";
+import { createPostgresAdminClient } from "./admin/server/postgresAdmin";
+import { readRequestBody } from "./readRequestBody";
+import { MediaRejected, MAX_MEDIA_BYTES } from "./storage/putMedia";
 import {
   readArticleBySlug,
   readArticles,
   readHomePatch,
+  readShopHomePatch,
   readShopProductBySlug,
   readShopProducts,
   readShopCategories,
@@ -155,7 +160,7 @@ async function handleRequest(
 
   const originHeaders = localOriginHeaders(req.headers.origin);
 
-  if (method === "OPTIONS" && (path === "/v1/admin" || path === "/v1/requests" || isAuthPath(path))) {
+  if (method === "OPTIONS" && (path === "/v1/admin" || path.startsWith("/v1/admin/assets") || path === "/v1/requests" || isAuthPath(path))) {
     res.writeHead(204, originHeaders);
     res.end();
     return;
@@ -206,6 +211,31 @@ async function handleRequest(
       sendJson(res, 200, { ok: true, result: sessionOf(account) }, originHeaders);
     } catch {
       sendJson(res, 500, { ok: false, code: "storage_unavailable" }, originHeaders);
+    }
+    return;
+  }
+
+  if (method === "POST" && path.startsWith("/v1/admin/assets")) {
+    try {
+      const account = await currentAccount(req);
+      if (account == null) {
+        sendJson(res, 401, { ok: false, code: "unauthorized" }, originHeaders);
+        return;
+      }
+      const name = url.searchParams.get("name") ?? "upload";
+      const mimeType = url.searchParams.get("type") || String(req.headers["content-type"] ?? "");
+      const body = await readRequestBody(req, MAX_MEDIA_BYTES);
+      const client = createPostgresAdminClient(account);
+      const result = await client.createAsset({ name, mimeType, body });
+      sendJson(res, 200, { ok: true, result }, originHeaders);
+    } catch (error) {
+      const code =
+        error instanceof AdminClientError
+          ? error.code
+          : error instanceof MediaRejected
+            ? error.code
+            : "publish_blocked";
+      sendJson(res, 400, { ok: false, code }, originHeaders);
     }
     return;
   }
@@ -362,9 +392,19 @@ async function handleRequest(
       return;
     }
 
+    if (path === "/v1/pages/shop-home") {
+      const shopHome = await readShopHomePatch(database);
+      if (!shopHome) {
+        sendJson(res, 404, { ok: false });
+        return;
+      }
+      sendJson(res, 200, shopHome);
+      return;
+    }
+
     {
       const match = path.match(/^\/v1\/pages\/([^/]+)$/);
-      if (match && match[1] !== "home") {
+      if (match && match[1] !== "home" && match[1] !== "shop-home") {
         const page = await readStubPatch(database, decodeURIComponent(match[1]));
         if (!page) {
           sendJson(res, 404, { ok: false });

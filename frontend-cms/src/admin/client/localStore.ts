@@ -729,7 +729,12 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     async createAsset(file) {
       const state = load();
       const id = crypto.randomUUID();
-      state.assets.push({ id, ...file });
+      state.assets.push({
+        id,
+        name: file.name,
+        mimeType: file.mimeType,
+        dataUrl: file.dataUrl ?? "blob:local-preview",
+      });
       save(state);
       return { id };
     },
@@ -1322,6 +1327,14 @@ function remoteAdminClient(): AdminClient {
     },
     async getSession() {
       return (await request("/v1/admin/auth/session", { method: "GET" })) as AdminSession;
+    },
+    async createAsset(file: { name: string; mimeType: string; body?: Blob; dataUrl?: string }) {
+      const params = new URLSearchParams({ name: file.name, type: file.mimeType });
+      return request(`/v1/admin/assets?${params}`, {
+        method: "POST",
+        body: file.body,
+        headers: { "content-type": file.mimeType || "application/octet-stream" },
+      }) as Promise<{ id: string }>;
     },
   } as AdminClient, {
     get(target, method) {

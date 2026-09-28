@@ -124,4 +124,10 @@ describe("normalizeImageUrl", () => {
     expect(normalizeImageUrl("/media/already.jpg")).toBe("/media/already.jpg");
     expect(normalizeImageUrl("data:image/png;base64,abc")).toBeNull();
   });
+
+  it("keeps public https URLs for the site", () => {
+    expect(normalizeImageUrl("https://s3.twcstorage.ru/bucket/bizon/media/uuid.png")).toBe(
+      "https://s3.twcstorage.ru/bucket/bizon/media/uuid.png",
+    );
+  });
 });

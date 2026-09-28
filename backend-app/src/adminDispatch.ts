@@ -17,7 +17,7 @@ export async function dispatchAdminCall(
 }> {
   const client = createPostgresAdminClient(account);
   const method = body.method;
-  if (method == null || typeof client[method as keyof AdminClient] !== "function") {
+  if (method == null || method === "createAsset" || typeof client[method as keyof AdminClient] !== "function") {
     return { status: 400, body: { ok: false, code: "publish_blocked" } };
   }
 

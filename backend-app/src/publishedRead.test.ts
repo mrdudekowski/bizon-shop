@@ -176,6 +176,7 @@ describe("published content readers", () => {
     expect(published.calls[0].sql).toContain("FROM pages");
     expect(published.calls[0].sql).toContain("key = 'home'");
     expect(published.calls[0].sql).toContain("status = 'published'");
+    expect(published.calls[0].sql).toContain("home_shop_campaign_image_id");
   });
 
   it("reads published articles and returns null for an absent draft slug", async () => {

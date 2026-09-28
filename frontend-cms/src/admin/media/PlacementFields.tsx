@@ -6,7 +6,6 @@ import { resolveMediaPreviewUrl } from "@/admin/domain/catalogPreviewUrl";
 import { AdminClientError } from "@/admin/client/errors";
 import { browserAdminClient } from "@/admin/client/localStore";
 import styles from "./PlacementFields.module.css";
-function readFile(file: File): Promise<string> { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file); }); }
 function emptyPlacement(assetId: string): ImagePlacement { return { assetId, alt: "", focalX: .5, focalY: .5, crop: { x: 0, y: 0, width: 1, height: 1 } }; }
 function clamp(value: number) { return Math.min(1, Math.max(0, value)); }
 function number(raw: string, fallback: number) { const parsed = Number(raw); return Number.isFinite(parsed) ? clamp(parsed) : fallback; }
@@ -17,6 +16,11 @@ export function PlacementFields({ value, onChange, label = "Фото" }: Props) 
   const frame = useRef<HTMLDivElement>(null);
   const assetId = value?.assetId;
   useEffect(() => {
+    return () => {
+      if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+  useEffect(() => {
     if (!assetId) { setPreviewUrl(null); return; }
     let cancelled = false;
     void browserAdminClient().listAssets().then((assets: MediaListItem[]) => { if (!cancelled) setPreviewUrl(resolveMediaPreviewUrl(assets.find((asset) => asset.id === assetId)?.dataUrl)); });
@@ -26,9 +30,12 @@ export function PlacementFields({ value, onChange, label = "Фото" }: Props) 
     if (!file) return;
     setUploadError("");
     try {
-      const dataUrl = await readFile(file);
-      const asset = await browserAdminClient().createAsset({ name: file.name, mimeType: file.type || "image/*", dataUrl });
-      setPreviewUrl(dataUrl);
+      const asset = await browserAdminClient().createAsset({
+        name: file.name,
+        mimeType: file.type || "image/png",
+        body: file,
+      });
+      setPreviewUrl(URL.createObjectURL(file));
       onChange(emptyPlacement(asset.id));
     } catch (error) {
       setUploadError(

@@ -36,6 +36,8 @@ import type {
   WheelVariantDraft,
 } from "../domain/types";
 import { PAGE_KEYS } from "../domain/types";
+import { getObjectStore } from "../../storage/objectStore";
+import { MediaRejected, putMedia } from "../../storage/putMedia";
 
 function databaseUri(): string {
   const connectionString = process.env.DATABASE_URI;
@@ -53,6 +55,17 @@ function getPool(): Pool {
 let draftsReady: Promise<void> | null = null;
 
 type Row = Record<string, unknown>;
+
+function bufferFromUpload(file: { body?: Buffer; dataUrl?: string }): Buffer {
+  if (file.body && file.body.length > 0) return file.body;
+  const dataUrl = file.dataUrl;
+  if (dataUrl?.startsWith("data:")) {
+    const comma = dataUrl.indexOf(",");
+    if (comma === -1) throw new MediaRejected("publish_blocked");
+    return Buffer.from(dataUrl.slice(comma + 1), "base64");
+  }
+  throw new MediaRejected("publish_blocked");
+}
 
 function str(value: unknown): string {
   return value == null ? "" : String(value);
@@ -808,11 +821,22 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       await query("DELETE FROM tire_models WHERE id = $1", [Number(id)]);
     },
     async createAsset(file) {
-      const rows = await query(
-        "INSERT INTO media (title, alt, filename, mime_type, url) VALUES ($1, '', $1, $2, $3) RETURNING id",
-        [file.name, file.mimeType, file.dataUrl.slice(0, 500)],
-      );
-      return { id: str(rows[0].id) };
+      const body = bufferFromUpload(file);
+      try {
+        const stored = await putMedia(getObjectStore(), {
+          name: file.name,
+          mimeType: file.mimeType,
+          body,
+        });
+        const rows = await query(
+          "INSERT INTO media (title, alt, filename, mime_type, url) VALUES ($1, '', $1, $2, $3) RETURNING id",
+          [stored.name, stored.mimeType, stored.url],
+        );
+        return { id: str(rows[0].id) };
+      } catch (error) {
+        if (error instanceof MediaRejected) throw new AdminClientError(error.code);
+        throw error;
+      }
     },
     async listAssets() {
       const rows = await query("SELECT id, title, filename, mime_type, url FROM media ORDER BY id");
@@ -826,7 +850,21 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
     },
     async deleteAsset(id) {
       const used = await query(
-        "SELECT id FROM tire_models WHERE main_image_id = $1 UNION ALL SELECT id FROM wheel_models WHERE main_image_id = $1 LIMIT 1",
+        `SELECT id FROM tire_types WHERE tire_types.cover_image_id = $1
+         UNION ALL SELECT id FROM tire_models WHERE main_image_id = $1
+         UNION ALL SELECT id FROM wheel_types WHERE cover_image_id = $1
+         UNION ALL SELECT id FROM wheel_models WHERE main_image_id = $1
+         UNION ALL SELECT id FROM shop_categories WHERE cover_image_id = $1
+         UNION ALL SELECT id FROM products WHERE main_image_id = $1
+         UNION ALL SELECT id FROM pages WHERE home_hero_image_id = $1 OR home_shop_campaign_image_id = $1 OR shop_hero_image_id = $1 OR stub_hero_image_id = $1
+         UNION ALL SELECT id FROM pages_shop_category_carousel WHERE desktop_image_id = $1 OR mobile_image_id = $1
+         UNION ALL SELECT id FROM pages_shop_vehicles_slides WHERE image_id = $1
+         UNION ALL SELECT id FROM tire_iq_articles WHERE featured_image_id = $1
+         UNION ALL SELECT id FROM people_stories WHERE featured_image_id = $1
+         UNION ALL SELECT parent_id FROM tire_models_rels WHERE media_id = $1
+         UNION ALL SELECT parent_id FROM wheel_models_rels WHERE media_id = $1
+         UNION ALL SELECT parent_id FROM products_rels WHERE media_id = $1
+         LIMIT 1`,
         [Number(id)],
       );
       if (used.length > 0) throw new AdminClientError("media_in_use");
@@ -891,6 +929,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           typeName: str(type[0]?.name),
           status: documentStatus(record),
           hasUnpublishedDraft: record.publishedSnapshot != null && !sameJson(record.draft, record.publishedSnapshot),
+          imageAssetId: record.draft.mainImage?.assetId ?? null,
         });
       }
       return items;
@@ -1055,6 +1094,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           categoryName: str(category[0]?.name),
           status: documentStatus(record),
           hasUnpublishedDraft: record.publishedSnapshot != null && !sameJson(record.draft, record.publishedSnapshot),
+          imageAssetId: record.draft.mainImage?.assetId ?? null,
         });
       }
       return items;
@@ -1180,6 +1220,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           kind: record.draft.kind,
           status: documentStatus(record),
           hasUnpublishedDraft: record.publishedSnapshot != null && !sameJson(record.draft, record.publishedSnapshot),
+          imageAssetId: record.draft.image?.assetId ?? null,
         });
       }
       for (const row of stories) {
@@ -1190,6 +1231,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           kind: "story" as const,
           status: documentStatus(record),
           hasUnpublishedDraft: false,
+          imageAssetId: record.draft.image?.assetId ?? null,
         });
       }
       return items;
@@ -1224,8 +1266,8 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const rawId = id.split("-").slice(1).join("-");
       const table = draft.kind === "story" ? "people_stories" : "tire_iq_articles";
       await query(
-        `UPDATE ${table} SET title=$2, slug=$3, excerpt=$4, content=$5::jsonb, status='published', updated_at=now() WHERE id=$1`,
-        [Number(rawId), draft.title, draft.slug, draft.excerpt, JSON.stringify(lexical(draft.body))],
+        `UPDATE ${table} SET title=$2, slug=$3, excerpt=$4, content=$5::jsonb, featured_image_id=$6, status='published', updated_at=now() WHERE id=$1`,
+        [Number(rawId), draft.title, draft.slug, draft.excerpt, JSON.stringify(lexical(draft.body)), draft.image ? Number(draft.image.assetId) : null],
       );
       await clearOverlay("materials", id);
       return this.getMaterial(id);
@@ -1300,6 +1342,9 @@ async function writePage(draft: PageDraft) {
         home_hero_secondary_cta_label=$9, home_hero_secondary_cta_href=$10,
         home_hero_metric_label=$11, home_hero_metric_text=$12,
         home_hero_image_id=$13, home_hero_image_alt=$14,
+        home_shop_campaign_eyebrow=$15, home_shop_campaign_title=$16, home_shop_campaign_lead=$17,
+        home_shop_campaign_image_id=$18, home_shop_campaign_image_alt=$19,
+        home_shop_campaign_cta_label=$20, home_shop_campaign_cta_href=$21,
         status='published', updated_at=now()
        WHERE key='home'`,
       [
@@ -1317,15 +1362,48 @@ async function writePage(draft: PageDraft) {
         draft.hero.metricText,
         draft.hero.image ? Number(draft.hero.image.assetId) : null,
         draft.hero.image?.alt || null,
+        draft.shopCampaign.eyebrow,
+        draft.shopCampaign.title,
+        draft.shopCampaign.lead,
+        draft.shopCampaign.image ? Number(draft.shopCampaign.image.assetId) : null,
+        draft.shopCampaign.image?.alt || null,
+        draft.shopCampaign.cta.label,
+        draft.shopCampaign.cta.href,
       ],
     );
     return;
   }
   if (draft.id === "shop-home") {
     await query(
-      `UPDATE pages SET seo_seo_title=$1, seo_seo_description=$2, shop_hero_eyebrow=$3, shop_hero_title=$4, shop_hero_lead=$5, shop_hero_cta_label=$6, shop_hero_cta_href=$7, status='published', updated_at=now() WHERE key='shop-home'`,
-      [draft.seoTitle, draft.seoDescription, draft.hero.eyebrow, draft.hero.title, draft.hero.lead, draft.hero.cta.label, draft.hero.cta.href],
+      `UPDATE pages SET seo_seo_title=$1, seo_seo_description=$2, shop_hero_eyebrow=$3, shop_hero_title=$4, shop_hero_lead=$5, shop_hero_cta_label=$6, shop_hero_cta_href=$7, shop_hero_image_id=$8, shop_hero_image_alt=$9, status='published', updated_at=now() WHERE key='shop-home'`,
+      [
+        draft.seoTitle,
+        draft.seoDescription,
+        draft.hero.eyebrow,
+        draft.hero.title,
+        draft.hero.lead,
+        draft.hero.cta.label,
+        draft.hero.cta.href,
+        draft.hero.image ? Number(draft.hero.image.assetId) : null,
+        draft.hero.image?.alt || null,
+      ],
     );
+    for (const slide of draft.categoryCarousel) {
+      await query(
+        `UPDATE pages_shop_category_carousel SET desktop_image_id=$2, mobile_image_id=$3 WHERE id=$1`,
+        [
+          Number(slide.id),
+          slide.desktopImage ? Number(slide.desktopImage.assetId) : null,
+          slide.mobileImage ? Number(slide.mobileImage.assetId) : null,
+        ],
+      );
+    }
+    for (const slide of draft.vehicles.slides) {
+      await query(`UPDATE pages_shop_vehicles_slides SET image_id=$2 WHERE id=$1`, [
+        Number(slide.id),
+        slide.image ? Number(slide.image.assetId) : null,
+      ]);
+    }
     return;
   }
   await query(

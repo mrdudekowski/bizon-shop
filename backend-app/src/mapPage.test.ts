@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapHomePatch } from "./mapPage";
+import { mapHomePatch, mapShopHomePatch } from "./mapPage";
 
 describe("mapHomePatch", () => {
   it("omits empty home strings so the site keeps its defaults", () => {
@@ -89,5 +89,50 @@ describe("mapHomePatch", () => {
         home_hero_image_url: "data:image/png;base64,abc",
       }).hero.imageUrl,
     ).toBeUndefined();
+  });
+
+  it("maps a public shop campaign image", () => {
+    expect(
+      mapHomePatch({
+        seo_seo_title: "",
+        seo_seo_description: "",
+        home_hero_eyebrow: "",
+        home_hero_title: "",
+        home_hero_lead: "",
+        home_hero_primary_cta_label: "",
+        home_hero_primary_cta_href: "",
+        home_hero_secondary_cta_label: "",
+        home_hero_secondary_cta_href: "",
+        home_hero_metric_label: "",
+        home_hero_metric_text: "",
+        home_shop_campaign_image_url: "https://s3.twcstorage.ru/bucket/bizon/media/uuid.png",
+        home_shop_campaign_image_alt: "Магазин",
+      }).shopCampaign,
+    ).toEqual({
+      imageUrl: "https://s3.twcstorage.ru/bucket/bizon/media/uuid.png",
+      imageAlt: "Магазин",
+    });
+  });
+});
+
+describe("mapShopHomePatch", () => {
+  it("maps a public shop hero image", () => {
+    expect(
+      mapShopHomePatch({
+        row: {
+          seo_seo_title: "",
+          seo_seo_description: "",
+          shop_hero_eyebrow: "",
+          shop_hero_title: "Shop",
+          shop_hero_lead: "",
+          shop_hero_cta_label: "",
+          shop_hero_cta_href: "",
+          shop_hero_image_url: "https://s3.twcstorage.ru/bucket/bizon/media/hero.png",
+          shop_hero_image_alt: "Hero",
+        },
+        carousel: [],
+        vehicles: [],
+      }).hero.imageUrl,
+    ).toBe("https://s3.twcstorage.ru/bucket/bizon/media/hero.png");
   });
 });

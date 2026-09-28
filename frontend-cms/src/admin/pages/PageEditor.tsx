@@ -99,15 +99,6 @@ function CtaFields({
   );
 }
 
-function readPdfFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-
 function moveDocument(documents: DocumentLink[], index: number, delta: number): DocumentLink[] {
   const target = index + delta;
   if (target < 0 || target >= documents.length) return documents;
@@ -130,11 +121,10 @@ function StubFields({
 }) {
   async function onDocumentFile(file: File | undefined) {
     if (file == null) return;
-    const dataUrl = await readPdfFile(file);
     const asset = await browserAdminClient().createAsset({
       name: file.name,
       mimeType: file.type || "application/pdf",
-      dataUrl,
+      body: file,
     });
     onChange({ ...draft, documents: [...draft.documents, { assetId: asset.id, title: file.name }] });
   }

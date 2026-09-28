@@ -1,7 +1,7 @@
 import { getPageDefaults } from "./pages/defaults";
 import type { PageKey } from "./pages/keys";
-import { mergeHomeContent } from "./pages/merge";
-import type { HomePageContent, PageContentByKey } from "./pages/types";
+import { mergeHomeContent, mergeShopHomeContent } from "./pages/merge";
+import type { HomePageContent, PageContentByKey, ShopHomePageContent } from "./pages/types";
 import { fetchPublishedJson, publishedApiEnabled } from "./publishedClient";
 
 export type PublishedStubOverlay = {
@@ -32,21 +32,29 @@ export async function getPublishedStubOverlay(key: string): Promise<PublishedStu
 }
 
 type HomePatch = Parameters<typeof mergeHomeContent>[1];
+type ShopHomePatch = Parameters<typeof mergeShopHomeContent>[1];
 
-/** Stage 1: code defaults, optionally merged with backend-app for home. */
+/** Stage 1: code defaults, optionally merged with backend-app for home and shop-home. */
 export async function getPageContent<K extends PageKey>(
   key: K,
 ): Promise<PageContentByKey[K]> {
   const defaults = getPageDefaults(key);
 
-  if (key !== "home" || !publishedApiEnabled()) {
+  if (!publishedApiEnabled()) {
     return defaults;
   }
 
-  const patch = await fetchPublishedJson<HomePatch>("/v1/pages/home");
-  if (!patch) {
+  if (key === "home") {
+    const patch = await fetchPublishedJson<HomePatch>("/v1/pages/home");
+    if (patch) return mergeHomeContent(defaults as HomePageContent, patch) as PageContentByKey[K];
     return defaults;
   }
 
-  return mergeHomeContent(defaults as HomePageContent, patch) as PageContentByKey[K];
+  if (key === "shop-home") {
+    const patch = await fetchPublishedJson<ShopHomePatch>("/v1/pages/shop-home");
+    if (patch) return mergeShopHomeContent(defaults as ShopHomePageContent, patch) as PageContentByKey[K];
+    return defaults;
+  }
+
+  return defaults;
 }

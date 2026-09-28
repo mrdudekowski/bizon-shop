@@ -32,7 +32,7 @@ export type AdminClient = {
   publishTireDirection(id: string): Promise<EntityRecord<TireDirectionDraft>>;
   hideTireDirection(id: string): Promise<EntityRecord<TireDirectionDraft>>;
   deleteTireDirection(id: string): Promise<void>;
-  createAsset(file: { name: string; mimeType: string; dataUrl: string }): Promise<{ id: string }>;
+  createAsset(file: { name: string; mimeType: string; body?: Blob; dataUrl?: string }): Promise<{ id: string }>;
   listTireModels(): Promise<TireModelListItem[]>;
   getTireModel(id: string): Promise<TireModelRecord>;
   createTireModel(input: { name: string; directionId: string }): Promise<TireModelRecord>;
