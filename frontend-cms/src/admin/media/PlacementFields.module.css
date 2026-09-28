@@ -1,12 +1,29 @@
 .fields, .productPhotos { display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; width: 100%; max-width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; }
-.fields > label, .productPhotos > label { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
-.fields input[type=file], .productPhotos > label input[type=file] {
+.fields > label, .productPhotos > label, .controls > label { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.fields input[type=file], .productPhotos > label input[type=file], .controls input[type=file] {
   width: auto;
   max-width: 100%;
   min-width: 0;
   min-height: 0;
   padding: 4px;
   background: #fafbfc;
+}
+.stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  align-items: start;
+}
+.previewColumn, .controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 .thumbs {
   display: grid;
@@ -20,7 +37,7 @@
   scrollbar-width: none;
 }
 .thumbs::-webkit-scrollbar { display: none; }
-.thumbs button {
+.thumbs button, .thumbAdd {
   position: relative;
   width: 100%;
   max-width: 100%;
@@ -37,23 +54,48 @@
   width: 100%;
   max-width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 .thumbActive { border-color: var(--ink); }
+.thumbAdd {
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  border-style: dashed;
+  background: #fafbfc;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+}
+.thumbAdd input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
 .previewFrame {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  justify-items: center;
+  justify-items: start;
   width: 100%;
   max-width: 100%;
   min-width: 0;
 }
 .previewShot {
   position: relative;
-  width: fit-content;
+  width: min(100%, var(--cms-preview-max, 22rem));
   max-width: 100%;
   min-width: 0;
-  max-height: var(--cms-preview-max);
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #e9ecf1;
@@ -62,19 +104,31 @@
 }
 .preview {
   display: block;
-  width: auto;
-  height: auto;
+  width: 100%;
   max-width: 100%;
-  max-height: var(--cms-preview-max);
-  object-fit: contain;
-  object-position: center;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--focus-x, 50%) var(--focus-y, 50%);
 }
-.focusPoint { position: absolute; z-index: 2; left: var(--focus-x); top: var(--focus-y); width: 32px; height: 32px; min-height: 32px; padding: 0; transform: translate(-50%,-50%); border: 0; background: transparent; box-shadow: none; cursor: grab; }
+.focusPoint {
+  position: absolute;
+  z-index: 2;
+  left: var(--focus-x);
+  top: var(--focus-y);
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  transform: translate(-50%,-50%);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: grab;
+  touch-action: none;
+}
+.focusPoint:active { cursor: grabbing; }
 .focusPoint::after { content: ''; display: block; width: 12px; height: 12px; margin: auto; border: 2px solid white; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px #17212e; }
-.numbers { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; width: min(100%, 720px); }
-.numbers > label { font-size: 12px; }
 .caption { color: var(--ink-muted); font-size: 12px; font-weight: 400; }
-.cropDetails { width: min(100%,720px); border-top: 1px solid var(--line); padding-top: 12px; }
-.cropDetails summary { width: fit-content; color: var(--ink-muted); cursor: pointer; font-size: 13px; }
-.cropDetails[open] summary { margin-bottom: 12px; color: var(--ink); }
-@media (min-width: 800px) { .numbers { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media (min-width: 800px) {
+  .stage { grid-template-columns: minmax(0, min(100%, var(--cms-preview-max, 22rem))) minmax(16rem, 1fr); }
+}

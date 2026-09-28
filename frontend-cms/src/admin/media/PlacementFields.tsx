@@ -7,7 +7,6 @@ import { browserAdminClient } from "@/admin/client/localStore";
 import styles from "./PlacementFields.module.css";
 function emptyPlacement(assetId: string): ImagePlacement { return { assetId, alt: "", focalX: .5, focalY: .5, crop: { x: 0, y: 0, width: 1, height: 1 } }; }
 function clamp(value: number) { return Math.min(1, Math.max(0, value)); }
-function number(raw: string, fallback: number) { const parsed = Number(raw); return Number.isFinite(parsed) ? clamp(parsed) : fallback; }
 async function uploadImageFile(file: File): Promise<ImagePlacement> {
   const asset = await browserAdminClient().createAsset({
     name: file.name,
@@ -25,8 +24,10 @@ function fitCmsPreviewToViewport() {
   const footer = document.querySelector(".documentActions");
   const first = document.querySelector<HTMLElement>("[data-cms-image-fields] [aria-label='Предпросмотр фото и точки фокуса']");
   if (!(footer instanceof HTMLElement) || !first?.getClientRects().length) return;
+  const fields = first.closest("[data-cms-image-fields]");
   const room = Math.floor(footer.getBoundingClientRect().top - first.getBoundingClientRect().top - 8);
-  document.documentElement.style.setProperty("--cms-preview-max", `${Math.max(160, Math.min(room, Math.round(window.innerHeight - 160)))}px`);
+  const widthCap = Math.floor(fields?.getBoundingClientRect().width ?? window.innerWidth);
+  document.documentElement.style.setProperty("--cms-preview-max", `${Math.max(72, Math.min(room, widthCap, Math.round(window.innerHeight - 220)))}px`);
 }
 type Props = {
   value: ImagePlacement | undefined;
@@ -58,10 +59,13 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
     if (!node) return;
     const fit = () => fitCmsPreviewToViewport();
     fit();
+    const raf = requestAnimationFrame(fit);
     const observer = new ResizeObserver(fit);
-    observer.observe(node);
+    const panel = node.closest("[data-document-tab-panel]");
+    if (panel) observer.observe(panel);
     window.addEventListener("resize", fit);
     return () => {
+      cancelAnimationFrame(raf);
       observer.disconnect();
       window.removeEventListener("resize", fit);
       queueMicrotask(() => {
@@ -81,19 +85,20 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
     }
   }
   function patch(next: Partial<ImagePlacement>) { if (value) onChange({ ...value, ...next }); }
-  function patchCrop(next: Partial<ImagePlacement["crop"]>) {
-    if (!value) return;
-    const crop = { ...value.crop, ...next };
-    crop.width = Math.min(1, Math.max(.01, crop.width));
-    crop.height = Math.min(1, Math.max(.01, crop.height));
-    crop.x = Math.min(Math.max(0, crop.x), 1 - crop.width);
-    crop.y = Math.min(Math.max(0, crop.y), 1 - crop.height);
-    onChange({ ...value, crop });
-  }
-  function pointAt(event: ReactPointerEvent<HTMLDivElement>) {
+  function pointAt(event: ReactPointerEvent) {
     if (!showFocus || !value || !frame.current) return;
     const bounds = frame.current.getBoundingClientRect();
     patch({ focalX: clamp((event.clientX - bounds.left) / bounds.width), focalY: clamp((event.clientY - bounds.top) / bounds.height) });
+  }
+  function dragFocus(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (!showFocus || !value) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    pointAt(event);
+  }
+  function moveDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    pointAt(event);
   }
   function moveFocus(event: ReactKeyboardEvent<HTMLButtonElement>) {
     if (!value) return;
@@ -103,33 +108,33 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
   }
   const placementStyle = value ? ({ "--focus-x": `${value.focalX * 100}%`, "--focus-y": `${value.focalY * 100}%` } as React.CSSProperties) : undefined;
   const displayUrl = previewSrc || previewUrl;
+  const replaceLabel = <label>{value ? "Заменить фото" : "Загрузить фото"}<input aria-label={`${label}: файл`} type="file" accept="image/*" onChange={(event) => void onFile(event.target.files?.[0])} /></label>;
   return <fieldset className={styles.fields} data-cms-image-fields><legend>{label}</legend>
-    {displayUrl ? null : <label>{value ? "Заменить фото" : "Загрузить фото"}<input aria-label={`${label}: файл`} type="file" accept="image/*" onChange={(event) => void onFile(event.target.files?.[0])} /></label>}
+    {displayUrl ? null : replaceLabel}
     {uploadError ? <p role="alert">{uploadError}</p> : null}
     {displayUrl ? (
-      <div className={styles.previewFrame}>
-        <div ref={frame} className={styles.previewShot} style={showFocus ? placementStyle : undefined} onPointerDown={pointAt} aria-label="Предпросмотр фото и точки фокуса">
-          <img className={styles.preview} src={displayUrl} alt={value?.alt || label} />
-          {showFocus && value ? <button className={styles.focusPoint} style={placementStyle} type="button" aria-label="Точка фокуса: перемещайте стрелками; Shift со стрелкой — крупный шаг" onPointerDown={(event) => event.stopPropagation()} onKeyDown={moveFocus} /> : null}
+      <>
+        {thumbs}
+        <div className={styles.stage}>
+          <div className={styles.previewColumn}>
+            <div className={styles.previewFrame}>
+              <div ref={frame} className={styles.previewShot} style={showFocus ? placementStyle : undefined} aria-label="Предпросмотр фото и точки фокуса">
+                <img className={styles.preview} src={displayUrl} alt={value?.alt || label} />
+                {showFocus && value ? <button className={styles.focusPoint} style={placementStyle} type="button" aria-label="Точка фокуса: перетащите кружок; стрелки на клавиатуре" onPointerDown={dragFocus} onPointerMove={moveDrag} onKeyDown={moveFocus} /> : null}
+              </div>
+            </div>
+          </div>
+          {value ? (
+            <div className={styles.controls}>
+              {replaceLabel}
+              {showFocus ? <p className={styles.caption}>Перетащите кружок, чтобы сдвинуть кадр на карточке.</p> : null}
+              <label>Подпись к фото<input value={value.alt} onChange={(event) => patch({ alt: event.target.value })} /></label>
+              <button type="button" className="ghost" onClick={() => { onChange(undefined); setPreviewUrl(null); }}>Убрать фото</button>
+            </div>
+          ) : null}
         </div>
-      </div>
+      </>
     ) : null}
-    {thumbs}
-    {displayUrl ? <label>{value ? "Заменить фото" : "Загрузить фото"}<input aria-label={`${label}: файл`} type="file" accept="image/*" onChange={(event) => void onFile(event.target.files?.[0])} /></label> : null}
-    {value && displayUrl ? <>
-      {showFocus ? <p className={styles.caption}>Нажмите на фото, чтобы указать фокус. Перемещайте точку стрелками.</p> : null}
-      <label>Подпись к фото<input value={value.alt} onChange={(event) => patch({ alt: event.target.value })} /></label>
-      <details className={styles.cropDetails}>
-        <summary>Точная настройка кадрирования</summary>
-        <div className={styles.numbers}>
-          <label>Рамка: левый край<input type="number" min="0" max="1" step=".01" value={value.crop.x} onChange={(event) => patchCrop({ x: number(event.target.value, value.crop.x) })} /></label>
-          <label>Рамка: верхний край<input type="number" min="0" max="1" step=".01" value={value.crop.y} onChange={(event) => patchCrop({ y: number(event.target.value, value.crop.y) })} /></label>
-          <label>Рамка: ширина<input type="number" min="0" max="1" step=".01" value={value.crop.width} onChange={(event) => patchCrop({ width: number(event.target.value, value.crop.width) })} /></label>
-          <label>Рамка: высота<input type="number" min="0" max="1" step=".01" value={value.crop.height} onChange={(event) => patchCrop({ height: number(event.target.value, value.crop.height) })} /></label>
-        </div>
-      </details>
-      <button type="button" className="ghost" onClick={() => { onChange(undefined); setPreviewUrl(null); }}>Убрать фото</button>
-    </> : null}
   </fieldset>;
 }
 
@@ -196,6 +201,21 @@ export function ProductPhotoFields({
       setUploadError(uploadErrorText(error));
     }
   }
+  const addPhoto = (
+    <label className={styles.thumbAdd}>
+      Добавить фото
+      <input
+        aria-label="Фотографии товара: файлы"
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={(event) => {
+          void onFiles(event.target.files);
+          event.target.value = "";
+        }}
+      />
+    </label>
+  );
   return (
     <div className={styles.productPhotos}>
       <PlacementFields
@@ -204,7 +224,7 @@ export function ProductPhotoFields({
         onChange={onPinnedChange}
         previewSrc={shown === pinned ? undefined : shownUrl}
         showFocus={shown === pinned && Boolean(pinnedPlacement)}
-        thumbs={slots.length > 1 ? (
+        thumbs={
           <div className={styles.thumbs} aria-label="Фотографии товара" onMouseLeave={() => setHovered(null)}>
             {slots.map((slot, index) => (
               <button
@@ -219,22 +239,10 @@ export function ProductPhotoFields({
                 {slot && urls[slot.assetId] ? <img src={urls[slot.assetId]} alt="" /> : <span>{index === 0 ? "Главное" : index}</span>}
               </button>
             ))}
+            {addPhoto}
           </div>
-        ) : null}
+        }
       />
-      <label>
-        Добавить фото
-        <input
-          aria-label="Фотографии товара: файлы"
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={(event) => {
-            void onFiles(event.target.files);
-            event.target.value = "";
-          }}
-        />
-      </label>
       {uploadError ? <p role="alert">{uploadError}</p> : null}
     </div>
   );
