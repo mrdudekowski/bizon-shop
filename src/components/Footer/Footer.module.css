@@ -25,16 +25,16 @@
 
 .wordmark {
   font-size: clamp(2.25rem, 5vw, 4.5rem);
-  letter-spacing: 0.14em;
-  line-height: 0.95;
+  letter-spacing: var(--tracking-kicker);
+  line-height: var(--leading-display);
 }
 
 .brand p {
   max-width: 34ch;
   margin: 0;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--color-on-dark-subtle);
   font-size: 1.05rem;
-  line-height: 1.55;
+  line-height: var(--leading-body);
 }
 
 .brand a {
@@ -58,10 +58,10 @@
 .nav p,
 .contact p {
   margin: 0 0 8px;
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 0.72rem;
+  color: var(--color-on-dark-faint);
+  font-size: var(--type-kicker);
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: var(--tracking-kicker);
   text-transform: uppercase;
 }
 
@@ -69,7 +69,7 @@
 .contact a,
 .contact span {
   width: fit-content;
-  color: rgba(255, 255, 255, 0.84);
+  color: var(--color-on-dark-muted);
   line-height: 1.4;
   transition: color var(--transition-fast);
 }
@@ -97,7 +97,7 @@
   justify-content: space-between;
   padding-top: 2rem;
   border-top: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--color-on-dark-subtle);
   font-size: 0.75rem;
 }
 

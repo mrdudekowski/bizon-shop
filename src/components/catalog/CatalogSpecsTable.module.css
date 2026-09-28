@@ -11,8 +11,8 @@
 .title {
   margin: 0;
   font-size: clamp(1.5rem, 3vw, 2.25rem);
-  font-weight: 550;
-  letter-spacing: -0.04em;
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-display);
   line-height: 1.15;
 }
 
@@ -43,7 +43,7 @@
   margin: 0;
   font-size: 1.0625rem;
   font-weight: 650;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-display);
   font-variant-numeric: tabular-nums;
 }
 
@@ -68,14 +68,14 @@
   color: var(--color-muted);
   font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-body);
   text-transform: uppercase;
 }
 
 .cardFacts dd {
   margin: 0;
   font-size: 0.9375rem;
-  font-weight: 550;
+  font-weight: var(--weight-display);
   font-variant-numeric: tabular-nums;
   word-break: break-word;
 }
@@ -120,7 +120,7 @@
   color: var(--color-muted);
   font-size: 0.6875rem;
   font-weight: 650;
-  letter-spacing: 0.045em;
+  letter-spacing: var(--tracking-body);
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -144,7 +144,7 @@
   z-index: 2;
   background: var(--color-surface);
   font-weight: 650;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-display);
   box-shadow: 1px 0 0 var(--color-border);
 }
 

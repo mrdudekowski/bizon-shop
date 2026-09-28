@@ -8,13 +8,13 @@
 
 .media {
   position: relative;
-  aspect-ratio: 1;
+  aspect-ratio: var(--aspect-square);
   overflow: hidden;
   background: var(--bizon-neutral-100);
 }
 
 .media img {
-  object-fit: cover;
+  object-fit: var(--media-fit-cover);
   transition: transform var(--transition-media);
 }
 
@@ -33,8 +33,8 @@
   margin: 0;
   color: var(--bizon-mint-700);
   font-size: 0.68rem;
-  font-weight: 750;
-  letter-spacing: 0.12em;
+  font-weight: var(--weight-kicker);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
 
@@ -42,7 +42,7 @@
   margin: 0;
   font-size: 1.3rem;
   font-weight: 600;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--tracking-display);
 }
 
 .description {

@@ -19,16 +19,16 @@
 .sectionTitle {
   margin: 0 0 1.25rem;
   font-family: var(--font-display);
-  font-size: clamp(1.8rem, 4vw, 3rem);
-  font-weight: 560;
-  letter-spacing: -0.05em;
+  font-size: var(--type-title);
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-display);
 }
 
 .taxonomyLabel {
   color: var(--color-muted);
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
 
@@ -46,7 +46,7 @@
 .taxonomyLinkActive {
   color: var(--color-text);
   font-size: 0.9375rem;
-  font-weight: 750;
+  font-weight: var(--weight-kicker);
   text-decoration: underline;
   text-underline-offset: 0.25em;
 }
@@ -84,11 +84,11 @@
 
 .card .media {
   min-height: clamp(14rem, 24vw, 22rem);
-  aspect-ratio: 4 / 5;
+  aspect-ratio: var(--aspect-portrait);
 }
 
 .media img {
-  object-fit: cover;
+  object-fit: var(--media-fit-cover);
   transition: transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
@@ -106,18 +106,18 @@
 .meta {
   margin: 0;
   color: var(--color-kicker);
-  font-size: 0.72rem;
-  font-weight: 750;
-  letter-spacing: 0.14em;
+  font-size: var(--type-kicker);
+  font-weight: var(--weight-kicker);
+  letter-spacing: var(--tracking-kicker);
   text-transform: uppercase;
 }
 
 .copy h2 {
   margin: 0;
   font-size: clamp(1.6rem, 3.5vw, 3rem);
-  font-weight: 540;
+  font-weight: var(--weight-display);
   line-height: 1.05;
-  letter-spacing: -0.04em;
+  letter-spacing: var(--tracking-display);
 }
 
 .copy h2 a {
@@ -128,7 +128,7 @@
 .copy > p:not(.meta) {
   margin: 0;
   color: var(--color-muted);
-  line-height: 1.55;
+  line-height: var(--leading-body);
 }
 
 .readMore {
@@ -153,8 +153,8 @@
   max-width: 18ch;
   margin: 0;
   font-size: clamp(2rem, 5vw, 3.5rem);
-  font-weight: 520;
-  letter-spacing: -0.05em;
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-display);
 }
 
 @media (max-width: 899px) {

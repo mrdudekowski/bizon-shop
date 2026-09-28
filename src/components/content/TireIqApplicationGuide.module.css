@@ -25,9 +25,9 @@
 .kicker {
   margin: 0 0 0.8rem;
   color: var(--color-kicker);
-  font-size: 0.72rem;
-  font-weight: 750;
-  letter-spacing: 0.14em;
+  font-size: var(--type-kicker);
+  font-weight: var(--weight-kicker);
+  letter-spacing: var(--tracking-kicker);
   text-transform: uppercase;
 }
 
@@ -35,17 +35,17 @@
   max-width: 10ch;
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(2.2rem, 5vw, 4.5rem);
-  font-weight: 560;
-  line-height: 0.98;
-  letter-spacing: -0.06em;
+  font-size: var(--type-title);
+  font-weight: var(--weight-display);
+  line-height: var(--leading-display);
+  letter-spacing: var(--tracking-display);
 }
 
 .heading > p:last-child {
   max-width: 38ch;
   margin: 1.25rem 0 0;
   color: var(--color-muted);
-  line-height: 1.55;
+  line-height: var(--leading-body);
 }
 
 .groups {

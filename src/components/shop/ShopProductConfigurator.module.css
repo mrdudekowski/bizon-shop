@@ -36,7 +36,7 @@
 }
 
 .mainImage img {
-  object-fit: cover;
+  object-fit: var(--media-fit-cover);
 }
 
 .thumbnails {
@@ -57,7 +57,7 @@
 }
 
 .thumbnails img {
-  object-fit: cover;
+  object-fit: var(--media-fit-cover);
 }
 
 .thumbnailActive {
@@ -74,18 +74,18 @@
 .kicker {
   margin: 0;
   color: var(--bizon-mint-700);
-  font-size: 0.72rem;
-  font-weight: 750;
-  letter-spacing: 0.16em;
+  font-size: var(--type-kicker);
+  font-weight: var(--weight-kicker);
+  letter-spacing: var(--tracking-kicker);
   text-transform: uppercase;
 }
 
 .details h1,
 .story h2 {
   margin: 0;
-  font-weight: 520;
-  letter-spacing: -0.055em;
-  line-height: 0.98;
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
   text-wrap: balance;
 }
 
@@ -119,7 +119,7 @@
 }
 
 .price span {
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
   background: var(--bizon-neutral-100);
   padding: 4px 8px;
   font-size: 0.75rem;
@@ -239,7 +239,7 @@
 
   .mainImage {
     min-height: auto;
-    aspect-ratio: 1;
+    aspect-ratio: var(--aspect-square);
   }
 }
 

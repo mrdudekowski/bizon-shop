@@ -67,7 +67,7 @@
   cursor: pointer;
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: var(--radius-circle);
   color: var(--color-foreground);
 }
 
@@ -97,7 +97,7 @@
   color: var(--color-text-subtle);
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
 
