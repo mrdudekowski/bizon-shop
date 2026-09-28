@@ -24,6 +24,9 @@ export default async function HomePage() {
   return (
     <>
       <MainHero content={page.hero} slides={getHeroTireSlides(catalog)} />
+      <Suspense fallback={null}>
+        <TireSelectionEntry content={page.selectionEntry} catalog={catalog} />
+      </Suspense>
       <TireDirectionShowcase catalog={catalog} content={page.directions} />
       <ShopCampaign content={page.shopCampaign} />
       <ExpertiseSupport
@@ -31,9 +34,6 @@ export default async function HomePage() {
         story={stories[0]}
         content={page.expertise}
       />
-      <Suspense fallback={null}>
-        <TireSelectionEntry content={page.selectionEntry} catalog={catalog} />
-      </Suspense>
     </>
   );
 }

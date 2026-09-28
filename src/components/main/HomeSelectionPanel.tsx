@@ -11,7 +11,8 @@ import { SelectionProgress } from "@/components/selection/SelectionProgress";
 import { SelectionResult } from "@/components/selection/SelectionResult";
 import { VehicleTypeStep } from "@/components/selection/VehicleTypeStep";
 import type { TireCatalogReadModel } from "@/lib/catalog/tireReadModel";
-import type { PageShell } from "@/lib/content/pages/types";
+import { TIRE_CATEGORIES } from "@/lib/catalog/tireCategories";
+import type { HomePageContent } from "@/lib/content/pages/types";
 import { recommendTires } from "@/lib/selection/engine";
 import { selectionHomeHref } from "@/lib/selection/homeHref";
 import type { SelectionState, SelectionStep } from "@/lib/selection/types";
@@ -28,6 +29,14 @@ const STEP_ORDER: SelectionStep[] = [
   "fitment",
   "result",
 ];
+
+const APPLICATION_LABELS: Record<string, string> = {
+  long_haul: "Магистральные перевозки",
+  regional: "Региональные перевозки",
+  off_road: "Сложные покрытия",
+  construction: "Строительство и карьеры",
+  urban: "Городская эксплуатация",
+};
 
 function resolveStep(
   params: URLSearchParams,
@@ -53,7 +62,7 @@ export function HomeSelectionPanel({
   content,
 }: {
   catalog: TireCatalogReadModel;
-  content: PageShell;
+  content: HomePageContent["selectionEntry"];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -126,20 +135,23 @@ export function HomeSelectionPanel({
     <section
       className={styles.selectionEntry}
       id="solutions"
-      data-main-chrome-tone="light"
+      data-main-chrome-tone="dark"
+      data-selection-theme="home"
+      style={content.imageUrl ? { backgroundImage: `linear-gradient(90deg, rgba(5, 8, 9, .86) 0%, rgba(5, 8, 9, .48) 52%, rgba(5, 8, 9, .16) 100%), url("${content.imageUrl}")` } : undefined}
     >
       <div className={styles.inner}>
-        <header className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>{content.eyebrow}</p>
-          <h2>{content.title}</h2>
-          <p>{content.lead}</p>
-          <p>
-            Уже знаете размер и количество?{" "}
-            <Link href="/contact?subject=procurement">Отправьте спецификацию</Link> — проверим подходящие модели и сформируем запрос.
-          </p>
-        </header>
+        <div className={styles.homeSelectionLayout}>
+          <header className={styles.sectionHeading}>
+            <p className={styles.eyebrow}>{content.eyebrow}</p>
+            <h2>{content.title}</h2>
+            <p>{content.lead}</p>
+            <p>
+              Уже знаете размер и количество?{" "}
+              <Link href="/contact?subject=procurement">Отправьте спецификацию</Link> — проверим подходящие модели и сформируем запрос.
+            </p>
+          </header>
 
-        <div className={styles.selectionPanel}>
+          <div className={styles.selectionPanel}>
           {catalog.directions.length === 0 ? (
             <div className={selectionStyles.failure}>
               <p className={selectionStyles.eyebrow}>Каталог проверяется</p>
@@ -218,6 +230,23 @@ export function HomeSelectionPanel({
               </div>
             </div>
           )}
+          </div>
+          <nav className={styles.applicationLinks} aria-label="Подбор шин по применению">
+            <div className={styles.applicationIntro}>
+              <p className={styles.eyebrow}>Подбор по применению</p>
+              <h3>Выберите свою сферу</h3>
+            </div>
+            {TIRE_CATEGORIES.map((category) => (
+              <Link
+                className={styles.applicationItem}
+                href={`/models?application=${encodeURIComponent(category.value)}`}
+                key={category.value}
+              >
+                <span>{APPLICATION_LABELS[category.value] ?? category.name}</span>
+                <span aria-hidden="true">↗</span>
+              </Link>
+            ))}
+          </nav>
         </div>
       </div>
     </section>

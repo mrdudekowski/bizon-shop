@@ -89,12 +89,46 @@
 .failure h1 { margin: 0; font-size: clamp(2.5rem, 6vw, 5rem); line-height: .98; letter-spacing: -.05em; }
 .failure p { margin: 0; color: var(--color-muted); line-height: 1.6; }
 
+:global([data-selection-theme="home"]) .progressText { color: rgba(255,255,255,.66); }
+:global([data-selection-theme="home"]) .progressTrack { background: rgba(255,255,255,.22); }
+:global([data-selection-theme="home"]) .legend { color: #fff; }
+:global([data-selection-theme="home"]) .questionHint { color: rgba(255,255,255,.68); }
+:global([data-selection-theme="home"]) .choiceCard,
+:global([data-selection-theme="home"]) .fitmentGroup,
+:global([data-selection-theme="home"]) .resultList article {
+  border-color: rgba(255,255,255,.2);
+  background: rgba(255,255,255,.045);
+  color: #fff;
+}
+:global([data-selection-theme="home"]) .choiceCard > span:last-child:not(.choiceIndex),
+:global([data-selection-theme="home"]) .fitmentGroup,
+:global([data-selection-theme="home"]) .resultList ul { color: rgba(255,255,255,.7); }
+:global([data-selection-theme="home"]) .choiceCard:hover { background: rgba(255,255,255,.1); }
+:global([data-selection-theme="home"]) .choiceCard:has(input:checked) { border-color: var(--color-accent-mint); background: color-mix(in srgb, var(--color-accent-mint) 16%, rgba(255,255,255,.04)); }
+:global([data-selection-theme="home"]) .fitmentGroup h2,
+:global([data-selection-theme="home"]) .resultList h2 { color: #fff; }
+:global([data-selection-theme="home"]) .inlineChoices span { border-color: rgba(255,255,255,.32); color: #fff; }
+:global([data-selection-theme="home"]) .inlineChoices input:checked + span { background: color-mix(in srgb, var(--color-accent-mint) 18%, transparent); }
+:global([data-selection-theme="home"]) .sizeField { color: rgba(255,255,255,.7); }
+:global([data-selection-theme="home"]) .sizeField input { border-color: rgba(255,255,255,.28); background: rgba(0,0,0,.3); color: #fff; }
+:global([data-selection-theme="home"]) .wizardActions { border-color: rgba(255,255,255,.18); }
+:global([data-selection-theme="home"]) .backButton,
+:global([data-selection-theme="home"]) .modelLink { color: var(--bizon-mint-400); }
+:global([data-selection-theme="home"]) .resultLead { color: rgba(255,255,255,.7); }
+:global([data-selection-theme="home"]) .consultation,
+:global([data-selection-theme="home"]) .failure { background: rgba(255,255,255,.06); color: #fff; }
+:global([data-selection-theme="home"]) .consultation p,
+:global([data-selection-theme="home"]) .failure p { color: rgba(255,255,255,.7); }
+
 @media (max-width: 899px) {
   .pageIntro { grid-template-columns: 1fr; }
   .resultList { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 639px) {
+  .selectionEntry { padding: 3rem 0; background-position: 61% center; }
+  .homeSelectionLayout { padding: 1rem; gap: 1.5rem; }
+  .homeSelectionLayout .sectionHeading h2 { font-size: clamp(2.5rem, 12vw, 4rem); }
   .wizardActions, .resultHandoff, .resultActions { align-items: stretch; flex-direction: column; }
   .wizardActions :global(.btn-accent), .resultHandoff :global(.btn-accent), .resultActions :global(.btn-secondary) { width: 100%; }
 }

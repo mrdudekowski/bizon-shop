@@ -21,6 +21,8 @@ export const HOME_PAGE_DEFAULTS: HomePageContent = {
     eyebrow: "Начать с задачи",
     title: "Подобрать модель по технике и маршруту",
     lead: "Выберите тип техники — первый ответ уже будет сохранён в подборе.",
+    imageUrl: "",
+    imageAlt: "Грузовой автомобиль на дороге в горном ландшафте",
   },
   directions: {
     eyebrow: "BIZON TIRES",

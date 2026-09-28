@@ -26,6 +26,11 @@ export type HomeShopCampaignContent = PageShell & {
   cta: PageCta;
 };
 
+export type HomeSelectionEntryContent = PageShell & {
+  imageUrl: string;
+  imageAlt: string;
+};
+
 export type HomeResumeContent = PageShell & {
   primaryCta: PageCta;
   secondaryCta: PageCta;
@@ -36,7 +41,7 @@ export type HomePageContent = {
   seoTitle?: string;
   seoDescription?: string;
   hero: HomeHeroContent;
-  selectionEntry: PageShell;
+  selectionEntry: HomeSelectionEntryContent;
   directions: PageShell;
   expertise: PageShell;
   shopCampaign: HomeShopCampaignContent;

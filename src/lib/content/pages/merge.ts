@@ -52,7 +52,7 @@ export function mergeHomeContent(
       primaryCta?: CtaPatch;
       secondaryCta?: CtaPatch;
     };
-    selectionEntry?: Partial<PageShell>;
+    selectionEntry?: Partial<HomePageContent["selectionEntry"]>;
     directions?: Partial<PageShell>;
     expertise?: Partial<PageShell>;
     shopCampaign?: Partial<Omit<HomePageContent["shopCampaign"], "cta">> & {
@@ -77,7 +77,11 @@ export function mergeHomeContent(
       metricLabel: pickText(patch.hero?.metricLabel, defaults.hero.metricLabel),
       metricText: pickText(patch.hero?.metricText, defaults.hero.metricText),
     },
-    selectionEntry: pickShell(patch.selectionEntry, defaults.selectionEntry),
+    selectionEntry: {
+      ...pickShell(patch.selectionEntry, defaults.selectionEntry),
+      imageUrl: pickImageUrl(patch.selectionEntry?.imageUrl, defaults.selectionEntry.imageUrl),
+      imageAlt: pickText(patch.selectionEntry?.imageAlt, defaults.selectionEntry.imageAlt),
+    },
     directions: pickShell(patch.directions, defaults.directions),
     expertise: pickShell(patch.expertise, defaults.expertise),
     shopCampaign: {
