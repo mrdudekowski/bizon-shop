@@ -4,12 +4,14 @@
 .filters label { flex: 1 1 150px; }
 .filters label:first-child { flex: 2 1 280px; }
 .filterGroup { display: flex; flex-wrap: wrap; gap: 8px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 18px; list-style: none; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 18px; list-style: none; }
 .directionPicker { margin-top: 28px; }
-.directionChoice { display: grid; gap: 8px; }
-.directionChoice .card { align-items: center; min-height: 132px; }
-.directionSettings { justify-self: start; margin-left: 8px; color: var(--ink-muted); font-size: 12px; text-decoration: none; }
-.directionSettings:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.directionChoice { position: relative; aspect-ratio: 1 / 1; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: #1b222c; }
+.directionChoice:hover { border-color: var(--accent); }
+.directionChoice:has(.card:focus-visible), .directionChoice:has(.directionSettings:focus-visible) { outline: 3px solid var(--accent); outline-offset: 3px; }
+.card:focus-visible, .directionSettings:focus-visible { outline: none; }
+.directionSettings { position: absolute; top: 12px; left: 12px; z-index: 3; display: inline-flex; min-height: 36px; align-items: center; padding: 0 10px; border-radius: 8px; background: rgb(12 16 22 / 62%); color: #fff; font-size: 12px; font-weight: 600; text-decoration: none; backdrop-filter: blur(8px); }
+.directionSettings:hover { background: rgb(12 16 22 / 82%); color: #fff; text-decoration: underline; text-underline-offset: 3px; }
 .manageDirections { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink); text-decoration: none; font-weight: 600; }
 .manageDirections:hover { background: var(--surface-muted); }
 .catalogList { display: grid; gap: 8px; width: 100%; max-width: 1120px; margin: 20px 0 0; padding: 0; list-style: none; }
@@ -50,14 +52,16 @@
 .catalogRow:hover .rowArrow { color: var(--ink); }
 .rowSettings { display: inline-flex; min-height: 40px; flex: 0 0 auto; align-items: center; padding: 0 8px; border-radius: 8px; color: var(--ink-muted); font-size: 12px; text-decoration: none; }
 .rowSettings:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
-.card { display: flex; gap: 18px; min-width: 0; padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); text-decoration: none; transition: border-color 140ms; }
-.card:hover { border-color: var(--accent); }
-.thumb { display: inline-grid; place-items: center; width: 52px; height: 56px; border-radius: 6px; background: var(--canvas); color: var(--ink-muted); object-fit: contain; flex-shrink: 0; }
-.thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
-.card .thumb { width: 90px; height: 100px; }
-.cardBody { display: grid; align-content: center; gap: 8px; min-width: 0; flex: 1; }
-.cardBody strong { font-size: 17px; }
-.meta { display: block; color: var(--ink-muted); font-size: 12px; font-weight: 400; margin-top: 3px; overflow-wrap: anywhere; }
+.card { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 0; min-width: 0; min-height: 0; padding: 0 18px 16px; border: 0; border-radius: inherit; background: transparent; color: #fff; text-decoration: none; }
+.card::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(180deg, rgb(12 16 22 / 34%) 0%, rgb(12 16 22 / 8%) 36%, rgb(12 16 22 / 52%) 68%, rgb(12 16 22 / 86%) 100%); }
+.card:hover { border-color: transparent; }
+.thumb { position: absolute; inset: 0; z-index: 0; display: grid; place-items: center; width: auto; height: auto; overflow: hidden; border-radius: 0; background: #1b222c; color: rgb(255 255 255 / 55%); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 0; transform: scale(1); transition: transform 220ms ease; }
+.directionChoice:hover .thumb img { transform: scale(1.04); }
+.cardBody { position: relative; z-index: 2; display: grid; gap: 4px; min-width: 0; padding-right: 28px; color: #fff; }
+.cardBody strong { color: #fff; font-size: 17px; overflow-wrap: anywhere; text-shadow: 0 1px 8px rgb(0 0 0 / 45%); }
+.cardArrow { position: absolute; right: 16px; bottom: 22px; z-index: 2; color: #fff; }
+.meta { display: block; color: rgb(255 255 255 / 88%); font-size: 12px; font-weight: 400; margin-top: 0; overflow-wrap: anywhere; }
 .badges { display: flex; flex-wrap: wrap; gap: 6px; }
 .badge, .badgeOnSite { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 4px 10px; border: 0; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--surface-muted); color: var(--ink-muted); }
 .badge::before, .badgeOnSite::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
@@ -97,7 +101,12 @@
   .rowBadges .badge,.rowBadges .badgeOnSite { min-height: 26px; padding: 3px 8px; font-size: 12px; }
   .rowArrow { display: none; }
   .rowOpenLink { display: none; }
-  .card { padding: 16px; }
+  .card { padding: 0 14px 14px; }
+  .directionSettings { top: 10px; left: 10px; }
   .empty { padding: 40px 20px; }
   .pageHead > button { width: auto; max-width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .thumb img { transition: none; }
+  .directionChoice:hover .thumb img { transform: none; }
 }

@@ -100,15 +100,15 @@ export function TireModelList() {
           </div>
           {loading ? <AdminLoading label="Загружаем направления…" /> : <ul className={`${styles.grid} ${styles.directionPicker}`}>
             {directions.map((direction) => {
-              const asset = assets.find((item) => item.id === direction.imageAssetId);
+              const coverSrc = assets.find((item) => item.id === direction.imageAssetId)?.dataUrl ?? resolveSiteCatalogPreview(direction.slug);
               const count = items.filter((item) => item.directionId === direction.id).length;
               return (
                 <li key={direction.id}>
                   <article className={styles.directionChoice}>
                     <Link className={styles.card} href={`/?direction=${encodeURIComponent(direction.id)}`}>
-                      <span className={styles.thumb}>{asset || resolveSiteCatalogPreview(direction.slug) ? <Image unoptimized width={52} height={56} src={asset?.dataUrl ?? resolveSiteCatalogPreview(direction.slug)!} alt="" /> : <Icon name="directions" size={34} />}</span>
+                      <span className={styles.thumb} aria-hidden="true">{coverSrc ? <Image unoptimized fill sizes="(max-width: 720px) 92vw, 320px" src={coverSrc} alt="" style={{ objectFit: "cover" }} /> : <Icon name="directions" size={48} />}</span>
                       <span className={styles.cardBody}><strong>{direction.name}</strong><span className={styles.meta}>{count} моделей</span></span>
-                      <Icon name="arrow" size={16} />
+                      <Icon className={styles.cardArrow} name="arrow" size={16} />
                     </Link>
                     <Link className={styles.directionSettings} href={`/tires/directions/${direction.id}`}>Настроить направление</Link>
                   </article>
