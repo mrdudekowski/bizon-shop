@@ -199,7 +199,7 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
     root: {
       seoTitle: { tab: "Для поиска", field: "Заголовок страницы в поиске" },
       seoDescription: { tab: "Для поиска", field: "Описание страницы в поиске" },
-      hero: { tab: "Шапка", children: { ...SECTION_COPY, image: { field: "Картинка шапки", children: IMAGE_CHILDREN }, primaryCta: { field: "Основная кнопка", children: CTA }, secondaryCta: { field: "Вторая кнопка", children: CTA }, cta: { field: "Кнопка", children: CTA }, metricLabel: { field: "Подпись метрики" }, metricText: { field: "Текст метрики" } } },
+      hero: { tab: "Шапка", children: { ...SECTION_COPY, image: { field: "Фон шапки", children: IMAGE_CHILDREN }, primaryCta: { field: "Основная кнопка", children: CTA }, secondaryCta: { field: "Вторая кнопка", children: CTA }, cta: { field: "Кнопка", children: CTA }, metricLabel: { field: "Подпись метрики" }, metricText: { field: "Текст метрики" } } },
       directions: { tab: "Направления", children: SECTION_COPY },
       expertise: { tab: "Экспертиза", children: SECTION_COPY },
       shopCampaign: {

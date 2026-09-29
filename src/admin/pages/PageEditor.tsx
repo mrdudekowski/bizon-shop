@@ -191,7 +191,7 @@ function HomeFields({
         onChange={(hero) => onChange({ ...draft, hero: { ...draft.hero, ...hero } })}
       />
       <PlacementFields
-        label="Картинка hero"
+        label="Фон hero"
         value={draft.hero.image}
         onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image } })}
       />
