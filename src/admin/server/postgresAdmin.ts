@@ -52,6 +52,7 @@ import {
 } from "../domain/changeSetTransitions";
 import { getObjectStore } from "../../storage/objectStore";
 import { MediaRejected, putMedia } from "../../storage/putMedia";
+import { shopHomeChildRows, shopHomeParentValues } from "../shopHomeWrite";
 
 function databaseUri(): string {
   const connectionString = process.env.DATABASE_URI;
@@ -1838,35 +1839,45 @@ async function writePage(draft: PageDraft) {
     return;
   }
   if (draft.id === "shop-home") {
+    const [page] = await query(`SELECT id FROM pages WHERE key='shop-home'`);
+    if (page == null) return;
+    const parentId = Number(page.id);
     await query(
-      `UPDATE pages SET seo_seo_title=$1, seo_seo_description=$2, shop_hero_eyebrow=$3, shop_hero_title=$4, shop_hero_lead=$5, shop_hero_cta_label=$6, shop_hero_cta_href=$7, shop_hero_image_id=$8, shop_hero_image_alt=$9, status='published', updated_at=now() WHERE key='shop-home'`,
-      [
-        draft.seoTitle,
-        draft.seoDescription,
-        draft.hero.eyebrow,
-        draft.hero.title,
-        draft.hero.lead,
-        draft.hero.cta.label,
-        draft.hero.cta.href,
-        draft.hero.image ? Number(draft.hero.image.assetId) : null,
-        draft.hero.image?.alt || null,
-      ],
+      `UPDATE pages SET seo_seo_title=$1, seo_seo_description=$2, shop_hero_eyebrow=$3, shop_hero_title=$4, shop_hero_lead=$5, shop_hero_cta_label=$6, shop_hero_cta_href=$7, shop_hero_image_id=$8, shop_hero_image_alt=$9, shop_wheels_intro_eyebrow=$10, shop_wheels_intro_title=$11, shop_wheels_intro_lead=$12, shop_wheels_intro_kicker=$13, shop_vehicles_eyebrow=$14, shop_vehicles_title=$15, shop_vehicles_lead=$16, shop_vehicles_cta_label=$17, shop_vehicles_cta_href=$18, status='published', updated_at=now() WHERE key='shop-home'`,
+      shopHomeParentValues(draft),
     );
-    for (const slide of draft.categoryCarousel) {
+    const children = shopHomeChildRows(parentId, draft);
+    await query(`DELETE FROM pages_shop_order_steps WHERE _parent_id=$1`, [parentId]);
+    for (const step of children.steps) {
       await query(
-        `UPDATE pages_shop_category_carousel SET desktop_image_id=$2, mobile_image_id=$3 WHERE id=$1`,
+        `INSERT INTO pages_shop_order_steps (id, _parent_id, _order, title, description) VALUES ($1, $2, $3, $4, $5)`,
+        [step.id, step.parentId, step.order, step.title, step.description],
+      );
+    }
+    await query(`DELETE FROM pages_shop_category_carousel WHERE _parent_id=$1`, [parentId]);
+    for (const slide of children.carousel) {
+      await query(
+        `INSERT INTO pages_shop_category_carousel (id, slide_id, _parent_id, _order, kicker, title, action, href, alt, desktop_image_id, mobile_image_id) VALUES ($1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
-          Number(slide.id),
-          slide.desktopImage ? Number(slide.desktopImage.assetId) : null,
-          slide.mobileImage ? Number(slide.mobileImage.assetId) : null,
+          slide.id,
+          slide.parentId,
+          slide.order,
+          slide.kicker,
+          slide.title,
+          slide.action,
+          slide.href,
+          slide.alt,
+          slide.desktopImageId,
+          slide.mobileImageId,
         ],
       );
     }
-    for (const slide of draft.vehicles.slides) {
-      await query(`UPDATE pages_shop_vehicles_slides SET image_id=$2 WHERE id=$1`, [
-        Number(slide.id),
-        slide.image ? Number(slide.image.assetId) : null,
-      ]);
+    await query(`DELETE FROM pages_shop_vehicles_slides WHERE _parent_id=$1`, [parentId]);
+    for (const slide of children.vehicles) {
+      await query(
+        `INSERT INTO pages_shop_vehicles_slides (id, _parent_id, _order, title, alt, image_id) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [slide.id, slide.parentId, slide.order, slide.title, slide.alt, slide.imageId],
+      );
     }
     return;
   }

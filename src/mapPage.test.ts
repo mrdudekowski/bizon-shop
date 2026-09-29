@@ -115,24 +115,82 @@ describe("mapHomePatch", () => {
   });
 });
 
+const emptyShopHomeRow = {
+  seo_seo_title: "",
+  seo_seo_description: "",
+  shop_hero_eyebrow: "",
+  shop_hero_title: "Shop",
+  shop_hero_lead: "",
+  shop_hero_cta_label: "",
+  shop_hero_cta_href: "",
+  shop_hero_image_alt: "",
+};
+
 describe("mapShopHomePatch", () => {
   it("maps a public shop hero image", () => {
     expect(
       mapShopHomePatch({
         row: {
-          seo_seo_title: "",
-          seo_seo_description: "",
-          shop_hero_eyebrow: "",
-          shop_hero_title: "Shop",
-          shop_hero_lead: "",
-          shop_hero_cta_label: "",
-          shop_hero_cta_href: "",
+          ...emptyShopHomeRow,
           shop_hero_image_url: "https://s3.twcstorage.ru/bucket/bizon/media/hero.png",
           shop_hero_image_alt: "Hero",
         },
         carousel: [],
         vehicles: [],
+        orderSteps: [],
       }).hero.imageUrl,
     ).toBe("https://s3.twcstorage.ru/bucket/bizon/media/hero.png");
+  });
+
+  it("maps wheels intro, order steps and vehicle shell so the site can leave defaults behind", () => {
+    expect(
+      mapShopHomePatch({
+        row: {
+          ...emptyShopHomeRow,
+          shop_wheels_intro_kicker: "BIZON Forged",
+          shop_wheels_intro_title: "Выберите свой дизайн",
+          shop_wheels_intro_lead: "Под заказ",
+          shop_vehicles_eyebrow: "BIZON Forged",
+          shop_vehicles_title: "Созданы менять характер",
+          shop_vehicles_cta_label: "Выбрать диски",
+          shop_vehicles_cta_href: "#wheels",
+        },
+        carousel: [
+          {
+            id: "acc",
+            kicker: "Accessories",
+            title: "Детали для движения",
+            action: "Открыть Accessories",
+            href: "/shop/accessories",
+            desktop_image_url: "/images/acc.png",
+            alt: "Acc",
+          },
+        ],
+        vehicles: [{ title: "Rubicon · Nomad", image_url: "/images/rubicon.png", alt: "Rubicon" }],
+        orderSteps: [{ title: "Выберите дизайн", description: "Посмотрите модели." }],
+      }),
+    ).toMatchObject({
+      wheelsIntro: {
+        kicker: "BIZON Forged",
+        title: "Выберите свой дизайн",
+        lead: "Под заказ",
+      },
+      orderSteps: [{ title: "Выберите дизайн", description: "Посмотрите модели." }],
+      categoryCarousel: [
+        {
+          id: "acc",
+          kicker: "Accessories",
+          title: "Детали для движения",
+          href: "/shop/accessories",
+          desktopImage: "/images/acc.png",
+        },
+      ],
+      vehicles: {
+        eyebrow: "BIZON Forged",
+        title: "Созданы менять характер",
+        cta: { label: "Выбрать диски", href: "#wheels" },
+        slides: [{ title: "Rubicon · Nomad", image: "/images/rubicon.png", alt: "Rubicon" }],
+      },
+    });
   });
 });

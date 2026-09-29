@@ -158,6 +158,27 @@ export function mapStubPatch(row: StubRow): StubPatch {
   };
 }
 
+type ShopHomeRow = {
+  seo_seo_title: string | null;
+  seo_seo_description: string | null;
+  shop_hero_eyebrow: string | null;
+  shop_hero_title: string | null;
+  shop_hero_lead: string | null;
+  shop_hero_cta_label: string | null;
+  shop_hero_cta_href: string | null;
+  shop_hero_image_url?: string | null;
+  shop_hero_image_alt: string | null;
+  shop_wheels_intro_kicker?: string | null;
+  shop_wheels_intro_eyebrow?: string | null;
+  shop_wheels_intro_title?: string | null;
+  shop_wheels_intro_lead?: string | null;
+  shop_vehicles_eyebrow?: string | null;
+  shop_vehicles_title?: string | null;
+  shop_vehicles_lead?: string | null;
+  shop_vehicles_cta_label?: string | null;
+  shop_vehicles_cta_href?: string | null;
+};
+
 export type ShopHomePatch = {
   seoTitle?: string;
   seoDescription?: string;
@@ -169,6 +190,13 @@ export type ShopHomePatch = {
     imageAlt?: string;
     cta?: HomeCta;
   };
+  wheelsIntro?: {
+    kicker?: string;
+    eyebrow?: string;
+    title?: string;
+    lead?: string;
+  };
+  orderSteps?: { title: string; description: string }[];
   categoryCarousel?: {
     id: string;
     kicker?: string;
@@ -180,21 +208,15 @@ export type ShopHomePatch = {
     alt?: string;
   }[];
   vehicles?: {
+    eyebrow?: string;
+    title?: string;
+    lead?: string;
+    cta?: HomeCta;
     slides?: { title?: string; image?: string; alt?: string }[];
   };
 };
 
-type ShopHomeRow = {
-  seo_seo_title: string | null;
-  seo_seo_description: string | null;
-  shop_hero_eyebrow: string | null;
-  shop_hero_title: string | null;
-  shop_hero_lead: string | null;
-  shop_hero_cta_label: string | null;
-  shop_hero_cta_href: string | null;
-  shop_hero_image_url?: string | null;
-  shop_hero_image_alt: string | null;
-};
+const optionalText = (value: string | null | undefined): string | undefined => value || undefined;
 
 export function mapShopHomePatch(input: {
   row: ShopHomeRow;
@@ -209,20 +231,41 @@ export function mapShopHomePatch(input: {
     alt?: string | null;
   }[];
   vehicles: { title?: string | null; image_url?: string | null; alt?: string | null }[];
+  orderSteps?: { title?: string | null; description?: string | null }[];
 }): ShopHomePatch {
-  const { row, carousel, vehicles } = input;
+  const { row, carousel, vehicles, orderSteps = [] } = input;
   const cta = mapCta(row.shop_hero_cta_label, row.shop_hero_cta_href);
+  const vehiclesCta = mapCta(row.shop_vehicles_cta_label ?? null, row.shop_vehicles_cta_href ?? null);
+  const wheelsIntro = {
+    ...(optionalText(row.shop_wheels_intro_kicker) ? { kicker: row.shop_wheels_intro_kicker } : {}),
+    ...(optionalText(row.shop_wheels_intro_eyebrow) ? { eyebrow: row.shop_wheels_intro_eyebrow } : {}),
+    ...(optionalText(row.shop_wheels_intro_title) ? { title: row.shop_wheels_intro_title } : {}),
+    ...(optionalText(row.shop_wheels_intro_lead) ? { lead: row.shop_wheels_intro_lead } : {}),
+  };
+  const vehicleShell = {
+    ...(optionalText(row.shop_vehicles_eyebrow) ? { eyebrow: row.shop_vehicles_eyebrow } : {}),
+    ...(optionalText(row.shop_vehicles_title) ? { title: row.shop_vehicles_title } : {}),
+    ...(optionalText(row.shop_vehicles_lead) ? { lead: row.shop_vehicles_lead } : {}),
+    ...(vehiclesCta ? { cta: vehiclesCta } : {}),
+  };
+
   return {
-    ...(nonEmptyString(row.seo_seo_title) ? { seoTitle: row.seo_seo_title } : {}),
-    ...(nonEmptyString(row.seo_seo_description) ? { seoDescription: row.seo_seo_description } : {}),
+    ...(optionalText(row.seo_seo_title) ? { seoTitle: row.seo_seo_title } : {}),
+    ...(optionalText(row.seo_seo_description) ? { seoDescription: row.seo_seo_description } : {}),
     hero: {
-      ...(nonEmptyString(row.shop_hero_eyebrow) ? { eyebrow: row.shop_hero_eyebrow } : {}),
-      ...(nonEmptyString(row.shop_hero_title) ? { title: row.shop_hero_title } : {}),
-      ...(nonEmptyString(row.shop_hero_lead) ? { lead: row.shop_hero_lead } : {}),
+      ...(optionalText(row.shop_hero_eyebrow) ? { eyebrow: row.shop_hero_eyebrow } : {}),
+      ...(optionalText(row.shop_hero_title) ? { title: row.shop_hero_title } : {}),
+      ...(optionalText(row.shop_hero_lead) ? { lead: row.shop_hero_lead } : {}),
       ...(publicImageUrl(row.shop_hero_image_url) ? { imageUrl: publicImageUrl(row.shop_hero_image_url) } : {}),
-      ...(nonEmptyString(row.shop_hero_image_alt) ? { imageAlt: row.shop_hero_image_alt } : {}),
+      ...(optionalText(row.shop_hero_image_alt) ? { imageAlt: row.shop_hero_image_alt } : {}),
       ...(cta ? { cta } : {}),
     },
+    ...(Object.keys(wheelsIntro).length > 0 ? { wheelsIntro } : {}),
+    orderSteps: orderSteps.flatMap((step) => {
+      const title = optionalText(step.title);
+      const description = optionalText(step.description);
+      return title || description ? [{ title: title ?? "", description: description ?? "" }] : [];
+    }),
     categoryCarousel: carousel.map((slide) => ({
       id: String(slide.id),
       kicker: slide.kicker ?? "",
@@ -234,6 +277,7 @@ export function mapShopHomePatch(input: {
       mobileImage: publicImageUrl(slide.mobile_image_url) ?? "",
     })),
     vehicles: {
+      ...vehicleShell,
       slides: vehicles.map((slide) => ({
         title: slide.title ?? "",
         alt: slide.alt ?? "",

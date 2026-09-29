@@ -3,6 +3,7 @@ import {
   readArticleBySlug,
   readArticles,
   readHomePatch,
+  readShopHomePatch,
   readShopProductBySlug,
   readTireModel,
   readTireModelsByType,
@@ -270,5 +271,43 @@ describe("published content readers", () => {
     });
     expect(calls[0].sql).toContain("products.status = 'published'");
     expect(calls[0].params).toEqual(["valve"]);
+  });
+
+  it("reads shop-home wheels intro, order steps and vehicle shell", async () => {
+    const { db, calls } = createRecordingDb((sql) => {
+      if (sql.includes("FROM pages_shop_order_steps")) {
+        return [{ title: "Выберите дизайн", description: "Посмотрите модели." }];
+      }
+      if (sql.includes("FROM pages_shop_category_carousel")) return [];
+      if (sql.includes("FROM pages_shop_vehicles_slides")) return [];
+      return [
+        {
+          id: 2,
+          seo_seo_title: "",
+          seo_seo_description: "",
+          shop_hero_eyebrow: "BIZON Forged",
+          shop_hero_title: "Диски для твоего зверя",
+          shop_hero_lead: "",
+          shop_hero_cta_label: "Выбрать диски",
+          shop_hero_cta_href: "#wheels",
+          shop_hero_image_alt: "",
+          shop_wheels_intro_kicker: "BIZON Forged",
+          shop_wheels_intro_title: "Выберите свой дизайн",
+          shop_wheels_intro_lead: "Под заказ",
+          shop_vehicles_title: "Созданы менять характер",
+          shop_vehicles_cta_label: "Выбрать диски",
+          shop_vehicles_cta_href: "#wheels",
+        },
+      ];
+    });
+
+    await expect(readShopHomePatch(db)).resolves.toMatchObject({
+      hero: { title: "Диски для твоего зверя", cta: { label: "Выбрать диски", href: "#wheels" } },
+      wheelsIntro: { kicker: "BIZON Forged", title: "Выберите свой дизайн" },
+      orderSteps: [{ title: "Выберите дизайн", description: "Посмотрите модели." }],
+      vehicles: { title: "Созданы менять характер" },
+    });
+    expect(calls[0].sql).toContain("shop_wheels_intro_title");
+    expect(calls.some((call) => call.sql.includes("pages_shop_order_steps"))).toBe(true);
   });
 });

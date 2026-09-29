@@ -237,14 +237,17 @@ export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch
   const [row] = await db.query(`
     SELECT pages.id, pages.seo_seo_title, pages.seo_seo_description, pages.shop_hero_eyebrow, pages.shop_hero_title,
       pages.shop_hero_lead, pages.shop_hero_cta_label, pages.shop_hero_cta_href, pages.shop_hero_image_alt,
-      media.url AS shop_hero_image_url
+      media.url AS shop_hero_image_url,
+      pages.shop_wheels_intro_kicker, pages.shop_wheels_intro_eyebrow, pages.shop_wheels_intro_title, pages.shop_wheels_intro_lead,
+      pages.shop_vehicles_eyebrow, pages.shop_vehicles_title, pages.shop_vehicles_lead,
+      pages.shop_vehicles_cta_label, pages.shop_vehicles_cta_href
     FROM pages
     LEFT JOIN media ON media.id = pages.shop_hero_image_id
     WHERE pages.key = 'shop-home' AND pages.status = 'published'
   `);
   if (!row) return null;
   const parentId = row.id;
-  const [carousel, vehicles] = await Promise.all([
+  const [carousel, vehicles, orderSteps] = await Promise.all([
     db.query(
       `
         SELECT slides.id, slides.kicker, slides.title, slides.action, slides.href, slides.alt,
@@ -267,11 +270,21 @@ export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch
       `,
       [parentId],
     ),
+    db.query(
+      `
+        SELECT title, description
+        FROM pages_shop_order_steps
+        WHERE _parent_id = $1
+        ORDER BY _order
+      `,
+      [parentId],
+    ),
   ]);
   return mapShopHomePatch({
     row: row as Parameters<typeof mapShopHomePatch>[0]["row"],
     carousel,
     vehicles,
+    orderSteps,
   });
 }
 
