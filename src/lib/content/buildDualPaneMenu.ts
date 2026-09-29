@@ -1,14 +1,12 @@
 import { ROUTES } from "@/constants/navigation";
+import { HERO_TIRE_CUTOUT_BY_SLUG } from "@/lib/catalog/heroTireSlides";
+import { getModelHref } from "@/lib/catalog/tireReadModel";
 import { curateMenuItems } from "./curateMenuItems";
 import type { DualPaneSection } from "./dualPaneMenuTypes";
-import type { CmsArticle, CmsShopCategory, CmsTireModel, CmsTireType, CmsWheelModel } from "./types";
+import type { CmsArticle, CmsShopCategory, CmsTireModel, CmsWheelModel } from "./types";
 
 function tireModelPills(model: CmsTireModel): string[] {
-  const pills: string[] = [];
-  if (model.tireTypeName) pills.push(model.tireTypeName);
-  const firstFeature = model.advantages[0]?.title?.trim();
-  if (firstFeature) pills.push(firstFeature);
-  return pills.slice(0, 2);
+  return model.tireTypeName ? [model.tireTypeName] : [];
 }
 
 function wheelModelPills(model: CmsWheelModel): string[] {
@@ -21,27 +19,17 @@ function wheelModelPills(model: CmsWheelModel): string[] {
 
 export function buildMainDualPaneMenuSections(input: {
   models: CmsTireModel[];
-  tireTypes: CmsTireType[];
   articles: CmsArticle[];
 }): DualPaneSection[] {
-  const models = curateMenuItems(input.models).map((model) => ({
-    id: model.id,
-    title: model.name,
-    href: `${ROUTES.models}/${model.tireTypeSlug}/${model.slug}`,
-    imageUrl: model.imageUrl,
-    pills: tireModelPills(model),
-  }));
-
-  const tireTypes = input.tireTypes
-    .filter((type) => type.showInMenu)
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((type) => ({
-      id: type.slug,
-      title: type.name,
-      href: `${ROUTES.models}/${type.slug}`,
-      imageUrl: type.imageUrl,
-      pills: type.shortDescription ? [type.shortDescription] : undefined,
-      description: type.shortDescription,
+  const models = [...input.models]
+    .sort((a, b) => (a.menuOrder ?? 0) - (b.menuOrder ?? 0))
+    .map((model) => ({
+      id: model.id,
+      title: model.name,
+      href: getModelHref(model),
+      imageUrl: HERO_TIRE_CUTOUT_BY_SLUG[model.slug] ?? model.imageUrl,
+      pills: tireModelPills(model),
+      advantages: model.advantages,
     }));
 
   const articles = curateMenuItems(input.articles).map((article) => ({
@@ -59,13 +47,6 @@ export function buildMainDualPaneMenuSections(input: {
       pane: "gallery",
       items: models,
       footerLink: { label: "Все модели", href: ROUTES.models },
-    },
-    {
-      id: "tire-types",
-      label: "Типы шин",
-      pane: "gallery",
-      items: tireTypes,
-      footerLink: { label: "Весь каталог", href: ROUTES.models },
     },
     {
       id: "shop",

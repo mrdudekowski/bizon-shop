@@ -23,9 +23,12 @@
 
 .bar {
   display: grid;
-  grid-template-columns: 44px auto minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   border: 1px solid var(--chrome-border);
   border-radius: var(--radius-pill);
   background: var(--chrome-bg);
@@ -35,22 +38,28 @@
   pointer-events: auto;
   backdrop-filter: blur(20px) saturate(135%);
   transition:
-    padding var(--transition-premium),
     background-color var(--transition-premium),
     border-color var(--transition-premium),
     color var(--transition-premium);
 }
 
-.chrome[data-compact="true"] .bar {
-  padding-top: 8px;
-  padding-bottom: 8px;
-}
-
+.start,
+.end,
 .burgerButton,
 .action,
 .utility {
   display: flex;
   align-items: center;
+  min-width: 0;
+}
+
+.start {
+  justify-content: flex-start;
+}
+
+.end {
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .burgerButton {
@@ -58,7 +67,43 @@
 }
 
 .brand {
-  white-space: nowrap;
+  justify-self: center;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.wordmark {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.wordmark img {
+  grid-area: 1 / 1;
+  display: block;
+  width: auto;
+  height: 1.75rem;
+  max-width: min(9.5rem, 42vw);
+  min-width: 0;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+  transition: opacity var(--transition-premium);
+}
+
+.wordmark img[data-on="dark"] {
+  opacity: 0;
+}
+
+.chrome[data-tone="dark"] .wordmark img[data-on="light"] {
+  opacity: 0;
+}
+
+.chrome[data-tone="dark"] .wordmark img[data-on="dark"] {
+  opacity: 1;
 }
 
 .brand :global(a),
@@ -76,10 +121,6 @@
   min-height: 44px;
   align-items: center;
   border-radius: var(--radius-pill);
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  font-weight: var(--weight-kicker);
-  letter-spacing: var(--tracking-label);
 }
 
 .navigation {
@@ -142,21 +183,9 @@
 }
 
 @media (max-width: 1100px) {
-  .bar {
-    grid-template-columns: 44px 1fr 96px;
-  }
-
-  .brand {
-    justify-self: center;
-  }
-
   .navigation,
   .utility {
     display: none;
-  }
-
-  .action {
-    justify-content: center;
   }
 
   .action :global(.chrome-primary) {
@@ -186,10 +215,5 @@
 
   .bar {
     padding: 10px 12px;
-  }
-
-  .chrome[data-compact="true"] .bar {
-    padding-top: 7px;
-    padding-bottom: 7px;
   }
 }

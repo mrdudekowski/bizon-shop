@@ -8,10 +8,7 @@ export function useAdaptiveChrome(
   toneAttribute: string,
   fallbackTone: ChromeTone,
 ) {
-  const [state, setState] = useState<{
-    compact: boolean;
-    tone: ChromeTone;
-  }>({ compact: false, tone: fallbackTone });
+  const [tone, setTone] = useState<ChromeTone>(fallbackTone);
 
   useEffect(() => {
     let frame = 0;
@@ -25,13 +22,11 @@ export function useAdaptiveChrome(
           .find(Boolean);
         const requestedTone = section?.getAttribute(toneAttribute);
 
-        setState({
-          compact: window.scrollY > 48,
-          tone:
-            requestedTone === "light" || requestedTone === "dark"
-              ? requestedTone
-              : fallbackTone,
-        });
+        setTone(
+          requestedTone === "light" || requestedTone === "dark"
+            ? requestedTone
+            : fallbackTone,
+        );
       });
     };
 
@@ -46,5 +41,5 @@ export function useAdaptiveChrome(
     };
   }, [fallbackTone, toneAttribute]);
 
-  return state;
+  return { tone };
 }

@@ -325,12 +325,35 @@
   min-width: 0;
   color: inherit;
   text-decoration: none;
+  isolation: isolate;
+}
+
+.galleryCard[data-tire] {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .galleryTitle {
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: var(--tracking-display);
+}
+
+.galleryMeta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  align-content: center;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.galleryCard[data-tire] .galleryTitle {
+  font-size: 0.95rem;
+  line-height: 1.2;
+  letter-spacing: var(--tracking-body);
 }
 
 .galleryMedia {
@@ -344,9 +367,48 @@
   background: color-mix(in srgb, var(--color-surface) 70%, var(--color-surface-muted));
 }
 
+.galleryMedia[data-cutout] {
+  aspect-ratio: 2 / 5;
+  overflow: visible;
+  background: transparent;
+}
+
+.galleryCard[data-tire] .galleryMedia {
+  justify-self: end;
+  width: min(42%, 8.75rem);
+  max-width: 100%;
+  min-width: 0;
+}
+
 .galleryImage {
   object-fit: var(--media-fit-contain);
   object-position: center;
+}
+
+.galleryMedia[data-cutout] :global(img) {
+  object-fit: contain;
+  object-position: right bottom;
+  transform-origin: center bottom;
+  transition: transform var(--transition-premium);
+}
+
+@media (hover: hover) {
+  .galleryCard:hover {
+    z-index: 1;
+  }
+  .galleryCard:hover .galleryMedia[data-cutout] :global(img) {
+    transform: scale(1.045);
+  }
+}
+
+.galleryCard:focus-visible .galleryMedia[data-cutout] :global(img) {
+  transform: scale(1.045);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .galleryMedia[data-cutout] :global(img) {
+    transition: none;
+  }
 }
 
 .pillRow {
@@ -366,6 +428,21 @@
   font-weight: 650;
   letter-spacing: var(--tracking-body);
   text-transform: uppercase;
+}
+
+.galleryIcons {
+  justify-content: flex-start;
+  --advantage-icon-size: 2.5rem;
+}
+
+.galleryCard[data-tire] .galleryIcons {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  --advantage-icon-size: 2.25rem;
 }
 
 .listItems {

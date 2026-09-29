@@ -22,6 +22,27 @@ type FloatingChromeProps = {
   onMouseLeave?: MouseEventHandler<HTMLDivElement>;
 };
 
+export function ChromeWordmark() {
+  return (
+    <span className={styles.wordmark}>
+      <img
+        data-on="light"
+        src="/brand/logo-navbar-black.png"
+        alt=""
+        width={300}
+        height={69}
+      />
+      <img
+        data-on="dark"
+        src="/brand/logo-navbar-white.png"
+        alt=""
+        width={300}
+        height={69}
+      />
+    </span>
+  );
+}
+
 export function FloatingChrome({
   ariaLabel,
   menuOpen,
@@ -36,30 +57,33 @@ export function FloatingChrome({
   rootRef,
   onMouseLeave,
 }: FloatingChromeProps) {
-  const { compact, tone } = useAdaptiveChrome(toneAttribute, fallbackTone);
+  const { tone } = useAdaptiveChrome(toneAttribute, fallbackTone);
 
   return (
     <div
       ref={rootRef}
       className={styles.chrome}
       data-tone={tone}
-      data-compact={compact ? "true" : "false"}
       data-main-chrome={surface === "main" ? "" : undefined}
       data-shop-chrome={surface === "shop" ? "" : undefined}
       onMouseLeave={onMouseLeave}
     >
       <nav className={styles.bar} aria-label={ariaLabel}>
-        <div className={styles.burgerButton}>
-          <BurgerToggle
-            isOpen={menuOpen}
-            onToggle={onMenuToggle}
-            inverted={tone === "dark"}
-          />
+        <div className={styles.start}>
+          <div className={styles.burgerButton}>
+            <BurgerToggle
+              isOpen={menuOpen}
+              onToggle={onMenuToggle}
+              inverted={tone === "dark"}
+            />
+          </div>
         </div>
         <div className={styles.brand}>{brand}</div>
-        <div className={styles.navigation}>{navigation}</div>
-        <div className={styles.utility}>{utility}</div>
-        <div className={styles.action}>{action}</div>
+        <div className={styles.end}>
+          <div className={styles.navigation}>{navigation}</div>
+          {utility ? <div className={styles.utility}>{utility}</div> : null}
+          <div className={styles.action}>{action}</div>
+        </div>
       </nav>
     </div>
   );

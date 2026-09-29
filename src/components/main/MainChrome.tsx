@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import { CartHeaderButton } from "@/components/cart/CartHeaderButton";
-import { FloatingChrome } from "@/components/chrome/FloatingChrome";
+import { ChromeWordmark, FloatingChrome } from "@/components/chrome/FloatingChrome";
 import { ROUTES } from "@/constants/navigation";
 
 type MainChromeProps = {
@@ -25,8 +25,8 @@ export function MainChrome({
       menuOpen={menuOpen}
       onMenuToggle={onMenuToggle}
       brand={
-        <Link href={ROUTES.home} aria-label="Bizon Tires — на главную" translate="no">
-          BIZON
+        <Link href={ROUTES.home} aria-label="Bizon Tires — на главную">
+          <ChromeWordmark />
         </Link>
       }
       navigation={

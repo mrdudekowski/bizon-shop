@@ -1,0 +1,44 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  --advantage-icon-size: 2.5rem;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 0 0 auto;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.thumb {
+  display: block;
+  flex: 0 0 auto;
+  width: var(--advantage-icon-size);
+  height: var(--advantage-icon-size);
+  max-width: 100%;
+  min-width: 0;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 0.4rem;
+  background: #111;
+}
+
+.caption {
+  padding: 0.25rem 0.45rem;
+  border-radius: 0.3rem;
+  background: #111;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 650;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}

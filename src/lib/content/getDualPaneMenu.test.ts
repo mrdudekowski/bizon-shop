@@ -30,18 +30,6 @@ describe("buildMainDualPaneMenuSections", () => {
   it("keeps locked section order and default-related ids", () => {
     const sections = buildMainDualPaneMenuSections({
       models: [model],
-      tireTypes: [
-        {
-          slug: "tbr",
-          name: "TBR",
-          description: "",
-          shortDescription: "Truck",
-          sortOrder: 1,
-          showInMenu: true,
-          selectionVehicleTypes: [],
-          selectionConditions: [],
-        },
-      ],
       articles: [
         {
           slug: "guide",
@@ -57,7 +45,6 @@ describe("buildMainDualPaneMenuSections", () => {
 
     expect(sections.map((section) => section.id)).toEqual([
       "models",
-      "tire-types",
       "shop",
       "branding",
       "tire-iq",
@@ -66,8 +53,10 @@ describe("buildMainDualPaneMenuSections", () => {
     expect(sections[0]?.footerLink?.href).toBe("/models");
     expect(sections[0]?.items[0]).toMatchObject({
       title: "DSR158",
-      href: "/models/tbr/dsr158",
-      pills: ["TBR", "Economy"],
+      href: "/models/tbr/regional/dsr158",
+      imageUrl: "/images/hero/dsr158.png",
+      pills: ["TBR"],
+      advantages: [{ key: "economy", title: "Economy" }],
     });
     expect(sections.find((section) => section.id === "about")?.items.map((item) => item.id)).toEqual([
       "about-page",
@@ -76,6 +65,23 @@ describe("buildMainDualPaneMenuSections", () => {
       "warranty",
       "supplier",
     ]);
+  });
+
+  it("lists every published model, not only showInMenu", () => {
+    const hidden = { ...model, id: "2", slug: "dsr177", name: "DSR177", showInMenu: false, menuOrder: 0 };
+    const sections = buildMainDualPaneMenuSections({
+      models: [model, hidden],
+      articles: [],
+    });
+    expect(sections[0]?.items.map((item) => item.title)).toEqual(["DSR177", "DSR158"]);
+  });
+
+  it("keeps the catalog photo when no hero cutout exists", () => {
+    const sections = buildMainDualPaneMenuSections({
+      models: [{ ...model, slug: "custom-model" }],
+      articles: [],
+    });
+    expect(sections[0]?.items[0]?.imageUrl).toBe("/tire.png");
   });
 });
 

@@ -3,19 +3,20 @@ import {
   buildShopDualPaneMenuSections,
 } from "./buildDualPaneMenu";
 import type { DualPaneMenuData } from "./dualPaneMenuTypes";
+import { getPublishedTireModels, getTireIQArticles } from "./staticCatalog";
 
 export type { DualPaneItem, DualPaneMenuData, DualPaneSection } from "./dualPaneMenuTypes";
 export { buildMainDualPaneMenuSections, buildShopDualPaneMenuSections } from "./buildDualPaneMenu";
 
-/** Stage 1: empty catalog — menu shows structure links only. */
 export async function getMainDualPaneMenu(): Promise<DualPaneMenuData> {
+  const [models, articles] = await Promise.all([
+    getPublishedTireModels(),
+    getTireIQArticles(),
+  ]);
+
   return {
     defaultSectionId: "models",
-    sections: buildMainDualPaneMenuSections({
-      models: [],
-      tireTypes: [],
-      articles: [],
-    }),
+    sections: buildMainDualPaneMenuSections({ models, articles }),
   };
 }
 

@@ -27,3 +27,42 @@ export function getFeatureImage(key: string): FeatureImage | null {
   if (Object.hasOwn(byKey, key)) return byKey[key as TireFeatureKey];
   return null;
 }
+
+export function getFeatureIcon(key: string): FeatureImage | null {
+  const image = getFeatureImage(key);
+  if (!image) return null;
+  return { ...image, src: `/images/catalog/feature-icons/${key}.png` };
+}
+
+export type AdvantageIcon = {
+  key: string;
+  src: string;
+  label: string;
+};
+
+export function resolveAdvantageIcons(
+  advantages: readonly { key: string; title?: string }[],
+): AdvantageIcon[] {
+  return advantages.flatMap((advantage) => {
+    const key = resolveFeatureKey(advantage);
+    if (!key) return [];
+    const icon = getFeatureIcon(key);
+    if (!icon) return [];
+    const title = advantage.title?.trim();
+    return [
+      {
+        key,
+        src: icon.src,
+        label: title || icon.label,
+      },
+    ];
+  });
+}
+
+function resolveFeatureKey(advantage: { key: string; title?: string }): string | null {
+  if (getFeatureImage(advantage.key)) return advantage.key;
+  const title = advantage.title?.trim().toLowerCase();
+  if (!title) return null;
+  const option = TIRE_PERFORMANCE_FEATURE_OPTIONS.find((entry) => entry.label.toLowerCase() === title);
+  return option?.value ?? null;
+}

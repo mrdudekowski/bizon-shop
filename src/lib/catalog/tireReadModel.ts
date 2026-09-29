@@ -14,7 +14,7 @@ export type TireCatalogReadModel = {
   directions: TireCatalogDirection[];
 };
 
-function getModelHref(model: CmsTireModel): string {
+export function getModelHref(model: CmsTireModel): string {
   const category = getTireCategoryByValue(model.applicationCategory);
   const categoryPath = category ? `/${category.slug}` : "";
   return `/models/${model.tireTypeSlug}${categoryPath}/${model.slug}`;

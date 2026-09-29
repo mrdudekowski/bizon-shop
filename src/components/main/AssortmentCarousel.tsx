@@ -1,5 +1,6 @@
 "use client";
 
+import { AdvantageIcons } from "@/components/catalog/AdvantageIcons";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { cardSubtitle, formatAxleLabels } from "@/lib/catalog/featuredAssortment";
 import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
@@ -39,6 +40,7 @@ export function AssortmentCarousel({ models }: { models: TireCatalogModel[] }) {
                 {formatAxleLabels(model)}
               </span>
             </span>
+            <AdvantageIcons advantages={model.advantages} className={styles.assortmentIcons} />
           </span>
         </Link>
       ))}

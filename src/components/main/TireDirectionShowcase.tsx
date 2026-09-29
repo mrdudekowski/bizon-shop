@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { AssortmentCarousel } from "@/components/main/AssortmentCarousel";
@@ -23,17 +22,15 @@ export function TireDirectionShowcase({
       data-main-chrome-tone="light"
       aria-labelledby="home-assortment-title"
     >
-      <Image
+      <img
         className={styles.directionWatermark}
-        src="/brand/logo-simple-black.png"
+        src="/brand/bizon.svg"
         alt=""
-        width={300}
-        height={63}
         aria-hidden="true"
+        draggable={false}
       />
       <div className={styles.assortmentContent}>
         <div className={styles.assortmentIntro}>
-          <p className={styles.assortmentKicker}>{content.eyebrow}</p>
           <h2 id="home-assortment-title">{content.title}</h2>
           <p>{content.lead}</p>
           <Link className={`btn-accent ${styles.assortmentCta}`} href="/models">

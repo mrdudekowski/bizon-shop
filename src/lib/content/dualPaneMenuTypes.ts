@@ -5,6 +5,7 @@ export type DualPaneItem = {
   imageUrl?: string | null;
   pills?: string[];
   description?: string;
+  advantages?: Array<{ key: string; title: string }>;
 };
 
 export type DualPaneSection = {

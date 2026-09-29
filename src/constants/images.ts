@@ -11,7 +11,7 @@ export const PREMIUM_MEDIA = {
   forgedWheel: `${PREMIUM_IMAGE_ROOT}/forged-wheel-workshop.png`,
   consultation: `${PREMIUM_IMAGE_ROOT}/fleet-consultation.png`,
   mounting: `${PREMIUM_IMAGE_ROOT}/tire-mounting.png`,
-  inspection: `${PREMIUM_IMAGE_ROOT}/tread-inspection.png`,
+  inspection: `${PREMIUM_IMAGE_ROOT}/tread-inspection.jpg`,
   mixedService: `${PREMIUM_IMAGE_ROOT}/mixed-service-site.png`,
   constructionDetail: `${PREMIUM_IMAGE_ROOT}/construction-drive-portrait.png`,
   severeService: `${PREMIUM_IMAGE_ROOT}/severe-service-campaign.png`,

@@ -32,6 +32,18 @@ describe("mergeHomeContent", () => {
     expect(merged.hero.primaryCta).toEqual({ label: "Открыть каталог", href: "/models" });
   });
 
+  it("overrides hero imageUrl from CMS and keeps the default file when CMS has none", () => {
+    expect(mergeHomeContent(HOME_PAGE_DEFAULTS, { hero: {} }).hero.imageUrl).toBe(
+      HOME_PAGE_DEFAULTS.hero.imageUrl,
+    );
+    expect(HOME_PAGE_DEFAULTS.hero.imageUrl).toBe("/images/hero/backdrop.jpg");
+
+    const merged = mergeHomeContent(HOME_PAGE_DEFAULTS, {
+      hero: { imageUrl: "https://s3.twcstorage.ru/bucket/bizon/media/hero.jpg" },
+    });
+    expect(merged.hero.imageUrl).toBe("https://s3.twcstorage.ru/bucket/bizon/media/hero.jpg");
+  });
+
   it("overrides shop campaign imageUrl from CMS", () => {
     const merged = mergeHomeContent(HOME_PAGE_DEFAULTS, {
       shopCampaign: {

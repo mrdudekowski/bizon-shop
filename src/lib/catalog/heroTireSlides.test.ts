@@ -60,6 +60,7 @@ describe("getHeroTireSlides", () => {
         href: "/models/tbr/regional/dsr158",
         imageUrl: "/images/hero/dsr158.png",
         imageAlt: "DSR158 — грузовая шина",
+        axleLabel: "Уточняется",
       },
       {
         id: "2",
@@ -67,6 +68,7 @@ describe("getHeroTireSlides", () => {
         href: "/models/tbr/regional/dsr177",
         imageUrl: "/images/hero/dsr177.png",
         imageAlt: "DSR177 — грузовая шина",
+        axleLabel: "Уточняется",
       },
     ]);
   });
@@ -84,5 +86,18 @@ describe("getHeroTireSlides", () => {
     expect(getHeroTireSlides(catalog, { dsr158: "/images/hero-tires/dsr158.png" })[0]?.imageUrl).toBe(
       "/images/hero-tires/dsr158.png",
     );
+  });
+
+  it("uses catalog axle labels on the slide", () => {
+    const catalog: TireCatalogReadModel = {
+      directions: [
+        {
+          ...tbr,
+          models: [model({ id: "1", slug: "dsr158", name: "DSR158", selectionAxles: ["drive"] })],
+        },
+      ],
+    };
+
+    expect(getHeroTireSlides(catalog)[0]?.axleLabel).toBe("Ведущая");
   });
 });

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CartHeaderButton } from "@/components/cart/CartHeaderButton";
-import { FloatingChrome } from "@/components/chrome/FloatingChrome";
+import { ChromeWordmark, FloatingChrome } from "@/components/chrome/FloatingChrome";
 import styles from "./ShopChrome.module.css";
 
 const CATEGORY_LINKS = [
@@ -52,7 +52,11 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen }) {
       ariaLabel="Навигация BIZON Shop"
       menuOpen={menuOpen}
       onMenuToggle={onMenuToggle}
-      brand={<Link href="/shop" translate="no">BIZON SHOP</Link>}
+      brand={
+        <Link href="/shop" aria-label="BIZON Shop — на главную">
+          <ChromeWordmark />
+        </Link>
+      }
       navigation={
         <>
           <Link href="/shop/categories">Каталог</Link>

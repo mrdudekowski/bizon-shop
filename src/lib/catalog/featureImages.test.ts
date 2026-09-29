@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { TIRE_PERFORMANCE_FEATURE_OPTIONS } from "@/lib/catalog/catalogFieldConstants";
-import { FEATURE_IMAGE_KEYS, getFeatureImage } from "./featureImages";
+import { FEATURE_IMAGE_KEYS, getFeatureIcon, getFeatureImage, resolveAdvantageIcons } from "./featureImages";
 
 describe("featureImages", () => {
   it("covers every CMS performance feature key", () => {
@@ -24,11 +24,53 @@ describe("featureImages", () => {
     }
   });
 
+  it("resolves CMS glyph icons separately from carousel photos", () => {
+    for (const key of FEATURE_IMAGE_KEYS) {
+      const icon = getFeatureIcon(key);
+      expect(icon).not.toBeNull();
+      expect(icon!.src).toBe(`/images/catalog/feature-icons/${key}.png`);
+      expect(existsSync(join(process.cwd(), "public", "images", "catalog", "feature-icons", `${key}.png`))).toBe(
+        true,
+      );
+    }
+  });
+
   it("returns null for unknown keys", () => {
     expect(getFeatureImage("not-a-feature")).toBeNull();
   });
 
   it("returns null for prototype keys like toString", () => {
     expect(getFeatureImage("toString")).toBeNull();
+  });
+
+  it("maps CMS advantage keys to public feature images", () => {
+    expect(
+      resolveAdvantageIcons([
+        { key: "anti-tear", title: "Стойкость к разрывам" },
+        { key: "not-a-feature", title: "Unknown" },
+        { key: "economy" },
+      ]),
+    ).toEqual([
+      {
+        key: "anti-tear",
+        src: "/images/catalog/feature-icons/anti-tear.png",
+        label: "Стойкость к разрывам",
+      },
+      {
+        key: "economy",
+        src: "/images/catalog/feature-icons/economy.png",
+        label: "Экономичность",
+      },
+    ]);
+  });
+
+  it("matches a CMS title when the stored key is missing", () => {
+    expect(resolveAdvantageIcons([{ key: "", title: "Стойкость к разрывам" }])).toEqual([
+      {
+        key: "anti-tear",
+        src: "/images/catalog/feature-icons/anti-tear.png",
+        label: "Стойкость к разрывам",
+      },
+    ]);
   });
 });

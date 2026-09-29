@@ -22,12 +22,17 @@ test("main site uses the premium floating chrome", async ({ page }, testInfo) =>
   await expect(nav.getByRole("button", { name: "Корзина", exact: true })).toHaveCount(1);
   await expect(page.locator('[aria-controls="burger-menu"]')).toHaveCount(1);
 
+  const heightBefore = await nav.evaluate((el) => el.getBoundingClientRect().height);
+
   await page.evaluate(() => {
     document.documentElement.style.scrollBehavior = "auto";
     window.scrollTo(0, 400);
   });
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(48);
-  await expect(page.locator('[data-main-chrome][data-compact="true"]')).toBeVisible();
+  await expect(page.locator("[data-main-chrome]")).toBeVisible();
+  await expect
+    .poll(() => nav.evaluate((el) => el.getBoundingClientRect().height))
+    .toBe(heightBefore);
 });
 
 test("main burger exposes the catalog and unified cart", async ({ page }) => {

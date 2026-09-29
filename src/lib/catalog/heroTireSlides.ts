@@ -1,3 +1,4 @@
+import { formatAxleLabels } from "@/lib/catalog/featuredAssortment";
 import type { TireCatalogReadModel } from "@/lib/catalog/tireReadModel";
 
 export type HeroModelSlide = {
@@ -6,6 +7,7 @@ export type HeroModelSlide = {
   href: string;
   imageUrl: string;
   imageAlt: string;
+  axleLabel: string;
 };
 
 const HERO_TIRE_SLIDE_LIMIT = 3;
@@ -37,5 +39,6 @@ export function getHeroTireSlides(
     href: model.href,
     imageUrl: cutouts[model.slug] || HERO_TIRE_CUTOUTS[index] || "",
     imageAlt: `${model.name} — грузовая шина`,
+    axleLabel: formatAxleLabels(model),
   }));
 }

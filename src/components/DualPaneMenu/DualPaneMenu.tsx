@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AdvantageIcons } from "@/components/catalog/AdvantageIcons";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { DualPaneItem, DualPaneMenuData, DualPaneSection } from "@/lib/content/dualPaneMenuTypes";
@@ -21,6 +23,15 @@ type DualPaneMenuProps = {
 };
 
 const MOBILE_MENU_QUERY = "(max-width: 768px)";
+const PHONE_MENU_QUERY = "(max-width: 767px)";
+
+function defaultOpenSectionId(sections: DualPaneSection[]) {
+  return sections.some((section) => section.id === "models") ? "models" : null;
+}
+
+function isHeroCutout(src?: string | null) {
+  return Boolean(src?.startsWith("/images/hero/"));
+}
 
 /** Close after the browser starts following the link (avoids focus-restore canceling nav). */
 function closeAfterNavigate(onClose: () => void) {
@@ -39,20 +50,50 @@ function GalleryPane({
   return (
     <div className={styles.galleryPane}>
       <ul className={styles.galleryList}>
-        {items.map((item) => (
+        {items.map((item) => {
+          const cutout = isHeroCutout(item.imageUrl);
+          const tireCard = Array.isArray(item.advantages);
+          return (
           <li key={item.id}>
-            <Link className={styles.galleryCard} href={item.href} onClick={onNavigate}>
-              <span className={styles.galleryTitle}>{item.title}</span>
-              <span className={styles.galleryMedia}>
-                <CatalogImage
-                  src={item.imageUrl}
-                  alt=""
-                  fill
-                  sizes="(max-width: 768px) 80vw, 280px"
-                  className={styles.galleryImage}
-                />
+            <Link
+              className={styles.galleryCard}
+              href={item.href}
+              data-tire={tireCard ? "" : undefined}
+              onClick={onNavigate}
+            >
+              {tireCard ? (
+                <span className={styles.galleryMeta}>
+                  <span className={styles.galleryTitle}>{item.title}</span>
+                  <AdvantageIcons
+                    advantages={item.advantages ?? []}
+                    className={styles.galleryIcons}
+                    showCaptions
+                  />
+                </span>
+              ) : (
+                <span className={styles.galleryTitle}>{item.title}</span>
+              )}
+              <span className={styles.galleryMedia} data-cutout={cutout ? "" : undefined}>
+                {cutout && item.imageUrl ? (
+                  <Image
+                    src={`${item.imageUrl}?v=cutout`}
+                    alt=""
+                    fill
+                    unoptimized
+                    sizes="(max-width: 768px) 80vw, 280px"
+                    className={styles.galleryImage}
+                  />
+                ) : (
+                  <CatalogImage
+                    src={item.imageUrl}
+                    alt=""
+                    fill
+                    sizes="(max-width: 768px) 80vw, 280px"
+                    className={styles.galleryImage}
+                  />
+                )}
               </span>
-              {item.pills?.length ? (
+              {tireCard || !item.pills?.length ? null : (
                 <span className={styles.pillRow}>
                   {item.pills.map((pill) => (
                     <span key={pill} className={styles.pill}>
@@ -60,10 +101,14 @@ function GalleryPane({
                     </span>
                   ))}
                 </span>
-              ) : null}
+              )}
+              {tireCard ? null : (
+                <AdvantageIcons advantages={item.advantages ?? []} className={styles.galleryIcons} />
+              )}
             </Link>
           </li>
-        ))}
+          );
+        })}
       </ul>
       {footerLink ? (
         <Link className={styles.paneFooterLink} href={footerLink.href} onClick={onNavigate}>
@@ -133,6 +178,7 @@ export function DualPaneMenu({
   const [mobileView, setMobileView] = useState<"nav" | "pane">("nav");
   const [paneKey, setPaneKey] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [wasOpen, setWasOpen] = useState(isOpen);
 
   const sections = menu?.sections ?? [];
   const activeSection =
@@ -142,6 +188,18 @@ export function DualPaneMenu({
 
   const handleLinkNavigate = () => closeAfterNavigate(onClose);
 
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
+    if (isOpen) {
+      const phone = window.matchMedia(PHONE_MENU_QUERY).matches;
+      const stacked = window.matchMedia(MOBILE_MENU_QUERY).matches;
+      const sectionId = phone ? null : defaultOpenSectionId(sections);
+      setActiveSectionId(sectionId);
+      setMobileView(sectionId && stacked ? "pane" : "nav");
+      setPaneKey((key) => key + 1);
+    }
+  }
+
   useEffect(() => {
     const media = window.matchMedia(MOBILE_MENU_QUERY);
     const sync = () => setIsMobile(media.matches);
@@ -149,14 +207,6 @@ export function DualPaneMenu({
     media.addEventListener("change", sync);
     return () => media.removeEventListener("change", sync);
   }, []);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    // Open on section list; Models/Wheels only after a section click.
-    setActiveSectionId(null);
-    setMobileView("nav");
-    setPaneKey((key) => key + 1);
-  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return undefined;

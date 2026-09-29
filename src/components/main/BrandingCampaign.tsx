@@ -45,7 +45,6 @@ export function BrandingCampaign() {
       <div className={styles.inner}>
         <div className={styles.brandingHero}>
           <div className={styles.brandingCopy}>
-            <p className={styles.eyebrow}>Bizon Custom</p>
             <h2 id="branding-heading">
               Брендирование
               <br />
@@ -61,7 +60,6 @@ export function BrandingCampaign() {
           </div>
 
           <div className={styles.brandingOffers}>
-            <p className={styles.eyebrow}>Ваш бренд на каждой шине</p>
             {OFFERS.map((offer) => (
               <Link key={offer.title} className={styles.brandingOffer} href={ROUTES.branding}>
                 {offer.image ? (
