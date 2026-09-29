@@ -12,7 +12,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition-duration: 0.5s;
+  transition: transform var(--transition-premium);
 }
 
 .toggle:focus-visible {
@@ -26,14 +26,11 @@
   height: 3px;
   background-color: var(--color-foreground);
   border-radius: 6px;
+  transition: transform var(--transition-premium), width var(--transition-premium);
 }
 
 .inverted .bar {
   background-color: var(--color-on-dark);
-}
-
-.barMiddle {
-  transition-duration: 0.8s;
 }
 
 .barTop,
@@ -43,28 +40,23 @@
 
 .open .bar {
   position: absolute;
-  transition-duration: 0.5s;
 }
 
 .open .barMiddle {
   transform: scaleX(0);
-  transition-duration: 0.5s;
 }
 
 .open .barTop {
   width: 100%;
   transform: rotate(45deg);
-  transition-duration: 0.5s;
 }
 
 .open .barBottom {
   width: 100%;
   transform: rotate(-45deg);
-  transition-duration: 0.5s;
 }
 
 .open {
-  transition-duration: 0.5s;
   transform: rotate(180deg);
 }
 

@@ -163,7 +163,7 @@
   --color-background: var(--bizon-white);
   --color-foreground: var(--bizon-neutral-900);
   --color-primary: var(--color-accent-coral);
-  --color-on-primary: var(--bizon-black);
+  --color-on-primary: var(--bizon-white);
   --color-secondary: var(--bizon-light);
   --color-muted: var(--bizon-neutral-600);
   --color-surface: var(--bizon-white);
@@ -319,9 +319,12 @@ a {
 }
 
 /* Размытие фона при открытом мобильном меню - визуально выделяет меню и фокусирует внимание */
+.page {
+  transition: filter var(--transition-premium);
+}
+
 .page--blurred {
   filter: blur(8px);
-  transition: filter var(--transition-fast);
 }
 
 /* Skip link для доступности - скрыт визуально, но доступен для screen readers и клавиатурной навигации */

@@ -2,14 +2,15 @@
   --menu-link-hover: var(--color-accent-coral);
   --pane-left-width: min(320px, 34vw);
   --pane-right-width: min(420px, 42vw);
+  --menu-duration: 240ms;
+  --menu-ease: cubic-bezier(0.22, 1, 0.36, 1);
   position: fixed;
   inset: 0;
-  display: none;
+  display: grid;
   grid-template-columns: minmax(0, 1fr);
-  opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity var(--transition-fast);
+  transition: visibility 0s linear var(--menu-duration);
   z-index: var(--z-index-overlay);
 }
 
@@ -18,16 +19,21 @@
 }
 
 .menuOpen {
-  display: grid;
-  opacity: 1;
   visibility: visible;
   pointer-events: auto;
+  transition: visibility 0s;
 }
 
 .menuBackdrop {
   position: absolute;
   inset: 0;
   background: var(--color-overlay);
+  opacity: 0;
+  transition: opacity var(--menu-duration) var(--menu-ease);
+}
+
+.menuOpen .menuBackdrop {
+  opacity: 1;
 }
 
 .menuShell {
@@ -40,7 +46,7 @@
   min-width: 0;
   height: 100%;
   transform: translateX(-100%);
-  transition: transform var(--transition-premium);
+  transition: transform var(--menu-duration) var(--menu-ease);
 }
 
 .menuOpen .menuShell {
@@ -428,6 +434,40 @@
   }
 }
 
+@keyframes menuItemIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.menuOpen .featuredLink,
+.menuOpen .cartLink,
+.menuOpen .sectionList > li {
+  animation: menuItemIn var(--menu-duration) var(--menu-ease) both;
+}
+
+.menuOpen .featuredLink {
+  animation-delay: 60ms;
+}
+
+.menuOpen .cartLink {
+  animation-delay: 90ms;
+}
+
+.menuOpen .sectionList > li:nth-child(1) { animation-delay: 120ms; }
+.menuOpen .sectionList > li:nth-child(2) { animation-delay: 150ms; }
+.menuOpen .sectionList > li:nth-child(3) { animation-delay: 180ms; }
+.menuOpen .sectionList > li:nth-child(4) { animation-delay: 210ms; }
+.menuOpen .sectionList > li:nth-child(5) { animation-delay: 240ms; }
+.menuOpen .sectionList > li:nth-child(6) { animation-delay: 270ms; }
+.menuOpen .sectionList > li:nth-child(7) { animation-delay: 300ms; }
+.menuOpen .sectionList > li:nth-child(n+8) { animation-delay: 300ms; }
+
 @media (max-width: 768px) {
   .menuShell {
     width: 100%;
@@ -484,10 +524,14 @@
 
 @media (prefers-reduced-motion: reduce) {
   .menuOverlay,
+  .menuBackdrop,
   .menuShell,
   .dualTrack,
   .rightPaneContent,
-  .listLink {
+  .listLink,
+  .featuredLink,
+  .cartLink,
+  .sectionList > li {
     transition: none !important;
     animation: none !important;
   }
