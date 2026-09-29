@@ -1,11 +1,14 @@
 import Link from "next/link";
 
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
-import { SHOP_LIFESTYLE_CATEGORIES } from "@/constants/shopCategories";
+import { shopCategoryIndexCards } from "@/lib/content/shopCategoryPresentation";
+import type { CmsShopCategory } from "@/lib/content/types";
 import { ShopResponsiveImage } from "./ShopResponsiveImage";
 import styles from "./ShopCategoriesIndex.module.css";
 
-export function ShopCategoriesIndex() {
+export function ShopCategoriesIndex({ categories }: { categories: readonly CmsShopCategory[] }) {
+  const cards = shopCategoryIndexCards(categories);
+
   return (
     <div className={styles.page}>
       <section className={styles.hero} data-shop-chrome-tone="dark">
@@ -17,7 +20,7 @@ export function ShopCategoriesIndex() {
           </nav>
           <p className={styles.kicker}>BIZON Shop</p>
           <h1>Движение продолжается вне автомобиля</h1>
-          <p className={styles.lead}>Два направления для дороги и остановок за пределами привычного маршрута.</p>
+          <p className={styles.lead}>Категории BIZON Shop — диски отдельно, товары по направлениям.</p>
         </div>
       </section>
 
@@ -28,15 +31,17 @@ export function ShopCategoriesIndex() {
             <h2 id="shop-categories-title">Выберите направление</h2>
           </div>
           <div className={styles.grid}>
-            {SHOP_LIFESTYLE_CATEGORIES.map((category) => (
-              <Link className={styles.card} href={`/shop/${category.slug}`} key={category.slug}>
-                <ShopResponsiveImage
-                  className={styles.media}
-                  desktopSrc={category.desktopImage}
-                  mobileSrc={category.mobileImage}
-                  alt={category.imageAlt}
-                  sizes="(max-width: 639px) 100vw, 50vw"
-                />
+            {cards.map((category) => (
+              <Link className={styles.card} href={category.href} key={category.slug}>
+                {category.desktopImage ? (
+                  <ShopResponsiveImage
+                    className={styles.media}
+                    desktopSrc={category.desktopImage}
+                    mobileSrc={category.mobileImage || category.desktopImage}
+                    alt={category.imageAlt}
+                    sizes="(max-width: 639px) 100vw, 50vw"
+                  />
+                ) : null}
                 <span className={styles.overlay} aria-hidden="true" />
                 <span className={styles.cardContent}>
                   <span>{category.kicker}</span>

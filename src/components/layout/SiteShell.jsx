@@ -24,6 +24,11 @@ export function SiteShell({ children, mainMenu, shopMenu }) {
   const pathname = usePathname();
   const isShop = pathname === ROUTES.shop || pathname.startsWith(`${ROUTES.shop}/`);
   const menu = isShop ? shopMenu : mainMenu;
+  const categoryItems = shopMenu?.sections?.find((section) => section.id === "categories")?.items ?? [];
+  const categoryLinks = [
+    ...categoryItems.filter((item) => item.id !== "all-categories"),
+    ...categoryItems.filter((item) => item.id === "all-categories"),
+  ].map((item) => ({ href: item.href, label: item.title }));
   useBodyScrollLock(cart.open, "cart-open");
 
   return (
@@ -42,6 +47,7 @@ export function SiteShell({ children, mainMenu, shopMenu }) {
             onMenuToggle={toggleMenu}
             cartCount={cart.count}
             onCartOpen={() => cart.setOpen(true)}
+            categoryLinks={categoryLinks}
           />
         ) : (
           <MainChrome
@@ -54,7 +60,7 @@ export function SiteShell({ children, mainMenu, shopMenu }) {
 
         <main id="main" className={isShop ? "main--shop" : undefined}>{children}</main>
 
-        {isShop ? <ShopFooter /> : <Footer />}
+        {isShop ? <ShopFooter catalogLinks={categoryLinks} /> : <Footer />}
 
         <BackToTop onScrollToTop={scrollToTop} />
       </div>

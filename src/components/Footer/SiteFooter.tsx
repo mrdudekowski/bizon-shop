@@ -82,8 +82,29 @@ const FOOTER_CONFIG: Record<FooterSurface, FooterConfig> = {
   },
 };
 
-export function SiteFooter({ surface }: { surface: FooterSurface }) {
+export function SiteFooter({
+  surface,
+  catalogLinks,
+}: {
+  surface: FooterSurface;
+  catalogLinks?: FooterLink[];
+}) {
   const config = FOOTER_CONFIG[surface];
+  const sections =
+    surface === "shop" && catalogLinks?.length
+      ? config.sections.map((section) =>
+          section.label === "Каталог"
+            ? {
+                ...section,
+                links: [
+                  { href: "/shop/wheels/forged", label: "BIZON Forged" },
+                  ...catalogLinks.filter((link) => link.href !== "/shop/categories"),
+                  { href: "/shop/categories", label: "Все категории" },
+                ],
+              }
+            : section,
+        )
+      : config.sections;
   const year = new Date().getFullYear();
   const hasPhone = !SITE_CONTACT.phone.includes("(000)");
   const hasEmail = !SITE_CONTACT.email.endsWith(".example");
@@ -97,7 +118,7 @@ export function SiteFooter({ surface }: { surface: FooterSurface }) {
           <Link href={config.primaryLink.href}>{config.primaryLink.label}</Link>
         </div>
 
-        {config.sections.map((section) => (
+        {sections.map((section) => (
           <nav className={styles.nav} aria-label={section.label} key={section.label}>
             <p>{section.label}</p>
             {section.links.map((link) => (

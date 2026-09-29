@@ -18,7 +18,7 @@ export function ForgedCatalog({ models }: { models: CmsWheelModel[] }) {
       <section className={styles.hero} data-shop-chrome-tone="dark">
         <div className={styles.heroInner}>
           <p className={styles.kicker}>BIZON Forged</p>
-          <h1>Пять характеров.<br />{" "}Одна точность.</h1>
+          <h1>Характеры.<br />{" "}Одна точность.</h1>
           <p className={styles.lead}>
             Кованые диски BIZON изготавливаются под заказ. Выберите дизайн — специалист
             проверит параметры автомобиля и возможность конфигурации.

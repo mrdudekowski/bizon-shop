@@ -73,4 +73,12 @@ describe("mergeShopHomeContent", () => {
       SHOP_HOME_PAGE_DEFAULTS.categoryCarousel,
     );
   });
+
+  it("uses CMS wheels intro when provided", () => {
+    const merged = mergeShopHomeContent(SHOP_HOME_PAGE_DEFAULTS, {
+      wheelsIntro: { title: "Новый ввод" },
+    });
+    expect(merged.wheelsIntro.title).toBe("Новый ввод");
+    expect(merged.wheelsIntro.lead).toBe(SHOP_HOME_PAGE_DEFAULTS.wheelsIntro.lead);
+  });
 });

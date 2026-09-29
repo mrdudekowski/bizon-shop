@@ -7,13 +7,14 @@ import { ChromeWordmark, FloatingChrome } from "@/components/chrome/FloatingChro
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import styles from "./ShopChrome.module.css";
 
-const CATEGORY_LINKS = [
+const FALLBACK_CATEGORY_LINKS = [
   { href: "/shop/accessories", label: "Accessories" },
   { href: "/shop/outdoor", label: "Outdoor" },
   { href: "/shop/categories", label: "Все категории" },
 ];
 
-export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen }) {
+export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, categoryLinks }) {
+  const links = categoryLinks?.length ? categoryLinks : FALLBACK_CATEGORY_LINKS;
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const chromeRef = useRef(null);
   const categoryTriggerRef = useRef(null);
@@ -81,7 +82,7 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen }) {
             </button>
             {categoriesOpen ? (
               <div id="shop-category-menu" className={styles.dropdown} onMouseEnter={cancelClose}>
-                {CATEGORY_LINKS.map((item) => (
+                {links.map((item) => (
                   <Link key={item.href} href={item.href} onClick={() => setCategoriesOpen(false)}>{item.label}</Link>
                 ))}
               </div>

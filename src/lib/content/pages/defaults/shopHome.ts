@@ -1,9 +1,9 @@
 import {
-  SHOP_CATEGORY_SLIDES,
   SHOP_HOME_WHEEL_SLUGS,
   SHOP_ORDER_STEPS,
   SHOP_VEHICLE_STORIES,
 } from "@/constants/shopHome";
+import { SHOP_LIFESTYLE_CATEGORIES } from "@/constants/shopCategories";
 
 import type { ShopHomePageContent } from "../types";
 
@@ -11,7 +11,7 @@ export const SHOP_HOME_PAGE_DEFAULTS: ShopHomePageContent = {
   key: "shop-home",
   hero: {
     eyebrow: "BIZON Forged",
-    title: "Кованые диски для вашего автомобиля",
+    title: "Диски для твоего зверя",
     lead: "Выберите дизайн — параметры и совместимость проверит специалист BIZON.",
     imageUrl: "/images/premium/shop-hero-forged-wheel-model.png",
     imageAlt: "Кованый диск BIZON и модель в красном образе",
@@ -27,7 +27,16 @@ export const SHOP_HOME_PAGE_DEFAULTS: ShopHomePageContent = {
     title: step.title,
     description: step.description,
   })),
-  categoryCarousel: SHOP_CATEGORY_SLIDES.map((slide) => ({ ...slide })),
+  categoryCarousel: SHOP_LIFESTYLE_CATEGORIES.map((category) => ({
+    id: category.slug,
+    kicker: category.kicker,
+    title: category.title,
+    action: `Открыть ${category.kicker}`,
+    href: `/shop/${category.slug}`,
+    desktopImage: category.desktopImage,
+    mobileImage: category.mobileImage,
+    alt: category.imageAlt,
+  })),
   vehicles: {
     eyebrow: "BIZON Forged",
     title: "Созданы менять характер",
