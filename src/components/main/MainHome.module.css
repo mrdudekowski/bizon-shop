@@ -64,28 +64,6 @@
   min-width: 0;
   pointer-events: none;
 }
-.heroMedia {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  overflow: hidden;
-}
-.heroMedia img {
-  object-fit: var(--media-fit-cover);
-  object-position: center 42%;
-}
-.heroOverlay {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background:
-    linear-gradient(90deg, rgba(8, 10, 12, 0.58) 0%, rgba(8, 10, 12, 0.22) 34%, transparent 62%),
-    linear-gradient(180deg, rgba(8, 10, 12, 0.38) 0%, transparent 28%);
-}
 .heroTires {
   position: absolute;
   top: 0;

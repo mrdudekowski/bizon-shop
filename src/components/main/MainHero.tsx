@@ -22,24 +22,6 @@ export function MainHero({
       data-main-chrome-tone="dark"
       aria-label={tires.length > 0 ? "Модели TBR" : undefined}
     >
-      <div className={styles.heroMedia}>
-        {content.imageUrl ? (
-          <Image
-            src={
-              content.imageUrl.startsWith("/")
-                ? `${content.imageUrl}?v=hd`
-                : content.imageUrl
-            }
-            alt={content.imageAlt}
-            fill
-            priority
-            sizes="100vw"
-          />
-        ) : null}
-      </div>
-
-      <div className={styles.heroOverlay} aria-hidden="true" />
-
       {tires.length > 0 ? (
         <div className={styles.heroTires}>
           {tires.map((slide) => (
