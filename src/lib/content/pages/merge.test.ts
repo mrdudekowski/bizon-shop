@@ -52,6 +52,16 @@ describe("mergeHomeContent", () => {
     });
     expect(merged.shopCampaign.imageUrl).toBe("https://s3.twcstorage.ru/bucket/bizon/media/uuid.png");
   });
+
+  it("overrides directions and expertise from CMS", () => {
+    const merged = mergeHomeContent(HOME_PAGE_DEFAULTS, {
+      directions: { title: "Шины под рабочую среду" },
+      expertise: { title: "Экспертиза и поддержка" },
+    });
+    expect(merged.directions.title).toBe("Шины под рабочую среду");
+    expect(merged.directions.lead).toBe(HOME_PAGE_DEFAULTS.directions.lead);
+    expect(merged.expertise.title).toBe("Экспертиза и поддержка");
+  });
 });
 
 describe("mergeShopHomeContent", () => {

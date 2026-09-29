@@ -22,7 +22,7 @@ export function ShopCampaign({ content }: { content: HomeShopCampaignContent }) 
         className={styles.shopCampaign}
         data-home-tone="dark"
         data-main-chrome-tone="dark"
-        aria-label="BIZON SHOP"
+        aria-label={content.title}
       >
         <div className={styles.shopMedia}>
           <Image
@@ -35,7 +35,7 @@ export function ShopCampaign({ content }: { content: HomeShopCampaignContent }) 
         <div className={styles.shopOverlay} aria-hidden="true" />
         <div className={styles.inner}>
           <Link className={`btn-accent ${styles.shopCta}`} href={content.cta.href}>
-            BIZON SHOP <SiteArrow />
+            {content.cta.label} <SiteArrow />
           </Link>
         </div>
       </section>

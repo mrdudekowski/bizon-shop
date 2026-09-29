@@ -64,6 +64,28 @@
   min-width: 0;
   pointer-events: none;
 }
+.heroMedia {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.heroMedia img {
+  object-fit: var(--media-fit-cover);
+  object-position: center right;
+}
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.18) 36%, transparent 58%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.32) 0%, transparent 26%);
+}
 .heroTires {
   position: absolute;
   top: 0;
@@ -179,7 +201,7 @@
   pointer-events: none;
 }
 .heroCopy h1 { max-width: 10ch; margin: 0; font-size: var(--type-hero); font-weight: var(--weight-display); line-height: var(--leading-display); letter-spacing: var(--tracking-display); text-wrap: balance; }
-.heroCopy > p { margin: 0; color: var(--color-on-dark-subtle); font-size: var(--type-lead); line-height: var(--leading-body); }
+.heroCopy > p:not(.eyebrow) { margin: 0; color: var(--color-on-dark-subtle); font-size: var(--type-lead); line-height: var(--leading-body); }
 .heroControls {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -858,7 +880,7 @@
     overflow-wrap: normal;
   }
   .heroCopy,
-  .hero .inner { padding-bottom: min(34vh, 12rem); }
+  .hero .inner { padding-bottom: 0; }
   .heroTires {
     width: min(86vw, 22rem);
     padding-bottom: 6%;
