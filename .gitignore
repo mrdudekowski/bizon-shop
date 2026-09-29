@@ -77,6 +77,10 @@ docs/
 !docs/implementation/**
 !docs/client-data-blockers-audit.md
 
+# Other apps: edited here, pushed from their own branches
+/backend-app/
+/frontend-cms/
+
 # Payload reference monorepo (not used — app uses npm @payloadcms/*)
 payload-bizon/
 
