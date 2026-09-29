@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ShopCategoryCarousel } from "@/components/shop/ShopCategoryCarousel";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
-import { getPageContent, getWheelModelsByTypeSlug } from "@/lib/content";
+import { getPageContent, getShopCategories, getShopProducts, getWheelModelsByTypeSlug } from "@/lib/content";
+import { shopProductCountLabel } from "@/lib/content/shopCategoryPresentation";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import styles from "./ShopHome.module.css";
 
@@ -18,15 +18,26 @@ export async function generateMetadata() {
 }
 
 export default async function ShopPage() {
-  const [page, forgedModels] = await Promise.all([
+  const [page, forgedModels, shopCategories, shopProducts] = await Promise.all([
     getPageContent("shop-home"),
     getWheelModelsByTypeSlug("forged"),
+    getShopCategories(),
+    getShopProducts(),
   ]);
 
   const forgedModelsBySlug = new Map(forgedModels.map((model) => [model.slug, model]));
-  const homeModels = page.preferredWheelSlugs
-    .map((slug) => forgedModelsBySlug.get(slug))
-    .filter((model): model is NonNullable<typeof model> => Boolean(model?.imageUrl));
+  const homeModels = [...forgedModelsBySlug.values()]
+    .filter((model) => model.showInMenu && model.imageUrl)
+    .sort((a, b) => a.menuOrder - b.menuOrder)
+    .slice(0, 3);
+  const categories = shopCategories
+    .filter((category) => category.showInMenu)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((category) => ({
+      ...category,
+      count: shopProducts.filter((product) => product.categorySlug === category.slug).length,
+      image: category.imageUrl || shopProducts.find((product) => product.categorySlug === category.slug)?.imageUrl,
+    }));
 
   return (
     <div className={styles.page}>
@@ -108,9 +119,41 @@ export default async function ShopPage() {
         </div>
       </section>
 
-      <div id="categories" data-shop-chrome-tone="dark">
-        <ShopCategoryCarousel slides={page.categoryCarousel} />
-      </div>
+      <section className={styles.categoriesSection} id="categories" data-shop-chrome-tone="dark" aria-labelledby="categories-title">
+        <div className={styles.content}>
+          <div className={styles.categoriesHead}>
+            <div>
+              <p className={styles.collectionKicker}>BIZON SHOP</p>
+              <h2 id="categories-title">Категории товаров</h2>
+              <p>Актуальные категории и ассортимент из каталога BIZON.</p>
+            </div>
+            <Link className={styles.categoriesAll} href="/shop/categories">Все категории <SiteArrow direction="ne" /></Link>
+          </div>
+          {categories.length ? (
+            <div className={styles.categoryGrid}>
+              {categories.map((category) => (
+                <Link className={styles.categoryCard} href={`/shop/${category.slug}`} key={category.slug}>
+                  <span className={styles.categoryMedia}>
+                    {category.image ? <Image src={category.image} alt="" fill sizes="(max-width: 639px) 88vw, (max-width: 900px) 46vw, 30vw" /> : null}
+                    <span className={styles.categoryOverlay} />
+                  </span>
+                  <span className={styles.categoryInfo}>
+                    <span>{shopProductCountLabel(category.count)}</span>
+                    <strong>{category.name}</strong>
+                    {category.description ? <span>{category.description}</span> : null}
+                  </span>
+                  <span className={styles.categoryArrow} aria-hidden="true"><SiteArrow direction="ne" /></span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className={styles.categoriesEmpty}>
+              <p>Категории появятся здесь после публикации в каталоге.</p>
+              <Link href="/shop/wheels/forged">Посмотреть кованые диски <SiteArrow direction="ne" /></Link>
+            </div>
+          )}
+        </div>
+      </section>
 
       <section
         className={styles.vehiclesSection}
