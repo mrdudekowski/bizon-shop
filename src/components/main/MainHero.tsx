@@ -20,23 +20,10 @@ export function MainHero({
   content: HomeHeroContent;
   slides: HeroModelSlide[];
 }) {
-  const mediaSlides =
-    slides.length > 0
-      ? slides
-      : [
-          {
-            id: "fallback",
-            name: content.title,
-            href: content.secondaryCta.href,
-            imageUrl: content.imageUrl,
-            imageAlt: content.imageAlt,
-          },
-        ];
-
   const [activeIndex, setActiveIndex] = useState(0);
   const [autoplay, setAutoplay] = useState(true);
   const touchStartX = useRef<number | null>(null);
-  const active = mediaSlides[activeIndex] ?? mediaSlides[0];
+  const active = slides[activeIndex] ?? slides[0];
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -45,13 +32,13 @@ export function MainHero({
       return;
     }
 
-    if (!autoplay || mediaSlides.length < 2) return;
+    if (!autoplay || slides.length < 2) return;
 
     let timer: number | undefined;
     const start = () => {
       window.clearInterval(timer);
       timer = window.setInterval(() => {
-        setActiveIndex((current) => (current + 1) % mediaSlides.length);
+        setActiveIndex((current) => (current + 1) % slides.length);
       }, AUTOPLAY_MS);
     };
     const onVisibilityChange = () => {
@@ -65,11 +52,11 @@ export function MainHero({
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [autoplay, mediaSlides.length]);
+  }, [autoplay, slides.length]);
 
   const selectSlide = (index: number) => {
     setAutoplay(false);
-    setActiveIndex((index + mediaSlides.length) % mediaSlides.length);
+    setActiveIndex((index + slides.length) % slides.length);
   };
 
   const onTouchStart = (event: React.TouchEvent<HTMLElement>) => {
@@ -89,36 +76,56 @@ export function MainHero({
     <section
       className={styles.hero}
       data-main-chrome-tone="dark"
-      aria-roledescription="carousel"
-      aria-label="Модели TBR"
+      aria-roledescription={slides.length > 1 ? "carousel" : undefined}
+      aria-label={slides.length > 0 ? "Модели TBR" : undefined}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
       <div className={styles.heroMedia}>
-        {mediaSlides.map((slide, index) => (
-          <div
-            key={slide.id}
-            className={`${styles.heroSlide} ${index === activeIndex ? styles.heroSlideActive : ""}`}
-            aria-hidden={index !== activeIndex}
-          >
-            <Image
-              src={slide.imageUrl}
-              alt={slide.imageAlt}
-              fill
-              priority={index === 0}
-              sizes="100vw"
-            />
-          </div>
-        ))}
+        {content.imageUrl ? (
+          <Image
+            src={content.imageUrl}
+            alt={content.imageAlt}
+            fill
+            priority
+            sizes="100vw"
+          />
+        ) : null}
       </div>
 
       <div className={styles.heroOverlay} aria-hidden="true" />
 
-      <Link
-        className={styles.heroHit}
-        href={active.href}
-        aria-label={`Открыть модель ${active.name}`}
-      />
+      {slides.length > 0 ? (
+        <div className={styles.heroTires} aria-hidden="true">
+          {slides.map((slide, index) => (
+            <div
+              key={slide.id}
+              className={styles.heroTire}
+            >
+              {slide.imageUrl ? (
+                <div className={`${styles.heroTireFrame} ${index === activeIndex ? styles.heroTireFrameOn : ""}`}>
+                  <Image
+                    src={slide.imageUrl}
+                    alt=""
+                    fill
+                    unoptimized
+                    sizes="(max-width: 767px) 88vw, 52vw"
+                    style={{ objectFit: "contain", objectPosition: "right center" }}
+                  />
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {active ? (
+        <Link
+          className={styles.heroHit}
+          href={active.href}
+          aria-label={`Открыть модель ${active.name}`}
+        />
+      ) : null}
 
       <div className={styles.inner}>
         <div className={styles.heroCopy}>
@@ -127,13 +134,13 @@ export function MainHero({
           <p>{content.lead}</p>
         </div>
 
-        {mediaSlides.length > 1 ? (
+        {slides.length > 1 && active ? (
           <div className={styles.heroControls}>
             <p className={styles.heroModelCue} aria-live="polite">
               {active.name}
             </p>
             <div className={styles.heroProgress}>
-              {mediaSlides.map((slide, index) => (
+              {slides.map((slide, index) => (
                 <button
                   key={slide.id}
                   type="button"

@@ -4,7 +4,7 @@ export const CATALOG_IMAGE_PLACEHOLDER = "/images/placeholder.svg";
 const PREMIUM_IMAGE_ROOT = "/images/premium";
 
 export const PREMIUM_MEDIA = {
-  hero: `${PREMIUM_IMAGE_ROOT}/highway-hero.png`,
+  hero: "/images/hero/backdrop.jpg",
   shopHero: `${PREMIUM_IMAGE_ROOT}/shop-hero-forged-wheel-model.png`,
   highwayCategory: `${PREMIUM_IMAGE_ROOT}/highway-fleet-portrait.png`,
   quarryCategory: `${PREMIUM_IMAGE_ROOT}/quarry-haul-truck.png`,

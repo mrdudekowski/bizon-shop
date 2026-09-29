@@ -11,7 +11,7 @@ export const HOME_PAGE_DEFAULTS: HomePageContent = {
     title: "Грузовые шины под условия работы вашего парка",
     lead: "Модель выбирается по технике, оси, нагрузке и маршруту — затем подтверждаем типоразмер, совместимость и наличие.",
     imageUrl: PREMIUM_MEDIA.hero,
-    imageAlt: "Грузовой автопарк на магистрали",
+    imageAlt: "Грузовик на горной магистрали на закате",
     primaryCta: { label: "Открыть каталог", href: "/models" },
     secondaryCta: { label: "Открыть модели и размеры", href: "/models" },
     metricLabel: "01",

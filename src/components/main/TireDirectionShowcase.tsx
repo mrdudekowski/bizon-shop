@@ -1,11 +1,10 @@
-import type { CSSProperties } from "react";
+import Image from "next/image";
 import Link from "next/link";
 
 import { AssortmentCarousel } from "@/components/main/AssortmentCarousel";
 import { pickAssortmentModels } from "@/lib/catalog/featuredAssortment";
 import type { TireCatalogReadModel } from "@/lib/catalog/tireReadModel";
 import type { PageShell } from "@/lib/content/pages/types";
-import { PREMIUM_MEDIA } from "@/constants/images";
 
 import styles from "./MainHome.module.css";
 
@@ -21,14 +20,17 @@ export function TireDirectionShowcase({
   return (
     <section
       className={styles.directionSection}
-      data-home-tone="dark"
-      data-main-chrome-tone="dark"
+      data-main-chrome-tone="light"
       aria-labelledby="home-assortment-title"
-      style={{ "--assortment-bg": `url("${PREMIUM_MEDIA.inspection}")` } as CSSProperties}
     >
-      <p className={styles.assortmentWatermark} aria-hidden="true">
-        BIZON
-      </p>
+      <Image
+        className={styles.directionWatermark}
+        src="/brand/logo-simple-black.png"
+        alt=""
+        width={300}
+        height={63}
+        aria-hidden="true"
+      />
       <div className={styles.assortmentContent}>
         <div className={styles.assortmentIntro}>
           <p className={styles.assortmentKicker}>{content.eyebrow}</p>

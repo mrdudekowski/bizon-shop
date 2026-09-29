@@ -3,15 +3,17 @@ import Link from "next/link";
 
 import type { HomeShopCampaignContent } from "@/lib/content/pages/types";
 
+import { HOME_SHOP_ZONE_SECTION_ID } from "./homeShopZone";
 import styles from "./MainHome.module.css";
 
 export function ShopCampaign({ content }: { content: HomeShopCampaignContent }) {
   return (
     <section
+      id={HOME_SHOP_ZONE_SECTION_ID}
       className={styles.shopCampaign}
       data-home-tone="dark"
       data-main-chrome-tone="dark"
-      aria-label={content.title}
+      aria-label="BIZON SHOP"
     >
       <div className={styles.shopMedia}>
         <Image
@@ -23,14 +25,9 @@ export function ShopCampaign({ content }: { content: HomeShopCampaignContent }) 
       </div>
       <div className={styles.shopOverlay} aria-hidden="true" />
       <div className={styles.inner}>
-        <div className={styles.shopCopy}>
-          <p className={styles.eyebrow}>{content.eyebrow}</p>
-          <h2>{content.title}</h2>
-          <p>{content.lead}</p>
-          <Link className="btn-accent" href={content.cta.href}>
-            {content.cta.label}
-          </Link>
-        </div>
+        <Link className={`btn-accent ${styles.shopCta}`} href={content.cta.href}>
+          BIZON SHOP <span aria-hidden="true">→</span>
+        </Link>
       </div>
     </section>
   );
