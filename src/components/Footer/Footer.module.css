@@ -74,6 +74,12 @@
   transition: color var(--transition-fast);
 }
 
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
 .nav a:hover,
 .contact a:hover,
 .brand a:hover {

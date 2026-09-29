@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CartHeaderButton } from "@/components/cart/CartHeaderButton";
 import { ChromeWordmark, FloatingChrome } from "@/components/chrome/FloatingChrome";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import styles from "./ShopChrome.module.css";
 
 const CATEGORY_LINKS = [
@@ -60,8 +61,6 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen }) {
       navigation={
         <>
           <Link href="/shop/categories">Каталог</Link>
-          <Link href="/shop#wheels">Подобрать по параметрам</Link>
-          <Link href="/shop/wheels/forged">Кованые диски</Link>
           <div
             className={styles.categoryMenu}
             onBlur={(event) => {
@@ -88,11 +87,11 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen }) {
               </div>
             ) : null}
           </div>
-          <Link href="/contact?subject=wheel-selection">Заявка на диски</Link>
-          <Link href="/shop/delivery-and-returns">Доставка и возврат</Link>
+          <Link href="/contact?subject=wheel-selection">Заявка</Link>
+          <Link href="/shop/delivery-and-returns">Возврат</Link>
         </>
       }
-      utility={<Link href="/">BIZON Tires ↗</Link>}
+      utility={<Link href="/">BIZON <SiteArrow direction="ne" /></Link>}
       action={<CartHeaderButton count={cartCount} onOpen={onCartOpen} />}
       toneAttribute="data-shop-chrome-tone"
       fallbackTone="dark"

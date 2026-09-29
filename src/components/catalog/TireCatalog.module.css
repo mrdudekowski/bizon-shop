@@ -45,7 +45,7 @@
 .directionBody { display: grid; gap: 1rem; padding: clamp(1.5rem, 3vw, 2.5rem); }
 .directionBody h2 { margin: 0; font-size: var(--type-title); font-weight: var(--weight-display); letter-spacing: var(--tracking-display); }
 .directionBody p { max-width: 35rem; margin: 0; color: var(--color-muted); line-height: 1.6; }
-.directionLink { width: fit-content; min-height: 44px; display: inline-flex; align-items: center; color: var(--color-link); font-weight: 650; }
+.directionLink { width: fit-content; min-height: 44px; display: inline-flex; align-items: center; gap: 0.4em; color: var(--color-link); font-weight: 650; }
 
 .filters {
   display: grid;
@@ -155,7 +155,7 @@
 .modelDescription { min-height: 3em; margin: 0; color: var(--color-muted); line-height: 1.5; }
 .modelFooter { display: flex; justify-content: space-between; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border); font-size: 0.8125rem; }
 .modelFooter > span { color: var(--color-muted); }
-.modelFooter a { color: var(--color-link); font-weight: 650; }
+.modelFooter a { display: inline-flex; align-items: center; gap: 0.35em; color: var(--color-link); font-weight: 650; }
 
 .emptyState {
   display: grid;
@@ -263,7 +263,7 @@
 .documents { display: grid; grid-template-columns: .65fr 1.35fr; gap: 2rem; margin-top: var(--section-space); padding-top: clamp(2rem, 5vw, 4rem); border-top: 1px solid var(--color-border); }
 .documents > div { border-top: 1px solid var(--color-border); }
 .documents a { display: flex; justify-content: space-between; gap: 1rem; min-height: 60px; align-items: center; border-bottom: 1px solid var(--color-border); }
-.documents a span:last-child { color: var(--color-link); font-size: .75rem; font-weight: 700; }
+.documents a span:last-child { display: inline-flex; align-items: center; gap: 0.3em; color: var(--color-link); font-size: .75rem; font-weight: 700; }
 
 .finalCta { display: flex; justify-content: space-between; align-items: end; gap: 2rem; margin-top: var(--section-space); padding: clamp(2rem, 5vw, 4rem); border-radius: var(--radius-card); background: var(--color-surface-muted); }
 .finalCta h2 { max-width: 17ch; }

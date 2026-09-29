@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { TireIqJob } from "@/lib/content/tireIqJobs";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 import { trackEvent } from "@/lib/analytics/yandexMetrika";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 
 import styles from "./TireIqJobNav.module.css";
 
@@ -40,7 +41,7 @@ export function TireIqJobNav({ jobs, hasKnowledge = true }: TireIqJobNavProps) {
                 <span className={styles.outcome}>{job.outcome}</span>
               </span>
               <span className={styles.arrow} aria-hidden="true">
-                ↗
+                <SiteArrow direction="ne" />
               </span>
             </Link>
           </li>

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { ForgedConfigurator } from "./ForgedConfigurator";
 import { ForgedGallery } from "./ForgedGallery";
 import { metaLine, type ForgedWheelView } from "./forgedView";
@@ -74,7 +75,7 @@ export function ForgedModel({ model }: { model: ForgedWheelView }) {
           </div>
           <ForgedConfigurator model={model} />
           <div className={styles.actions}>
-            <Link href={BASE_PATH} className={styles.secondaryAction}>← Все дизайны</Link>
+            <Link href={BASE_PATH} className={styles.secondaryAction}><SiteArrow direction="left" /> Все дизайны</Link>
           </div>
         </div>
       </section>

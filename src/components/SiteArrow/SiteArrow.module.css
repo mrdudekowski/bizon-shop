@@ -1,0 +1,21 @@
+.arrow {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 0.85em;
+  height: 0.85em;
+  color: inherit;
+  background: currentColor;
+  -webkit-mask: url("/brand/arrow-right.png") center / contain no-repeat;
+  mask: url("/brand/arrow-right.png") center / contain no-repeat;
+  pointer-events: none;
+  vertical-align: -0.08em;
+}
+
+.left {
+  transform: rotate(180deg);
+}
+
+/* ponytail: the brand PNG is already the angled mark; ne is the same glyph */
+.ne {
+  transform: none;
+}

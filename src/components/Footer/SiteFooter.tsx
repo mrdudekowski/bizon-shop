@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { SITE_CONTACT, contactEmailHref, contactPhoneHref } from "@/constants/contact";
 import { ROUTES } from "@/constants/navigation";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 
 import styles from "./Footer.module.css";
 
@@ -72,7 +73,7 @@ const FOOTER_CONFIG: Record<FooterSurface, FooterConfig> = {
         links: [
           { href: "/cart", label: "Корзина" },
           { href: "/shop/delivery-and-returns", label: "Доставка и возврат" },
-          { href: "/", label: "BIZON Tires ↗" },
+          { href: "/", label: "BIZON Tires" },
         ],
       },
     ],
@@ -100,7 +101,10 @@ export function SiteFooter({ surface }: { surface: FooterSurface }) {
           <nav className={styles.nav} aria-label={section.label} key={section.label}>
             <p>{section.label}</p>
             {section.links.map((link) => (
-              <Link href={link.href} key={link.href}>{link.label}</Link>
+              <Link href={link.href} key={link.href}>
+                {link.label}
+                {link.href === "/" && surface === "shop" ? <SiteArrow direction="ne" /> : null}
+              </Link>
             ))}
           </nav>
         ))}

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { PageHero, type PageHeroBreadcrumb } from "@/components/content/PageHero";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { getTireIqTaxonomyLabel } from "@/lib/content/tireIqTaxonomy";
 
 import styles from "./EditorialListing.module.css";
@@ -106,7 +107,7 @@ export function EditorialListing({
                   </h2>
                   {item.description ? <p>{item.description}</p> : null}
                   <Link href={item.href} className={styles.readMore}>
-                    Читать <span aria-hidden="true">↗</span>
+                    Читать <SiteArrow direction="ne" />
                   </Link>
                 </div>
               </article>

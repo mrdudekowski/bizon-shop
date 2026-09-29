@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { SHOP_LIFESTYLE_CATEGORIES } from "@/constants/shopCategories";
 import { ShopResponsiveImage } from "./ShopResponsiveImage";
 import styles from "./ShopCategoriesIndex.module.css";
@@ -40,7 +41,7 @@ export function ShopCategoriesIndex() {
                 <span className={styles.cardContent}>
                   <span>{category.kicker}</span>
                   <strong>{category.title}</strong>
-                  <span className={styles.arrow} aria-hidden="true">↗</span>
+                  <span className={styles.arrow} aria-hidden="true"><SiteArrow direction="ne" /></span>
                 </span>
               </Link>
             ))}

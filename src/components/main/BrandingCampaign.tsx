@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { PREMIUM_MEDIA } from "@/constants/images";
 import { ROUTES } from "@/constants/navigation";
 
@@ -55,7 +56,7 @@ export function BrandingCampaign() {
               Решения для автопарков и крупных проектов.
             </p>
             <Link className="btn-accent" href={ROUTES.branding}>
-              Узнать больше <span aria-hidden="true">→</span>
+              Узнать больше <SiteArrow />
             </Link>
           </div>
 

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import type { CmsWheelModel } from "@/lib/content/types";
 import { metaLine, toForgedWheelView } from "./forgedView";
 import styles from "./ForgedCatalog.module.css";
@@ -52,7 +53,7 @@ export function ForgedCatalog({ models }: { models: CmsWheelModel[] }) {
                   <strong>{view.name}</strong>
                   <p>{metaLine(view)}</p>
                 </div>
-                <span className={styles.arrow} aria-hidden="true">↗</span>
+                <span className={styles.arrow} aria-hidden="true"><SiteArrow direction="ne" /></span>
               </Link>
             ))}
           </div>

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+
 import styles from "./TireIqAxleSelector.module.css";
 
 const AXLES = [
@@ -66,7 +68,7 @@ export function TireIqAxleSelector({ hasKnowledge = true }: { hasKnowledge?: boo
               <span>{axle.description}</span>
             </span>
             <span className={styles.arrow} aria-hidden="true">
-              ↗
+              <SiteArrow direction="ne" />
             </span>
           </Link>
         ))}

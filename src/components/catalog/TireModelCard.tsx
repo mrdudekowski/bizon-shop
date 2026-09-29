@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CatalogImage } from "@/components/catalog/CatalogImage";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { getTireCategoryByValue } from "@/lib/catalog/tireCategories";
 import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
 import { AXLE_OPTIONS } from "@/lib/selection/options";
@@ -45,7 +46,7 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
               ? `${sizeSummary}${additionalSizes ? ` +${additionalSizes}` : ""}`
               : "Размер — по запросу"}
           </span>
-          <Link href={model.href}>Открыть параметры <span aria-hidden="true">↗</span></Link>
+          <Link href={model.href}>Открыть параметры <SiteArrow direction="ne" /></Link>
         </div>
       </div>
     </article>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CatalogImage } from "@/components/catalog/CatalogImage";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 
 export function CatalogCard({
   href,
@@ -32,7 +33,7 @@ export function CatalogCard({
           </Link>
         </h2>
         {description && <p className="info-card-text">{description}</p>}
-        <span className="catalog-card__arrow" aria-hidden="true">→</span>
+        <span className="catalog-card__arrow" aria-hidden="true"><SiteArrow /></span>
       </div>
     </article>
   );

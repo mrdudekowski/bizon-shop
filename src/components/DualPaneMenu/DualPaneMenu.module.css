@@ -242,6 +242,8 @@
 
 .backButton {
   display: none;
+  align-items: center;
+  gap: 0.4em;
   border: none;
   background: transparent;
   color: var(--color-foreground);

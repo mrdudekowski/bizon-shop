@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+
 import styles from "./TireIqDumpTruckSelector.module.css";
 
 const AXLES = [
@@ -45,7 +47,7 @@ export function TireIqDumpTruckSelector({ hasKnowledge = true }: { hasKnowledge?
               <strong>{axle.title}</strong>
               <span>{axle.description}</span>
             </span>
-            <span className={styles.arrow} aria-hidden="true">↗</span>
+            <span className={styles.arrow} aria-hidden="true"><SiteArrow direction="ne" /></span>
           </Link>
         ))}
       </div>

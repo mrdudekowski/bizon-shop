@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { getFeatureImage } from "@/lib/catalog/featureImages";
 import type { CmsTireAdvantage } from "@/lib/content/types";
 import styles from "./ModelAdvantagesCarousel.module.css";
@@ -152,14 +153,14 @@ export function ModelAdvantagesCarousel({ advantages }: ModelAdvantagesCarouselP
               onClick={() => selectSlide(activeIndex - 1)}
               aria-label="Предыдущее преимущество"
             >
-              ←
+              <SiteArrow direction="left" />
             </button>
             <button
               type="button"
               onClick={() => selectSlide(activeIndex + 1)}
               aria-label="Следующее преимущество"
             >
-              →
+              <SiteArrow />
             </button>
           </div>
         </div>

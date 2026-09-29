@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CatalogBuyPanel } from "@/components/catalog/CatalogBuyPanel";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { LexicalContent } from "@/components/content/LexicalContent";
 import { CatalogProductGallery } from "@/components/catalog/CatalogProductGallery";
 import { PageHeader } from "@/components/catalog/PageHeader";
@@ -118,7 +119,7 @@ export function WheelModelStage({
               {evidenceDocuments.map((document) => (
                 <a key={document.url} href={document.url} target="_blank" rel="noreferrer">
                   <span>{document.title}</span>
-                  <span aria-hidden="true">PDF ↗</span>
+                  <span>PDF <SiteArrow direction="ne" /></span>
                 </a>
               ))}
             </div>
@@ -135,7 +136,7 @@ export function WheelModelStage({
               Запросить наличие и предложение
             </Link>
             <Link className="btn-glass" href={typeBasePath}>
-              ← Все модели {wheelType.name}
+              <SiteArrow direction="left" /> Все модели {wheelType.name}
             </Link>
           </div>
         </section>

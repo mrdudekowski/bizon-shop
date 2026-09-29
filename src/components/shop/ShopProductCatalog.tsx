@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { PageHeader } from "@/components/catalog/PageHeader";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { ShopProductCard } from "@/components/shop/ShopProductCard";
 import type { CmsProduct, CmsShopCategory } from "@/lib/content/types";
 import styles from "./ShopProductCatalog.module.css";
@@ -33,7 +34,7 @@ export function ShopProductCatalog({
           <p>Товары и доступные варианты появятся после финального отбора.</p>
         </section>
       )}
-      <p className={styles.back}><Link href="/shop/categories">← Все категории</Link></p>
+      <p className={styles.back}><Link href="/shop/categories"><SiteArrow direction="left" /> Все категории</Link></p>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { WheelModelGrid } from "@/components/catalog/WheelModelGrid";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { ForgedCatalog } from "@/components/shop/ForgedCatalog";
 
 type PageProps = {
@@ -80,7 +81,7 @@ export default async function WheelTypePage({ params }: PageProps) {
       )}
       <p className="mt-8">
         <Link href="/shop" className="btn-glass inline-flex">
-          ← Магазин
+          <SiteArrow direction="left" /> Магазин
         </Link>
       </p>
     </div>

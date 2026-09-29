@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CatalogImage } from "@/components/catalog/CatalogImage";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { parseBulletPoints } from "@/utils/textUtils";
 
 function syncScrollButtons(track, setCanPrev, setCanNext) {
@@ -87,7 +88,7 @@ export default function ProductCarousel({ items = [] }) {
                 {summary ? <p className="category-card-desc">{summary}</p> : null}
               </div>
               <span className="category-card-arrow" aria-hidden="true">
-                →
+                <SiteArrow />
               </span>
             </Link>
           );
@@ -101,7 +102,7 @@ export default function ProductCarousel({ items = [] }) {
         disabled={!canScrollPrev}
         aria-label="Предыдущая категория"
       >
-        ←
+        <SiteArrow direction="left" />
       </button>
 
       <button
@@ -111,7 +112,7 @@ export default function ProductCarousel({ items = [] }) {
         disabled={!canScrollNext}
         aria-label="Следующая категория"
       >
-        →
+        <SiteArrow />
       </button>
     </div>
   );

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { PageHeader } from "@/components/catalog/PageHeader";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import styles from "@/components/catalog/TireCatalog.module.css";
 import { getPublishedTireCatalog } from "@/lib/content";
 import { createPageMetadata } from "@/lib/seo/metadata";
@@ -34,7 +35,7 @@ export default async function ModelsPage() {
                   <p className={styles.eyebrow}>{direction.models.length} моделей · доступно к заказу</p>
                   <h2>{direction.name}</h2>
                   <p>{direction.shortDescription || direction.description}</p>
-                  <Link className={styles.directionLink} href={`/models/${direction.slug}`}>Посмотреть модели и размеры <span aria-hidden="true">↗</span></Link>
+                  <Link className={styles.directionLink} href={`/models/${direction.slug}`}>Посмотреть модели и размеры <SiteArrow direction="ne" /></Link>
                 </div>
               </article>
             ))}

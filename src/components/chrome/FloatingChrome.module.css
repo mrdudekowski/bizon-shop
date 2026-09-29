@@ -137,6 +137,7 @@
   display: inline-flex;
   min-height: 44px;
   align-items: center;
+  gap: 0.4em;
   border-radius: var(--radius-pill);
   padding: 8px 10px;
 }
@@ -205,6 +206,13 @@
 
   .action :global(.chrome-primary > span:last-child) {
     display: inline;
+  }
+}
+
+@media (max-width: 1279px) {
+  .chrome[data-shop-chrome] .navigation,
+  .chrome[data-shop-chrome] .utility {
+    display: none;
   }
 }
 

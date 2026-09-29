@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import type { ShopCategorySlide } from "@/lib/content/pages/types";
 import { ShopResponsiveImage } from "./ShopResponsiveImage";
 import styles from "./ShopCategoryCarousel.module.css";
@@ -116,8 +117,8 @@ export function ShopCategoryCarousel({
           >
             {autoplay ? "Пауза" : "Старт"}
           </button>
-          <button type="button" onClick={() => selectSlide(activeIndex - 1)} aria-label="Предыдущая категория">←</button>
-          <button type="button" onClick={() => selectSlide(activeIndex + 1)} aria-label="Следующая категория">→</button>
+          <button type="button" onClick={() => selectSlide(activeIndex - 1)} aria-label="Предыдущая категория"><SiteArrow direction="left" /></button>
+          <button type="button" onClick={() => selectSlide(activeIndex + 1)} aria-label="Следующая категория"><SiteArrow /></button>
         </div>
       </div>
     </section>

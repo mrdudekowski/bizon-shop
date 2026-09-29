@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ShopCategoryCarousel } from "@/components/shop/ShopCategoryCarousel";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { getPageContent, getWheelModelsByTypeSlug } from "@/lib/content";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import styles from "./ShopHome.module.css";
@@ -86,7 +87,7 @@ export default async function ShopPage() {
                   </span>
                 </span>
                 <span className={styles.modelArrow} aria-hidden="true">
-                  ↗
+                  <SiteArrow direction="ne" />
                 </span>
               </Link>
             ))}

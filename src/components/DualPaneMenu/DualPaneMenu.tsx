@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AdvantageIcons } from "@/components/catalog/AdvantageIcons";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { DualPaneItem, DualPaneMenuData, DualPaneSection } from "@/lib/content/dualPaneMenuTypes";
 import styles from "./DualPaneMenu.module.css";
@@ -113,7 +114,7 @@ function GalleryPane({
       {footerLink ? (
         <Link className={styles.paneFooterLink} href={footerLink.href} onClick={onNavigate}>
           {footerLink.label}
-          <span aria-hidden="true">→</span>
+          <SiteArrow />
         </Link>
       ) : null}
     </div>
@@ -153,7 +154,7 @@ function ListPane({
       {footerLink ? (
         <Link className={styles.paneFooterLink} href={footerLink.href} onClick={onNavigate}>
           {footerLink.label}
-          <span aria-hidden="true">→</span>
+          <SiteArrow />
         </Link>
       ) : null}
     </div>
@@ -308,7 +309,7 @@ export function DualPaneMenu({
                 onClick={handleLinkNavigate}
               >
                 <span>{featuredItem.name}</span>
-                <span aria-hidden="true">→</span>
+                <SiteArrow />
               </Link>
             ) : null}
 
@@ -318,7 +319,7 @@ export function DualPaneMenu({
                   {cartItem.name}
                   <small>Единая заявка BIZON</small>
                 </span>
-                <span aria-hidden="true">→</span>
+                <SiteArrow />
               </Link>
             ) : null}
 
@@ -342,7 +343,7 @@ export function DualPaneMenu({
                         >
                           <span>{section.label}</span>
                           <span className={styles.sectionChevron} aria-hidden="true">
-                            ›
+                            <SiteArrow />
                           </span>
                         </button>
                       </li>
@@ -363,7 +364,7 @@ export function DualPaneMenu({
                     className={styles.backButton}
                     onClick={() => setMobileView("nav")}
                   >
-                    ← Назад
+                    <SiteArrow direction="left" /> Назад
                   </button>
                   <h2 className={styles.rightPaneTitle}>{activeSection?.label}</h2>
                 </div>

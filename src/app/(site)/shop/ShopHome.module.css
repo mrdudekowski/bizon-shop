@@ -228,6 +228,7 @@
   border-radius: var(--radius-circle);
   background: var(--bizon-black);
   color: var(--bizon-white);
+  font-size: 1.35rem;
   transition: background-color var(--transition-fast), transform var(--transition-fast);
 }
 

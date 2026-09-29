@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+
 import styles from "./TireIqBusSelector.module.css";
 
 const AXLES = [
@@ -31,7 +33,7 @@ export function TireIqBusSelector({ hasKnowledge = true }: { hasKnowledge?: bool
             onFocus={() => setActiveAxle(axle.key)} onBlur={() => setActiveAxle(null)}>
             <span className={styles.number}>{axle.number}</span>
             <span className={styles.content}><strong>{axle.title}</strong><span>{axle.description}</span></span>
-            <span className={styles.arrow} aria-hidden="true">↗</span>
+            <span className={styles.arrow} aria-hidden="true"><SiteArrow direction="ne" /></span>
           </Link>
         ))}
       </div>

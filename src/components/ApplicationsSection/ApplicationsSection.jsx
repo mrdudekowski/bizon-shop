@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { PREMIUM_MEDIA } from "@/constants/images";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 
 const APPLICATIONS = [
   {
@@ -86,7 +87,7 @@ export function ApplicationsSection() {
               <strong>{application.title}</strong>
               <span>{application.description}</span>
             </span>
-            <span className="application-card__arrow" aria-hidden="true">→</span>
+            <span className="application-card__arrow" aria-hidden="true"><SiteArrow /></span>
           </Link>
         ))}
       </div>

@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+
 import { AssortmentCarousel } from "@/components/main/AssortmentCarousel";
 import { pickAssortmentModels } from "@/lib/catalog/featuredAssortment";
 import type { TireCatalogReadModel } from "@/lib/catalog/tireReadModel";
@@ -34,7 +36,7 @@ export function TireDirectionShowcase({
           <h2 id="home-assortment-title">{content.title}</h2>
           <p>{content.lead}</p>
           <Link className={`btn-accent ${styles.assortmentCta}`} href="/models">
-            Перейти в каталог <span aria-hidden="true">→</span>
+            Перейти в каталог <SiteArrow />
           </Link>
         </div>
 

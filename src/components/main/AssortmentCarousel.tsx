@@ -1,6 +1,7 @@
 "use client";
 
 import { AdvantageIcons } from "@/components/catalog/AdvantageIcons";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { cardSubtitle, formatAxleLabels } from "@/lib/catalog/featuredAssortment";
 import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
@@ -30,7 +31,7 @@ export function AssortmentCarousel({ models }: { models: TireCatalogModel[] }) {
               <span className={styles.assortmentStatus}>{cardSubtitle(model)}</span>
             </span>
             <span className={styles.assortmentArrow} aria-hidden="true">
-              →
+              <SiteArrow />
             </span>
           </span>
           <span className={styles.assortmentCardBody}>

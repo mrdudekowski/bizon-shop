@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+
 import styles from "./TireIqApplicationGuide.module.css";
 
 const GUIDE_GROUPS = [
@@ -60,7 +62,7 @@ export function TireIqApplicationGuide({ hasKnowledge = true }: { hasKnowledge?:
                 <li key={option.label}>
                   <Link href={option.href === "/tire-iq#knowledge" && !hasKnowledge ? "/contact" : option.href}>
                     {option.label}
-                    <span aria-hidden="true">↗</span>
+                    <SiteArrow direction="ne" />
                   </Link>
                 </li>
               ))}

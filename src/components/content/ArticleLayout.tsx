@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { PageHero, type PageHeroBreadcrumb } from "@/components/content/PageHero";
+import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 
 import styles from "./ArticleLayout.module.css";
 
@@ -81,7 +82,7 @@ export function ArticleLayout({
         </section>
         <p className={styles.back}>
           <Link href={backHref} className="btn-secondary">
-            ← {backLabel}
+            <SiteArrow direction="left" /> {backLabel}
           </Link>
         </p>
       </div>
