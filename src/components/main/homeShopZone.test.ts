@@ -13,12 +13,12 @@ import {
 describe("computeShopZoneFadeInProgress", () => {
   const vh = 1000;
 
-  it("is 0 when shop top is at or below the start line", () => {
+  it("is 0 when the branding top is at or below the start line", () => {
     expect(computeShopZoneFadeInProgress(vh * SHOP_ZONE_FADE_IN_START_SHARE, vh)).toBe(0);
     expect(computeShopZoneFadeInProgress(vh * SHOP_ZONE_FADE_IN_START_SHARE + 40, vh)).toBe(0);
   });
 
-  it("is 1 when shop top is at or above the end line", () => {
+  it("is 1 when branding top is at or above the end line", () => {
     expect(computeShopZoneFadeInProgress(vh * SHOP_ZONE_FADE_IN_END_SHARE, vh)).toBe(1);
     expect(computeShopZoneFadeInProgress(vh * SHOP_ZONE_FADE_IN_END_SHARE - 80, vh)).toBe(1);
   });

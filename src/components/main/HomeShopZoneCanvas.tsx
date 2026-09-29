@@ -5,8 +5,8 @@ import { useEffect } from "react";
 import {
   computeShopZoneBackdropProgress,
   getShopZoneViewportHeightPx,
+  HOME_SHOP_ZONE_ENTER_ID,
   HOME_SHOP_ZONE_EXIT_ID,
-  HOME_SHOP_ZONE_SECTION_ID,
   HOME_SHOP_ZONE_SHELL,
   resolveShopZoneProgress,
 } from "./homeShopZone";
@@ -20,7 +20,7 @@ export function HomeShopZoneCanvas() {
     let rafId = 0;
 
     const apply = () => {
-      const shop = document.getElementById(HOME_SHOP_ZONE_SECTION_ID);
+      const shop = document.getElementById(HOME_SHOP_ZONE_ENTER_ID);
       const exit = document.getElementById(HOME_SHOP_ZONE_EXIT_ID);
       const progress = resolveShopZoneProgress(
         computeShopZoneBackdropProgress(shop, exit, getShopZoneViewportHeightPx()),
