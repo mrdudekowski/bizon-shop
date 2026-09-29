@@ -41,6 +41,16 @@ describe("buildMainDualPaneMenuSections", () => {
           menuOrder: 0,
         },
       ],
+      categories: [
+        {
+          slug: "pritsepy",
+          name: "Прицепы",
+          description: "",
+          imageUrl: "/cms/trailer.png",
+          showInMenu: true,
+          sortOrder: 0,
+        },
+      ],
     });
 
     expect(sections.map((section) => section.id)).toEqual([
@@ -65,6 +75,16 @@ describe("buildMainDualPaneMenuSections", () => {
       "warranty",
       "supplier",
     ]);
+    expect(sections.find((section) => section.id === "shop")?.items.map((item) => item.id)).toEqual([
+      "shop-home",
+      "shop-wheels",
+      "shop-categories",
+      "pritsepy",
+      "shop-delivery",
+    ]);
+    expect(sections.find((section) => section.id === "shop")?.items).toEqual(
+      expect.arrayContaining([{ id: "pritsepy", title: "Прицепы", href: "/shop/pritsepy", imageUrl: "/cms/trailer.png", description: "" }]),
+    );
   });
 
   it("lists every published model, not only showInMenu", () => {
@@ -72,6 +92,7 @@ describe("buildMainDualPaneMenuSections", () => {
     const sections = buildMainDualPaneMenuSections({
       models: [model, hidden],
       articles: [],
+      categories: [],
     });
     expect(sections[0]?.items.map((item) => item.title)).toEqual(["DSR177", "DSR158"]);
   });
@@ -80,6 +101,7 @@ describe("buildMainDualPaneMenuSections", () => {
     const sections = buildMainDualPaneMenuSections({
       models: [{ ...model, slug: "custom-model" }],
       articles: [],
+      categories: [],
     });
     expect(sections[0]?.items[0]?.imageUrl).toBe("/tire.png");
   });

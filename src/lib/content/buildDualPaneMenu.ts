@@ -20,6 +20,7 @@ function wheelModelPills(model: CmsWheelModel): string[] {
 export function buildMainDualPaneMenuSections(input: {
   models: CmsTireModel[];
   articles: CmsArticle[];
+  categories: CmsShopCategory[];
 }): DualPaneSection[] {
   const models = [...input.models]
     .sort((a, b) => (a.menuOrder ?? 0) - (b.menuOrder ?? 0))
@@ -56,8 +57,16 @@ export function buildMainDualPaneMenuSections(input: {
         { id: "shop-home", title: "Магазин BIZON", href: ROUTES.shop, description: "Диски и аксессуары" },
         { id: "shop-wheels", title: "Кованые диски", href: `${ROUTES.shop}/wheels/forged` },
         { id: "shop-categories", title: "Все категории", href: ROUTES.shopCategories },
-        { id: "shop-accessories", title: "Аксессуары", href: `${ROUTES.shop}/accessories` },
-        { id: "shop-outdoor", title: "Outdoor", href: `${ROUTES.shop}/outdoor` },
+        ...input.categories
+          .filter((category) => category.showInMenu)
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((category) => ({
+            id: category.slug,
+            title: category.name,
+            href: `${ROUTES.shop}/${category.slug}`,
+            imageUrl: category.imageUrl,
+            description: category.description,
+          })),
         { id: "shop-delivery", title: "Доставка и возврат", href: ROUTES.shopDeliveryAndReturns },
       ],
     },

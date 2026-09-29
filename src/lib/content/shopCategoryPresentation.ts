@@ -3,7 +3,7 @@ import { getShopLifestyleCategory, SHOP_LIFESTYLE_CATEGORIES } from "@/constants
 import type { CmsShopCategory } from "./types";
 
 export function shopCategoryLabel(category: Pick<CmsShopCategory, "slug" | "name">): string {
-  return getShopLifestyleCategory(category.slug)?.kicker ?? category.name;
+  return category.name;
 }
 
 export function shopCategoryNavLinks(categories: readonly CmsShopCategory[]): { href: string; label: string }[] {
@@ -21,15 +21,17 @@ export function shopCategoryNavLinks(categories: readonly CmsShopCategory[]): { 
 
 function toIndexCard(category: Pick<CmsShopCategory, "slug" | "name" | "imageUrl">) {
   const lifestyle = getShopLifestyleCategory(category.slug);
-  const image = lifestyle?.desktopImage || category.imageUrl || "";
+  const desktopImage = category.imageUrl || lifestyle?.desktopImage || "";
+  const mobileImage = category.imageUrl || lifestyle?.mobileImage || desktopImage;
+
   return {
     slug: category.slug,
-    kicker: lifestyle?.kicker ?? category.name,
-    title: lifestyle?.title ?? category.name,
+    kicker: "",
+    title: category.name,
     href: `${ROUTES.shop}/${category.slug}`,
-    desktopImage: lifestyle?.desktopImage ?? image,
-    mobileImage: lifestyle?.mobileImage ?? image,
-    imageAlt: lifestyle?.imageAlt ?? category.name,
+    desktopImage,
+    mobileImage,
+    imageAlt: category.imageUrl ? category.name : lifestyle?.imageAlt ?? category.name,
   };
 }
 

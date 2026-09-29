@@ -2,19 +2,25 @@ import Link from "next/link";
 
 import { ShopProductCard } from "@/components/shop/ShopProductCard";
 import type { ShopLifestyleCategory } from "@/constants/shopCategories";
-import { SHOP_LIFESTYLE_CATEGORIES } from "@/constants/shopCategories";
 import type { CmsProduct } from "@/lib/content/types";
 import { ShopResponsiveImage } from "./ShopResponsiveImage";
 import styles from "./ShopLifestyleCategory.module.css";
 
 type ShopLifestyleCategoryProps = {
   category: ShopLifestyleCategory;
+  heading: string;
+  lead: string;
   products: CmsProduct[];
+  sibling?: { slug: string; name: string; desktopImage: string; mobileImage: string };
 };
 
-export function ShopLifestyleCategoryPage({ category, products }: ShopLifestyleCategoryProps) {
-  const sibling = SHOP_LIFESTYLE_CATEGORIES.find((item) => item.slug !== category.slug);
-
+export function ShopLifestyleCategoryPage({
+  category,
+  heading,
+  lead,
+  products,
+  sibling,
+}: ShopLifestyleCategoryProps) {
   return (
     <div className={styles.page}>
       <section className={styles.hero} data-shop-chrome-tone="dark">
@@ -32,9 +38,9 @@ export function ShopLifestyleCategoryPage({ category, products }: ShopLifestyleC
             <span aria-hidden="true">/</span>
             <Link href="/shop/categories">Категории</Link>
           </nav>
-          <p className={styles.kicker}>{category.kicker}</p>
-          <h1>{category.title}</h1>
-          <p className={styles.lead}>{category.description}</p>
+          <p className={styles.kicker}>BIZON Shop</p>
+          <h1>{heading}</h1>
+          <p className={styles.lead}>{lead}</p>
           <a className={styles.heroAction} href="#collection">Смотреть коллекцию</a>
         </div>
       </section>
@@ -62,7 +68,7 @@ export function ShopLifestyleCategoryPage({ category, products }: ShopLifestyleC
           <div className={styles.collectionHead}>
             <div>
               <p className={styles.lightKicker}>Коллекция</p>
-              <h2 id={`${category.slug}-collection`}>{category.kicker}</h2>
+              <h2 id={`${category.slug}-collection`}>{heading}</h2>
             </div>
             <p>Товары и доступные варианты появятся здесь после финального отбора коллекции.</p>
           </div>
@@ -95,8 +101,8 @@ export function ShopLifestyleCategoryPage({ category, products }: ShopLifestyleC
           <div className={styles.nextOverlay} aria-hidden="true" />
           <div className={styles.nextContent}>
             <p>Следующая категория</p>
-            <h2>{sibling.kicker}</h2>
-            <Link href={`/shop/${sibling.slug}`}>Открыть {sibling.kicker}</Link>
+            <h2>{sibling.name}</h2>
+            <Link href={`/shop/${sibling.slug}`}>Открыть {sibling.name}</Link>
           </div>
         </section>
       ) : null}

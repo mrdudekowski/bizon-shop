@@ -128,7 +128,7 @@
   gap: 10px;
 }
 
-.cardContent > span:first-child {
+.cardKicker {
   color: var(--bizon-mint-300);
   font-size: 0.75rem;
   font-weight: var(--weight-kicker);

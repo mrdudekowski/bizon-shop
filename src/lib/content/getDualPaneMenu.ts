@@ -3,7 +3,6 @@ import {
   buildShopDualPaneMenuSections,
 } from "./buildDualPaneMenu";
 import type { DualPaneMenuData } from "./dualPaneMenuTypes";
-import { shopCategoryLabel } from "./shopCategoryPresentation";
 import {
   getPublishedTireModels,
   getPublishedWheelModels,
@@ -15,14 +14,15 @@ export type { DualPaneItem, DualPaneMenuData, DualPaneSection } from "./dualPane
 export { buildMainDualPaneMenuSections, buildShopDualPaneMenuSections } from "./buildDualPaneMenu";
 
 export async function getMainDualPaneMenu(): Promise<DualPaneMenuData> {
-  const [models, articles] = await Promise.all([
+  const [models, articles, categories] = await Promise.all([
     getPublishedTireModels(),
     getTireIQArticles(),
+    getShopCategories(),
   ]);
 
   return {
     defaultSectionId: "models",
-    sections: buildMainDualPaneMenuSections({ models, articles }),
+    sections: buildMainDualPaneMenuSections({ models, articles, categories }),
   };
 }
 
@@ -34,12 +34,6 @@ export async function getShopDualPaneMenu(): Promise<DualPaneMenuData> {
 
   return {
     defaultSectionId: "wheels",
-    sections: buildShopDualPaneMenuSections({
-      wheels,
-      categories: categories.map((category) => ({
-        ...category,
-        name: shopCategoryLabel(category),
-      })),
-    }),
+    sections: buildShopDualPaneMenuSections({ wheels, categories }),
   };
 }

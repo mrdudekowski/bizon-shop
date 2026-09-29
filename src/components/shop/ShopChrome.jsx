@@ -8,8 +8,6 @@ import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import styles from "./ShopChrome.module.css";
 
 const FALLBACK_CATEGORY_LINKS = [
-  { href: "/shop/accessories", label: "Accessories" },
-  { href: "/shop/outdoor", label: "Outdoor" },
   { href: "/shop/categories", label: "Все категории" },
 ];
 

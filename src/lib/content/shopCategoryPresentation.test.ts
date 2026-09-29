@@ -42,36 +42,57 @@ const categories: CmsShopCategory[] = [
 ];
 
 describe("shopCategoryPresentation", () => {
-  it("keeps visible lifestyle labels for matching slugs and CMS names for the rest", () => {
-    expect(shopCategoryLabel(categories[1]!)).toBe("Accessories");
+  it("uses the published CMS name for every category", () => {
+    expect(shopCategoryLabel(categories[1]!)).toBe("Комфорт в автомобиле");
     expect(shopCategoryLabel(categories[2]!)).toBe("Прицепы");
   });
 
-  it("builds chrome links from published menu categories, lifestyle first labels, all-categories last", () => {
+  it("builds chrome links from published menu categories and CMS names", () => {
     expect(shopCategoryNavLinks(categories)).toEqual([
-      { href: "/shop/outdoor", label: "Outdoor" },
-      { href: "/shop/accessories", label: "Accessories" },
+      { href: "/shop/outdoor", label: "Кемпинг и путешествия" },
+      { href: "/shop/accessories", label: "Комфорт в автомобиле" },
       { href: "/shop/pritsepy", label: "Прицепы" },
       { href: "/shop/categories", label: "Все категории" },
     ]);
   });
 
-  it("uses lifestyle card chrome for accessories/outdoor and CMS fields for other categories", () => {
+  it("builds index cards from CMS names and images, with lifestyle photos only as fallback", () => {
     const cards = shopCategoryIndexCards(categories);
     expect(cards.map((card) => card.slug)).toEqual(["outdoor", "accessories", "pritsepy"]);
-    expect(cards[0]).toMatchObject({
-      kicker: "Outdoor",
-      title: "За пределами маршрута",
-      desktopImage: expect.stringContaining("outdoor-wrangler"),
+    expect(cards[0]).toEqual({
+      slug: "outdoor",
+      kicker: "",
+      title: "Кемпинг и путешествия",
+      href: "/shop/outdoor",
+      desktopImage: "/cms/outdoor.png",
+      mobileImage: "/cms/outdoor.png",
+      imageAlt: "Кемпинг и путешествия",
     });
     expect(cards[2]).toEqual({
       slug: "pritsepy",
-      kicker: "Прицепы",
+      kicker: "",
       title: "Прицепы",
       href: "/shop/pritsepy",
       desktopImage: "/cms/trailer.png",
       mobileImage: "/cms/trailer.png",
       imageAlt: "Прицепы",
+    });
+  });
+
+  it("falls back to lifestyle images when a published category has no photo", () => {
+    const cards = shopCategoryIndexCards([
+      {
+        slug: "accessories",
+        name: "Комфорт в автомобиле",
+        description: "",
+        showInMenu: true,
+        sortOrder: 0,
+      },
+    ]);
+    expect(cards[0]).toMatchObject({
+      title: "Комфорт в автомобиле",
+      desktopImage: expect.stringContaining("accessories-driver-glasses"),
+      mobileImage: expect.stringContaining("accessories-driver-glasses-primorye-mobile"),
     });
   });
 });

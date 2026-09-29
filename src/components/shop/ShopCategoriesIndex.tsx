@@ -44,7 +44,7 @@ export function ShopCategoriesIndex({ categories }: { categories: readonly CmsSh
                 ) : null}
                 <span className={styles.overlay} aria-hidden="true" />
                 <span className={styles.cardContent}>
-                  <span>{category.kicker}</span>
+                  {category.kicker ? <span className={styles.cardKicker}>{category.kicker}</span> : null}
                   <strong>{category.title}</strong>
                   <span className={styles.arrow} aria-hidden="true"><SiteArrow direction="ne" /></span>
                 </span>

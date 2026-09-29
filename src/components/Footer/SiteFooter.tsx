@@ -63,8 +63,6 @@ const FOOTER_CONFIG: Record<FooterSurface, FooterConfig> = {
         label: "Каталог",
         links: [
           { href: "/shop/wheels/forged", label: "BIZON Forged" },
-          { href: "/shop/accessories", label: "Accessories" },
-          { href: "/shop/outdoor", label: "Outdoor" },
           { href: "/shop/categories", label: "Все категории" },
         ],
       },
