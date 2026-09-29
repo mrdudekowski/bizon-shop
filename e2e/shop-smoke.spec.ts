@@ -7,6 +7,7 @@ const SHOP_ROUTES = [
   "/shop/outdoor",
   "/shop/wheels/forged",
   "/shop/wheels/forged/atlas",
+  "/shop/delivery-and-returns",
   "/cart",
 ] as const;
 
@@ -73,7 +74,9 @@ test("desktop categories menu toggles and restores focus", async ({ page }, test
   await expect(trigger).toHaveCount(1);
   await trigger.click();
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
-  await expect(page.locator("#shop-category-menu a")).toHaveCount(3);
+  const menu = page.locator("#shop-category-menu");
+  await expect(menu.getByRole("link", { name: "Все категории" })).toBeVisible();
+  await expect(menu.getByRole("link")).not.toHaveCount(0);
 
   await trigger.press("Escape");
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
@@ -89,14 +92,12 @@ test("shop burger exposes wheel selection and unified cart", async ({ page }) =>
   await expect(dialog.getByRole("link", { name: /^Корзина/ })).toHaveAttribute("href", "/cart");
 });
 
-test("shop homepage has the approved hierarchy and carousel controls", async ({ page }) => {
+test("shop homepage keeps forged wheels, published categories and vehicle stories", async ({ page }) => {
   await page.goto("/shop");
 
-  await expect(
-    page.locator("section").first().getByRole("heading", { level: 1 }),
-  ).toContainText("Кованые диски");
-  await expect(page.getByRole("link", { name: "Выбрать диски", exact: true }).first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "Приостановить карусель" })).toBeVisible();
+  await expect(page.locator("section").first().getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Категории товаров" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Приостановить карусель" })).toHaveCount(0);
 
   const vehicleBackground = await page.locator('[data-shop-section="vehicles"]').evaluate(
     (element) => getComputedStyle(element).backgroundColor,

@@ -4,6 +4,7 @@ import {
   shopCategoryIndexCards,
   shopCategoryLabel,
   shopCategoryNavLinks,
+  shopProductCountLabel,
 } from "./shopCategoryPresentation";
 import type { CmsShopCategory } from "./types";
 
@@ -45,6 +46,14 @@ describe("shopCategoryPresentation", () => {
   it("uses the published CMS name for every category", () => {
     expect(shopCategoryLabel(categories[1]!)).toBe("Комфорт в автомобиле");
     expect(shopCategoryLabel(categories[2]!)).toBe("Прицепы");
+  });
+
+  it("declines товар for Russian counts", () => {
+    expect(shopProductCountLabel(1)).toBe("1 товар");
+    expect(shopProductCountLabel(2)).toBe("2 товара");
+    expect(shopProductCountLabel(5)).toBe("5 товаров");
+    expect(shopProductCountLabel(21)).toBe("21 товар");
+    expect(shopProductCountLabel(12)).toBe("12 товаров");
   });
 
   it("builds chrome links from published menu categories and CMS names", () => {

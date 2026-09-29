@@ -6,6 +6,14 @@ export function shopCategoryLabel(category: Pick<CmsShopCategory, "slug" | "name
   return category.name;
 }
 
+export function shopProductCountLabel(count: number): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${count} товар`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} товара`;
+  return `${count} товаров`;
+}
+
 export function shopCategoryNavLinks(categories: readonly CmsShopCategory[]): { href: string; label: string }[] {
   return [
     ...categories

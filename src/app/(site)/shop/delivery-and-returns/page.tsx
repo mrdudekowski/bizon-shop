@@ -28,11 +28,32 @@ export default async function DeliveryAndReturnsPage() {
           { href: "/shop/delivery-and-returns", label: "Доставка и возврат" },
         ]}
       />
-      <DemoContentNotice>Примеры ниже описывают желаемый UX: Shop принимает заявку, а не онлайн-оплату. Финальные условия необходимо заменить до запуска продаж.</DemoContentNotice>
+      <DemoContentNotice>
+        Shop принимает заявку, а не онлайн-оплату. Срок, стоимость и возможность возврата фиксируются в предложении
+        менеджера до сделки.
+      </DemoContentNotice>
       <div className="grid gap-5 max-w-3xl">
-        <section className="card-base info-card"><h2 className="info-card-title">Оформление заявки</h2><p className="info-card-text mt-3">Добавьте позиции в корзину и оставьте контакты. В демонстрационном сценарии менеджер в течение одного рабочего дня уточняет наличие, цену, способ и срок поставки до оформления сделки.</p></section>
-        <section className="card-base info-card"><h2 className="info-card-title">Доставка</h2><p className="info-card-text mt-3">Пример: доставка доступна по России транспортной компанией или самовывозом по согласованию. Стоимость и дата зависят от габаритов заказа, региона и выбранного перевозчика и фиксируются в предложении менеджера.</p></section>
-        <section className="card-base info-card"><h2 className="info-card-title">Возврат и обмен</h2><p className="info-card-text mt-3">Пример: до использования товара покупатель направляет заявку менеджеру с номером заказа и фотографиями товара. Возможность возврата, адрес и расходы на перевозку подтверждаются индивидуально после проверки основания обращения.</p></section>
+        <section className="card-base info-card">
+          <h2 className="info-card-title">Оформление заявки</h2>
+          <p className="info-card-text mt-3">
+            Добавьте позиции в корзину и оставьте контакты. Менеджер уточнит наличие, цену, способ и срок поставки до
+            оформления сделки.
+          </p>
+        </section>
+        <section className="card-base info-card">
+          <h2 className="info-card-title">Доставка</h2>
+          <p className="info-card-text mt-3">
+            Доставка по России транспортной компанией или самовывоз — по согласованию. Стоимость и дата зависят от
+            габаритов заказа, региона и перевозчика и фиксируются в предложении менеджера.
+          </p>
+        </section>
+        <section className="card-base info-card">
+          <h2 className="info-card-title">Возврат и обмен</h2>
+          <p className="info-card-text mt-3">
+            До использования товара направьте заявку с номером заказа и фотографиями. Возможность возврата, адрес и
+            расходы на перевозку подтверждаются после проверки основания обращения.
+          </p>
+        </section>
       </div>
     </div>
   );
