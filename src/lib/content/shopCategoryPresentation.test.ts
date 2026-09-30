@@ -4,6 +4,8 @@ import {
   shopCategoryIndexCards,
   shopCategoryLabel,
   shopCategoryNavLinks,
+  shopHomeCarouselSlides,
+  shopHomeCategoryCards,
   shopProductCountLabel,
 } from "./shopCategoryPresentation";
 import type { CmsShopCategory } from "./types";
@@ -86,6 +88,41 @@ describe("shopCategoryPresentation", () => {
       mobileImage: "/cms/trailer.png",
       imageAlt: "Прицепы",
     });
+  });
+
+  it("rotates up to four carousel frames per category and keeps a title slide when photos are missing", () => {
+    const slides = shopHomeCarouselSlides([
+      {
+        ...categories[0]!,
+        carousel: [
+          { title: "Стоянка у воды", imageUrl: "/camp-1.jpg" },
+          { title: "", imageUrl: "/camp-2.jpg" },
+          { title: "Без фото", imageUrl: null },
+        ],
+      },
+      categories[1]!,
+    ]);
+    expect(slides.map((slide) => slide.title)).toEqual([
+      "Стоянка у воды",
+      "Кемпинг и путешествия",
+      "Комфорт в автомобиле",
+    ]);
+    expect(slides[1]?.imageUrl).toBe("/camp-2.jpg");
+    expect(slides[2]?.imageUrl).toBeNull();
+  });
+
+  it("builds category cards from the menu icon", () => {
+    expect(
+      shopHomeCategoryCards(categories).map((card) => ({
+        slug: card.slug,
+        href: card.href,
+        iconUrl: card.iconUrl,
+      })),
+    ).toEqual([
+      { slug: "outdoor", href: "/shop/outdoor", iconUrl: "/cms/outdoor.png" },
+      { slug: "accessories", href: "/shop/accessories", iconUrl: "/cms/acc.png" },
+      { slug: "pritsepy", href: "/shop/pritsepy", iconUrl: "/cms/trailer.png" },
+    ]);
   });
 
   it("falls back to lifestyle images when a published category has no photo", () => {

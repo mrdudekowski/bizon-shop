@@ -304,31 +304,7 @@
   padding: clamp(64px, 8vw, 112px) 0;
 }
 
-.categoriesHead {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 32px;
-  margin-bottom: 30px;
-}
-
-.categoriesHead > div { display: grid; gap: 14px; min-width: 0; }
-.categoriesHead h2 { margin: 0; font-size: clamp(2.5rem, 5.5vw, 5rem); line-height: 0.98; letter-spacing: var(--tracking-display); }
-.categoriesHead > div > p:last-child { margin: 0; color: var(--color-on-dark-muted); line-height: 1.5; }
-.categoriesAll,
 .categoriesEmpty a { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 12px; border-radius: var(--radius-control); background: var(--bizon-coral-500); color: var(--bizon-white); padding: 11px 18px; font-weight: 650; white-space: nowrap; }
-.categoryGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 16px; width: 100%; max-width: 100%; min-width: 0; }
-.categoryCard { position: relative; display: block; width: 100%; max-width: 100%; min-width: 0; min-height: 360px; overflow: hidden; border: 1px solid rgba(255,255,255,.14); border-radius: var(--radius-panel); background: var(--color-surface-inverse-muted); color: inherit; }
-.categoryMedia { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(ellipse at 70% 40%, rgba(134,145,143,.3), transparent 60%), linear-gradient(135deg, #242a2b, #0b0d0e); }
-.categoryMedia :global(img) { object-fit: cover; transition: transform var(--transition-media); }
-.categoryCard:hover .categoryMedia :global(img) { transform: scale(1.035); }
-.categoryOverlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8,10,12,.12), rgba(8,10,12,.16) 35%, rgba(8,10,12,.9)); }
-.categoryInfo { position: absolute; right: 64px; bottom: 22px; left: 22px; z-index: 1; display: grid; gap: 8px; min-width: 0; }
-.categoryInfo > span:first-child { color: var(--bizon-mint-300); font-size: .76rem; font-weight: 700; letter-spacing: var(--tracking-label); text-transform: uppercase; }
-.categoryInfo strong { font-size: clamp(1.5rem, 2.3vw, 2.2rem); }
-.categoryInfo > span:last-child { display: -webkit-box; overflow: hidden; color: var(--color-on-dark-muted); line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.categoryArrow { position: absolute; right: 18px; bottom: 20px; z-index: 1; display: grid; width: 42px; height: 42px; place-items: center; border-radius: 50%; background: rgba(255,255,255,.12); }
-.categoryCard:hover .categoryArrow { background: var(--bizon-coral-500); }
 .categoriesEmpty { display: flex; align-items: center; justify-content: space-between; gap: 24px; border: 1px solid rgba(255,255,255,.14); border-radius: var(--radius-panel); padding: 28px; }
 .categoriesEmpty p { margin: 0; color: var(--color-on-dark-muted); }
 
@@ -537,9 +513,6 @@
     min-height: 420px;
   }
 
-  .categoriesHead { align-items: flex-start; flex-direction: column; }
-  .categoryGrid { grid-template-columns: minmax(0, 1fr); }
-  .categoryCard { min-height: min(78vw, 390px); }
   .categoriesEmpty { align-items: flex-start; flex-direction: column; }
 
   .vehiclesSection {

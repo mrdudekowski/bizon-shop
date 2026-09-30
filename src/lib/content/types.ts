@@ -40,6 +40,11 @@ export type CmsProductVariant = {
   images: string[];
 };
 
+export type CmsShopCategoryCarouselFrame = {
+  title: string;
+  imageUrl?: string | null;
+};
+
 export type CmsShopCategory = {
   slug: string;
   name: string;
@@ -47,6 +52,7 @@ export type CmsShopCategory = {
   imageUrl?: string | null;
   showInMenu: boolean;
   sortOrder: number;
+  carousel?: CmsShopCategoryCarouselFrame[];
 };
 
 export type CmsTireType = {

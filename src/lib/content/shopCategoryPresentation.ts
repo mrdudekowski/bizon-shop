@@ -43,6 +43,52 @@ function toIndexCard(category: Pick<CmsShopCategory, "slug" | "name" | "imageUrl
   };
 }
 
+export type ShopHomeCategoryCard = {
+  slug: string;
+  title: string;
+  href: string;
+  iconUrl: string | null;
+};
+
+export function shopHomeCategoryCards(categories: readonly CmsShopCategory[]): ShopHomeCategoryCard[] {
+  return categories
+    .filter((category) => category.showInMenu)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((category) => ({
+      slug: category.slug,
+      title: category.name,
+      href: `${ROUTES.shop}/${category.slug}`,
+      iconUrl: category.imageUrl ?? null,
+    }));
+}
+
+export type ShopHomeCarouselSlide = {
+  id: string;
+  title: string;
+  href: string;
+  imageUrl: string | null;
+};
+
+export function shopHomeCarouselSlides(categories: readonly CmsShopCategory[]): ShopHomeCarouselSlide[] {
+  return categories
+    .filter((category) => category.showInMenu)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .flatMap((category) => {
+      const href = `${ROUTES.shop}/${category.slug}`;
+      const frames = (category.carousel ?? [])
+        .filter((frame) => frame.imageUrl)
+        .slice(0, 4)
+        .map((frame, index) => ({
+          id: `${category.slug}-${index}`,
+          title: frame.title.trim() || category.name,
+          href,
+          imageUrl: frame.imageUrl ?? null,
+        }));
+      if (frames.length > 0) return frames;
+      return [{ id: category.slug, title: category.name, href, imageUrl: null }];
+    });
+}
+
 export function shopCategoryIndexCards(categories: readonly CmsShopCategory[]) {
   const published = categories
     .filter((category) => category.showInMenu)

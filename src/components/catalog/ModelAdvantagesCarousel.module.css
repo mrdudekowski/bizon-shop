@@ -64,7 +64,8 @@
 }
 
 .content p,
-.content h2 {
+.content h2,
+.title {
   margin: 0;
 }
 
@@ -76,7 +77,8 @@
   text-transform: uppercase;
 }
 
-.content h2 {
+.content h2,
+.title {
   max-width: 10ch;
   font-size: var(--type-hero);
   font-weight: var(--weight-display);
@@ -236,7 +238,8 @@
     padding-bottom: 128px;
   }
 
-  .content h2 {
+  .content h2,
+  .title {
     font-size: clamp(2.5rem, 13vw, 4rem);
   }
 
