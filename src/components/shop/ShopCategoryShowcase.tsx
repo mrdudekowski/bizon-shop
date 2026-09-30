@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { ShopCategoryCarousel } from "@/components/shop/ShopCategoryCarousel";
-import { ROUTES } from "@/constants/navigation";
 import type { ShopHomeCarouselSlide, ShopHomeCategoryCard } from "@/lib/content/shopCategoryPresentation";
 import styles from "./ShopCategoryShowcase.module.css";
 
@@ -71,60 +70,42 @@ export function ShopCategoryShowcase({
 
   return (
     <div className={styles.root} ref={rootRef}>
-      <div className={styles.band}>
-        <div className={styles.head}>
-        <div>
-          <p className={styles.kicker}>BIZON SHOP</p>
-          <h2 id="categories-title">Категории товаров</h2>
-          <p>Актуальные категории и ассортимент из каталога BIZON.</p>
-        </div>
-        <div className={styles.actions}>
-          <Link
-            className={styles.all}
-            href={ROUTES.shopCategories}
-            data-visible={showingCards ? "false" : "true"}
-            tabIndex={showingCards ? -1 : undefined}
-            aria-hidden={showingCards}
-          >
-            Все категории <SiteArrow direction="ne" />
-          </Link>
-          <button
-            type="button"
-            className={styles.toggle}
-            aria-pressed={showingCards}
-            aria-label={showingCards ? "Показать карусель" : "Показать карточки"}
-            onClick={toggleView}
-          >
-            <span className={styles.toggleIcon} data-icon={showingCards ? "frames" : "grid"}>
-              <GridIcon />
-              <FramesIcon />
-            </span>
-          </button>
-        </div>
-        </div>
-      </div>
-
+      <h2 id="categories-title" className={styles.visuallyHidden}>
+        Категории товаров
+      </h2>
+      <button
+        type="button"
+        className={styles.toggle}
+        aria-pressed={showingCards}
+        aria-label={showingCards ? "Показать карусель" : "Показать карточки"}
+        onClick={toggleView}
+      >
+        <span className={styles.toggleIcon} data-icon={showingCards ? "frames" : "grid"}>
+          <GridIcon />
+          <FramesIcon />
+        </span>
+      </button>
       <div className={styles.stage} data-phase={leaving ? "out" : "in"}>
         {visible === "carousel" ? (
           <ShopCategoryCarousel slides={slides} />
         ) : (
           <div className={styles.band}>
             <ul className={styles.grid}>
-            {cards.map((card) => (
-              <li key={card.slug}>
-                <Link className={styles.card} href={card.href}>
-                  <span className={styles.iconFrame}>
-                    {card.iconUrl ? (
-                      <Image src={card.iconUrl} alt="" width={280} height={180} className={styles.icon} />
-                    ) : null}
-                  </span>
-                  <span className={styles.cardTitle}>{card.title}</span>
-                  <span className={styles.cardArrow} aria-hidden="true">
-                    <SiteArrow direction="ne" />
-                  </span>
-                </Link>
-              </li>
-            ))}
+              {cards.map((card) => (
+                <li key={card.slug}>
+                  <Link className={styles.card} href={card.href}>
+                    <span className={styles.iconFrame}>
+                      {card.iconUrl ? (
+                        <Image src={card.iconUrl} alt="" width={280} height={180} className={styles.icon} />
+                      ) : null}
+                    </span>
+                    <span className={styles.cardTitle}>{card.title}</span>
+                    <span className={styles.cardArrow} aria-hidden="true">
+                      <SiteArrow direction="ne" />
+                    </span>
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         )}

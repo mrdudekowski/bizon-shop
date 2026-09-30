@@ -299,8 +299,12 @@
 }
 
 .categoriesSection {
-  background: var(--bizon-neutral-950, #080a0b);
+  background: var(--bizon-black);
   color: var(--bizon-white);
+  padding: 0;
+}
+
+.categoriesSection:has(.categoriesEmpty) {
   padding: clamp(64px, 8vw, 112px) 0;
 }
 

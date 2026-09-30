@@ -1,8 +1,19 @@
 .root {
   --showcase-switch: 280ms;
+  position: relative;
   width: 100%;
   max-width: 100%;
   min-width: 0;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .band {
@@ -10,100 +21,63 @@
   max-width: 100%;
   min-width: 0;
   margin: 0 auto;
+  padding: 88px 0 64px;
 }
 
-.head {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 32px;
+.stage {
+  position: relative;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  margin-bottom: 30px;
-}
-
-.head > div:first-child {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
-  min-width: 0;
-}
-
-.kicker {
-  margin: 0;
-  color: var(--bizon-mint-700);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: var(--tracking-kicker);
-  text-transform: uppercase;
-}
-
-.head h2 {
-  margin: 0;
-  font-size: clamp(2.5rem, 5.5vw, 5rem);
-  line-height: 0.98;
-  letter-spacing: var(--tracking-display);
-}
-
-.head > div:first-child > p:last-child {
-  margin: 0;
-  color: var(--color-on-dark-muted);
-  line-height: 1.5;
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
-.all {
-  display: inline-flex;
-  min-height: 46px;
-  max-width: 240px;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  overflow: hidden;
-  border-radius: var(--radius-control);
-  background: var(--bizon-coral-500);
-  color: var(--bizon-white);
-  padding: 11px 18px;
-  font-weight: 650;
-  white-space: nowrap;
   opacity: 1;
   transform: none;
-  transition:
-    opacity var(--showcase-switch) ease,
-    transform var(--showcase-switch) ease,
-    max-width var(--showcase-switch) ease,
-    padding var(--showcase-switch) ease,
-    margin var(--showcase-switch) ease;
+  transition: opacity var(--showcase-switch) ease, transform var(--showcase-switch) ease;
 }
 
-.all[data-visible="false"] {
-  max-width: 0;
-  margin-right: -12px;
-  padding-right: 0;
-  padding-left: 0;
+.stage[data-phase="out"] {
   opacity: 0;
-  transform: translateY(8px);
-  pointer-events: none;
+  transform: translateY(10px);
+}
+
+.stage[data-phase="in"] .cardArrow {
+  animation: rise 420ms ease both;
 }
 
 .toggle {
+  position: absolute;
+  top: calc(var(--header-height) + 12px);
+  right: var(--page-gutter);
+  z-index: 3;
   display: grid;
   width: 46px;
   height: 46px;
-  flex: 0 0 46px;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: var(--radius-circle);
+  background: rgba(20, 22, 22, 0.34);
   color: var(--bizon-white);
   padding: 0;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.toggle:hover {
+  border-color: var(--bizon-mint-300);
+  background: rgba(20, 22, 22, 0.62);
+  transform: scale(1.08);
+}
+
+.toggle:active {
+  transform: scale(0.92);
+}
+
+.toggle:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 3px;
 }
 
 .toggleIcon {
@@ -132,24 +106,6 @@
 .toggleIcon[data-icon="frames"] svg:first-child {
   opacity: 0;
   transform: scale(0.82);
-}
-
-.stage {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  opacity: 1;
-  transform: none;
-  transition: opacity var(--showcase-switch) ease, transform var(--showcase-switch) ease;
-}
-
-.stage[data-phase="out"] {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-.stage[data-phase="in"] .cardArrow {
-  animation: rise 420ms ease both;
 }
 
 .grid {
@@ -269,19 +225,14 @@
   }
 }
 
-@media (max-width: 639px) {
-  .head {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .root {
     --showcase-switch: 0ms;
   }
 
-  .all,
+  .toggle,
+  .toggle:hover,
+  .toggle:active,
   .toggleIcon svg,
   .stage,
   .card,
@@ -289,5 +240,6 @@
   .cardArrow {
     animation: none;
     transition: none;
+    transform: none;
   }
 }
