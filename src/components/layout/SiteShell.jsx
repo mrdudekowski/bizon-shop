@@ -11,6 +11,7 @@ import { useCart } from "@/hooks/useCart";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useMenuToggle } from "@/hooks/useMenuToggle";
 import { scrollToTop } from "@/lib/scroll";
+import { useLenis } from "lenis/react";
 import { usePathname } from "next/navigation";
 import { ROUTES } from "@/constants/navigation";
 
@@ -20,6 +21,7 @@ import { ROUTES } from "@/constants/navigation";
  */
 export function SiteShell({ children, mainMenu, shopMenu }) {
   const { menuOpen, closeMenu, toggleMenu } = useMenuToggle();
+  const lenis = useLenis();
   const cart = useCart();
   const pathname = usePathname();
   const isShop = pathname === ROUTES.shop || pathname.startsWith(`${ROUTES.shop}/`);
@@ -62,7 +64,7 @@ export function SiteShell({ children, mainMenu, shopMenu }) {
 
         {isShop ? <ShopFooter catalogLinks={categoryLinks} /> : <Footer />}
 
-        <BackToTop onScrollToTop={scrollToTop} />
+        <BackToTop onScrollToTop={() => scrollToTop(lenis)} />
       </div>
 
       <DualPaneMenu

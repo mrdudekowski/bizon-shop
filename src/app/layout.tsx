@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 
+import { SmoothScrollRoot } from "@/components/scroll/SmoothScrollRoot";
 import { createPageMetadata } from "@/lib/seo/metadata";
+import "lenis/dist/lenis.css";
 import "./globals.css";
 
 const bounded = localFont({
@@ -40,7 +42,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru" className={`${bounded.variable} ${manrope.variable}`} data-scroll-behavior="smooth">
-      <body>{children}</body>
+      <body>
+        <SmoothScrollRoot />
+        {children}
+      </body>
     </html>
   );
 }

@@ -26,7 +26,7 @@ export function getHeaderOffset() {
 /**
  * @param {string} sectionId
  */
-export function scrollToSectionId(sectionId) {
+export function scrollToSectionId(sectionId, lenis) {
   if (!sectionId || typeof sectionId !== "string") {
     console.warn("scrollToSectionId: sectionId должен быть непустой строкой");
     return;
@@ -39,13 +39,20 @@ export function scrollToSectionId(sectionId) {
     return;
   }
 
-  target.scrollIntoView({
-    behavior: getScrollBehavior(),
-    block: "start",
-  });
+  if (lenis) {
+    lenis.scrollTo(target, { offset: -getHeaderOffset() });
+    return;
+  }
+
+  target.scrollIntoView({ behavior: getScrollBehavior(), block: "start" });
 }
 
-export function scrollToTop() {
+export function scrollToTop(lenis) {
+  if (lenis) {
+    lenis.scrollTo(0);
+    return;
+  }
+
   window.scrollTo({
     top: 0,
     behavior: getScrollBehavior(),

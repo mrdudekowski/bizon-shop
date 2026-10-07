@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { useLenis } from "lenis/react";
 import { scrollToSectionId } from "@/lib/scroll";
 
 /**
@@ -11,7 +12,9 @@ import { scrollToSectionId } from "@/lib/scroll";
  * scrollToSection('products');
  */
 export const useScrollToSection = () => {
+  const lenis = useLenis();
+
   return useCallback((sectionId) => {
-    scrollToSectionId(sectionId);
-  }, []);
+    scrollToSectionId(sectionId, lenis);
+  }, [lenis]);
 };

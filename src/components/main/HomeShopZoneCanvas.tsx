@@ -27,7 +27,7 @@ export function HomeShopZoneCanvas() {
         reducedMotion.matches
       );
       shell.style.setProperty("--home-shop-progress", String(progress));
-      shell.style.setProperty("--home-invert", progress >= 0.5 ? "1" : "0");
+      shell.style.setProperty("--home-invert", String(progress));
     };
 
     const schedule = () => {
