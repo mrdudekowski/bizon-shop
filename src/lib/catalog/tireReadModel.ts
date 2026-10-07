@@ -40,7 +40,5 @@ export async function buildTireCatalogReadModel(
     }),
   );
 
-  return {
-    directions: directions.filter((direction) => direction.models.length > 0),
-  };
+  return { directions };
 }

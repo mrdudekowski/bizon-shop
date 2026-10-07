@@ -9,9 +9,12 @@ const BurgerToggle = ({ isOpen, onToggle, inverted = false }) => (
     aria-controls="burger-menu"
     onClick={() => onToggle(!isOpen)}
   >
-    <span className={`${styles.bar} ${styles.barTop}`} />
-    <span className={`${styles.bar} ${styles.barMiddle}`} />
-    <span className={`${styles.bar} ${styles.barBottom}`} />
+    <span className={styles.icon} aria-hidden="true">
+      <span className={`${styles.bar} ${styles.barTop}`} />
+      <span className={`${styles.bar} ${styles.barMiddle}`} />
+      <span className={`${styles.bar} ${styles.barBottom}`} />
+    </span>
+    <span className={styles.label}>Все разделы</span>
   </button>
 );
 

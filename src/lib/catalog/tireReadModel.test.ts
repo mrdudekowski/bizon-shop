@@ -42,7 +42,7 @@ const model = {
 } as CmsTireModel;
 
 describe("buildTireCatalogReadModel", () => {
-  it("omits directions without models and hydrates canonical model data", async () => {
+  it("keeps empty directions and hydrates canonical model data", async () => {
     const catalog = await buildTireCatalogReadModel(
       [tbr, otr],
       async (slug) => (slug === "tbr" ? [model] : []),
@@ -51,7 +51,9 @@ describe("buildTireCatalogReadModel", () => {
 
     expect(catalog.directions.map((direction) => direction.slug)).toEqual([
       "tbr",
+      "otr",
     ]);
+    expect(catalog.directions[1].models).toEqual([]);
     expect(catalog.directions[0].models[0]).toMatchObject({
       slug: "dsr158",
       href: "/models/tbr/regional/dsr158",

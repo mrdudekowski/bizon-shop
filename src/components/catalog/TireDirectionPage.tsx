@@ -55,19 +55,32 @@ export function TireDirectionPage({
           ]}
         />
 
-        <TireCatalogFilters
-          filters={effectiveFilters}
-          resetHref={pagePath}
-          sizes={sizes}
-          lockApplication={category?.value}
-        />
+        {direction.models.length > 0 ? (
+          <>
+            <TireCatalogFilters
+              filters={effectiveFilters}
+              resetHref={pagePath}
+              sizes={sizes}
+              lockApplication={category?.value}
+            />
 
-        <div className={styles.resultHeader} aria-live="polite">
-          <p>{formatModelCount(models.length)}</p>
-          <p>Отобраны по задаче, оси и типоразмеру</p>
-        </div>
+            <div className={styles.resultHeader} aria-live="polite">
+              <p>{formatModelCount(models.length)}</p>
+              <p>Отобраны по задаче, оси и типоразмеру</p>
+            </div>
+          </>
+        ) : null}
 
-        {models.length ? (
+        {direction.models.length === 0 ? (
+          <div className={styles.emptyState}>
+            <p className={styles.eyebrow}>Категория готовится</p>
+            <h2>Категория без моделей</h2>
+            <p>Модели для этой категории пока не опубликованы. Свяжитесь с командой BIZON, чтобы уточнить доступные решения.</p>
+            <div className={styles.emptyActions}>
+              <Link className="btn-accent" href="/contact?subject=tire-selection">Связаться с BIZON</Link>
+            </div>
+          </div>
+        ) : models.length ? (
           <div className={styles.modelGrid}>{models.map((model) => <TireModelCard key={model.id} model={model} />)}</div>
         ) : (
           <div className={styles.emptyState}>

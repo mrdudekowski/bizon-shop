@@ -38,17 +38,25 @@ export default async function ModelsPage() {
         {catalog.directions.length ? (
           <div className={styles.directionGrid}>
             {catalog.directions.map((direction) => (
-              <article className={styles.directionCard} key={direction.slug}>
-                <Link className={styles.directionMedia} href={`/models/${direction.slug}`} aria-label={`Открыть ${direction.name}`}>
-                  <CatalogImage src={direction.imageUrl} fallbackKey={direction.slug} alt={direction.name} fill sizes="(max-width: 767px) 100vw, 50vw" />
-                </Link>
-                <div className={styles.directionBody}>
-                  <p className={styles.eyebrow}>{direction.models.length} моделей · доступно к заказу</p>
-                  <h2>{direction.name}</h2>
-                  <p>{direction.shortDescription || direction.description}</p>
-                  <Link className={styles.directionLink} href={`/models/${direction.slug}`}>Посмотреть модели и размеры <SiteArrow direction="ne" /></Link>
-                </div>
-              </article>
+              <Link className={styles.directionCard} href={`/models/${direction.slug}`} key={direction.slug}>
+                <CatalogImage
+                  src={direction.imageUrl}
+                  fallbackKey={direction.slug}
+                  alt=""
+                  fill
+                  sizes="(max-width: 767px) 100vw, 50vw"
+                />
+                <span className={styles.directionScrim} aria-hidden="true" />
+                <span className={styles.directionBody}>
+                  <span className={styles.eyebrow}>
+                    {direction.models.length} {direction.models.length === 1 ? "модель" : direction.models.length > 1 && direction.models.length < 5 ? "модели" : "моделей"}
+                    {direction.models.length ? " · доступно к заказу" : null}
+                  </span>
+                  <h2 className={styles.directionTitle}>{direction.name}</h2>
+                  <span className={styles.directionDescription}>{direction.shortDescription || direction.description}</span>
+                  <span className={styles.directionLink}>Посмотреть модели и размеры <SiteArrow direction="ne" /></span>
+                </span>
+              </Link>
             ))}
           </div>
         ) : (
