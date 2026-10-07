@@ -152,6 +152,15 @@ function emptyPageDraft(key: PageKey): PageDraft {
       wheelsIntro: { ...emptySection(), kicker: "" },
       orderSteps: [],
       categoryCarousel: [],
+      catalog: {
+        copy: {
+          eyebrow: "BIZON Shop",
+          title: "Движение продолжается вне автомобиля",
+          lead: "Категории BIZON Shop — диски отдельно, товары по направлениям.",
+          sectionTitle: "Выберите направление",
+        },
+        tiles: [],
+      },
       vehicles: { ...emptySection(), cta: emptyCta(), slides: [] },
     };
   }

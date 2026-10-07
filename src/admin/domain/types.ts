@@ -361,6 +361,24 @@ export type ShopHomeVehicleSlide = {
   alt: string;
 };
 
+export type ShopCatalogTileDraft = {
+  categoryId: string;
+  title: string;
+  visible: boolean;
+  sortOrder: number;
+  carouselVisible: boolean;
+  icon?: ImagePlacement;
+  image?: ImagePlacement;
+  carouselImage?: ImagePlacement;
+};
+
+export type ShopCatalogCopyDraft = {
+  eyebrow: string;
+  title: string;
+  lead: string;
+  sectionTitle: string;
+};
+
 export type ShopHomePageDraft = {
   id: "shop-home";
   seoTitle: string;
@@ -369,6 +387,7 @@ export type ShopHomePageDraft = {
   wheelsIntro: PageSectionCopy & { kicker: string };
   orderSteps: { id: string; title: string; description: string }[];
   categoryCarousel: ShopHomeCategorySlide[];
+  catalog: { copy: ShopCatalogCopyDraft; tiles: ShopCatalogTileDraft[] };
   vehicles: PageSectionCopy & {
     cta: PageCta;
     slides: ShopHomeVehicleSlide[];

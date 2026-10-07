@@ -7,11 +7,11 @@ const shopHomeFieldsStart = source.indexOf("function ShopHomeFields");
 const pageEditorStart = source.indexOf("export function PageEditor");
 
 describe("PageEditor page-specific fields", () => {
-  it("keeps the category carousel editor on the Shop landing page only", () => {
+  it("moves Shop home carousel editing out of Pages and into the Shop showcase tab", () => {
     const stubFields = source.slice(stubFieldsStart, shopHomeFieldsStart);
     const shopHomeFields = source.slice(shopHomeFieldsStart, pageEditorStart);
 
     expect(stubFields).not.toContain("categoryCarousel");
-    expect(shopHomeFields).toContain("categoryCarousel");
+    expect(shopHomeFields).not.toContain("categoryCarousel");
   });
 });

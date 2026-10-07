@@ -104,6 +104,23 @@ describe("createLocalAdminClient", () => {
     expect(reset.publishedSnapshot).toBeNull();
   });
 
+  it("seeds the Shop page with editable catalog copy and empty tile presentation", async () => {
+    const client = createLocalAdminClient(memory());
+    const page = await client.getPage("shop-home");
+
+    expect(page.draft).toMatchObject({
+      catalog: {
+        copy: {
+          eyebrow: "BIZON Shop",
+          title: "Движение продолжается вне автомобиля",
+          lead: "Категории BIZON Shop — диски отдельно, товары по направлениям.",
+          sectionTitle: "Выберите направление",
+        },
+        tiles: [],
+      },
+    });
+  });
+
   it("refuses to delete a used file", async () => {
     const client = createLocalAdminClient(memory());
     const asset = await client.createAsset({ name: "tire.png", mimeType: "image/png", dataUrl: "data:image/png,x" });

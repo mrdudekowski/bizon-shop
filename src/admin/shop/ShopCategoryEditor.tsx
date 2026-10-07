@@ -12,8 +12,7 @@ import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
 import { DOCUMENT_STATUS, actionErrorText } from "@/admin/client/actionFeedback";
 import { wheelTypePublishBlockers } from "@/admin/domain/publishRules";
-import type { EntityRecord, ImagePlacement, ShopCategoryDraft } from "@/admin/domain/types";
-import { PlacementFields } from "@/admin/media/PlacementFields";
+import type { EntityRecord, ShopCategoryDraft } from "@/admin/domain/types";
 import type { PublishBlockerHint } from "@/admin/ui/documentTabs";
 import { ShopCategoryProducts } from "./ShopCategoryProducts";
 
@@ -22,7 +21,6 @@ import styles from "./ShopDocument.module.css";
 const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
   name: { text: "Укажите название", tab: "Карточка категории", field: "Название" },
   slug: { text: "Укажите адрес страницы", tab: "Карточка категории", field: "Адрес" },
-  mainImage: { text: "Добавьте иконку", tab: "Настройки категории", field: "Иконка" },
 };
 
 const CATEGORY_TABS = ["products", "settings"] as const;
@@ -74,11 +72,6 @@ export function ShopCategoryEditor({ id }: { id: string }) {
     tabs[nextIndex]?.focus();
     const nextTab = CATEGORY_TABS[nextIndex];
     if (nextTab) setActiveTab(nextTab);
-  }
-
-  function patchGallery(image: ImagePlacement | undefined) {
-    const id = draft?.carousel[0]?.id ?? "gallery";
-    patch({ carousel: image ? [{ id, image }] : [] });
   }
 
   async function onSave() {
@@ -166,40 +159,6 @@ export function ShopCategoryEditor({ id }: { id: string }) {
             Описание
             <textarea value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
           </label>
-          <label className={styles.field}>
-            Порядок
-            <input
-              type="number"
-              value={draft.sortOrder}
-              onChange={(event) => patch({ sortOrder: Number(event.target.value) || 0 })}
-            />
-          </label>
-          <label className={styles.check}>
-            <input
-              type="checkbox"
-              checked={draft.showInMenu}
-              onChange={(event) => patch({ showInMenu: event.target.checked })}
-            />
-            Показывать в меню
-          </label>
-        </section>
-        <section className={styles.section}>
-          <h2>Иконка</h2>
-          <p className={styles.inlineHint}>Показывается в меню Shop.</p>
-          <PlacementFields
-            label="Иконка"
-            value={draft.mainImage}
-            onChange={(mainImage) => patch({ mainImage })}
-          />
-        </section>
-        <section className={styles.section}>
-          <h2>Карусель</h2>
-          <p className={styles.inlineHint}>Одно фото направления на главной Shop.</p>
-          <PlacementFields
-            label="Фото галереи"
-            value={draft.carousel[0]?.image}
-            onChange={patchGallery}
-          />
         </section>
       </div>
 

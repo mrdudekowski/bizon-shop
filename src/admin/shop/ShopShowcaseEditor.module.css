@@ -1,0 +1,36 @@
+.page,
+.list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding-bottom: 96px;
+}
+
+.heading p { color: var(--muted, #64748b); }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.tabs button[aria-selected="true"] { border-color: #0bd5b3; background: #d5fff7; color: #101820; }
+.card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #dfe4eb;
+  border-radius: 12px;
+  background: #fff;
+}
+.cardHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.cardHead h3 { min-width: 0; overflow-wrap: anywhere; }
+.field { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; }
+.field input,
+.field textarea { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
+.field textarea { min-height: 120px; }
+.check { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+@media (min-width: 760px) {
+  .card { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cardHead { grid-column: 1 / -1; }
+}
