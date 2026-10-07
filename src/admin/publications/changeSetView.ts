@@ -9,14 +9,15 @@ export const CHANGESET_STATUS_LABEL: Record<ChangeSetStatus, string> = {
 };
 
 export function editorHref(entityType: StatusEntity, entityId: string): string {
-  if (entityType === "tire-model") return `/tires/${entityId}`;
-  if (entityType === "tire-direction") return `/tires/directions/${entityId}`;
-  if (entityType === "wheel-model") return `/wheels/${entityId}`;
-  if (entityType === "wheel-type") return `/wheels/types/${entityId}`;
-  if (entityType === "shop-product") return `/shop/${entityId}`;
-  if (entityType === "shop-category") return `/shop/categories/${entityId}`;
-  if (entityType === "page") return `/pages/${entityId}`;
-  return `/materials/${entityId}`;
+  const id = encodeURIComponent(entityId);
+  if (entityType === "tire-model") return `/tires/editor?id=${id}`;
+  if (entityType === "tire-direction") return `/tires/directions/editor?id=${id}`;
+  if (entityType === "wheel-model") return `/wheels/editor?id=${id}`;
+  if (entityType === "wheel-type") return `/wheels/types/editor?id=${id}`;
+  if (entityType === "shop-product") return `/shop/product-editor?id=${id}`;
+  if (entityType === "shop-category") return `/shop/category-editor?id=${id}`;
+  if (entityType === "page") return `/pages/editor?key=${id}`;
+  return `/materials/editor?id=${id}`;
 }
 
 export function changeCount(pack: ChangeSet): number {

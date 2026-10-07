@@ -94,6 +94,11 @@
 
 .content { min-width: 0; padding: 32px 32px 0; }
 .notice { margin: 0 0 20px; padding: 12px 16px; border: 1px solid #f1d88a; border-radius: 12px; background: #fff7dc; color: #604b0b; }
+.siteDeployNotice { margin: 0 0 20px; padding: 12px 16px; border: 1px solid #f1d88a; border-radius: 12px; background: #fff7dc; color: #604b0b; }
+.siteDeployNotice p { margin: 0; }
+.siteDeployRetry { margin-top: 10px; min-height: 40px; padding: 8px 12px; border: 1px solid currentColor; border-radius: 8px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.siteDeployRetry:disabled { cursor: wait; opacity: .65; }
+.siteDeployRetry:focus-visible { outline: 3px solid #1f5eff; outline-offset: 2px; }
 .authLoading { min-height: 100dvh; display: grid; place-items: center; color: #687586; }
 
 .newtonsCradle {

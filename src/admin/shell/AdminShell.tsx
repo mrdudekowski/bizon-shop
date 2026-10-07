@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { browserAdminClient } from "@/admin/client/localStore";
+import { AdminClientError } from "@/admin/client/errors";
 import type { AdminSession } from "@/admin/domain/types";
 import { Icon, type IconName } from "@/admin/ui/Icon";
 import { isMoreCurrent, isNavCurrent, profileInitials, splitNav } from "./mobileNav";
@@ -24,26 +25,25 @@ const CONTENT_NAV = [
   { href: "/materials", label: "Материалы", icon: "materials" },
 ] as const satisfies readonly { href: string; label: string; icon: IconName }[];
 
-// One request per screen module. Dynamic editors use a stand-in id so the module
-// is compiled before the first real document is opened.
+// One request per screen module so the first development open is already warm.
 const ADMIN_SCREEN_ROUTES = [
   "/",
   "/tires/directions",
-  "/tires/directions/dir-long-haul",
-  "/tires/_",
+  "/tires/directions/editor?id=dir-long-haul",
+  "/tires/editor?id=1",
   "/wheels",
-  "/wheels/types/_",
-  "/wheels/_",
+  "/wheels/types/editor?id=1",
+  "/wheels/editor?id=1",
   "/shop",
-  "/shop/categories/_",
-  "/shop/_",
+  "/shop/category-editor?id=1",
+  "/shop/product-editor?id=1",
   "/pages",
-  "/pages/about",
+  "/pages/editor?key=about",
   "/materials",
-  "/materials/_",
+  "/materials/editor?id=1",
   "/media",
   "/publications",
-  "/publications/_",
+  "/publications/editor?id=1",
   "/users",
 ] as const;
 
@@ -74,6 +74,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const [authLoaded, setAuthLoaded] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [siteDeployMessage, setSiteDeployMessage] = useState<string | null>(null);
+  const [siteDeployRetryAvailable, setSiteDeployRetryAvailable] = useState(false);
+  const [siteDeployRetrying, setSiteDeployRetrying] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -92,11 +95,26 @@ export function AdminShell({ children }: { children: ReactNode }) {
       event.returnValue = "";
     };
     const handleExpiredSession = () => setSession(null);
+    const handleSiteDeployStatus = (event: Event) => {
+      const status = (event as CustomEvent<{ status?: string }>).detail?.status;
+      if (status === "started") {
+        setSiteDeployMessage("Публикация сохранена. Пересборка публичного сайта запущена.");
+        setSiteDeployRetryAvailable(false);
+      } else if (status === "failed") {
+        setSiteDeployMessage("Публикация сохранена, но пересборку сайта запустить не удалось.");
+        setSiteDeployRetryAvailable(true);
+      } else if (status === "not_configured") {
+        setSiteDeployMessage("Публикация сохранена. Автоматическая пересборка сайта ещё не настроена.");
+        setSiteDeployRetryAvailable(false);
+      }
+    };
     window.addEventListener("bizon-session-expired", handleExpiredSession);
+    window.addEventListener("bizon-site-deploy-status", handleSiteDeployStatus);
     window.addEventListener("beforeunload", warnBeforeUnload);
     return () => {
       stopWarmup();
       window.removeEventListener("bizon-session-expired", handleExpiredSession);
+      window.removeEventListener("bizon-site-deploy-status", handleSiteDeployStatus);
       window.removeEventListener("beforeunload", warnBeforeUnload);
     };
   }, []);
@@ -123,6 +141,26 @@ export function AdminShell({ children }: { children: ReactNode }) {
       await browserAdminClient().logout();
     } finally {
       setSession(null);
+    }
+  }
+
+  async function retrySiteDeploy() {
+    setSiteDeployRetrying(true);
+    setSiteDeployMessage("Повторно запускаем пересборку публичного сайта…");
+    setSiteDeployRetryAvailable(false);
+    try {
+      const result = await browserAdminClient().retrySiteDeploy();
+      setSiteDeployMessage(result.message);
+    } catch (error) {
+      if (error instanceof AdminClientError && error.code === "site_deploy_not_configured") {
+        setSiteDeployMessage("Автоматическая пересборка сайта ещё не настроена.");
+        setSiteDeployRetryAvailable(false);
+      } else {
+        setSiteDeployMessage("Не удалось запустить пересборку сайта. Повторите попытку.");
+        setSiteDeployRetryAvailable(true);
+      }
+    } finally {
+      setSiteDeployRetrying(false);
     }
   }
 
@@ -201,6 +239,16 @@ export function AdminShell({ children }: { children: ReactNode }) {
         </nav>
         <div className={styles.content}>
           {notice ? <p className={styles.notice}>{notice}</p> : null}
+          {siteDeployMessage ? (
+            <div className={styles.siteDeployNotice} role="status" aria-live="polite">
+              <p>{siteDeployMessage}</p>
+              {siteDeployRetryAvailable && role === "admin" ? (
+                <button className={styles.siteDeployRetry} type="button" disabled={siteDeployRetrying} onClick={() => void retrySiteDeploy()}>
+                  {siteDeployRetrying ? "Запускаем…" : "Повторить пересборку"}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           {children}
         </div>
 

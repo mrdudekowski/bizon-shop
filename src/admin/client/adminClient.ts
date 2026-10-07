@@ -26,6 +26,7 @@ import type {
 } from "@/admin/domain/types";
 
 export type AdminClient = {
+  retrySiteDeploy(): Promise<SiteDeployResult>;
   changeDocumentStatus(entity: StatusEntity, id: string, status: DocumentStatus): Promise<unknown>;
   login(login: string, password: string): Promise<AdminSession>;
   logout(): Promise<void>;
@@ -121,4 +122,9 @@ export type AdminClient = {
   returnChangeSet(id: string, comment: string): Promise<ChangeSet>;
   cancelChangeSet(id: string): Promise<ChangeSet>;
   storageNotice(): Promise<string | null>;
+};
+
+export type SiteDeployResult = {
+  status: "started";
+  message: string;
 };

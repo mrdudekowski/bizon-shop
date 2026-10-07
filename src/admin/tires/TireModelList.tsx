@@ -88,7 +88,7 @@ export function TireModelList() {
       await client.saveTireModel(created.id, { ...created.draft, slug: nextSlug });
     }
     dialogRef.current?.close();
-    router.push(`/tires/${created.id}`);
+    router.push(`/tires/editor?id=${encodeURIComponent(created.id)}`);
   }
 
   return (
@@ -111,7 +111,7 @@ export function TireModelList() {
                       <span className={styles.cardBody}><strong>{direction.name}</strong><span className={styles.meta}>{count} моделей</span></span>
                       <Icon name="arrow" size={16} />
                     </Link>
-                    <Link className={styles.directionSettings} href={`/tires/directions/${direction.id}`}>Настроить направление</Link>
+                    <Link className={styles.directionSettings} href={`/tires/directions/editor?id=${encodeURIComponent(direction.id)}`}>Настроить направление</Link>
                   </article>
                 </li>
               );
@@ -124,7 +124,7 @@ export function TireModelList() {
       <div className={styles.pageHead}>
         <div><h1>{directions.find((direction) => direction.id === selectedDirectionId)?.name ?? "Шины"}</h1><p className="subheading">Модели шин, размеры и публикация на сайте.</p></div>
         <div className={styles.filterGroup}>
-          {directions.some((direction) => direction.id === selectedDirectionId) ? <Link className={styles.manageDirections} href={`/tires/directions/${selectedDirectionId}`}>Настроить направление</Link> : null}
+          {directions.some((direction) => direction.id === selectedDirectionId) ? <Link className={styles.manageDirections} href={`/tires/directions/editor?id=${encodeURIComponent(selectedDirectionId)}`}>Настроить направление</Link> : null}
           <button type="button" className="ghost" onClick={() => router.push("/")}>Все направления</button>
           {canCreate ? (
           <button type="button" className="primary" onClick={openCreate}>
@@ -149,7 +149,7 @@ export function TireModelList() {
           <ul className={styles.catalogList}>
             {visible.map((item) => (
               <li key={item.id}>
-                <CatalogRow href={`/tires/${item.id}`} title={item.name} meta={`${item.sizeCount} размеров`} icon="tires" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onDelete={role === "admin" ? () => deleteModel(item.id, item.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(item.id, nextStatus) : undefined} />
+                <CatalogRow href={`/tires/editor?id=${encodeURIComponent(item.id)}`} title={item.name} meta={`${item.sizeCount} размеров`} icon="tires" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onDelete={role === "admin" ? () => deleteModel(item.id, item.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(item.id, nextStatus) : undefined} />
               </li>
             ))}
           </ul>

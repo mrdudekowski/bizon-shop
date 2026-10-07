@@ -76,7 +76,7 @@ export function ShopProductList() {
       await client.saveShopCategory(created.id, { ...created.draft, slug: nextSlug });
     }
     categoryDialogRef.current?.close();
-    router.push(`/shop/categories/${created.id}`);
+    router.push(`/shop/category-editor?id=${encodeURIComponent(created.id)}`);
   }
 
   function imageUrl(category: EntityRecord<ShopCategoryDraft>) {
@@ -111,7 +111,7 @@ export function ShopProductList() {
           {categories.map((category) => (
             <li key={category.id}>
               <CatalogRow
-                href={`/shop/categories/${category.id}`}
+                href={`/shop/category-editor?id=${encodeURIComponent(category.id)}`}
                 title={category.draft.name || "Без названия"}
                 meta={`/${category.draft.slug} · ${productCounts[category.id] ?? 0} товаров`}
                 icon="shop"

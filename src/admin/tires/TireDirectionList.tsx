@@ -62,7 +62,7 @@ export function TireDirectionList() {
       await browserAdminClient().saveTireDirection(created.id, { ...created.draft, slug: nextSlug });
     }
     dialogRef.current?.close();
-    router.push(`/tires/directions/${created.id}`);
+    router.push(`/tires/directions/editor?id=${encodeURIComponent(created.id)}`);
   }
 
   const visibleDirections = directions.filter((direction) => {
@@ -78,7 +78,7 @@ export function TireDirectionList() {
       {loading ? <AdminLoading label="Загружаем направления…" /> : <ul className={styles.catalogList}>
         {visibleDirections.map((direction) => (
           <li key={direction.id}>
-            <CatalogRow href={`/tires/directions/${direction.id}`} title={direction.name} meta={`/${direction.slug}`} icon="directions" imageUrl={assets.find((asset) => asset.id === direction.imageAssetId)?.dataUrl ?? resolveSiteCatalogPreview(direction.slug)} status={direction.status} hasUnpublishedDraft={direction.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeDirectionStatus(direction.id, nextStatus) : undefined} />
+          <CatalogRow href={`/tires/directions/editor?id=${encodeURIComponent(direction.id)}`} title={direction.name} meta={`/${direction.slug}`} icon="directions" imageUrl={assets.find((asset) => asset.id === direction.imageAssetId)?.dataUrl ?? resolveSiteCatalogPreview(direction.slug)} status={direction.status} hasUnpublishedDraft={direction.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeDirectionStatus(direction.id, nextStatus) : undefined} />
           </li>
         ))}
       </ul>}

@@ -223,7 +223,7 @@ export function ShopProductEditor({ id }: { id: string }) {
 
   return (
     <main className="document" data-unsaved={dirty ? "true" : undefined}>
-      <Link className="backLink" href={`/shop/categories/${encodeURIComponent(draft.categoryId)}`}>← Назад к категории</Link>
+      <Link className="backLink" href={`/shop/category-editor?id=${encodeURIComponent(draft.categoryId)}`}>← Назад к категории</Link>
       <h1>{draft.name || "Товар"}</h1>
       <BlockNav />
       <section className={styles.section}>
@@ -423,7 +423,7 @@ export function ShopProductEditor({ id }: { id: string }) {
           parentPublicationBlocked ? (
             <p role="status">
               Категория «{selectedCategory?.draft.name ?? "товара"}» не опубликована. Сначала опубликуйте ее в{" "}
-              <Link href={`/shop/categories/${encodeURIComponent(product.categoryId)}`}>настройках категории</Link>.
+              <Link href={`/shop/category-editor?id=${encodeURIComponent(product.categoryId)}`}>настройках категории</Link>.
             </p>
           ) : null
         }

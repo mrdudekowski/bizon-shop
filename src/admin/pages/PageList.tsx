@@ -71,7 +71,7 @@ export function PageList() {
       {loading ? <AdminLoading label="Загружаем страницы…" /> : <ul className={styles.catalogList}>
         {pages.map((page) => (
           <li key={page.id}>
-            <CatalogRow href={`/pages/${page.draft.id}`} title={PAGE_LABELS[page.draft.id]} icon="pages" imageUrl={assets.find((asset) => asset.id === previewAssetId(page.draft))?.dataUrl} status={statusOf(page)} hasUnpublishedDraft={hasDraft(page)} onStatusChange={role === "admin" ? (status) => changeStatus(page.draft.id, status) : undefined} />
+            <CatalogRow href={`/pages/editor?key=${encodeURIComponent(page.draft.id)}`} title={PAGE_LABELS[page.draft.id]} icon="pages" imageUrl={assets.find((asset) => asset.id === previewAssetId(page.draft))?.dataUrl} status={statusOf(page)} hasUnpublishedDraft={hasDraft(page)} onStatusChange={role === "admin" ? (status) => changeStatus(page.draft.id, status) : undefined} />
           </li>
         ))}
       </ul>}

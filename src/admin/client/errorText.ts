@@ -27,4 +27,6 @@ export const ERROR_TEXT: Record<AdminClientError["code"], string> = {
   changeset_not_pending: "Этот пакет нельзя обработать в текущем статусе",
   review_comment_required: "Напишите комментарий, чтобы вернуть пакет на доработку",
   conflict: "Эту запись уже изменили в другой вкладке. Обновите её и повторите правку.",
+  site_deploy_failed: "Не удалось запустить пересборку сайта. Можно повторить попытку.",
+  site_deploy_not_configured: "Автоматическая пересборка сайта ещё не настроена.",
 };

@@ -38,7 +38,7 @@ import type {
   StatusEntity,
 } from "@/admin/domain/types";
 
-import type { AdminClient } from "./adminClient";
+import type { AdminClient, SiteDeployResult } from "./adminClient";
 import { AdminClientError } from "./errors";
 import { actorSession, cancelOverlappingPacks, currentUser, recordEditorMutation, requirePermission } from "./applyChangeSet";
 import {
@@ -732,6 +732,9 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
   }
 
   return {
+    async retrySiteDeploy(): Promise<SiteDeployResult> {
+      throw new AdminClientError("site_deploy_not_configured");
+    },
     async changeDocumentStatus(entity, id, status) {
       if (entity === "page") {
         if (status === "on_site") return this.publishPage(id as PageKey);
@@ -1620,13 +1623,11 @@ export function browserAdminClient(): AdminClient {
   return remoteAdminClient();
 }
 
-/**
- * The browser stays on the CMS origin. Next.js forwards /v1/* to backend-app, so a
- * session cookie set at login is sent on the next request instead of being treated
- * as a different site (localhost versus 127.0.0.1, or a different port).
- */
+/** The CMS browser talks directly to backend-app; the session cookie remains HttpOnly. */
 function adminApiBase(): string {
-  return (process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "").replace(/\/+$/, "");
+  const configured = (process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "").trim();
+  const base = configured || (process.env.NODE_ENV === "development" ? "http://127.0.0.1:4000" : "");
+  return base.replace(/\/+$/, "");
 }
 
 function remoteAdminClient(): AdminClient {
@@ -1634,6 +1635,7 @@ function remoteAdminClient(): AdminClient {
   const savedDraftByEntity = new Map<string, unknown>();
   const cloneDraft = <T,>(draft: T): T => (draft == null ? draft : JSON.parse(JSON.stringify(draft)) as T);
   const request = async (path: string, init: RequestInit) => {
+    if (!adminApi) throw new AdminClientError("network");
     let response: Response;
     try {
       response = await fetch(`${adminApi}${path}`, { ...init, credentials: "include" });
@@ -1642,6 +1644,10 @@ function remoteAdminClient(): AdminClient {
     }
     if (response.status === 401 && !path.endsWith("/auth/login") && typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("bizon-session-expired"));
+    }
+    const deployStatus = response.headers.get("x-bizon-site-deploy");
+    if (typeof window !== "undefined" && (deployStatus === "started" || deployStatus === "failed" || deployStatus === "not_configured")) {
+      window.dispatchEvent(new CustomEvent("bizon-site-deploy-status", { detail: { status: deployStatus } }));
     }
     const body = (await response.json()) as { ok: boolean; result?: unknown; code?: AdminClientError["code"] };
     if (!body.ok) throw new AdminClientError(body.code ?? "publish_blocked");
@@ -1670,6 +1676,9 @@ function remoteAdminClient(): AdminClient {
     return result;
   };
   return new Proxy({
+    async retrySiteDeploy() {
+      return await request("/v1/admin/site-deploy/retry", { method: "POST" }) as SiteDeployResult;
+    },
     async login(login: string, password: string) {
       return withCapabilities((await request("/v1/admin/auth/login", {
         method: "POST",

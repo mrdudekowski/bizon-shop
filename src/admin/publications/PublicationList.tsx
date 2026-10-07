@@ -157,7 +157,7 @@ export function PublicationList() {
                       void reload();
                     }}
                   />
-                  <Link className={pub.openLink} href={`/publications/${pack.id}`}>Открыть пакет</Link>
+                  <Link className={pub.openLink} href={`/publications/editor?id=${encodeURIComponent(pack.id)}`}>Открыть пакет</Link>
                 </div>
               </div>
               <details>

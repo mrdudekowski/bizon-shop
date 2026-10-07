@@ -87,7 +87,7 @@ export function ShopCategoryProducts({ categoryId, categoryName }: { categoryId:
       await client.saveShopProduct(created.id, { ...created.draft, slug: nextSlug });
     }
     dialogRef.current?.close();
-    router.push(`/shop/${created.id}`);
+    router.push(`/shop/product-editor?id=${encodeURIComponent(created.id)}`);
   }
 
   async function changeStatus(id: string, nextStatus: DocumentStatus) {
@@ -159,7 +159,7 @@ export function ShopCategoryProducts({ categoryId, categoryName }: { categoryId:
             {visibleProducts.map((product) => (
               <li key={product.id}>
                 <CatalogRow
-                  href={`/shop/${product.id}`}
+                  href={`/shop/product-editor?id=${encodeURIComponent(product.id)}`}
                   title={product.name || "Без названия"}
                   meta={`${categoryName}${!product.categoryPublished ? " · доступность ждёт публикации категории" : ""}`}
                   icon="shop"

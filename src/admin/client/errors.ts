@@ -24,7 +24,9 @@ export type AdminErrorCode =
   | "pending_review_exists"
   | "changeset_not_pending"
   | "review_comment_required"
-  | "conflict";
+  | "conflict"
+  | "site_deploy_failed"
+  | "site_deploy_not_configured";
 
 export class AdminClientError extends Error {
   constructor(readonly code: AdminErrorCode) {

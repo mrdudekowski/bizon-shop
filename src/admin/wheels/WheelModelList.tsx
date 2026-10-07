@@ -91,7 +91,7 @@ export function WheelModelList() {
     const nextSlug = slugifyTitle(slugTouched ? slug : name);
     if (nextSlug && nextSlug !== created.draft.slug) await client.saveWheelModel(created.id, { ...created.draft, slug: nextSlug });
     modelDialogRef.current?.close();
-    router.push(`/wheels/${created.id}`);
+    router.push(`/wheels/editor?id=${encodeURIComponent(created.id)}`);
   }
 
   return (
@@ -100,7 +100,7 @@ export function WheelModelList() {
       <div className={styles.pageHead}><h2>Модели дисков</h2>{canCreate ? <button className="primary" type="button" onClick={openModelDialog}>Добавить модель</button> : null}</div>
       <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название модели…" />
       {filteredModels.length === 0 ? <p className={styles.empty}>{models.length > 0 ? "По заданным фильтрам модели не найдены" : "Моделей дисков пока нет"}</p> : <>
-        <ul className={styles.catalogList}>{filteredModels.map((model) => <li key={model.id}><CatalogRow href={`/wheels/${model.id}`} title={model.name} icon="wheels" imageUrl={assets.find((asset) => asset.id === model.imageAssetId)?.dataUrl} status={model.status} hasUnpublishedDraft={model.hasUnpublishedDraft} onDelete={role === "admin" ? () => deleteModel(model.id, model.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(model.id, nextStatus) : undefined} /></li>)}</ul>
+        <ul className={styles.catalogList}>{filteredModels.map((model) => <li key={model.id}><CatalogRow href={`/wheels/editor?id=${encodeURIComponent(model.id)}`} title={model.name} icon="wheels" imageUrl={assets.find((asset) => asset.id === model.imageAssetId)?.dataUrl} status={model.status} hasUnpublishedDraft={model.hasUnpublishedDraft} onDelete={role === "admin" ? () => deleteModel(model.id, model.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(model.id, nextStatus) : undefined} /></li>)}</ul>
         <div className={styles.listFoot}>Показано {filteredModels.length} моделей</div>
       </>}
       <CatalogCreateDialog

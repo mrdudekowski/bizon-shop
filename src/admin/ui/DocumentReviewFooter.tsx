@@ -118,7 +118,7 @@ export function DocumentReviewFooter({
       {role === "admin" && foreignPending ? (
         <p>
           Эту карточку отправил на одобрение {foreignPending.authorLogin}.{" "}
-          <Link href={`/publications/${foreignPending.id}`}>Открыть пакет</Link>
+          <Link href={`/publications/editor?id=${encodeURIComponent(foreignPending.id)}`}>Открыть пакет</Link>
         </p>
       ) : null}
       <button type="button" disabled={saving} onClick={() => void save()}>

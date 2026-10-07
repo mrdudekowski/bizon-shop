@@ -81,7 +81,7 @@ export function MaterialList() {
     const nextSlug = slugifyTitle(slugTouched ? slug : title);
     if (nextSlug && nextSlug !== created.draft.slug) await client.saveMaterial(created.id, { ...created.draft, slug: nextSlug });
     dialogRef.current?.close();
-    router.push(`/materials/${created.id}`);
+    router.push(`/materials/editor?id=${encodeURIComponent(created.id)}`);
   }
 
   if (session == null) return <main><AdminLoading label="Проверяем доступ…" /></main>;
@@ -93,7 +93,7 @@ export function MaterialList() {
       <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название материала…" />
       {loading ? <AdminLoading label="Загружаем материалы…" /> : items.length === 0 ? <div className={styles.empty}><Icon name="materials" size={36} /><h2>Материалов пока нет</h2><p>Создайте статью Tire IQ.</p>{canCreate ? <button className="primary" type="button" onClick={openCreate}>Добавить материал</button> : null}</div> : visibleItems.length === 0 ? <div className={styles.empty}><h2>Ничего не найдено</h2><p>Измените запрос или выберите другой статус.</p></div> : <>
         <ul className={styles.catalogList}>{visibleItems.map((item) => (
-          <li key={item.id}><CatalogRow href={`/materials/${item.id}`} title={item.title} meta="Tire IQ" icon="materials" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeStatus(item.id, nextStatus) : undefined} /></li>
+          <li key={item.id}><CatalogRow href={`/materials/editor?id=${encodeURIComponent(item.id)}`} title={item.title} meta="Tire IQ" icon="materials" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeStatus(item.id, nextStatus) : undefined} /></li>
         ))}</ul>
         <div className={styles.listFoot}>Показано {visibleItems.length} из {items.length} материалов</div>
       </>}
