@@ -9,6 +9,7 @@ import {
   getShopLifestyleCategory,
   SHOP_LIFESTYLE_CATEGORIES,
 } from "@/constants/shopCategories";
+import { shopCategoryPageView } from "@/lib/content/shopCategoryPresentation";
 
 type PageProps = {
   params: Promise<{ categorySlug: string }>;
@@ -47,53 +48,44 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function ShopCategoryPage({ params }: PageProps) {
   const { categorySlug } = await params;
   const lifestyleCategory = getShopLifestyleCategory(categorySlug);
-
-  if (lifestyleCategory) {
-    const loaded = await loadPublished(async () => {
-      const [products, published, cms] = await Promise.all([
-        getShopProducts({ categorySlug }),
-        getShopCategories(),
-        getShopCategoryBySlug(categorySlug),
-      ]);
-      return { products, published, cms };
-    });
-    if (loaded.kind === "unavailable") return <PublishedContentUnavailable />;
-    const { products, published, cms } = loaded.value;
-    const siblingLifestyle = SHOP_LIFESTYLE_CATEGORIES.find((item) => item.slug !== lifestyleCategory.slug);
-    const siblingCms = siblingLifestyle
-      ? published.find((item) => item.slug === siblingLifestyle.slug)
-      : undefined;
-
-    return (
-      <ShopLifestyleCategoryPage
-        category={lifestyleCategory}
-        heading={cms?.name || lifestyleCategory.title}
-        lead={cms?.description?.trim() || lifestyleCategory.description}
-        products={products}
-        sibling={
-          siblingLifestyle
-            ? {
-                slug: siblingLifestyle.slug,
-                name: siblingCms?.name || siblingLifestyle.title,
-                desktopImage: siblingLifestyle.desktopImage,
-                mobileImage: siblingLifestyle.mobileImage,
-              }
-            : undefined
-        }
-      />
-    );
-  }
-
   const loaded = await loadPublished(async () => {
-    const category = await getShopCategoryBySlug(categorySlug);
-    if (!category) return null;
-    const products = await getShopProducts({ categorySlug });
-    return { category, products };
+    const [category, products, published] = await Promise.all([
+      getShopCategoryBySlug(categorySlug),
+      getShopProducts({ categorySlug }),
+      getShopCategories(),
+    ]);
+    return { category, products, published };
   });
   if (loaded.kind === "unavailable") return <PublishedContentUnavailable />;
 
-  if (!loaded.value) {
-    notFound();
+  const { category, products, published } = loaded.value;
+  const pageView = shopCategoryPageView(category != null, lifestyleCategory != null);
+  if (pageView === "catalog" && category) {
+    return <ShopProductCatalog category={category} products={products} />;
   }
-  return <ShopProductCatalog category={loaded.value.category} products={loaded.value.products} />;
+  if (pageView === "not-found" || !lifestyleCategory) notFound();
+
+  const siblingLifestyle = SHOP_LIFESTYLE_CATEGORIES.find((item) => item.slug !== lifestyleCategory.slug);
+  const siblingCms = siblingLifestyle
+    ? published.find((item) => item.slug === siblingLifestyle.slug)
+    : undefined;
+
+  return (
+    <ShopLifestyleCategoryPage
+      category={lifestyleCategory}
+      heading={lifestyleCategory.title}
+      lead={lifestyleCategory.description}
+      products={products}
+      sibling={
+        siblingLifestyle
+          ? {
+              slug: siblingLifestyle.slug,
+              name: siblingCms?.name || siblingLifestyle.title,
+              desktopImage: siblingLifestyle.desktopImage,
+              mobileImage: siblingLifestyle.mobileImage,
+            }
+          : undefined
+      }
+    />
+  );
 }

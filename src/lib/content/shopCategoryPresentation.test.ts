@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   shopCategoryIndexCards,
   shopCategoryLabel,
+  shopCategoryPageView,
   shopCategoryNavLinks,
   shopHomeCarouselSlides,
   shopHomeCategoryCards,
@@ -45,6 +46,15 @@ const categories: CmsShopCategory[] = [
 ];
 
 describe("shopCategoryPresentation", () => {
+  it("uses the CMS product catalog when a lifestyle slug is a published category", () => {
+    expect(shopCategoryPageView(true, true)).toBe("catalog");
+  });
+
+  it("uses the lifestyle fallback only when no CMS category is published", () => {
+    expect(shopCategoryPageView(false, true)).toBe("lifestyle");
+    expect(shopCategoryPageView(false, false)).toBe("not-found");
+  });
+
   it("uses the published CMS name for every category", () => {
     expect(shopCategoryLabel(categories[1]!)).toBe("Комфорт в автомобиле");
     expect(shopCategoryLabel(categories[2]!)).toBe("Прицепы");

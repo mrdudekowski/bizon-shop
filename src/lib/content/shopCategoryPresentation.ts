@@ -2,6 +2,16 @@ import { ROUTES } from "@/constants/navigation";
 import { getShopLifestyleCategory } from "@/constants/shopCategories";
 import type { CmsShopCategory } from "./types";
 
+export type ShopCategoryPageView = "catalog" | "lifestyle" | "not-found";
+
+export function shopCategoryPageView(
+  hasPublishedCmsCategory: boolean,
+  hasLifestyleFallback: boolean,
+): ShopCategoryPageView {
+  if (hasPublishedCmsCategory) return "catalog";
+  return hasLifestyleFallback ? "lifestyle" : "not-found";
+}
+
 export function shopCategoryLabel(category: Pick<CmsShopCategory, "slug" | "name">): string {
   return category.name;
 }
