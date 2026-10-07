@@ -2,7 +2,7 @@ import http from "node:http";
 import { randomBytes, randomUUID } from "node:crypto";
 import pg from "pg";
 import { dispatchAdminCall } from "./adminDispatch";
-import { isAdminRequestOriginAllowed, localOriginHeaders } from "./adminCors";
+import { isRequestOriginAllowed, localOriginHeaders } from "./adminCors";
 import {
   authenticate,
   bootstrapAccounts,
@@ -27,7 +27,8 @@ import { MediaRejected, MAX_MEDIA_BYTES } from "./storage/putMedia";
 import { normalizeRequest } from "./requests/normalizeRequest";
 import { parseRequestBody, validateRequest } from "./requests/validateRequest";
 import { checkRateLimit, trustedClientAddress } from "./security/rateLimit";
-import { isSiteAffectingPublicationMethod, triggerStaticSiteDeploy } from "./deploy/timewebApps";
+import { getStaticSiteDeployStatus, isSiteAffectingPublicationMethod, triggerStaticSiteDeploy } from "./deploy/timewebApps";
+import { readPublishedContentRevision } from "./contentRevision";
 import {
   readArticleBySlug,
   readArticles,
@@ -87,6 +88,7 @@ async function readJson(req: http.IncomingMessage): Promise<unknown> {
 
 function createPgDatabase(connectionString: string): ReadDatabase & {
   transaction<T>(run: (query: ReadDatabase["query"]) => Promise<T>): Promise<T>;
+  withReadSnapshot<T>(run: (snapshot: ReadDatabase) => Promise<T>): Promise<T>;
 } {
   const pool = new pg.Pool({ connectionString });
 
@@ -103,6 +105,26 @@ function createPgDatabase(connectionString: string): ReadDatabase & {
           const queryResult = await client.query(sql, params);
           return queryResult.rows as Record<string, unknown>[];
         });
+        await client.query("COMMIT");
+        return result;
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+    async withReadSnapshot(run) {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+        const snapshot = {
+          query: async (sql: string, params: unknown[] = []) => {
+            const result = await client.query(sql, params);
+            return result.rows as Record<string, unknown>[];
+          },
+        } satisfies ReadDatabase;
+        const result = await run(snapshot);
         await client.query("COMMIT");
         return result;
       } catch (error) {
@@ -190,10 +212,10 @@ async function handleRequest(
   const url = new URL(req.url ?? "/", URL_BASE);
   const path = url.pathname;
 
-  const originHeaders = localOriginHeaders(req.headers.origin);
+  const originHeaders = localOriginHeaders(path, req.headers.origin);
   for (const [name, value] of Object.entries(originHeaders)) res.setHeader(name, value);
 
-  if (!isAdminRequestOriginAllowed(path, method, req.headers.origin)) {
+  if (!isRequestOriginAllowed(path, method, req.headers.origin)) {
     sendJson(res, 403, { ok: false, code: "origin_not_allowed" });
     return;
   }
@@ -335,8 +357,18 @@ async function handleRequest(
       const body = (await readJson(req)) as { method?: string; args?: unknown[] };
       const outcome = await dispatchAdminCall(body, account);
       if (outcome.body.ok && isSiteAffectingPublicationMethod(body.method)) {
+        let expectedRevision: string | null = null;
+        try {
+          expectedRevision = (await readPublishedContentRevision(getDatabase())).revision;
+        } catch {
+          console.error(JSON.stringify({ event: "site_deploy.content_revision_unavailable" }));
+        }
         const deploy = await triggerStaticSiteDeploy();
         res.setHeader("x-bizon-site-deploy", deploy.status);
+        if (deploy.deploymentId) {
+          res.setHeader("x-bizon-site-deploy-id", deploy.deploymentId);
+          if (expectedRevision) res.setHeader("x-bizon-content-revision", expectedRevision);
+        }
       }
       sendJson(res, outcome.status, outcome.body, originHeaders);
     } catch (error) {
@@ -345,6 +377,23 @@ async function handleRequest(
         return;
       }
       sendJson(res, 400, { ok: false, code: "publish_blocked" }, originHeaders);
+    }
+    return;
+  }
+
+  if (method === "GET" && path === "/v1/admin/site-deploy/status") {
+    try {
+      const account = await currentAccount(req);
+      if (account == null) {
+        sendJson(res, 401, { ok: false, code: "unauthorized" }, originHeaders);
+        return;
+      }
+      const deploymentId = url.searchParams.get("deploymentId") ?? "";
+      const expectedRevision = url.searchParams.get("expectedRevision") ?? "";
+      const result = await getStaticSiteDeployStatus(deploymentId, expectedRevision);
+      sendJson(res, 200, { ok: true, result }, originHeaders);
+    } catch {
+      sendJson(res, 200, { ok: true, result: { status: "unavailable" } }, originHeaders);
     }
     return;
   }
@@ -360,8 +409,19 @@ async function handleRequest(
         sendJson(res, 403, { ok: false, code: "forbidden" });
         return;
       }
+      let expectedRevision: string | null = null;
+      try {
+        const revisionResult = await readPublishedContentRevision(getDatabase());
+        expectedRevision = revisionResult.revision;
+      } catch {
+        console.error(JSON.stringify({ event: "site_deploy.content_revision_unavailable" }));
+      }
       const deploy = await triggerStaticSiteDeploy();
       res.setHeader("x-bizon-site-deploy", deploy.status);
+      if (deploy.deploymentId) {
+        res.setHeader("x-bizon-site-deploy-id", deploy.deploymentId);
+        if (expectedRevision) res.setHeader("x-bizon-content-revision", expectedRevision);
+      }
       if (deploy.status === "started") {
         sendJson(res, 200, { ok: true, result: deploy });
       } else {
@@ -472,6 +532,25 @@ async function handleRequest(
 
   try {
     const database = getDatabase();
+
+    if (path === "/v1/content/revision") {
+      const address = trustedClientAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"]?.toString());
+      const limit = checkRateLimit(`content-revision:${address}`);
+      if (!limit.allowed) {
+        sendJson(res, 429, { ok: false }, {
+          "cache-control": "no-store",
+          "retry-after": String(limit.retryAfterSeconds),
+        });
+        return;
+      }
+      try {
+        const revision = await readPublishedContentRevision(database);
+        sendJson(res, 200, revision, { "cache-control": "no-store" });
+      } catch {
+        sendJson(res, 503, { ok: false, code: "published_content_unavailable" }, { "cache-control": "no-store" });
+      }
+      return;
+    }
 
     if (path === "/v1/tires/types") {
       sendPublishedJson(res, 200, await readTireTypes(database));

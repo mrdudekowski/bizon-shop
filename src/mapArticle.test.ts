@@ -27,6 +27,7 @@ describe("mapArticle", () => {
       imageUrl: "/media/article.jpg",
       showInMenu: true,
       menuOrder: 3,
+      taxonomy: [],
     });
   });
 

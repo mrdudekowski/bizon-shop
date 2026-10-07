@@ -401,6 +401,7 @@ export type ArticleDraft = {
   gallery: ImagePlacement[];
   showInMenu: boolean;
   menuOrder: number;
+  taxonomy: string[];
 };
 
 export type MediaListItem = {

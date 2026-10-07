@@ -336,7 +336,12 @@ function wrap<T>(id: string, draft: T, status: string, publishedBody: T | null):
 
 async function present<T>(collection: string, id: string, mapped: T, status: string): Promise<EntityRecord<T>> {
   const overlay = await readOverlay<T>(collection, id);
-  const draft = overlay ?? mapped;
+  const draft = overlay == null
+    ? mapped
+    : collection === "materials" && typeof overlay === "object" && overlay !== null
+      ? { ...mapped as object, ...overlay as object,
+          taxonomy: (overlay as { taxonomy?: unknown }).taxonomy ?? (mapped as { taxonomy?: unknown }).taxonomy } as T
+      : overlay;
   return wrap(id, draft, status, mapped);
 }
 
@@ -592,6 +597,9 @@ async function presentCategory(row: Row, status = str(row.status)): Promise<Enti
 }
 
 function mapArticle(row: Row): ArticleDraft {
+  const taxonomy = Array.isArray(row.taxonomy)
+    ? row.taxonomy.filter((value): value is string => typeof value === "string")
+    : [];
   return {
     id: `article-${row.id}`,
     kind: "article",
@@ -603,6 +611,7 @@ function mapArticle(row: Row): ArticleDraft {
     gallery: [],
     showInMenu: Boolean(row.show_in_menu),
     menuOrder: num(row.menu_order) ?? 0,
+    taxonomy,
   };
 }
 
@@ -2032,7 +2041,10 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return this.getPage(key);
     },
     async listMaterials() {
-      const articles = await query("SELECT * FROM tire_iq_articles ORDER BY title");
+      const articles = await query(`SELECT tire_iq_articles.*,
+        ARRAY(SELECT taxonomy.value FROM tire_iq_articles_taxonomy taxonomy
+          WHERE taxonomy._parent_id = tire_iq_articles.id ORDER BY taxonomy._order) AS taxonomy
+        FROM tire_iq_articles ORDER BY title`);
       const items = [];
       for (const row of articles) {
         const record = await present("materials", `article-${row.id}`, await mapArticle(row), str(row.status));
@@ -2050,7 +2062,11 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
     async getMaterial(id) {
       const match = /^article-(\d+)$/.exec(id);
       if (!match) throw new AdminClientError("not_found");
-      const row = await requireRow("tire_iq_articles", match[1]);
+      const [row] = await query(`SELECT tire_iq_articles.*,
+        ARRAY(SELECT taxonomy.value FROM tire_iq_articles_taxonomy taxonomy
+          WHERE taxonomy._parent_id = tire_iq_articles.id ORDER BY taxonomy._order) AS taxonomy
+        FROM tire_iq_articles WHERE id = $1`, [Number(match[1])]);
+      if (!row) throw new AdminClientError("not_found");
       return present("materials", id, await mapArticle(row), str(row.status));
     },
     async createMaterial(input) {
@@ -2102,6 +2118,13 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         "UPDATE tire_iq_articles SET title=$2, slug=$3, excerpt=$4, content=$5::jsonb, featured_image_id=$6, status='published', updated_at=now() WHERE id=$1",
         [Number(rawId), draft.title, draft.slug, draft.excerpt, JSON.stringify(lexical(draft.body)), draft.image ? Number(draft.image.assetId) : null],
       );
+      const allowedTaxonomy = new Set(["selection", "wear", "pressure", "load", "axles", "quarry", "construction", "tco", "diagnostics"]);
+      const taxonomy = [...new Set(Array.isArray(draft.taxonomy) ? draft.taxonomy : [])]
+        .filter((value): value is string => typeof value === "string" && allowedTaxonomy.has(value));
+      await query("DELETE FROM tire_iq_articles_taxonomy WHERE _parent_id = $1", [Number(rawId)]);
+      for (const [index, value] of taxonomy.entries()) {
+        await query("INSERT INTO tire_iq_articles_taxonomy (_parent_id, _order, value) VALUES ($1, $2, $3)", [Number(rawId), index, value]);
+      }
       await clearOverlay("materials", id);
       await releaseLocks("material", id);
       return this.getMaterial(id);

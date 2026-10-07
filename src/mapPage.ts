@@ -293,6 +293,7 @@ export function mapShopHomePatch(input: {
     icon_url?: string | null;
     image_url?: string | null;
     carousel_image_url?: string | null;
+    carousel_image_alt?: string | null;
     carousel_visible?: boolean;
     icon_alt?: string | null;
     image_alt?: string | null;

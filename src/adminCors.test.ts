@@ -1,40 +1,53 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { isAdminRequestOriginAllowed, localOriginHeaders } from "./adminCors";
+import { isRequestOriginAllowed, localOriginHeaders } from "./adminCors";
 
-describe("local admin CORS headers", () => {
-  it("allows the media replacement and cancellation methods from the local CMS", () => {
-    const headers = localOriginHeaders("http://127.0.0.1:3001");
+const cmsOrigin = "http://127.0.0.1:3001";
+const siteOrigin = "http://127.0.0.1:3000";
 
-    expect(headers["access-control-allow-origin"]).toBe("http://127.0.0.1:3001");
-    expect(headers["access-control-allow-methods"]?.split(", ")).toEqual([
-      "GET",
-      "POST",
-      "PUT",
-      "DELETE",
-      "OPTIONS",
-    ]);
-    expect(headers["access-control-allow-credentials"]).toBe("true");
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
+describe("route-scoped CORS", () => {
+  it("allows the CMS origin to use admin routes", () => {
+    expect(isRequestOriginAllowed("/v1/admin", "POST", cmsOrigin)).toBe(true);
+    expect(isRequestOriginAllowed("/v1/admin/assets/1", "PUT", cmsOrigin)).toBe(true);
+    expect(localOriginHeaders("/v1/admin", cmsOrigin)["access-control-allow-origin"]).toBe(cmsOrigin);
   });
 
-  it("does not return CORS permission headers for a non-local origin", () => {
-    expect(localOriginHeaders("https://attacker.example")).toEqual({});
+  it("does not grant the public site origin access to CMS admin routes", () => {
+    expect(isRequestOriginAllowed("/v1/admin/auth/session", "GET", siteOrigin)).toBe(false);
+    expect(isRequestOriginAllowed("/v1/admin", "POST", siteOrigin)).toBe(false);
+    expect(localOriginHeaders("/v1/admin", siteOrigin)).toEqual({});
   });
 
-  it("does not allow a different local port to use the CMS session", () => {
-    expect(localOriginHeaders("http://127.0.0.1:3000")).toEqual({});
-    expect(localOriginHeaders("http://localhost:3002")).toEqual({});
-    expect(localOriginHeaders("http://localhost")).toEqual({});
+  it("allows the public site origin only on public API routes", () => {
+    expect(isRequestOriginAllowed("/v1/requests", "POST", siteOrigin)).toBe(true);
+    expect(isRequestOriginAllowed("/v1/cart", "PUT", siteOrigin)).toBe(true);
+    expect(isRequestOriginAllowed("/v1/articles", "GET", siteOrigin)).toBe(true);
+    expect(localOriginHeaders("/v1/requests", siteOrigin)["access-control-allow-origin"]).toBe(siteOrigin);
   });
 
-  it("rejects state-changing admin requests from unapproved origins", () => {
-    expect(isAdminRequestOriginAllowed("/v1/admin", "POST", "https://attacker.example")).toBe(false);
-    expect(isAdminRequestOriginAllowed("/v1/admin/assets/1", "PUT", "http://127.0.0.1:3001")).toBe(true);
-    expect(isAdminRequestOriginAllowed("/v1/admin/assets/1/replacement", "DELETE", "http://localhost:3001")).toBe(true);
+  it("rejects an unapproved browser origin for both admin and public routes", () => {
+    expect(isRequestOriginAllowed("/v1/admin", "POST", "https://attacker.example")).toBe(false);
+    expect(isRequestOriginAllowed("/v1/requests", "POST", "https://attacker.example")).toBe(false);
+    expect(localOriginHeaders("/v1/admin", "https://attacker.example")).toEqual({});
   });
 
-  it("keeps reads and origin-less service calls outside the browser-origin check", () => {
-    expect(isAdminRequestOriginAllowed("/v1/admin/auth/session", "GET", "https://attacker.example")).toBe(true);
-    expect(isAdminRequestOriginAllowed("/v1/admin", "POST", undefined)).toBe(true);
+  it("uses separate configured origin lists in production", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("CORS_ALLOWED_ORIGINS", "https://www.bizontires.example");
+    vi.stubEnv("CMS_ALLOWED_ORIGINS", "https://cms.bizontires.example");
+
+    expect(isRequestOriginAllowed("/v1/requests", "POST", "https://www.bizontires.example")).toBe(true);
+    expect(isRequestOriginAllowed("/v1/admin", "POST", "https://www.bizontires.example")).toBe(false);
+    expect(isRequestOriginAllowed("/v1/admin", "POST", "https://cms.bizontires.example")).toBe(true);
+    expect(isRequestOriginAllowed("/v1/requests", "POST", "https://cms.bizontires.example")).toBe(false);
+  });
+
+  it("allows origin-less service calls while keeping browser origins scoped", () => {
+    expect(isRequestOriginAllowed("/v1/admin", "POST", undefined)).toBe(true);
+    expect(isRequestOriginAllowed("/v1/requests", "POST", undefined)).toBe(true);
   });
 });

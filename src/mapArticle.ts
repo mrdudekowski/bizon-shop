@@ -9,6 +9,7 @@ type ArticleRow = {
   image_url: string | null;
   show_in_menu: boolean;
   menu_order: number;
+  taxonomy?: string[];
 };
 
 export type CmsArticle = {
@@ -20,6 +21,7 @@ export type CmsArticle = {
   imageUrl: string | null;
   showInMenu: boolean;
   menuOrder: number;
+  taxonomy: string[];
 };
 
 export function mapArticle(row: ArticleRow): CmsArticle {
@@ -32,5 +34,6 @@ export function mapArticle(row: ArticleRow): CmsArticle {
     imageUrl: normalizeImageUrl(row.image_url),
     showInMenu: row.show_in_menu,
     menuOrder: toFiniteNumber(row.menu_order) ?? 0,
+    taxonomy: row.taxonomy ?? [],
   };
 }

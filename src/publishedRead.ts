@@ -28,7 +28,18 @@ import {
 
 export type ReadDatabase = {
   query(sql: string, params?: unknown[]): Promise<Record<string, unknown>[]>;
+  withReadSnapshot?<T>(run: (snapshot: ReadDatabase) => Promise<T>): Promise<T>;
 };
+
+export const PUBLIC_STUB_PAGE_KEYS = [
+  "about",
+  "contact",
+  "warranty",
+  "branding",
+  "become-a-supplier",
+  "privacy-policy",
+  "shop-delivery-returns",
+] as const;
 
 function readStringColumn(rows: Record<string, unknown>[], column: string): string[] {
   return rows.flatMap((row) => (typeof row[column] === "string" ? [row[column]] : []));
@@ -312,7 +323,9 @@ export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch
 
 export async function readArticles(db: ReadDatabase): Promise<CmsArticle[]> {
   const articleRows = await db.query(`
-    SELECT tire_iq_articles.*, media.url AS image_url
+    SELECT tire_iq_articles.*, media.url AS image_url,
+      ARRAY(SELECT taxonomy.value FROM tire_iq_articles_taxonomy taxonomy
+        WHERE taxonomy._parent_id = tire_iq_articles.id ORDER BY taxonomy._order) AS taxonomy
     FROM tire_iq_articles
     LEFT JOIN media ON media.id = tire_iq_articles.featured_image_id
     WHERE tire_iq_articles.status = 'published'
@@ -327,7 +340,9 @@ export async function readArticleBySlug(
 ): Promise<CmsArticle | null> {
   const [articleRow] = await db.query(
     `
-      SELECT tire_iq_articles.*, media.url AS image_url
+      SELECT tire_iq_articles.*, media.url AS image_url,
+        ARRAY(SELECT taxonomy.value FROM tire_iq_articles_taxonomy taxonomy
+          WHERE taxonomy._parent_id = tire_iq_articles.id ORDER BY taxonomy._order) AS taxonomy
       FROM tire_iq_articles
       LEFT JOIN media ON media.id = tire_iq_articles.featured_image_id
       WHERE tire_iq_articles.status = 'published' AND tire_iq_articles.slug = $1
@@ -338,15 +353,7 @@ export async function readArticleBySlug(
   return articleRow ? mapArticle(articleRow as Parameters<typeof mapArticle>[0]) : null;
 }
 
-const STUB_PAGE_KEYS = new Set([
-  "about",
-  "contact",
-  "warranty",
-  "branding",
-  "become-a-supplier",
-  "privacy-policy",
-  "shop-delivery-returns",
-]);
+const STUB_PAGE_KEYS = new Set<string>(PUBLIC_STUB_PAGE_KEYS);
 
 export async function readStubPatch(db: ReadDatabase, key: string): Promise<StubPatch | null> {
   if (!STUB_PAGE_KEYS.has(key)) return null;
