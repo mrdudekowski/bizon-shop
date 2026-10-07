@@ -9,6 +9,16 @@ describe("publish image columns", () => {
     expect(block).toContain("featured_image_id");
   });
 
+  it("publishMaterial persists menu visibility and order", () => {
+    const source = fs.readFileSync(new URL("./postgresAdmin.ts", import.meta.url), "utf8");
+    const start = source.indexOf("async publishMaterial");
+    const block = source.slice(start, source.indexOf("async hideMaterial", start));
+    expect(block).toContain("show_in_menu=$");
+    expect(block).toContain("menu_order=$");
+    expect(block).toContain("draft.showInMenu");
+    expect(block).toContain("draft.menuOrder");
+  });
+
   it("writePage saves home campaign and shop-home hero images to their own columns", () => {
     const source = fs.readFileSync(new URL("./postgresAdmin.ts", import.meta.url), "utf8");
     const start = source.indexOf("async function writePage");

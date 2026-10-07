@@ -2115,8 +2115,8 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       await applyPendingMediaReplacements(draft);
       const rawId = id.slice("article-".length);
       await query(
-        "UPDATE tire_iq_articles SET title=$2, slug=$3, excerpt=$4, content=$5::jsonb, featured_image_id=$6, status='published', updated_at=now() WHERE id=$1",
-        [Number(rawId), draft.title, draft.slug, draft.excerpt, JSON.stringify(lexical(draft.body)), draft.image ? Number(draft.image.assetId) : null],
+        "UPDATE tire_iq_articles SET title=$2, slug=$3, excerpt=$4, content=$5::jsonb, featured_image_id=$6, show_in_menu=$7, menu_order=$8, status='published', updated_at=now() WHERE id=$1",
+        [Number(rawId), draft.title, draft.slug, draft.excerpt, JSON.stringify(lexical(draft.body)), draft.image ? Number(draft.image.assetId) : null, draft.showInMenu, draft.menuOrder],
       );
       const allowedTaxonomy = new Set(["selection", "wear", "pressure", "load", "axles", "quarry", "construction", "tco", "diagnostics"]);
       const taxonomy = [...new Set(Array.isArray(draft.taxonomy) ? draft.taxonomy : [])]
