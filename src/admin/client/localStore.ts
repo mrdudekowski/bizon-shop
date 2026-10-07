@@ -1676,6 +1676,48 @@ function remoteAdminClient(): AdminClient {
     return result;
   };
   return new Proxy({
+    async changeDocumentStatus(entity: StatusEntity, id: string, status: DocumentStatus) {
+      const methodByStatus: Record<StatusEntity, Record<DocumentStatus, string>> = {
+        "tire-direction": {
+          draft: "unpublishDocument",
+          on_site: "publishTireDirection",
+          hidden: "hideTireDirection",
+        },
+        "tire-model": {
+          draft: "unpublishDocument",
+          on_site: "publishTireModel",
+          hidden: "hideTireModel",
+        },
+        "wheel-type": {
+          draft: "unpublishDocument",
+          on_site: "publishWheelType",
+          hidden: "hideWheelType",
+        },
+        "wheel-model": {
+          draft: "unpublishDocument",
+          on_site: "publishWheelModel",
+          hidden: "hideWheelModel",
+        },
+        "shop-category": {
+          draft: "unpublishDocument",
+          on_site: "publishShopCategory",
+          hidden: "hideShopCategory",
+        },
+        "shop-product": {
+          draft: "unpublishDocument",
+          on_site: "publishShopProduct",
+          hidden: "hideShopProduct",
+        },
+        page: { draft: "unpublishDocument", on_site: "publishPage", hidden: "hidePage" },
+        material: {
+          draft: "unpublishDocument",
+          on_site: "publishMaterial",
+          hidden: "hideMaterial",
+        },
+      };
+      const method = methodByStatus[entity][status];
+      return method === "unpublishDocument" ? call(method)(entity, id) : call(method)(id);
+    },
     async retrySiteDeploy() {
       return await request("/v1/admin/site-deploy/retry", { method: "POST" }) as SiteDeployResult;
     },
