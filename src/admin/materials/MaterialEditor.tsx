@@ -34,15 +34,24 @@ export function MaterialEditor({ id }: { id: string }) {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
+    let active = true;
     const client = browserAdminClient();
     void Promise.all([client.getSession(), client.getMaterial(id)]).then(([session, material]) => {
+      if (!active) return;
       setRole(session.role);
       setRecord(material);
+      setLoadError(false);
+    }).catch(() => {
+      if (active) setLoadError(true);
     });
-  }, [id, setRole]);
+    return () => { active = false; };
+  }, [id, setRole, loadAttempt]);
 
+  if (loadError) return <main><p role="alert">Не удалось загрузить материал.</p><button type="button" onClick={() => { setLoadError(false); setLoadAttempt((attempt) => attempt + 1); }}>Повторить</button></main>;
   if (session == null || record == null) return <main><AdminLoading /></main>;
   if (!canEditorPerform(session, "edit_site_pages")) return <SectionAccessNotice title="Материалы" icon="materials" />;
   const draft = record.draft;
@@ -93,7 +102,7 @@ export function MaterialEditor({ id }: { id: string }) {
   async function onDelete() {
     try {
       await browserAdminClient().deleteMaterial(id);
-      router.push("/materials");
+      router.push("/materials/");
     } catch (error) {
       setMessage(actionErrorText(error, "Не удалось удалить"));
     }
@@ -101,7 +110,7 @@ export function MaterialEditor({ id }: { id: string }) {
 
   return (
     <main className="document" data-unsaved={dirty ? "true" : undefined}>
-      <Link className="backLink" href="/materials">← Назад к материалам</Link>
+      <Link className="backLink" href="/materials/">← Назад к материалам</Link>
       <h1>{draft.title || "Материал"}</h1>
       <section className={styles.section}>
         <h2>Карточка</h2>

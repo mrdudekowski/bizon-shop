@@ -17,7 +17,7 @@ export function editorHref(entityType: StatusEntity, entityId: string): string {
   if (entityType === "shop-product") return `/shop/product-editor?id=${id}`;
   if (entityType === "shop-category") return `/shop/category-editor?id=${id}`;
   if (entityType === "page") return `/pages/editor?key=${id}`;
-  return `/materials/editor?id=${id}`;
+  return `/materials/editor/?id=${id}`;
 }
 
 export function changeCount(pack: ChangeSet): number {

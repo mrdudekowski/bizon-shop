@@ -22,7 +22,7 @@ const CATALOG_NAV = [
 
 const CONTENT_NAV = [
   { href: "/pages", label: "Страницы", icon: "pages" },
-  { href: "/materials", label: "Материалы", icon: "materials" },
+  { href: "/materials/", label: "Материалы", icon: "materials" },
 ] as const satisfies readonly { href: string; label: string; icon: IconName }[];
 
 // One request per screen module so the first development open is already warm.
@@ -39,8 +39,8 @@ const ADMIN_SCREEN_ROUTES = [
   "/shop/product-editor?id=1",
   "/pages",
   "/pages/editor?key=about",
-  "/materials",
-  "/materials/editor?id=1",
+  "/materials/",
+  "/materials/editor/?id=1",
   "/media",
   "/publications",
   "/publications/editor?id=1",

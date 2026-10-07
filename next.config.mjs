@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "export",
+  trailingSlash: true,
   // Keep the CMS independent from the public site's lockfile in the parent folder.
   turbopack: {
     root: fileURLToPath(new URL(".", import.meta.url)),

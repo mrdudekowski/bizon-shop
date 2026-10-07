@@ -42,14 +42,20 @@ export function MaterialList() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | DocumentStatus>("all");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [createError, setCreateError] = useState(false);
   const { view, setView } = useCatalogView("materials", items.length);
 
   async function reload() {
+    setLoading(true);
+    setLoadError(false);
     try {
       const client = browserAdminClient();
       const [materials, media] = await Promise.all([client.listMaterials(), client.listAssets()]);
       setItems(materials);
       setAssets(media);
+    } catch {
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -79,12 +85,17 @@ export function MaterialList() {
 
   async function createMaterial() {
     if (!title.trim()) return;
+    setCreateError(false);
     const client = browserAdminClient();
-    const created = await client.createMaterial({ title, kind: "article" });
-    const nextSlug = slugifyTitle(slugTouched ? slug : title);
-    if (nextSlug && nextSlug !== created.draft.slug) await client.saveMaterial(created.id, { ...created.draft, slug: nextSlug });
-    dialogRef.current?.close();
-    router.push(`/materials/editor?id=${encodeURIComponent(created.id)}`);
+    try {
+      const created = await client.createMaterial({ title, kind: "article" });
+      const nextSlug = slugifyTitle(slugTouched ? slug : title);
+      if (nextSlug && nextSlug !== created.draft.slug) await client.saveMaterial(created.id, { ...created.draft, slug: nextSlug });
+      dialogRef.current?.close();
+      router.push(`/materials/editor/?id=${encodeURIComponent(created.id)}`);
+    } catch {
+      setCreateError(true);
+    }
   }
 
   if (session == null) return <main><AdminLoading label="Проверяем доступ…" /></main>;
@@ -93,13 +104,14 @@ export function MaterialList() {
   return (
     <main>
       <div className={styles.pageHead}><div><h1>Материалы</h1><p className="subheading">Экспертные статьи Tire IQ.</p></div>{canCreate ? <button className="primary" type="button" onClick={openCreate}>Добавить материал</button> : null}</div>
+      {createError ? <p role="alert">Не удалось создать материал. Проверьте данные и повторите попытку.</p> : null}
       <div className={styles.catalogControls}>
         <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название материала…" />
         <CatalogViewToggle view={view} onChange={setView} />
       </div>
-      {loading ? <AdminLoading label="Загружаем материалы…" /> : items.length === 0 ? <div className={styles.empty}><Icon name="materials" size={36} /><h2>Материалов пока нет</h2><p>Создайте статью Tire IQ.</p>{canCreate ? <button className="primary" type="button" onClick={openCreate}>Добавить материал</button> : null}</div> : visibleItems.length === 0 ? <div className={styles.empty}><h2>Ничего не найдено</h2><p>Измените запрос или выберите другой статус.</p></div> : <>
+      {loading ? <AdminLoading label="Загружаем материалы…" /> : loadError ? <div role="alert"><p>Не удалось загрузить материалы.</p><button type="button" onClick={() => void reload()}>Повторить</button></div> : items.length === 0 ? <div className={styles.empty}><Icon name="materials" size={36} /><h2>Материалов пока нет</h2><p>Создайте статью Tire IQ.</p>{canCreate ? <button className="primary" type="button" onClick={openCreate}>Добавить материал</button> : null}</div> : visibleItems.length === 0 ? <div className={styles.empty}><h2>Ничего не найдено</h2><p>Измените запрос или выберите другой статус.</p></div> : <>
         <ul className={view === "tiles" ? styles.catalogTiles : styles.catalogList}>{visibleItems.map((item) => (
-          <li key={item.id}><CatalogRow view={view} href={`/materials/editor?id=${encodeURIComponent(item.id)}`} title={item.title} meta="Tire IQ" icon="materials" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeStatus(item.id, nextStatus) : undefined} /></li>
+          <li key={item.id}><CatalogRow view={view} href={`/materials/editor/?id=${encodeURIComponent(item.id)}`} title={item.title} meta="Tire IQ" icon="materials" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeStatus(item.id, nextStatus) : undefined} /></li>
         ))}</ul>
         <div className={styles.listFoot}>Показано {visibleItems.length} из {items.length} материалов</div>
       </>}
