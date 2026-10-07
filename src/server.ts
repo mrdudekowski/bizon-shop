@@ -1,5 +1,5 @@
 import http from "node:http";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import pg from "pg";
 import { dispatchAdminCall } from "./adminDispatch";
 import { isAdminRequestOriginAllowed, localOriginHeaders } from "./adminCors";
@@ -24,6 +24,10 @@ import { LoginThrottle, type LoginAttemptTicket } from "./admin/server/loginThro
 import { createPostgresAdminClient } from "./admin/server/postgresAdmin";
 import { readJsonRequestBody, readRequestBody, RequestBodyTooLarge } from "./readRequestBody";
 import { MediaRejected, MAX_MEDIA_BYTES } from "./storage/putMedia";
+import { normalizeRequest } from "./requests/normalizeRequest";
+import { parseRequestBody, validateRequest } from "./requests/validateRequest";
+import { checkRateLimit, trustedClientAddress } from "./security/rateLimit";
+import { isSiteAffectingPublicationMethod, triggerStaticSiteDeploy } from "./deploy/timewebApps";
 import {
   readArticleBySlug,
   readArticles,
@@ -47,7 +51,9 @@ import {
 
 /** Only used to turn a request path into a URL; the request never leaves this process. */
 const URL_BASE = "http://localhost";
-const PORT = 4000;
+const PORT = Number.parseInt(process.env.PORT ?? "4000", 10);
+const CART_SESSION_COOKIE = "bizon-cart-session-v1";
+const CART_SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 const loginThrottle = new LoginThrottle();
 
 type JsonBody = unknown;
@@ -136,7 +142,34 @@ function authQuery() {
 }
 
 function isSecureRequest(req: http.IncomingMessage): boolean {
-  return req.headers["x-forwarded-proto"] === "https";
+  const protocol = req.headers["x-forwarded-proto"];
+  return process.env.NODE_ENV === "production" || String(protocol ?? "").split(",")[0]?.trim() === "https";
+}
+
+function readCartCookie(header: string | undefined): string | null {
+  for (const part of (header ?? "").split(";")) {
+    const separator = part.indexOf("=");
+    if (separator < 0 || part.slice(0, separator).trim() !== CART_SESSION_COOKIE) continue;
+    try {
+      const token = decodeURIComponent(part.slice(separator + 1).trim());
+      return token || null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function cartCookie(token: string | null, secure: boolean): string {
+  const attributes = [
+    `${CART_SESSION_COOKIE}=${token ?? ""}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    `Max-Age=${token ? CART_SESSION_TTL_SECONDS : 0}`,
+  ];
+  if (secure) attributes.push("Secure");
+  return attributes.join("; ");
 }
 
 function sessionOf(account: AuthenticatedAccount) {
@@ -158,13 +191,29 @@ async function handleRequest(
   const path = url.pathname;
 
   const originHeaders = localOriginHeaders(req.headers.origin);
+  for (const [name, value] of Object.entries(originHeaders)) res.setHeader(name, value);
 
   if (!isAdminRequestOriginAllowed(path, method, req.headers.origin)) {
     sendJson(res, 403, { ok: false, code: "origin_not_allowed" });
     return;
   }
 
-  if (method === "OPTIONS" && (path === "/v1/admin" || path.startsWith("/v1/admin/assets") || path === "/v1/requests" || isAuthPath(path))) {
+  if (path === "/health" && method === "GET") {
+    sendJson(res, 200, { ok: true });
+    return;
+  }
+
+  if (path === "/ready" && method === "GET") {
+    try {
+      await checkBackendReadiness((sql) => getDatabase().query(sql));
+      sendJson(res, 200, { ok: true });
+    } catch {
+      sendJson(res, 503, { ok: false });
+    }
+    return;
+  }
+
+  if (method === "OPTIONS") {
     res.writeHead(204, originHeaders);
     res.end();
     return;
@@ -285,6 +334,10 @@ async function handleRequest(
       }
       const body = (await readJson(req)) as { method?: string; args?: unknown[] };
       const outcome = await dispatchAdminCall(body, account);
+      if (outcome.body.ok && isSiteAffectingPublicationMethod(body.method)) {
+        const deploy = await triggerStaticSiteDeploy();
+        res.setHeader("x-bizon-site-deploy", deploy.status);
+      }
       sendJson(res, outcome.status, outcome.body, originHeaders);
     } catch (error) {
       if (error instanceof RequestBodyTooLarge) {
@@ -296,29 +349,56 @@ async function handleRequest(
     return;
   }
 
+  if (method === "POST" && path === "/v1/admin/site-deploy/retry") {
+    try {
+      const account = await currentAccount(req);
+      if (account == null) {
+        sendJson(res, 401, { ok: false, code: "unauthorized" });
+        return;
+      }
+      if (account.role !== "admin") {
+        sendJson(res, 403, { ok: false, code: "forbidden" });
+        return;
+      }
+      const deploy = await triggerStaticSiteDeploy();
+      res.setHeader("x-bizon-site-deploy", deploy.status);
+      if (deploy.status === "started") {
+        sendJson(res, 200, { ok: true, result: deploy });
+      } else {
+        sendJson(res, deploy.status === "failed" ? 502 : 503, {
+          ok: false,
+          code: deploy.status === "failed" ? "site_deploy_failed" : "site_deploy_not_configured",
+        });
+      }
+    } catch {
+      sendJson(res, 500, { ok: false, code: "site_deploy_failed" });
+    }
+    return;
+  }
+
   if (path === "/v1/cart") {
-    const token = req.headers["x-cart-token"];
-    const cartToken = typeof token === "string" ? token : "";
-    if (!cartToken) {
-      sendJson(res, 400, { ok: false });
+    let cartToken = readCartCookie(req.headers.cookie);
+    if (method === "GET" && !cartToken) {
+      sendJson(res, 200, { ok: true, hasSession: false, items: [] });
       return;
     }
+    if (method === "PUT" && !cartToken) cartToken = randomBytes(32).toString("base64url");
     try {
       const database = getDatabase();
       if (method === "GET") {
-        const items = await readCartSession(database, cartToken);
+        const items = await readCartSession(database, cartToken!);
         sendJson(res, 200, { ok: true, hasSession: items != null, items: items ?? [] });
         return;
       }
       if (method === "PUT") {
         const body = (await readJson(req)) as { items?: unknown };
-        await saveCartSession(database, cartToken, body.items);
-        sendJson(res, 200, { ok: true });
+        await saveCartSession(database, cartToken!, body.items);
+        sendJson(res, 200, { ok: true }, { "set-cookie": cartCookie(cartToken, isSecureRequest(req)) });
         return;
       }
       if (method === "DELETE") {
-        await deleteCartSession(database, cartToken);
-        sendJson(res, 200, { ok: true });
+        if (cartToken) await deleteCartSession(database, cartToken);
+        sendJson(res, 200, { ok: true }, { "set-cookie": cartCookie(null, isSecureRequest(req)) });
         return;
       }
     } catch (error) {
@@ -332,22 +412,54 @@ async function handleRequest(
 
   if (method === "POST" && path === "/v1/requests") {
     try {
-      const body = (await readJson(req)) as StoredRequestInput;
-      if (!body || typeof body.name !== "string" || body.name.trim() === "") {
-        sendJson(res, 400, { ok: false });
+      const rateLimit = checkRateLimit(`requests:${trustedClientAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"]?.toString())}`);
+      if (!rateLimit.allowed) {
+        sendJson(res, 429, { ok: false, error: "rate_limit_exceeded", message: "Too many requests. Please try again later." }, {
+          "retry-after": String(rateLimit.retryAfterSeconds),
+        });
         return;
       }
+      let rawBody: unknown;
+      try {
+        rawBody = await readJson(req);
+      } catch (error) {
+        if (error instanceof RequestBodyTooLarge) throw error;
+        sendJson(res, 400, {
+          ok: false,
+          error: "invalid_request_body",
+          message: "Invalid request body",
+        });
+        return;
+      }
+      const parsed = parseRequestBody(rawBody);
+      if (!parsed.ok) {
+        sendJson(res, 400, { ok: false, error: parsed.error, message: parsed.message });
+        return;
+      }
+      const validated = validateRequest(parsed.body);
+      if (!validated.ok) {
+        sendJson(res, 400, { ok: false, error: validated.error, message: validated.message });
+        return;
+      }
+      const forwardedFor = req.headers["x-forwarded-for"]?.toString();
+      const trustedAddress = trustedClientAddress(req.socket.remoteAddress, forwardedFor);
+      const body = normalizeRequest(validated.body, {
+        sourceIp: trustedAddress,
+        userAgent: req.headers["user-agent"],
+      }) as StoredRequestInput;
       const database = getDatabase() as ReadDatabase & {
         transaction<T>(run: (query: ReadDatabase["query"]) => Promise<T>): Promise<T>;
       };
       const requestId = await database.transaction((query) =>
         insertRequest({ query }, body),
       );
-      sendJson(res, 201, { ok: true, requestId });
+      sendJson(res, 201, { ok: true, requestId, message: "Заявка принята" });
     } catch (error) {
-      sendJson(res, error instanceof RequestBodyTooLarge ? 413 : 500, {
+      sendJson(res, error instanceof RequestBodyTooLarge ? 413 : 502, {
         ok: false,
-        ...(error instanceof RequestBodyTooLarge ? { code: "request_too_large" } : {}),
+        ...(error instanceof RequestBodyTooLarge
+          ? { error: "request_too_large", message: "Request is too large" }
+          : { error: "request_create_failed", message: "Could not save the request" }),
       });
     }
     return;
@@ -355,21 +467,6 @@ async function handleRequest(
 
   if (method !== "GET") {
     sendJson(res, 404, { ok: false });
-    return;
-  }
-
-  if (path === "/health") {
-    sendJson(res, 200, { ok: true });
-    return;
-  }
-
-  if (path === "/ready") {
-    try {
-      await checkBackendReadiness((sql) => getDatabase().query(sql));
-      sendJson(res, 200, { ok: true });
-    } catch {
-      sendJson(res, 503, { ok: false });
-    }
     return;
   }
 
@@ -594,13 +691,9 @@ async function handleRequest(
   }
 }
 
-/**
- * Both loopback addresses, so the CMS reaches the API on whichever hostname the page
- * was opened with. Staying on loopback keeps the port off the network.
- */
-const LOOPBACK_HOSTS = ["127.0.0.1", "::1"];
+const LISTEN_HOSTS = process.env.NODE_ENV === "production" ? ["0.0.0.0"] : ["127.0.0.1", "::1"];
 
-const servers = LOOPBACK_HOSTS.map(() =>
+const servers = LISTEN_HOSTS.map(() =>
   http.createServer((req, res) => {
     const requestId = randomUUID();
     const startedAt = performance.now();
@@ -628,13 +721,12 @@ prepareAuth().then(
   () => {
     console.log("CMS accounts ready");
     servers.forEach((server, index) => {
-      const host = LOOPBACK_HOSTS[index];
+      const host = LISTEN_HOSTS[index];
       server.on("error", (error: NodeJS.ErrnoException) => {
-        // A machine without IPv6 loopback still serves fine on the other address.
         console.error(`backend-app cannot listen on ${host}:${PORT}:`, error.message);
       });
       server.listen(PORT, host, () => {
-        console.log(`backend-app listening on http://${host === "::1" ? "localhost" : host}:${PORT}`);
+        console.log(`backend-app listening on ${host}:${PORT}`);
       });
     });
   },

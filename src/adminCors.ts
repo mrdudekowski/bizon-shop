@@ -1,24 +1,43 @@
-const LOCAL_CMS_ORIGIN = /^https?:\/\/(127\.0\.0\.1|localhost):3001$/;
 const STATE_CHANGING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
+function allowedOrigins(): Set<string> {
+  const configured = (process.env.CORS_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  if (configured.length > 0) return new Set(configured);
+  if (process.env.NODE_ENV === "production") return new Set();
+  return new Set([
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+  ]);
+}
+
 export function isAdminRequestOriginAllowed(
-  path: string,
-  method: string,
+  _path: string,
+  _method: string,
   origin: string | undefined,
 ): boolean {
-  const isAdminPath = path === "/v1/admin" || path.startsWith("/v1/admin/");
-  if (!isAdminPath || !STATE_CHANGING_METHODS.has(method.toUpperCase()) || !origin) return true;
-  return LOCAL_CMS_ORIGIN.test(origin);
+  // Requests from other servers and command-line tools have no Origin header.
+  if (!origin) return true;
+  return allowedOrigins().has(origin);
 }
 
 export function localOriginHeaders(origin: string | undefined): Record<string, string> {
-  if (!origin || !LOCAL_CMS_ORIGIN.test(origin)) return {};
+  if (!origin || !allowedOrigins().has(origin)) return {};
   return {
     "access-control-allow-origin": origin,
-    "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "access-control-allow-headers": "content-type",
-    // The CMS session lives in a cookie, so the browser only sends it when credentials are allowed.
     "access-control-allow-credentials": "true",
+    "access-control-expose-headers": "x-bizon-site-deploy",
+    "access-control-max-age": "600",
     vary: "origin",
   };
+}
+
+export function isStateChangingMethod(method: string): boolean {
+  return STATE_CHANGING_METHODS.has(method.toUpperCase());
 }

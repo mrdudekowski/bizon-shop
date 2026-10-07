@@ -4,18 +4,19 @@
   "type": "module",
   "scripts": {
     "dev": "tsx --env-file=.env src/server.ts",
+    "start": "tsx src/server.ts",
     "db:migrate": "tsx --env-file=.env src/migrate.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1141.0",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "tsx": "^4.20.5"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "@types/pg": "^8.23.1",
-    "tsx": "^4.20.5",
     "typescript": "5.8.2",
     "vitest": "^5.0.3"
   }
