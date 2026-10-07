@@ -2,7 +2,6 @@ import type {
   CmsArticle,
   CmsProduct,
   CmsShopCategory,
-  CmsStory,
   CmsTireAdvantage,
   CmsTireDocument,
   CmsTireModel,
@@ -15,14 +14,95 @@ import type {
   TireModelRouteParam,
   WheelModelRouteParam,
 } from "./types";
-import { fetchPublishedJson, publishedApiEnabled } from "./publishedClient";
+import { fetchPublishedJson, fetchPublishedList, publishedApiEnabled } from "./publishedClient";
 import type {
   CatalogAxle,
   OperatingCondition,
   VehicleType,
 } from "@/lib/selection/options";
 
-const emptySlugs: string[] = [];
+type PayloadRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is PayloadRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasStrings(value: unknown, ...keys: string[]): value is PayloadRecord {
+  return isRecord(value) && keys.every((key) => typeof value[key] === "string");
+}
+
+function isStringArray(value: unknown): boolean {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isShopVariant(value: unknown): boolean {
+  return hasStrings(value, "id")
+    && typeof value.priceOnRequest === "boolean"
+    && typeof value.available === "boolean"
+    && isStringArray(value.images);
+}
+
+function isShopProduct(value: unknown): boolean {
+  return hasStrings(value, "slug", "name", "categorySlug", "type", "brand", "descriptionShort", "descriptionLong")
+    && isStringArray(value.gallery)
+    && Array.isArray(value.variants)
+    && value.variants.every(isShopVariant)
+    && typeof value.priceOnRequest === "boolean"
+    && typeof value.available === "boolean";
+}
+
+function isShopCategory(value: unknown): boolean {
+  return hasStrings(value, "slug", "name", "description")
+    && typeof value.showInMenu === "boolean"
+    && typeof value.sortOrder === "number"
+    && (value.carousel === undefined || Array.isArray(value.carousel));
+}
+
+function isArticle(value: unknown): boolean {
+  return hasStrings(value, "slug", "title", "excerpt", "publishedAt")
+    && typeof value.showInMenu === "boolean"
+    && typeof value.menuOrder === "number"
+    && isRecord(value)
+    && Object.prototype.hasOwnProperty.call(value, "content");
+}
+
+function isTireType(value: unknown): boolean {
+  return hasStrings(value, "slug", "name")
+    && (value.description === undefined || typeof value.description === "string" || value.description === null)
+    && (value.descriptionShort === undefined || typeof value.descriptionShort === "string" || value.descriptionShort === null)
+    && (value.sortOrder === undefined || typeof value.sortOrder === "number")
+    && (value.showInMenu === undefined || typeof value.showInMenu === "boolean");
+}
+
+function isTireModel(value: unknown): boolean {
+  return hasStrings(value, "id", "slug", "name", "tireTypeSlug", "tireTypeName");
+}
+
+function isTireVariant(value: unknown): boolean {
+  return hasStrings(value, "id", "size")
+    && typeof value.available === "boolean"
+    && typeof value.priceOnRequest === "boolean";
+}
+
+function isWheelType(value: unknown): boolean {
+  return hasStrings(value, "slug", "name", "description", "shortDescription")
+    && typeof value.sortOrder === "number";
+}
+
+function isWheelModel(value: unknown): boolean {
+  return hasStrings(value, "id", "slug", "name", "wheelTypeSlug", "wheelTypeName", "descriptionShort", "descriptionLong")
+    && typeof value.showInMenu === "boolean"
+    && typeof value.menuOrder === "number"
+    && Array.isArray(value.gallery)
+    && value.gallery.every((image) => hasStrings(image, "url", "alt", "label"));
+}
+
+function isWheelVariant(value: unknown): boolean {
+  return hasStrings(value, "id", "modelId", "sizeLabel")
+    && typeof value.available === "boolean"
+    && typeof value.priceOnRequest === "boolean";
+}
+
 
 type BackendTireType = {
   slug: string;
@@ -42,7 +122,7 @@ type BackendTireModel = {
   name: string;
   tireTypeSlug: string;
   tireTypeName: string;
-  applicationCategory?: string;
+  applicationTypes?: string[];
   brand?: string;
   descriptionShort?: string;
   descriptionLong?: string;
@@ -150,13 +230,14 @@ function normalizeTireType(raw: BackendTireType): CmsTireType {
 }
 
 function normalizeTireModel(raw: BackendTireModel): CmsTireModel {
+  const applicationTypes = asStringArray(raw.applicationTypes);
   return {
     id: String(raw.id),
     slug: raw.slug,
     name: raw.name,
     tireTypeSlug: raw.tireTypeSlug,
     tireTypeName: raw.tireTypeName,
-    applicationCategory: raw.applicationCategory ?? "",
+    applicationTypes,
     brand: raw.brand ?? "",
     descriptionShort: raw.descriptionShort ?? "",
     descriptionLong: raw.descriptionLong ?? "",
@@ -206,7 +287,7 @@ export async function getShopProducts(options?: GetShopProductsOptions): Promise
   const path = category
     ? `/v1/shop/products?category=${encodeURIComponent(category)}`
     : "/v1/shop/products";
-  return (await fetchPublishedJson<CmsProduct[]>(path)) ?? [];
+  return fetchPublishedList<CmsProduct>(path, isShopProduct);
 }
 
 export async function getShopProductsByCategorySlug(slug: string): Promise<CmsProduct[]> {
@@ -229,7 +310,7 @@ export async function getShopCategories(): Promise<CmsShopCategory[]> {
   if (!publishedApiEnabled()) {
     return [];
   }
-  return (await fetchPublishedJson<CmsShopCategory[]>("/v1/shop/categories")) ?? [];
+  return fetchPublishedList<CmsShopCategory>("/v1/shop/categories", isShopCategory);
 }
 
 export async function getShopCategoryBySlug(slug: string): Promise<CmsShopCategory | null> {
@@ -248,8 +329,7 @@ export async function getTireIQArticles(_topic?: string): Promise<CmsArticle[]> 
   if (!publishedApiEnabled()) {
     return [];
   }
-  const articles = await fetchPublishedJson<CmsArticle[]>("/v1/articles");
-  return articles ?? [];
+  return fetchPublishedList<CmsArticle>("/v1/articles", isArticle);
 }
 
 export async function getTireIQArticleBySlug(slug: string): Promise<CmsArticle | null> {
@@ -264,24 +344,12 @@ export async function getAllTireIQSlugs(): Promise<string[]> {
   return articles.map((article) => article.slug);
 }
 
-export async function getPeopleStories(): Promise<CmsStory[]> {
-  return [];
-}
-
-export async function getPeopleStoryBySlug(_slug: string): Promise<CmsStory | null> {
-  return null;
-}
-
-export async function getAllPeopleStorySlugs(): Promise<string[]> {
-  return emptySlugs;
-}
-
 export async function getTireTypes(): Promise<CmsTireType[]> {
   if (!publishedApiEnabled()) {
     return [];
   }
-  const types = await fetchPublishedJson<BackendTireType[]>("/v1/tires/types");
-  return (types ?? []).map(normalizeTireType);
+  const types = await fetchPublishedList<BackendTireType>("/v1/tires/types", isTireType);
+  return types.map(normalizeTireType);
 }
 
 export async function getTireTypeBySlug(slug: string): Promise<CmsTireType | null> {
@@ -303,10 +371,11 @@ export async function getTireModelsByTypeSlug(slug: string): Promise<CmsTireMode
   if (!publishedApiEnabled()) {
     return [];
   }
-  const models = await fetchPublishedJson<BackendTireModel[]>(
+  const models = await fetchPublishedList<BackendTireModel>(
     `/v1/tires/types/${encodeURIComponent(slug)}/models`,
+    isTireModel,
   );
-  return (models ?? []).map(normalizeTireModel);
+  return models.map(normalizeTireModel);
 }
 
 export async function getTireModelByTypeAndSlug(
@@ -354,17 +423,18 @@ export async function getTireVariantsByModelId(modelId: string): Promise<CmsTire
   if (!publishedApiEnabled()) {
     return [];
   }
-  const variants = await fetchPublishedJson<BackendTireVariant[]>(
+  const variants = await fetchPublishedList<BackendTireVariant>(
     `/v1/tires/models/${encodeURIComponent(modelId)}/variants`,
+    isTireVariant,
   );
-  return (variants ?? []).map(normalizeTireVariant);
+  return variants.map(normalizeTireVariant);
 }
 
 export async function getWheelTypes(): Promise<CmsWheelType[]> {
   if (!publishedApiEnabled()) {
     return [];
   }
-  return (await fetchPublishedJson<CmsWheelType[]>("/v1/wheels/types")) ?? [];
+  return fetchPublishedList<CmsWheelType>("/v1/wheels/types", isWheelType);
 }
 
 export async function getWheelTypeBySlug(slug: string): Promise<CmsWheelType | null> {
@@ -383,10 +453,11 @@ export async function getWheelModelsByTypeSlug(slug: string): Promise<CmsWheelMo
   if (!publishedApiEnabled()) {
     return [];
   }
-  const models = await fetchPublishedJson<CmsWheelModel[]>(
+  const models = await fetchPublishedList<CmsWheelModel>(
     `/v1/wheels/types/${encodeURIComponent(slug)}/models`,
+    isWheelModel,
   );
-  return models ?? [];
+  return models;
 }
 
 export async function getWheelModelByTypeAndSlug(
@@ -431,18 +502,20 @@ export async function getWheelVariantsByModelId(modelId: string): Promise<CmsWhe
   if (!publishedApiEnabled()) {
     return [];
   }
-  const variants = await fetchPublishedJson<CmsWheelVariant[]>(
+  const variants = await fetchPublishedList<CmsWheelVariant>(
     `/v1/wheels/models/${encodeURIComponent(modelId)}/variants`,
+    isWheelVariant,
   );
-  return variants ?? [];
+  return variants;
 }
 
 export async function getWheelVariantsByTypeSlug(slug: string): Promise<CmsWheelVariant[]> {
   if (!publishedApiEnabled()) {
     return [];
   }
-  const variants = await fetchPublishedJson<CmsWheelVariant[]>(
+  const variants = await fetchPublishedList<CmsWheelVariant>(
     `/v1/wheels/types/${encodeURIComponent(slug)}/variants`,
+    isWheelVariant,
   );
-  return variants ?? [];
+  return variants;
 }

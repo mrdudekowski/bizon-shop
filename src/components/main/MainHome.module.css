@@ -201,6 +201,7 @@
   pointer-events: none;
 }
 .heroCopy h1 { max-width: 10ch; margin: 0; font-size: var(--type-hero); font-weight: var(--weight-display); line-height: var(--leading-display); letter-spacing: var(--tracking-display); text-wrap: balance; }
+.heroAccent { color: var(--color-accent-coral); }
 .heroCopy > p:not(.eyebrow) { margin: 0; color: var(--color-on-dark-subtle); font-size: var(--type-lead); line-height: var(--leading-body); }
 .heroControls {
   display: grid;
@@ -500,11 +501,6 @@
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
-.assortmentIcons {
-  justify-content: flex-start;
-  padding-top: 10px;
-  --advantage-icon-size: 2.25rem;
-}
 .expertiseBanner {
   position: relative;
   display: grid;
@@ -584,64 +580,207 @@
   color: rgba(255, 255, 255, .82);
   font-size: .68rem;
   font-weight: 700;
-  letter-spacing: .16em;
+  letter-spacing: var(--tracking-brand-emphasis);
 }
 .branding {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  min-height: min(88svh, 44rem);
   overflow: hidden;
   isolation: isolate;
 }
 :global(.section.section--dark).branding {
-  padding-block: clamp(2.5rem, 8vh, 5.5rem);
+  padding-block: 0;
+  box-sizing: border-box;
 }
-.brandingMedia {
+.brandingCompare {
   position: absolute;
   inset: 0;
   z-index: 0;
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  user-select: none;
+  touch-action: pan-y;
+  cursor: ew-resize;
+  --split: 50%;
 }
-.brandingMedia :global(img) {
+.brandingLayer,
+.brandingLayerAfter {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.brandingLayer :global(img),
+.brandingLayerAfter :global(img) {
   object-fit: cover;
-  object-position: 42% center;
+  object-position: 62% center;
+}
+.brandingLayerAfter {
+  clip-path: inset(0 0 0 var(--split));
+}
+.brandingHandle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--split);
+  z-index: 1;
+  width: 2px;
+  pointer-events: none;
+  background: #fff;
+  transform: translateX(-50%);
+}
+.brandingHandleKnob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: #111;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.28);
+  transform: translate(-50%, -50%);
+}
+.brandingHandleKnob svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+.brandingHandleKnob path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.brandingRange {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  cursor: ew-resize;
+  outline: none;
+  background: transparent;
+  pointer-events: none;
+  touch-action: pan-y;
+}
+.brandingRange::-webkit-slider-runnable-track {
+  height: 100%;
+  background: transparent;
+}
+.brandingRange::-webkit-slider-thumb {
+  appearance: none;
+  width: 2.75rem;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+.brandingRange::-moz-range-track {
+  height: 100%;
+  background: transparent;
+  border: 0;
+}
+.brandingRange::-moz-range-thumb {
+  width: 2.75rem;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.brandingCompare:has(.brandingRange:focus-visible) .brandingHandleKnob {
+  outline: var(--focus-outline);
+  outline-offset: 3px;
 }
 .brandingOverlay {
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.22) 38%, rgba(0, 0, 0, 0.08) 52%, rgba(0, 0, 0, 0.55) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, transparent 28%, transparent 62%, rgba(0, 0, 0, 0.82) 100%);
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.72) 0%,
+    rgba(0, 0, 0, 0.32) 28%,
+    rgba(0, 0, 0, 0.04) 48%,
+    transparent 58%
+  );
 }
 .branding .inner {
   position: relative;
   z-index: 2;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: clamp(1.25rem, 4vh, 2.5rem);
-}
-.brandingHero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: clamp(2rem, 5vw, 4rem);
-  align-items: center;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
+  align-content: center;
+  gap: 1.5rem;
+  box-sizing: border-box;
+  min-height: min(88svh, 44rem);
+  padding-block: clamp(4.5rem, 12vh, 6.5rem) 4.5rem;
+  pointer-events: none;
 }
 .brandingCopy {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  align-content: center;
   justify-items: start;
   gap: 0.85rem;
   width: 100%;
+  max-width: min(32rem, 100%);
+  min-width: 0;
+}
+.brandingCta {
+  pointer-events: auto;
+}
+.brandingCaptions {
+  position: absolute;
+  right: var(--page-gutter);
+  bottom: calc(var(--header-height) + 1.25rem);
+  left: var(--page-gutter);
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  width: auto;
   max-width: 100%;
   min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-brand-caption);
+  text-transform: uppercase;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.55);
+}
+.brandingCaption,
+.brandingCaptionAfter {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.brandingCaption::before,
+.brandingCaptionAfter::before {
+  content: "";
+  width: 1.75rem;
+  height: 1px;
+  background: currentColor;
+}
+.brandingCaption {
+  color: var(--color-on-dark);
+}
+.brandingCaptionAfter {
+  justify-self: end;
+  color: var(--color-primary);
 }
 .brandingCopy h2 {
   width: max-content;
@@ -672,92 +811,6 @@
 }
 .resume .inner > p {
   color: var(--color-muted);
-}
-.brandingOffers {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  justify-items: stretch;
-  gap: 0.85rem;
-  width: 100%;
-  max-width: min(30rem, 100%);
-  min-width: 0;
-  justify-self: end;
-}
-.brandingOffer {
-  position: relative;
-  isolation: isolate;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: center;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  min-height: 6.5rem;
-  padding: 1.35rem 1.5rem;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--bizon-white) 12%, transparent);
-  border-radius: var(--radius-card);
-  background: color-mix(in srgb, var(--bizon-white) 8%, var(--bizon-black));
-  color: var(--color-on-dark);
-  transition: border-color var(--transition-fast);
-}
-.brandingOffer:hover {
-  border-color: color-mix(in srgb, var(--bizon-white) 28%, transparent);
-}
-.brandingOffer:focus-visible {
-  outline: var(--focus-outline);
-  outline-offset: var(--focus-offset);
-}
-.brandingOfferCopy {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.2rem;
-  min-width: 0;
-}
-.brandingOfferCopy strong {
-  font-size: 1.125rem;
-  font-weight: 650;
-  letter-spacing: var(--tracking-body);
-  text-transform: uppercase;
-}
-.brandingOfferCopy span {
-  color: var(--color-on-dark-subtle);
-  font-size: 0.875rem;
-  line-height: 1.45;
-}
-.brandingOffer > :not(.brandingOfferMedia) {
-  position: relative;
-  z-index: 1;
-}
-.brandingOfferMedia {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  overflow: hidden;
-}
-.brandingOfferMedia::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.42) 52%, rgba(0, 0, 0, 0.18) 100%);
-}
-.brandingOfferMedia :global(img) {
-  object-fit: cover;
-  object-position: 80% center;
-  transform: scale(1.55);
-  transform-origin: 80% center;
-}
-.brandingOfferMediaLogo :global(img) {
-  object-position: 78% 38%;
-  transform-origin: 78% 40%;
-}
-.brandingOfferMediaInscriptions :global(img) {
-  object-position: 100% 34%;
-  transform: scale(1.28) translateX(24%);
-  transform-origin: 100% 34%;
 }
 .shopLead {
   position: relative;
@@ -862,14 +915,9 @@
   .assortmentContent { width: min(var(--container-max), calc(100% - (var(--page-gutter) * 2))); }
 }
 @media (min-width: 1024px) {
-  :global(.section.section--dark).branding {
+  :global(.section.section--dark).branding,
+  .branding .inner {
     min-height: 100svh;
-    box-sizing: border-box;
-  }
-  .brandingHero {
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-    gap: clamp(2rem, 5vw, 4rem);
-    min-height: calc(100svh - clamp(5rem, 16vh, 11rem));
   }
 }
 @media (max-width: 767px) {

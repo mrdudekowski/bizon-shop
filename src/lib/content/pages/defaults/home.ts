@@ -8,7 +8,7 @@ export const HOME_PAGE_DEFAULTS: HomePageContent = {
   seoDescription: undefined,
   hero: {
     eyebrow: "BIZON TIRES · PROFESSIONAL SERIES",
-    title: "Грузовые шины под условия работы вашего парка",
+    title: "Шины для больших задач",
     lead: "Модель выбирается по технике, оси, нагрузке и маршруту — затем подтверждаем типоразмер, совместимость и наличие.",
     imageUrl: PREMIUM_MEDIA.hero,
     imageAlt: "Крупный план грузовой шины на тёмном фоне",

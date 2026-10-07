@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
+import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { TireDirectionPage } from "@/components/catalog/TireDirectionPage";
 import { TireModelStage } from "@/components/catalog/TireModelStage";
 import { getTireCategoryBySlug } from "@/lib/catalog/tireCategories";
@@ -13,6 +14,7 @@ import {
 } from "@/lib/content";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { createProductStructuredData } from "@/lib/seo/structuredData";
+import { loadPublished } from "@/lib/content/loadPublished";
 
 type PageProps = {
   params: Promise<{ tireTypeSlug: string; segments: string[] }>;
@@ -20,10 +22,15 @@ type PageProps = {
 };
 
 export async function generateStaticParams() {
-  const [routes, catalog] = await Promise.all([
-    getAllTireModelRouteParams(),
-    getPublishedTireCatalog(),
-  ]);
+  const loaded = await loadPublished(async () => {
+    const [routes, catalog] = await Promise.all([
+      getAllTireModelRouteParams(),
+      getPublishedTireCatalog(),
+    ]);
+    return { routes, catalog };
+  });
+  if (loaded.kind === "unavailable") return [];
+  const { routes, catalog } = loaded.value;
   return routes.map((route) => ({
     tireTypeSlug: route.tireTypeSlug,
     segments:
@@ -41,7 +48,8 @@ export async function generateMetadata({ params }: PageProps) {
   const category = segments.length >= 1 ? getTireCategoryBySlug(segments[0]) : undefined;
 
   if (category && segments.length === 1) {
-    const tireType = await getTireTypeBySlug(tireTypeSlug);
+    const loaded = await loadPublished(() => getTireTypeBySlug(tireTypeSlug));
+    const tireType = loaded.kind === "ok" ? loaded.value : null;
     if (!tireType) return {};
     return createPageMetadata({
       title: `${category.name} — ${tireType.name}`,
@@ -52,9 +60,17 @@ export async function generateMetadata({ params }: PageProps) {
 
   const modelSlug = segments.length === 2 ? segments[1] : segments[0];
   if (!modelSlug) return {};
-  const model = await getTireModelByTypeAndSlug(tireTypeSlug, modelSlug);
+  const loaded = await loadPublished(async () => {
+    const model = await getTireModelByTypeAndSlug(tireTypeSlug, modelSlug);
+    if (!model) return null;
+    const catalog = await getPublishedTireCatalog();
+    return { model, catalog };
+  });
+  if (loaded.kind === "unavailable") return {};
+  const modelData = loaded.value;
+  const model = modelData?.model;
   if (!model) return {};
-  const catalog = await getPublishedTireCatalog();
+  const catalog = modelData.catalog;
   const catalogModel = catalog.directions
     .find((direction) => direction.slug === tireTypeSlug)
     ?.models.find((item) => item.slug === modelSlug);
@@ -74,7 +90,16 @@ async function TireCategoryRoute({
   categorySlug: string;
   rawFilters: Record<string, string | string[] | undefined>;
 }) {
-  const catalog = await getPublishedTireCatalog();
+  const loaded = await loadPublished(getPublishedTireCatalog);
+  if (loaded.kind === "unavailable") {
+    return (
+      <PublishedContentUnavailable
+        title="Каталог шин временно недоступен"
+        message="Не получилось загрузить модели. Попробуйте ещё раз через минуту."
+      />
+    );
+  }
+  const catalog = loaded.value;
   const direction = catalog.directions.find((item) => item.slug === tireTypeSlug);
   if (!direction || !getTireCategoryBySlug(categorySlug)) notFound();
 
@@ -96,18 +121,31 @@ async function TireModelRoute({
   modelSlug: string;
   requestedPath: string;
 }) {
-  const [catalog, model] = await Promise.all([
-    getPublishedTireCatalog(),
-    getTireModelByTypeAndSlug(tireTypeSlug, modelSlug),
-  ]);
+  const loaded = await loadPublished(async () => {
+    const [catalog, model] = await Promise.all([
+      getPublishedTireCatalog(),
+      getTireModelByTypeAndSlug(tireTypeSlug, modelSlug),
+    ]);
+    if (!model) return null;
+    const variants = await getTireVariantsByModelId(model.id);
+    return { catalog, model, variants };
+  });
+  if (loaded.kind === "unavailable") {
+    return (
+      <PublishedContentUnavailable
+        title="Каталог шин временно недоступен"
+        message="Не получилось загрузить модель. Попробуйте ещё раз через минуту."
+      />
+    );
+  }
+  if (!loaded.value) notFound();
+  const { catalog, model } = loaded.value;
   const catalogModel = catalog.directions
     .find((direction) => direction.slug === tireTypeSlug)
     ?.models.find((item) => item.slug === modelSlug);
-  if (!model) notFound();
-
   if (catalogModel && requestedPath !== catalogModel.href) redirect(catalogModel.href);
 
-  const variants = await getTireVariantsByModelId(model.id);
+  const { variants } = loaded.value;
   const modelPath =
     catalogModel?.href || requestedPath || `/models/${tireTypeSlug}/${modelSlug}`;
   const hydratedModel = catalogModel ?? {

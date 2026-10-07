@@ -79,9 +79,9 @@ export const CATALOG_AXES: CatalogAxis[] = [
       },
       {
         type: "select",
-        id: "applicationCategory",
+        id: "applicationTypes",
         label: "Сегмент",
-        filterField: "applicationCategory",
+        filterField: "applicationTypes",
         options: TIRE_APPLICATION_CATEGORIES,
       },
     ],
@@ -149,10 +149,9 @@ export const CATALOG_AXES: CatalogAxis[] = [
 export const contentDashboardSection: CatalogDashboardSection = {
   id: "content",
   title: "Контент",
-  description: "Статьи Tire IQ и истории клиентов People Stories.",
+  description: "Экспертные статьи Tire IQ.",
   items: [
     { label: "Tire IQ", collection: "tire-iq-articles" },
-    { label: "People Stories", collection: "people-stories" },
   ],
 };
 

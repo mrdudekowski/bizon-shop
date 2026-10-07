@@ -1,4 +1,4 @@
-import { getTireCategoryByValue } from "@/lib/catalog/tireCategories";
+import { getModelApplicationCategories } from "@/lib/catalog/tireCategories";
 import type { CmsTireModel, CmsTireType } from "@/lib/content/types";
 
 export type TireCatalogModel = CmsTireModel & {
@@ -15,7 +15,7 @@ export type TireCatalogReadModel = {
 };
 
 export function getModelHref(model: CmsTireModel): string {
-  const category = getTireCategoryByValue(model.applicationCategory);
+  const category = getModelApplicationCategories(model)[0];
   const categoryPath = category ? `/${category.slug}` : "";
   return `/models/${model.tireTypeSlug}${categoryPath}/${model.slug}`;
 }

@@ -90,25 +90,25 @@ describe("shopCategoryPresentation", () => {
     });
   });
 
-  it("rotates up to four carousel frames per category and keeps a title slide when photos are missing", () => {
+  it("does not show hard-coded categories when the published CMS list is empty", () => {
+    expect(shopCategoryIndexCards([])).toEqual([]);
+  });
+
+  it("uses one gallery photo per category", () => {
     const slides = shopHomeCarouselSlides([
       {
         ...categories[0]!,
         carousel: [
           { title: "Стоянка у воды", imageUrl: "/camp-1.jpg" },
-          { title: "", imageUrl: "/camp-2.jpg" },
-          { title: "Без фото", imageUrl: null },
+          { title: "Лишний кадр", imageUrl: "/camp-2.jpg" },
         ],
       },
       categories[1]!,
     ]);
-    expect(slides.map((slide) => slide.title)).toEqual([
-      "Стоянка у воды",
-      "Кемпинг и путешествия",
-      "Комфорт в автомобиле",
+    expect(slides.map((slide) => ({ id: slide.id, title: slide.title, imageUrl: slide.imageUrl }))).toEqual([
+      { id: "outdoor", title: "Кемпинг и путешествия", imageUrl: "/camp-1.jpg" },
+      { id: "accessories", title: "Комфорт в автомобиле", imageUrl: null },
     ]);
-    expect(slides[1]?.imageUrl).toBe("/camp-2.jpg");
-    expect(slides[2]?.imageUrl).toBeNull();
   });
 
   it("builds category cards from the menu icon", () => {

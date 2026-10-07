@@ -29,7 +29,7 @@ const model = {
   name: "DSR158",
   tireTypeSlug: "tbr",
   tireTypeName: "TBR",
-  applicationCategory: "regional",
+  applicationTypes: ["regional"],
   brand: "DOUBLESTAR",
   descriptionShort: "Региональная ведущая шина",
   descriptionLong: "Для региональных маршрутов",

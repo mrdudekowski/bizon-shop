@@ -6,6 +6,7 @@ import { LexicalContent } from "@/components/content/LexicalContent";
 import { CatalogProductGallery } from "@/components/catalog/CatalogProductGallery";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { WheelVariantsTable } from "@/components/catalog/WheelVariantsTable";
+import { ForgedConfigurator } from "@/components/shop/ForgedConfigurator";
 import { getWheelConstructionMethodLabel } from "@/lib/content/wheelConstructionMethod";
 import type { CmsWheelModel, CmsWheelType, CmsWheelVariant } from "@/lib/content/types";
 
@@ -50,7 +51,7 @@ export function WheelModelStage({
           ]}
         />
 
-        <section className={styles.productStage} aria-labelledby="wheel-stage-title">
+        <section className={styles.productStage} aria-label={model.name}>
           <CatalogProductGallery
             images={gallery}
             fallbackKey={model.slug}
@@ -59,7 +60,6 @@ export function WheelModelStage({
 
           <div className={styles.productPanel}>
             <p className={styles.eyebrow}>{model.series || wheelType.name}</p>
-            <h2 id="wheel-stage-title">Параметры под ваш автомобиль</h2>
             <LexicalContent data={model.descriptionLong || model.descriptionShort} />
             <p>
               Выберите размер и конфигурацию, затем подтвердите совместимость с автомобилем
@@ -109,6 +109,17 @@ export function WheelModelStage({
             </p>
           </div>
         </section>
+
+        {wheelType.slug === "forged" ? (
+          <ForgedConfigurator
+            model={{
+              id: model.id,
+              slug: model.slug,
+              name: model.name,
+              finish: model.series?.trim() || "",
+            }}
+          />
+        ) : null}
 
         <WheelVariantsTable model={model} variants={variants} modelPath={modelPath} />
 

@@ -11,7 +11,7 @@ const model = {
   name: "DSR158",
   tireTypeSlug: "tbr",
   tireTypeName: "TBR",
-  applicationCategory: "regional",
+  applicationTypes: ["regional"],
   brand: "BIZON",
   descriptionShort: "short",
   descriptionLong: "long",
@@ -71,7 +71,6 @@ describe("buildMainDualPaneMenuSections", () => {
     expect(sections.find((section) => section.id === "about")?.items.map((item) => item.id)).toEqual([
       "about-page",
       "contact",
-      "stories",
       "warranty",
       "supplier",
     ]);

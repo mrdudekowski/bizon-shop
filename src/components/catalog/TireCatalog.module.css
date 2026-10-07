@@ -10,6 +10,20 @@
   padding-top: clamp(0.5rem, 1.5vw, 1rem);
 }
 
+.modelPage :global(.page-header) {
+  gap: 0.4rem;
+  padding-top: 0.35rem;
+  padding-bottom: 0.5rem;
+}
+
+.modelPage :global(.section-title) {
+  font-size: clamp(1.75rem, 3.2vw, 2.5rem);
+}
+
+.modelPage :global(.section-description) {
+  font-size: 0.9375rem;
+}
+
 .pageInner {
   width: 100%;
   max-width: var(--container-max);
@@ -172,10 +186,10 @@
 
 .productStage {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(20rem, 0.65fr);
-  gap: clamp(1.5rem, 4vw, 4rem);
-  align-items: stretch;
-  margin-top: clamp(1rem, 3vw, 2.5rem);
+  grid-template-columns: minmax(0, 36rem) minmax(18rem, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+  margin-top: 0.5rem;
 }
 
 .productMedia {
@@ -184,7 +198,8 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  min-height: clamp(30rem, 58vw, 50rem);
+  min-height: 0;
+  aspect-ratio: 1;
   padding: 0;
   overflow: hidden;
   border: 0;
@@ -193,7 +208,35 @@
   cursor: zoom-in;
 }
 .productMedia:disabled { cursor: default; }
-.productMedia img { object-fit: var(--media-fit-contain); padding: clamp(2rem, 6vw, 6rem); }
+.productMedia img { object-fit: var(--media-fit-cover); object-position: center; padding: 0; }
+
+.productShot {
+  position: relative;
+  width: 100%;
+  max-width: min(36rem, calc(100svh - 11rem));
+  min-width: 0;
+}
+
+.applicationBadges {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+.applicationBadges img {
+  display: block;
+  width: 48px;
+  height: 48px;
+  max-width: 100%;
+}
 
 .productGallery {
   display: grid;
@@ -236,17 +279,23 @@
 
 .productThumbActive { border-color: var(--color-border-strong); }
 
-.productPanel { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1.25rem; padding: clamp(1rem, 3vw, 2.5rem) 0; }
+.productPanel { display: flex; flex-direction: column; align-items: flex-start; justify-content: start; gap: 0.7rem; padding: 0; }
 .productPanel h2 { max-width: 11ch; margin: 0; font-size: var(--type-display); font-weight: var(--weight-display); line-height: var(--leading-display); letter-spacing: var(--tracking-display); }
 .productPanel > p:not(.eyebrow, .disclaimer) { margin: 0; color: var(--color-muted); line-height: var(--leading-body); }
 .productFacts { width: 100%; margin: 0; border-top: 1px solid var(--color-border); }
-.productFacts div { display: grid; grid-template-columns: 7.5rem 1fr; gap: 1rem; padding: 0.9rem 0; border-bottom: 1px solid var(--color-border); }
+.productFacts div { display: grid; grid-template-columns: 7.5rem 1fr; gap: 1rem; padding: 0.45rem 0; border-bottom: 1px solid var(--color-border); }
 .productFacts dt { color: var(--color-muted); font-size: 0.8125rem; }
 .productFacts dd { margin: 0; font-size: 0.9375rem; font-weight: 600; }
+.productAdvantages {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  --advantage-icon-size: 2rem;
+}
 .disclaimer { margin: 0; color: var(--color-muted); font-size: 0.8125rem; line-height: 1.5; }
 
 .pageInnerBeforeAdvantages {
-  padding-bottom: clamp(1.25rem, 3vw, 2rem);
+  padding-bottom: 1rem;
 }
 
 .advantagesBlock {
@@ -273,7 +322,6 @@
   .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .modelGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .productStage { grid-template-columns: 1fr; }
-  .productMedia { min-height: min(78vw, 42rem); }
   .productPanel { max-width: 42rem; }
 }
 
@@ -283,10 +331,11 @@
   .resultHeader, .finalCta { align-items: flex-start; flex-direction: column; }
   .resultHeader p:last-child { align-self: auto; }
   .modelDescription { min-height: 0; }
-  .productMedia { min-height: 100vw; }
   .finalCta :global(.btn-accent),
   .finalCta :global(.btn-secondary),
   .finalCtaActions { width: 100%; }
+  .applicationBadges { top: 10px; right: 10px; gap: 6px; }
+  .applicationBadges img { width: 40px; height: 40px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

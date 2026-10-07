@@ -8,8 +8,6 @@ import {
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { createProductStructuredData } from "@/lib/seo/structuredData";
 import { WheelModelStage } from "@/components/catalog/WheelModelStage";
-import { ForgedModel } from "@/components/shop/ForgedModel";
-import { toForgedWheelView } from "@/components/shop/forgedView";
 
 type PageProps = {
   params: Promise<{ wheelTypeSlug: string; modelSlug: string }>;
@@ -53,21 +51,6 @@ export default async function WheelModelPage({ params }: PageProps) {
     brand: model.series ?? "BIZON",
     category: wheelType.name,
   });
-
-  if (wheelType.slug === "forged") {
-    const view = toForgedWheelView(model);
-    if (!view) notFound();
-
-    return (
-      <>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-        />
-        <ForgedModel model={view} />
-      </>
-    );
-  }
 
   const variants = await getWheelVariantsByModelId(model.id);
 

@@ -4,6 +4,20 @@ import type { HomeHeroContent } from "@/lib/content/pages/types";
 
 import styles from "./MainHome.module.css";
 
+function accentHeroTitle(title: string) {
+  const text = title.replaceAll("ваших", "больших");
+  const accent = "больших";
+  const at = text.indexOf(accent);
+  if (at < 0) return text;
+  return (
+    <>
+      {text.slice(0, at)}
+      <span className={styles.heroAccent}>{accent}</span>
+      {text.slice(at + accent.length)}
+    </>
+  );
+}
+
 export function MainHero({ content }: { content: HomeHeroContent }) {
   return (
     <section className={styles.hero} data-main-chrome-tone="dark">
@@ -28,7 +42,7 @@ export function MainHero({ content }: { content: HomeHeroContent }) {
       <div className={styles.inner}>
         <div className={styles.heroCopy}>
           {content.eyebrow ? <p className={styles.eyebrow}>{content.eyebrow}</p> : null}
-          <h1>{content.title}</h1>
+          <h1>{accentHeroTitle(content.title)}</h1>
           <p>{content.lead}</p>
         </div>
       </div>

@@ -3,8 +3,10 @@ import Link from "next/link";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import styles from "@/components/catalog/TireCatalog.module.css";
 import { getPublishedTireCatalog } from "@/lib/content";
+import { loadPublished } from "@/lib/content/loadPublished";
 import { createPageMetadata } from "@/lib/seo/metadata";
 
 export const metadata = createPageMetadata({
@@ -14,7 +16,16 @@ export const metadata = createPageMetadata({
 });
 
 export default async function ModelsPage() {
-  const catalog = await getPublishedTireCatalog();
+  const loaded = await loadPublished(getPublishedTireCatalog);
+  if (loaded.kind === "unavailable") {
+    return (
+      <PublishedContentUnavailable
+        title="Каталог шин временно недоступен"
+        message="Не получилось загрузить каталог. Попробуйте ещё раз через минуту."
+      />
+    );
+  }
+  const catalog = loaded.value;
 
   return (
     <div className={styles.catalogPage} data-main-chrome-tone="light">

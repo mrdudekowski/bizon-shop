@@ -3,6 +3,8 @@ import { getAllShopCategorySlugs, getShopProducts, getShopCategoryBySlug, getSho
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { ShopLifestyleCategoryPage } from "@/components/shop/ShopLifestyleCategory";
 import { ShopProductCatalog } from "@/components/shop/ShopProductCatalog";
+import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
+import { loadPublished } from "@/lib/content/loadPublished";
 import {
   getShopLifestyleCategory,
   SHOP_LIFESTYLE_CATEGORIES,
@@ -13,7 +15,8 @@ type PageProps = {
 };
 
 export async function generateStaticParams() {
-  const slugs = await getAllShopCategorySlugs();
+  const loaded = await loadPublished(getAllShopCategorySlugs);
+  const slugs = loaded.kind === "ok" ? loaded.value : [];
   return Array.from(new Set([
     ...SHOP_LIFESTYLE_CATEGORIES.map((category) => category.slug),
     ...slugs,
@@ -22,7 +25,8 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps) {
   const { categorySlug } = await params;
-  const category = await getShopCategoryBySlug(categorySlug);
+  const loaded = await loadPublished(() => getShopCategoryBySlug(categorySlug));
+  const category = loaded.kind === "ok" ? loaded.value : null;
   if (category) {
     return createPageMetadata({
       title: category.name,
@@ -45,11 +49,16 @@ export default async function ShopCategoryPage({ params }: PageProps) {
   const lifestyleCategory = getShopLifestyleCategory(categorySlug);
 
   if (lifestyleCategory) {
-    const [products, published, cms] = await Promise.all([
-      getShopProducts({ categorySlug }),
-      getShopCategories(),
-      getShopCategoryBySlug(categorySlug),
-    ]);
+    const loaded = await loadPublished(async () => {
+      const [products, published, cms] = await Promise.all([
+        getShopProducts({ categorySlug }),
+        getShopCategories(),
+        getShopCategoryBySlug(categorySlug),
+      ]);
+      return { products, published, cms };
+    });
+    if (loaded.kind === "unavailable") return <PublishedContentUnavailable />;
+    const { products, published, cms } = loaded.value;
     const siblingLifestyle = SHOP_LIFESTYLE_CATEGORIES.find((item) => item.slug !== lifestyleCategory.slug);
     const siblingCms = siblingLifestyle
       ? published.find((item) => item.slug === siblingLifestyle.slug)
@@ -75,15 +84,16 @@ export default async function ShopCategoryPage({ params }: PageProps) {
     );
   }
 
-  const category = await getShopCategoryBySlug(categorySlug);
+  const loaded = await loadPublished(async () => {
+    const category = await getShopCategoryBySlug(categorySlug);
+    if (!category) return null;
+    const products = await getShopProducts({ categorySlug });
+    return { category, products };
+  });
+  if (loaded.kind === "unavailable") return <PublishedContentUnavailable />;
 
-  if (!category) {
+  if (!loaded.value) {
     notFound();
   }
-
-  const products = await getShopProducts({ categorySlug });
-
-  return (
-    <ShopProductCatalog category={category} products={products} />
-  );
+  return <ShopProductCatalog category={loaded.value.category} products={loaded.value.products} />;
 }

@@ -98,7 +98,6 @@ export function buildMainDualPaneMenuSections(input: {
       items: [
         { id: "about-page", title: "О компании", href: ROUTES.about },
         { id: "contact", title: "Контакты", href: ROUTES.contact },
-        { id: "stories", title: "Истории клиентов", href: ROUTES.peopleStories },
         { id: "warranty", title: "Гарантия", href: ROUTES.warranty },
         { id: "supplier", title: "Стать поставщиком", href: ROUTES.supplier },
       ],

@@ -11,9 +11,6 @@ export {
   getTireIQArticles,
   getTireIQArticleBySlug,
   getAllTireIQSlugs,
-  getPeopleStories,
-  getPeopleStoryBySlug,
-  getAllPeopleStorySlugs,
   getTireTypes,
   getTireTypeBySlug,
   getAllTireTypeSlugs,
@@ -48,5 +45,4 @@ export type {
   TireModelRouteParam,
   WheelModelRouteParam,
   CmsArticle,
-  CmsStory,
 } from "./types";

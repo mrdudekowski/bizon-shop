@@ -1,5 +1,5 @@
 import { ROUTES } from "@/constants/navigation";
-import { getShopLifestyleCategory, SHOP_LIFESTYLE_CATEGORIES } from "@/constants/shopCategories";
+import { getShopLifestyleCategory } from "@/constants/shopCategories";
 import type { CmsShopCategory } from "./types";
 
 export function shopCategoryLabel(category: Pick<CmsShopCategory, "slug" | "name">): string {
@@ -73,36 +73,17 @@ export function shopHomeCarouselSlides(categories: readonly CmsShopCategory[]): 
   return categories
     .filter((category) => category.showInMenu)
     .sort((a, b) => a.sortOrder - b.sortOrder)
-    .flatMap((category) => {
-      const href = `${ROUTES.shop}/${category.slug}`;
-      const frames = (category.carousel ?? [])
-        .filter((frame) => frame.imageUrl)
-        .slice(0, 4)
-        .map((frame, index) => ({
-          id: `${category.slug}-${index}`,
-          title: frame.title.trim() || category.name,
-          href,
-          imageUrl: frame.imageUrl ?? null,
-        }));
-      if (frames.length > 0) return frames;
-      return [{ id: category.slug, title: category.name, href, imageUrl: null }];
-    });
+    .map((category) => ({
+      id: category.slug,
+      title: category.name,
+      href: `${ROUTES.shop}/${category.slug}`,
+      imageUrl: category.carousel?.find((frame) => frame.imageUrl)?.imageUrl ?? null,
+    }));
 }
 
 export function shopCategoryIndexCards(categories: readonly CmsShopCategory[]) {
   const published = categories
     .filter((category) => category.showInMenu)
     .sort((a, b) => a.sortOrder - b.sortOrder);
-
-  if (published.length > 0) {
-    return published.map(toIndexCard);
-  }
-
-  return SHOP_LIFESTYLE_CATEGORIES.map((category) =>
-    toIndexCard({
-      slug: category.slug,
-      name: category.title,
-      imageUrl: category.desktopImage,
-    }),
-  );
+  return published.map(toIndexCard);
 }

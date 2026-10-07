@@ -2,7 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { ShopCategoryShowcase } from "@/components/shop/ShopCategoryShowcase";
+import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { getPageContent, getShopCategories, getWheelModelsByTypeSlug } from "@/lib/content";
+import { loadPublished } from "@/lib/content/loadPublished";
 import { shopHomeCarouselSlides, shopHomeCategoryCards } from "@/lib/content/shopCategoryPresentation";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import styles from "./ShopHome.module.css";
@@ -19,11 +21,13 @@ export async function generateMetadata() {
 }
 
 export default async function ShopPage() {
-  const [page, forgedModels, shopCategories] = await Promise.all([
+  const loaded = await loadPublished(() => Promise.all([
     getPageContent("shop-home"),
     getWheelModelsByTypeSlug("forged"),
     getShopCategories(),
-  ]);
+  ]));
+  if (loaded.kind === "unavailable") return <PublishedContentUnavailable />;
+  const [page, forgedModels, shopCategories] = loaded.value;
 
   const forgedModelsBySlug = new Map(forgedModels.map((model) => [model.slug, model]));
   const homeModels = [...forgedModelsBySlug.values()]

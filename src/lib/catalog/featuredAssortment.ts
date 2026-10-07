@@ -1,5 +1,6 @@
 import type { TireCatalogModel, TireCatalogReadModel } from "@/lib/catalog/tireReadModel";
 import { AXLE_OPTIONS } from "@/lib/selection/options";
+import { getModelApplicationValues, getTireCategoryByValue } from "@/lib/catalog/tireCategories";
 
 export const ASSORTMENT_PREVIEW_COUNT = 3;
 
@@ -19,17 +20,21 @@ export function pickAssortmentModels(catalog: TireCatalogReadModel): TireCatalog
 
 export function formatAxleLabels(model: Pick<TireCatalogModel, "selectionAxles" | "axlePosition">): string {
   const labels = model.selectionAxles
-    .map((value) => AXLE_OPTIONS.find((option) => option.value === value)?.label)
-    .filter((label): label is string => Boolean(label));
+    .flatMap((value) => {
+      const option = AXLE_OPTIONS.find((item) => item.value === value);
+      return option ? [option.label] : [];
+    });
   if (labels.length >= 3) return "Все оси";
   if (labels.length > 0) return labels.join(" / ");
   return model.axlePosition?.trim() || "Уточняется";
 }
 
-export function cardSubtitle(model: Pick<TireCatalogModel, "selectionAxles" | "applicationCategory" | "tireTypeName">): string {
+export function cardSubtitle(model: Pick<TireCatalogModel, "selectionAxles" | "applicationTypes" | "tireTypeName">): string {
   if (model.selectionAxles.length === 1) {
     const axle = AXLE_OPTIONS.find((option) => option.value === model.selectionAxles[0]);
     if (axle) return axle.label;
   }
-  return APPLICATION_SHORT[model.applicationCategory] || (model.selectionAxles.length > 1 ? "Универсальные" : model.tireTypeName);
+  const applications = getModelApplicationValues(model)
+    .map((value) => APPLICATION_SHORT[value] ?? getTireCategoryByValue(value)?.name ?? value);
+  return applications.join(" · ") || (model.selectionAxles.length > 1 ? "Универсальные" : model.tireTypeName);
 }

@@ -1,10 +1,12 @@
 import { EditorialListing } from "@/components/content/EditorialListing";
+import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { TireIqApplicationGuide } from "@/components/content/TireIqApplicationGuide";
 import { TireIqAxleSelector } from "@/components/content/TireIqAxleSelector";
 import { TireIqDumpTruckSelector } from "@/components/content/TireIqDumpTruckSelector";
 import { TireIqBusSelector } from "@/components/content/TireIqBusSelector";
 import { TireIqJobNav } from "@/components/content/TireIqJobNav";
 import { getTireIQArticles } from "@/lib/content";
+import { loadPublished } from "@/lib/content/loadPublished";
 import { TIRE_IQ_JOBS } from "@/lib/content/tireIqJobs";
 import { TIRE_IQ_TAXONOMY } from "@/lib/content/tireIqTaxonomy";
 import { getTireIqArticleCover } from "@/lib/content/tireIqVisuals";
@@ -23,7 +25,16 @@ type TireIQPageProps = {
 export default async function TireIQPage({ searchParams }: TireIQPageProps) {
   const { topic } = await searchParams;
   const activeTopic = TIRE_IQ_TAXONOMY.some((item) => item.value === topic) ? topic : undefined;
-  const articles = await getTireIQArticles(activeTopic);
+  const loaded = await loadPublished(() => getTireIQArticles(activeTopic));
+  if (loaded.kind === "unavailable") {
+    return (
+      <PublishedContentUnavailable
+        title="Материалы Tire IQ временно недоступны"
+        message="Не получилось загрузить статьи. Попробуйте ещё раз через минуту."
+      />
+    );
+  }
+  const articles = loaded.value;
   const hasKnowledge = articles.length > 0;
 
   return (

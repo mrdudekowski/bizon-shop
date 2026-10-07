@@ -11,6 +11,12 @@
   box-sizing: border-box;
 }
 
+img {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
 /* BIZON visual tokens — canonical SSOT for public UI. */
 :root {
   /* Coral — action, primary CTA */
@@ -98,6 +104,8 @@
   --tracking-kicker: 0.08em;
   --tracking-label: 0.06em;
   --tracking-brand: 0.1em;
+  --tracking-brand-emphasis: 0.16em;
+  --tracking-brand-caption: 0.14em;
 
   --radius-control: 0.75rem;
   --radius: var(--radius-control);

@@ -73,9 +73,7 @@ export function SiteShell({ children, mainMenu, shopMenu }) {
         title={isShop ? "Меню BIZON Shop" : "Меню BIZON Tires"}
         homeHref={isShop ? ROUTES.shop : ROUTES.home}
         homeLabel={isShop ? "BIZON SHOP" : "BIZON"}
-        featuredItem={isShop
-          ? { name: "Выбрать диски", link: "/shop#wheels" }
-          : { name: "Открыть каталог", link: ROUTES.models }}
+        featuredItem={isShop ? { name: "Выбрать диски", link: "/shop#wheels" } : null}
         cartItem={{
           name: `Корзина${cart.count > 0 ? ` · ${cart.count}` : ""}`,
           link: "/cart",

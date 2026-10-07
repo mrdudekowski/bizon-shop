@@ -1,5 +1,7 @@
 import { ShopCategoriesIndex } from "@/components/shop/ShopCategoriesIndex";
+import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { getShopCategories } from "@/lib/content";
+import { loadPublished } from "@/lib/content/loadPublished";
 import { createPageMetadata } from "@/lib/seo/metadata";
 
 export async function generateMetadata() {
@@ -11,6 +13,7 @@ export async function generateMetadata() {
 }
 
 export default async function ShopCategoriesPage() {
-  const categories = await getShopCategories();
-  return <ShopCategoriesIndex categories={categories} />;
+  const loaded = await loadPublished(getShopCategories);
+  if (loaded.kind === "unavailable") return <PublishedContentUnavailable />;
+  return <ShopCategoriesIndex categories={loaded.value} />;
 }

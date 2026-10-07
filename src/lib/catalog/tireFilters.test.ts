@@ -5,13 +5,13 @@ import { filterTireModels, parseTireFilters } from "./tireFilters";
 const models = [
   {
     slug: "regional-drive",
-    applicationCategory: "regional",
+    applicationTypes: ["regional"],
     selectionAxles: ["drive"],
     sizes: ["315/80R22.5"],
   },
   {
     slug: "long-haul-steer",
-    applicationCategory: "long_haul",
+    applicationTypes: ["long_haul"],
     selectionAxles: ["steer"],
     sizes: ["385/65R22.5"],
   },

@@ -6,9 +6,9 @@ import { cardSubtitle, formatAxleLabels } from "./featuredAssortment";
 const model = {
   selectionAxles: ["steer", "drive"],
   axlePosition: "",
-  applicationCategory: "long_haul",
+  applicationTypes: ["long_haul"],
   tireTypeName: "TBR",
-} as Pick<TireCatalogModel, "selectionAxles" | "axlePosition" | "applicationCategory" | "tireTypeName">;
+} as Pick<TireCatalogModel, "selectionAxles" | "axlePosition" | "applicationTypes" | "tireTypeName">;
 
 describe("formatAxleLabels", () => {
   it("joins catalog axles", () => {
@@ -27,6 +27,6 @@ describe("cardSubtitle", () => {
 
   it("falls back to universal when axles are mixed", () => {
     expect(cardSubtitle(model)).toBe("Магистральные");
-    expect(cardSubtitle({ ...model, applicationCategory: "unknown" })).toBe("Универсальные");
+    expect(cardSubtitle({ ...model, applicationTypes: ["unknown"] })).toBe("Универсальные");
   });
 });

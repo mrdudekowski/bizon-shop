@@ -11,9 +11,15 @@ type CatalogProductGalleryProps = {
   images: string[];
   alt: string;
   fallbackKey: string;
+  applications?: { name: string; icon: string }[];
 };
 
-export function CatalogProductGallery({ images, alt, fallbackKey }: CatalogProductGalleryProps) {
+export function CatalogProductGallery({
+  images,
+  alt,
+  fallbackKey,
+  applications = [],
+}: CatalogProductGalleryProps) {
   const [pinned, setPinned] = useState(0);
   const [hovered, setHovered] = useState<number | null>(null);
   const shown = marketplaceShown(pinned, hovered);
@@ -27,22 +33,33 @@ export function CatalogProductGallery({ images, alt, fallbackKey }: CatalogProdu
 
   return (
     <div className={styles.productGallery}>
-      <button
-        type="button"
-        className={styles.productMedia}
-        disabled={!canSwitch}
-        onClick={() => pin(shown)}
-        aria-label={canSwitch ? "Закрепить это фото" : alt}
-      >
-        <CatalogImage
-          src={current}
-          fallbackKey={fallbackKey}
-          alt={alt}
-          fill
-          priority
-          sizes="(max-width: 899px) 100vw, 58vw"
-        />
-      </button>
+      <div className={styles.productShot}>
+        <button
+          type="button"
+          className={styles.productMedia}
+          disabled={!canSwitch}
+          onClick={() => pin(shown)}
+          aria-label={canSwitch ? "Закрепить это фото" : alt}
+        >
+          <CatalogImage
+            src={current}
+            fallbackKey={fallbackKey}
+            alt={alt}
+            fill
+            priority
+            sizes="(max-width: 899px) 100vw, 58vw"
+          />
+        </button>
+        {applications.length > 0 ? (
+          <ul className={styles.applicationBadges} aria-label="Применение">
+            {applications.map((application) => (
+              <li key={application.icon}>
+                <img src={application.icon} alt={application.name} width={48} height={48} />
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
       {canSwitch ? (
         <div
           className={styles.productThumbs}

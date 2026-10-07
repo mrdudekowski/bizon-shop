@@ -3,23 +3,22 @@ import Link from "next/link";
 
 import { CatalogCard } from "@/components/catalog/CatalogCard";
 import { PREMIUM_MEDIA } from "@/constants/images";
-import type { CmsArticle, CmsStory, CmsTireModel } from "@/lib/content/types";
-import { getTireCategoryByValue } from "@/lib/catalog/tireCategories";
+import type { CmsArticle, CmsTireModel } from "@/lib/content/types";
+import { getModelApplicationCategories, getModelApplicationLabels } from "@/lib/catalog/tireCategories";
 
 type HomeContentSectionsProps = {
   tbrModels: CmsTireModel[];
   articles: CmsArticle[];
-  stories: CmsStory[];
 };
 
 function getModelHref(model: CmsTireModel) {
-  const category = getTireCategoryByValue(model.applicationCategory);
+  const category = getModelApplicationCategories(model)[0];
   const typePath = `/models/${model.tireTypeSlug}`;
 
   return `${typePath}${category ? `/${category.slug}` : ""}/${model.slug}`;
 }
 
-export function HomeContentSections({ tbrModels, articles, stories }: HomeContentSectionsProps) {
+export function HomeContentSections({ tbrModels, articles }: HomeContentSectionsProps) {
   const featuredModels = tbrModels.slice(0, 3);
   const editorialItems = [
     ...articles.slice(0, 1).map((article) => ({
@@ -30,15 +29,6 @@ export function HomeContentSections({ tbrModels, articles, stories }: HomeConten
       meta: "Tire IQ",
       imageUrl: article.imageUrl,
       fallbackKey: "tire-pressure-fleet",
-    })),
-    ...stories.slice(0, 1).map((story) => ({
-      key: `story-${story.slug}`,
-      href: `/people-stories/${story.slug}`,
-      title: story.title,
-      description: story.excerpt,
-      meta: "People Stories",
-      imageUrl: story.imageUrl,
-      fallbackKey: "north-logistics-fleet",
     })),
   ];
 
@@ -58,7 +48,7 @@ export function HomeContentSections({ tbrModels, articles, stories }: HomeConten
                 href={getModelHref(model)}
                 title={model.name}
                 description={model.descriptionShort}
-                meta={getTireCategoryByValue(model.applicationCategory)?.name ?? model.tireTypeName}
+                meta={getModelApplicationLabels(model).join(" · ") || model.tireTypeName}
                 imageUrl={model.imageUrl}
                 imageAlt={model.name}
                 mediaKey={model.slug}
@@ -97,8 +87,8 @@ export function HomeContentSections({ tbrModels, articles, stories }: HomeConten
       <section className="section" aria-labelledby="knowledge-heading">
         <div className="section-heading">
           <p className="section-kicker">Знания и практика</p>
-          <h2 id="knowledge-heading" className="section-title">Tire IQ и People Stories</h2>
-          <p className="section-description">Практические материалы для подбора и истории эксплуатации от клиентов BIZON.</p>
+          <h2 id="knowledge-heading" className="section-title">Tire IQ</h2>
+          <p className="section-description">Практические материалы для подбора и эксплуатации шин.</p>
         </div>
         {editorialItems.length > 0 ? (
           <div className="section-grid">
@@ -121,11 +111,6 @@ export function HomeContentSections({ tbrModels, articles, stories }: HomeConten
               <h3 className="info-card-title">Tire IQ</h3>
               <p className="info-card-text">Здесь появятся методики подбора и эксплуатации после редакционной подготовки материалов.</p>
               <Link href="/tire-iq" className="btn-secondary w-fit">Перейти в Tire IQ</Link>
-            </article>
-            <article className="card-base info-card">
-              <h3 className="info-card-title">People Stories</h3>
-              <p className="info-card-text">Кейсы публикуются только после согласования фактов и материалов с клиентом.</p>
-              <Link href="/people-stories" className="btn-secondary w-fit">Открыть истории</Link>
             </article>
           </div>
         )}

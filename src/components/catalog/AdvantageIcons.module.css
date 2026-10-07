@@ -39,6 +39,6 @@
   font-size: 0.65rem;
   font-weight: 650;
   line-height: 1.2;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--tracking-display);
   white-space: nowrap;
 }

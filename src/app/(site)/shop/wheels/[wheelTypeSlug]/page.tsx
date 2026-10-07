@@ -11,13 +11,16 @@ import { PageHeader } from "@/components/catalog/PageHeader";
 import { WheelModelGrid } from "@/components/catalog/WheelModelGrid";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { ForgedCatalog } from "@/components/shop/ForgedCatalog";
+import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
+import { loadPublished } from "@/lib/content/loadPublished";
 
 type PageProps = {
   params: Promise<{ wheelTypeSlug: string }>;
 };
 
 export async function generateStaticParams() {
-  const slugs = await getAllWheelTypeSlugs();
+  const loaded = await loadPublished(getAllWheelTypeSlugs);
+  const slugs = loaded.kind === "ok" ? loaded.value : [];
   return [...new Set(["forged", ...slugs])].map((wheelTypeSlug) => ({ wheelTypeSlug }));
 }
 
@@ -30,7 +33,8 @@ export async function generateMetadata({ params }: PageProps) {
       path: "/shop/wheels/forged",
     });
   }
-  const wheelType = await getWheelTypeBySlug(wheelTypeSlug);
+  const loaded = await loadPublished(() => getWheelTypeBySlug(wheelTypeSlug));
+  const wheelType = loaded.kind === "ok" ? loaded.value : null;
   if (!wheelType) return {};
   return createPageMetadata({
     title: wheelType.name,
@@ -41,25 +45,22 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function WheelTypePage({ params }: PageProps) {
   const { wheelTypeSlug } = await params;
-  if (wheelTypeSlug.toLowerCase() === "forged") {
+  const loaded = await loadPublished(async () => {
     const wheelType = await getWheelTypeBySlug(wheelTypeSlug);
-    if (!wheelType) {
-      notFound();
+    if (!wheelType) return null;
+    if (wheelTypeSlug.toLowerCase() === "forged") {
+      return { wheelType, models: await getWheelModelsByTypeSlug(wheelType.slug), variants: null };
     }
-    const models = await getWheelModelsByTypeSlug(wheelType.slug);
-    return <ForgedCatalog models={models} />;
-  }
-
-  const wheelType = await getWheelTypeBySlug(wheelTypeSlug);
-
-  if (!wheelType) {
-    notFound();
-  }
-
-  const [models, variants] = await Promise.all([
-    getWheelModelsByTypeSlug(wheelType.slug),
-    getWheelVariantsByTypeSlug(wheelType.slug),
-  ]);
+    const [models, variants] = await Promise.all([
+      getWheelModelsByTypeSlug(wheelType.slug),
+      getWheelVariantsByTypeSlug(wheelType.slug),
+    ]);
+    return { wheelType, models, variants };
+  });
+  if (loaded.kind === "unavailable") return <PublishedContentUnavailable />;
+  if (!loaded.value) notFound();
+  const { wheelType, models, variants } = loaded.value;
+  if (variants === null) return <ForgedCatalog models={models} />;
 
   const typeBasePath = `/shop/wheels/${wheelType.slug}`;
 

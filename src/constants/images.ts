@@ -21,6 +21,8 @@ export const PREMIUM_MEDIA = {
   brandingColorAccents: `${PREMIUM_IMAGE_ROOT}/branding-color-accents.jpg`,
   brandingLogo: `${PREMIUM_IMAGE_ROOT}/branding-logo.jpg`,
   brandingInscriptions: `${PREMIUM_IMAGE_ROOT}/branding-inscriptions.jpg`,
+  brandingTirePlain: `${PREMIUM_IMAGE_ROOT}/branding-tire-plain.jpg`,
+  brandingTireBranded: `${PREMIUM_IMAGE_ROOT}/branding-tire-branded.jpg`,
   regionalAllPosition: `${PREMIUM_IMAGE_ROOT}/regional-all-position-315.png`,
   regionalDrive: `${PREMIUM_IMAGE_ROOT}/regional-drive-295.png`,
   steer385: `${PREMIUM_IMAGE_ROOT}/steer-tire-385.png`,

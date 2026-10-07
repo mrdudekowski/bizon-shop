@@ -2,14 +2,14 @@ import Link from "next/link";
 
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
-import { getTireCategoryByValue } from "@/lib/catalog/tireCategories";
+import { getModelApplicationLabels } from "@/lib/catalog/tireCategories";
 import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
 import { AXLE_OPTIONS } from "@/lib/selection/options";
 
 import styles from "./TireCatalog.module.css";
 
 export function TireModelCard({ model }: { model: TireCatalogModel }) {
-  const application = getTireCategoryByValue(model.applicationCategory)?.name;
+  const application = getModelApplicationLabels(model).join(" · ");
   const axles = model.selectionAxles
     .map((value) => AXLE_OPTIONS.find((option) => option.value === value)?.label)
     .filter(Boolean)
@@ -30,7 +30,7 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
       </Link>
       <div className={styles.modelBody}>
         <div className={styles.modelMeta}>
-          <span>{application ?? model.applicationCategory}</span>
+          <span>{application || "Применение не указано"}</span>
           {axles && <span>{axles}</span>}
         </div>
         <div>

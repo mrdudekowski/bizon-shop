@@ -13,10 +13,10 @@ export function TireDirectionShowcase({
   catalog,
   content,
 }: {
-  catalog: TireCatalogReadModel;
+  catalog: TireCatalogReadModel | null;
   content: PageShell;
 }) {
-  const models = pickAssortmentModels(catalog);
+  const models = catalog ? pickAssortmentModels(catalog) : [];
 
   return (
     <section
@@ -40,7 +40,14 @@ export function TireDirectionShowcase({
           </Link>
         </div>
 
-        {models.length > 0 ? (
+        {catalog === null ? (
+          <div className={styles.assortmentEmpty} role="alert">
+            <p>Каталог временно недоступен. Попробуйте ещё раз через минуту.</p>
+            <form>
+              <button className="btn-secondary" type="submit">Попробовать ещё раз</button>
+            </form>
+          </div>
+        ) : models.length > 0 ? (
           <AssortmentCarousel models={models} />
         ) : (
           <p className={styles.assortmentEmpty}>Модели появятся после публикации каталога.</p>

@@ -30,27 +30,31 @@ export function ShopCategoriesIndex({ categories }: { categories: readonly CmsSh
             <p className={styles.lightKicker}>Категории</p>
             <h2 id="shop-categories-title">Выберите направление</h2>
           </div>
-          <div className={styles.grid}>
-            {cards.map((category) => (
-              <Link className={styles.card} href={category.href} key={category.slug}>
-                {category.desktopImage ? (
-                  <ShopResponsiveImage
-                    className={styles.media}
-                    desktopSrc={category.desktopImage}
-                    mobileSrc={category.mobileImage || category.desktopImage}
-                    alt={category.imageAlt}
-                    sizes="(max-width: 639px) 100vw, 50vw"
-                  />
-                ) : null}
-                <span className={styles.overlay} aria-hidden="true" />
-                <span className={styles.cardContent}>
-                  {category.kicker ? <span className={styles.cardKicker}>{category.kicker}</span> : null}
-                  <strong>{category.title}</strong>
-                  <span className={styles.arrow} aria-hidden="true"><SiteArrow direction="ne" /></span>
-                </span>
-              </Link>
-            ))}
-          </div>
+          {cards.length > 0 ? (
+            <div className={styles.grid}>
+              {cards.map((category) => (
+                <Link className={styles.card} href={category.href} key={category.slug}>
+                  {category.desktopImage ? (
+                    <ShopResponsiveImage
+                      className={styles.media}
+                      desktopSrc={category.desktopImage}
+                      mobileSrc={category.mobileImage || category.desktopImage}
+                      alt={category.imageAlt}
+                      sizes="(max-width: 639px) 100vw, 50vw"
+                    />
+                  ) : null}
+                  <span className={styles.overlay} aria-hidden="true" />
+                  <span className={styles.cardContent}>
+                    {category.kicker ? <span className={styles.cardKicker}>{category.kicker}</span> : null}
+                    <strong>{category.title}</strong>
+                    <span className={styles.arrow} aria-hidden="true"><SiteArrow direction="ne" /></span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.empty}>Категории пока не опубликованы. Загляните сюда позже.</p>
+          )}
         </div>
       </section>
     </div>

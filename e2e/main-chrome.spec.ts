@@ -35,12 +35,12 @@ test("main site uses the premium floating chrome", async ({ page }, testInfo) =>
     .toBe(heightBefore);
 });
 
-test("main burger exposes the catalog and unified cart", async ({ page }) => {
+test("main burger exposes the unified cart without a catalog CTA", async ({ page }) => {
   await page.goto("/");
   await page.locator('[aria-controls="burger-menu"]').click();
 
   const dialog = page.getByRole("dialog", { name: "Меню BIZON Tires", exact: true });
-  await expect(dialog.getByRole("link", { name: "Открыть каталог" })).toHaveAttribute("href", "/models");
+  await expect(dialog.getByRole("link", { name: "Открыть каталог" })).toHaveCount(0);
   await expect(dialog.getByRole("link", { name: /^Корзина/ })).toHaveAttribute("href", "/cart");
 });
 

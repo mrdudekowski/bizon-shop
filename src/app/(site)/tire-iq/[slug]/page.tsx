@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 
 import { ArticleLayout } from "@/components/content/ArticleLayout";
+import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { LexicalContent } from "@/components/content/LexicalContent";
 import { TireIqContextualVisuals } from "@/components/content/TireIqContextualVisuals";
 import { getAllTireIQSlugs, getTireIQArticleBySlug } from "@/lib/content";
+import { loadPublished } from "@/lib/content/loadPublished";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { getTireIqArticleCover } from "@/lib/content/tireIqVisuals";
 
@@ -12,13 +14,16 @@ type PageProps = {
 };
 
 export async function generateStaticParams() {
-  const slugs = await getAllTireIQSlugs();
+  const loaded = await loadPublished(getAllTireIQSlugs);
+  const slugs = loaded.kind === "ok" ? loaded.value : [];
   return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params;
-  const article = await getTireIQArticleBySlug(slug);
+  const loaded = await loadPublished(() => getTireIQArticleBySlug(slug));
+  if (loaded.kind === "unavailable") return {};
+  const article = loaded.value;
   if (!article) return {};
   return createPageMetadata({
     title: article.title,
@@ -29,7 +34,16 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function TireIQArticlePage({ params }: PageProps) {
   const { slug } = await params;
-  const article = await getTireIQArticleBySlug(slug);
+  const loaded = await loadPublished(() => getTireIQArticleBySlug(slug));
+  if (loaded.kind === "unavailable") {
+    return (
+      <PublishedContentUnavailable
+        title="Материал Tire IQ временно недоступен"
+        message="Не получилось загрузить статью. Попробуйте ещё раз через минуту."
+      />
+    );
+  }
+  const article = loaded.value;
   if (!article) notFound();
 
   return (

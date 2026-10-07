@@ -35,11 +35,11 @@ export async function POST(request: Request) {
 
   const raw = await request.json().catch(() => null);
   const parsed = parseRequestBody(raw);
-  if (!parsed.ok) {
+  if (parsed.ok === false) {
     return NextResponse.json({ ok: false, error: parsed.error, message: parsed.message }, { status: 400 });
   }
   const validated = validateRequest(parsed.body);
-  if (!validated.ok) {
+  if (validated.ok === false) {
     return NextResponse.json(
       { ok: false, error: validated.error, message: validated.message },
       { status: 400 },

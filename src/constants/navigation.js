@@ -6,7 +6,6 @@ export const ROUTES = {
   models: "/models",
   shop: "/shop",
   tireIq: "/tire-iq",
-  peopleStories: "/people-stories",
   contact: "/contact",
   warranty: "/warranty",
   about: "/about",
@@ -44,5 +43,4 @@ export const SITEMAP_STATIC_ROUTES = [
 /** Content list routes — add to sitemap only when published items exist. */
 export const SITEMAP_CONTENT_LIST_ROUTES = {
   tireIq: ROUTES.tireIq,
-  peopleStories: ROUTES.peopleStories,
 };

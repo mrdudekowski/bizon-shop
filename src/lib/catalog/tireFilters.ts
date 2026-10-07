@@ -1,4 +1,4 @@
-import { TIRE_CATEGORIES } from "@/lib/catalog/tireCategories";
+import { getModelApplicationValues, TIRE_CATEGORIES } from "@/lib/catalog/tireCategories";
 import { AXLE_OPTIONS, type CatalogAxle } from "@/lib/selection/options";
 
 export type TireFilters = {
@@ -12,7 +12,7 @@ type SearchParamsInput =
   | Record<string, string | string[] | undefined>;
 
 type FilterableTireModel = {
-  applicationCategory: string;
+  applicationTypes?: readonly string[];
   selectionAxles: readonly string[];
   sizes: readonly string[];
 };
@@ -54,7 +54,7 @@ export function filterTireModels<T extends FilterableTireModel>(
   return models.filter((model) => {
     if (
       filters.application &&
-      model.applicationCategory !== filters.application
+      !getModelApplicationValues(model).includes(filters.application)
     ) {
       return false;
     }

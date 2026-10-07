@@ -11,6 +11,8 @@ export type CmsProduct = {
   slug: string;
   name: string;
   categorySlug: string;
+  subcategorySlug?: string;
+  subcategoryName?: string;
   type: string;
   brand: string;
   descriptionShort: string;
@@ -84,7 +86,7 @@ export type CmsTireModel = {
   name: string;
   tireTypeSlug: string;
   tireTypeName: string;
-  applicationCategory: string;
+  applicationTypes: string[];
   brand: string;
   descriptionShort: string;
   descriptionLong: string;
@@ -139,11 +141,6 @@ export type CmsArticle = {
   showInMenu: boolean;
   menuOrder: number;
   taxonomy?: string[];
-};
-
-export type CmsStory = CmsArticle & {
-  clientName?: string;
-  industry?: string;
 };
 
 export type WheelModelRouteParam = {

@@ -3,8 +3,14 @@
 import type { FormEvent } from "react";
 import { requestOpenCart } from "@/lib/cart/cartStorage";
 import { useCart } from "@/hooks/useCart";
-import type { ForgedWheelView } from "./forgedView";
 import styles from "./ForgedConfigurator.module.css";
+
+type ForgedConfiguratorModel = {
+  id: string;
+  slug: string;
+  name: string;
+  finish: string;
+};
 
 function value(formData: FormData, name: string): string {
   return String(formData.get(name) ?? "").trim();
@@ -19,7 +25,7 @@ function configurationKey(vehicle: string, year: string): string {
   return normalized || "vehicle";
 }
 
-export function ForgedConfigurator({ model }: { model: ForgedWheelView }) {
+export function ForgedConfigurator({ model }: { model: ForgedConfiguratorModel }) {
   const cart = useCart();
   const maxYear = new Date().getFullYear() + 1;
 

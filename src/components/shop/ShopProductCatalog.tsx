@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
@@ -13,6 +16,16 @@ export function ShopProductCatalog({
   category: CmsShopCategory;
   products: CmsProduct[];
 }) {
+  const [subcategorySlug, setSubcategorySlug] = useState("");
+  const subcategories = Array.from(
+    new Map(products.flatMap((product) => product.subcategorySlug && product.subcategoryName
+      ? [[product.subcategorySlug, product.subcategoryName] as const]
+      : [])).entries(),
+  ).sort((left, right) => left[1].localeCompare(right[1], "ru"));
+  const visibleProducts = subcategorySlug
+    ? products.filter((product) => product.subcategorySlug === subcategorySlug)
+    : products;
+
   return (
     <div className={styles.page}>
       <PageHeader
@@ -24,14 +37,24 @@ export function ShopProductCatalog({
           { href: `/shop/${category.slug}`, label: category.name },
         ]}
       />
-      {products.length > 0 ? (
+      {subcategories.length > 0 ? (
+        <label className={styles.filter}>
+          Подкатегория
+          <select value={subcategorySlug} onChange={(event) => setSubcategorySlug(event.target.value)}>
+            <option value="">Все товары</option>
+            {subcategories.map(([slug, name]) => <option key={slug} value={slug}>{name}</option>)}
+          </select>
+        </label>
+      ) : null}
+      {visibleProducts.length > 0 ? (
         <div className={styles.grid}>
-          {products.map((product) => <ShopProductCard key={product.slug} product={product} />)}
+          {visibleProducts.map((product) => <ShopProductCard key={product.slug} product={product} />)}
         </div>
       ) : (
         <section className={styles.empty}>
-          <h2>Коллекция готовится</h2>
-          <p>Товары и доступные варианты появятся после финального отбора.</p>
+          <h2>{subcategorySlug ? "В этой подкатегории пока нет товаров" : "Коллекция готовится"}</h2>
+          <p>{subcategorySlug ? "Выберите другую подкатегорию или покажите все товары." : "Товары и доступные варианты появятся после финального отбора."}</p>
+          {subcategorySlug ? <button type="button" className={styles.resetFilter} onClick={() => setSubcategorySlug("")}>Показать все товары</button> : null}
         </section>
       )}
       <p className={styles.back}><Link href="/shop/categories"><SiteArrow direction="left" /> Все категории</Link></p>

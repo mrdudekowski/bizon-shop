@@ -38,7 +38,6 @@ const FOOTER_CONFIG: Record<FooterSurface, FooterConfig> = {
         links: [
           { href: ROUTES.about, label: "О компании" },
           { href: ROUTES.tireIq, label: "Tire IQ" },
-          { href: ROUTES.peopleStories, label: "People Stories" },
           { href: ROUTES.supplier, label: "Стать поставщиком" },
         ],
       },

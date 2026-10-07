@@ -9,9 +9,3 @@ test("tire iq listing and detail use editorial story templates", async ({ page }
   await expect(page).toHaveURL(/\/tire-iq\/.+/);
   await expect(page.getByRole("link", { name: /Все статьи/ })).toBeVisible();
 });
-
-test("people stories listing renders editorial cards", async ({ page }) => {
-  await page.goto("/people-stories");
-  await expect(page.getByRole("heading", { level: 1, name: "People Stories" })).toBeVisible();
-  await expect(page.locator("[data-editorial-card]").first()).toBeVisible();
-});

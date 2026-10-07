@@ -14,7 +14,7 @@ function model(partial: Partial<CmsTireModel> & Pick<CmsTireModel, "id" | "slug"
   return {
     tireTypeSlug: "tbr",
     tireTypeName: "TBR",
-    applicationCategory: "regional",
+    applicationTypes: ["regional"],
     brand: "DOUBLESTAR",
     descriptionShort: "",
     descriptionLong: "",

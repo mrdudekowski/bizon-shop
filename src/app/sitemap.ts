@@ -1,17 +1,16 @@
 import type { MetadataRoute } from "next";
 import {
-  getAllPeopleStorySlugs,
   getAllShopProductSlugs,
-  getShopProducts,
+  getShopCategories,
   getAllTireIQSlugs,
   getAllTireTypeSlugs,
   getTireModelsByTypeSlug,
   getAllWheelModelRouteParams,
   getAllWheelTypeSlugs,
 } from "@/lib/content";
-import { TIRE_CATEGORIES, getTireCategoryByValue } from "@/lib/catalog/tireCategories";
+import { TIRE_CATEGORIES, getModelApplicationCategories, getModelApplicationValues, getTireCategoryByValue } from "@/lib/catalog/tireCategories";
 import { SITEMAP_CONTENT_LIST_ROUTES, SITEMAP_STATIC_ROUTES } from "@/constants/navigation";
-import { SHOP_LIFESTYLE_CATEGORIES } from "@/constants/shopCategories";
+import { loadPublished } from "@/lib/content/loadPublished";
 import { getSiteUrl } from "@/lib/seo/metadata";
 
 function listRouteEntry(path: string): MetadataRoute.Sitemap[number] {
@@ -26,23 +25,44 @@ function listRouteEntry(path: string): MetadataRoute.Sitemap[number] {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = getSiteUrl();
 
-  const [productSlugs, shopProducts, tireTypeSlugs, articleSlugs, storySlugs, wheelTypeSlugs, wheelModelRoutes] =
-    await Promise.all([
-      getAllShopProductSlugs(),
-      getShopProducts(),
-      getAllTireTypeSlugs(),
-      getAllTireIQSlugs(),
-      getAllPeopleStorySlugs(),
-      getAllWheelTypeSlugs(),
-      getAllWheelModelRouteParams(),
-    ]);
+  const loaded = await loadPublished(async () => {
+    const [productSlugs, shopCategories, tireTypeSlugs, articleSlugs, wheelTypeSlugs, wheelModelRoutes] =
+      await Promise.all([
+        getAllShopProductSlugs(),
+        getShopCategories(),
+        getAllTireTypeSlugs(),
+        getAllTireIQSlugs(),
+        getAllWheelTypeSlugs(),
+        getAllWheelModelRouteParams(),
+      ]);
 
-  const tireModelsByType = await Promise.all(
-    tireTypeSlugs.map(async (tireTypeSlug) => ({
-      tireTypeSlug,
-      models: await getTireModelsByTypeSlug(tireTypeSlug),
-    })),
-  );
+    const tireModelsByType = await Promise.all(
+      tireTypeSlugs.map(async (tireTypeSlug) => ({
+        tireTypeSlug,
+        models: await getTireModelsByTypeSlug(tireTypeSlug),
+      })),
+    );
+    return { productSlugs, shopCategories, tireTypeSlugs, articleSlugs, wheelTypeSlugs, wheelModelRoutes, tireModelsByType };
+  });
+  const {
+    productSlugs,
+    shopCategories,
+    tireTypeSlugs,
+    articleSlugs,
+    wheelTypeSlugs,
+    wheelModelRoutes,
+    tireModelsByType,
+  } = loaded.kind === "ok"
+    ? loaded.value
+    : {
+        productSlugs: [],
+        shopCategories: [],
+        tireTypeSlugs: [],
+        articleSlugs: [],
+        wheelTypeSlugs: [],
+        wheelModelRoutes: [],
+        tireModelsByType: [],
+      };
 
   const entries: MetadataRoute.Sitemap = SITEMAP_STATIC_ROUTES.map((path) => ({
     url: `${siteUrl}${path}`,
@@ -63,7 +83,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const { tireTypeSlug, models } of tireModelsByType) {
     const categoryValues = tireTypeSlug === "tbr"
       ? TIRE_CATEGORIES.map((category) => category.value)
-      : Array.from(new Set(models.map((model) => model.applicationCategory)));
+      : Array.from(new Set(models.flatMap((model) => getModelApplicationValues(model))));
 
     for (const categoryValue of categoryValues) {
       const category = getTireCategoryByValue(categoryValue);
@@ -77,7 +97,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
 
     for (const model of models) {
-      const category = getTireCategoryByValue(model.applicationCategory);
+      const category = getModelApplicationCategories(model)[0];
       const categoryPath = category ? `/${category.slug}` : "";
       entries.push({
         url: `${siteUrl}/models/${tireTypeSlug}${categoryPath}/${model.slug}`,
@@ -88,10 +108,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  const allShopCategorySlugs = new Set([
-    ...SHOP_LIFESTYLE_CATEGORIES.map((category) => category.slug),
-    ...shopProducts.map((product) => product.categorySlug).filter(Boolean),
-  ]);
+  const allShopCategorySlugs = new Set(shopCategories.map((category) => category.slug));
 
   for (const slug of allShopCategorySlugs) {
     entries.push({
@@ -134,18 +151,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const slug of articleSlugs) {
       entries.push({
         url: `${siteUrl}/tire-iq/${slug}`,
-        lastModified: new Date(),
-        changeFrequency: "monthly",
-        priority: 0.6,
-      });
-    }
-  }
-
-  if (storySlugs.length > 0) {
-    entries.push(listRouteEntry(SITEMAP_CONTENT_LIST_ROUTES.peopleStories));
-    for (const slug of storySlugs) {
-      entries.push({
-        url: `${siteUrl}/people-stories/${slug}`,
         lastModified: new Date(),
         changeFrequency: "monthly",
         priority: 0.6,

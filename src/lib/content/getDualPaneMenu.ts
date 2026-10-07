@@ -3,6 +3,7 @@ import {
   buildShopDualPaneMenuSections,
 } from "./buildDualPaneMenu";
 import type { DualPaneMenuData } from "./dualPaneMenuTypes";
+import { loadPublished } from "./loadPublished";
 import {
   getPublishedTireModels,
   getPublishedWheelModels,
@@ -14,11 +15,12 @@ export type { DualPaneItem, DualPaneMenuData, DualPaneSection } from "./dualPane
 export { buildMainDualPaneMenuSections, buildShopDualPaneMenuSections } from "./buildDualPaneMenu";
 
 export async function getMainDualPaneMenu(): Promise<DualPaneMenuData> {
-  const [models, articles, categories] = await Promise.all([
+  const loaded = await loadPublished(() => Promise.all([
     getPublishedTireModels(),
     getTireIQArticles(),
     getShopCategories(),
-  ]);
+  ]));
+  const [models, articles, categories] = loaded.kind === "ok" ? loaded.value : [[], [], []];
 
   return {
     defaultSectionId: "models",
@@ -27,10 +29,11 @@ export async function getMainDualPaneMenu(): Promise<DualPaneMenuData> {
 }
 
 export async function getShopDualPaneMenu(): Promise<DualPaneMenuData> {
-  const [wheels, categories] = await Promise.all([
+  const loaded = await loadPublished(() => Promise.all([
     getPublishedWheelModels(),
     getShopCategories(),
-  ]);
+  ]));
+  const [wheels, categories] = loaded.kind === "ok" ? loaded.value : [[], []];
 
   return {
     defaultSectionId: "wheels",

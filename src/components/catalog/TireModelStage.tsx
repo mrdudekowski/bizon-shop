@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AdvantageIcons } from "@/components/catalog/AdvantageIcons";
 import { CatalogBuyPanel } from "@/components/catalog/CatalogBuyPanel";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { LexicalContent } from "@/components/content/LexicalContent";
@@ -7,7 +8,7 @@ import { CatalogProductGallery } from "@/components/catalog/CatalogProductGaller
 import { ModelAdvantagesCarousel } from "@/components/catalog/ModelAdvantagesCarousel";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { TireVariantsTable } from "@/components/catalog/TireVariantsTable";
-import { getTireCategoryByValue } from "@/lib/catalog/tireCategories";
+import { getModelApplicationCategories, getModelApplicationLabels } from "@/lib/catalog/tireCategories";
 import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
 import type { CmsTireVariant } from "@/lib/content/types";
 import { AXLE_OPTIONS } from "@/lib/selection/options";
@@ -29,7 +30,8 @@ export function TireModelStage({
   modelPath,
   breadcrumbs,
 }: TireModelStageProps) {
-  const application = getTireCategoryByValue(model.applicationCategory)?.name;
+  const applications = getModelApplicationCategories(model);
+  const application = getModelApplicationLabels(model).join(" · ");
   const axleLabels = model.selectionAxles
     .map((value) => AXLE_OPTIONS.find((option) => option.value === value)?.label)
     .filter(Boolean);
@@ -50,16 +52,16 @@ export function TireModelStage({
           breadcrumbs={breadcrumbs}
         />
 
-        <section className={styles.productStage} aria-labelledby="product-stage-title">
+        <section className={styles.productStage} aria-label={model.name}>
           <CatalogProductGallery
             images={gallery}
             fallbackKey={model.slug}
             alt={`${model.name} — грузовая шина`}
+            applications={applications}
           />
 
           <div className={styles.productPanel}>
             <p className={styles.eyebrow}>{model.brand || "BIZON TBR"}</p>
-            <h2 id="product-stage-title">Под рабочую нагрузку и ваш маршрут</h2>
             <LexicalContent data={model.descriptionLong || model.descriptionShort} />
             <p>
               Подтвердите применение, ось и типоразмер перед заказом — эти параметры
@@ -68,7 +70,7 @@ export function TireModelStage({
             <dl className={styles.productFacts}>
               <div>
                 <dt>Применение</dt>
-                <dd>{application ?? model.applicationCategory}</dd>
+                <dd>{application || "Уточняется"}</dd>
               </div>
               <div>
                 <dt>Позиция</dt>
@@ -79,6 +81,12 @@ export function TireModelStage({
                 <dd>{model.treadType || "По спецификации"}</dd>
               </div>
             </dl>
+
+            <AdvantageIcons
+              advantages={model.advantages}
+              showCaptions
+              className={styles.productAdvantages}
+            />
 
             <CatalogBuyPanel
               baseItem={{
