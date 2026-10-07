@@ -15,6 +15,8 @@ const PUBLIC_SITE_DEPLOY_METHODS = new Set([
   "publishPage",
   "publishMaterial",
   "publishChangeSet",
+  "unpublishDocument",
+  "resetPage",
   "hideTireDirection",
   "hideTireModel",
   "hideWheelType",
@@ -22,6 +24,7 @@ const PUBLIC_SITE_DEPLOY_METHODS = new Set([
   "hideShopCategory",
   "hideShopProduct",
   "hideMaterial",
+  "hidePage",
 ]);
 
 export function isSiteAffectingPublicationMethod(method: unknown): method is string {

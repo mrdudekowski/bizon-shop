@@ -1715,6 +1715,11 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
     },
     async hideShopCategory(id) {
       requirePermission("hide");
+      const publishedProducts = await query(
+        "SELECT id FROM products WHERE shop_category_id=$1 AND status='published' LIMIT 1",
+        [Number(id)],
+      );
+      if (publishedProducts.length > 0) throw new AdminClientError("category_has_published_products");
       await publishStatus("shop_categories", id, "archived");
       return this.getShopCategory(id);
     },
@@ -1988,6 +1993,11 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       await releaseLocks("page", key);
       return this.getPage(key);
     },
+    async hidePage(key) {
+      requirePermission("hide");
+      await query("UPDATE pages SET status='archived', updated_at=now() WHERE key=$1", [key]);
+      return this.getPage(key);
+    },
     async resetPage(key) {
       requirePermission("publish");
       await query("UPDATE pages SET status = 'draft', updated_at = now() WHERE key = $1", [key]);
@@ -2074,6 +2084,33 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const current = await this.getMaterial(id);
       await publishStatus("tire_iq_articles", id.slice("article-".length), "archived");
       return this.getMaterial(id);
+    },
+    async unpublishDocument(entityType, entityId) {
+      requirePermission("publish");
+      if (entityType === "page") {
+        await query("UPDATE pages SET status='draft', updated_at=now() WHERE key=$1", [entityId]);
+        return null;
+      }
+
+      const tableByEntity: Record<Exclude<StatusEntity, "page">, string> = {
+        "tire-direction": "tire_types",
+        "tire-model": "tire_models",
+        "wheel-type": "wheel_types",
+        "wheel-model": "wheel_models",
+        "shop-category": "shop_categories",
+        "shop-product": "products",
+        material: "tire_iq_articles",
+      };
+      if (entityType === "shop-category") {
+        const publishedProducts = await query(
+          "SELECT id FROM products WHERE shop_category_id=$1 AND status='published' LIMIT 1",
+          [Number(entityId)],
+        );
+        if (publishedProducts.length > 0) throw new AdminClientError("category_has_published_products");
+      }
+      const id = entityType === "material" ? entityId.replace(/^article-/, "") : entityId;
+      await publishStatus(tableByEntity[entityType as Exclude<StatusEntity, "page">], id, "draft");
+      return null;
     },
     async deleteMaterial(id) {
       requirePermission("delete");
@@ -2259,7 +2296,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         typeof value !== "function" ||
         property === "createAsset" ||
         property === "replaceAsset" ||
-        !/^(create|save|publish|hide|delete|reset|submit|return|cancel|update|assign|set)/.test(property)
+        !/^(create|save|publish|unpublish|hide|delete|reset|submit|return|cancel|update|assign|set)/.test(property)
       ) {
         return value;
       }

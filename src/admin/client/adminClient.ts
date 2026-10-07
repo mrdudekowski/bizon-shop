@@ -12,6 +12,7 @@ import type {
   PasswordResetHistoryItem,
   PageDraft,
   PageKey,
+  StatusEntity,
   ShopCategoryDraft,
   ShopProductDraft,
   ShopSubcategoryDraft,
@@ -84,7 +85,9 @@ export type AdminClient = {
   getPage(key: PageKey): Promise<EntityRecord<PageDraft>>;
   savePage(key: PageKey, draft: PageDraft): Promise<EntityRecord<PageDraft>>;
   publishPage(key: PageKey): Promise<EntityRecord<PageDraft>>;
+  hidePage(key: PageKey): Promise<EntityRecord<PageDraft>>;
   resetPage(key: PageKey): Promise<EntityRecord<PageDraft>>;
+  unpublishDocument(entityType: StatusEntity, entityId: string): Promise<unknown>;
   listMaterials(): Promise<
     {
       id: string;
