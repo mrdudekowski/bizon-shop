@@ -91,4 +91,36 @@ describe("mergeShopHomeContent", () => {
     expect(merged.wheelsIntro.title).toBe("Новый ввод");
     expect(merged.wheelsIntro.lead).toBe(SHOP_HOME_PAGE_DEFAULTS.wheelsIntro.lead);
   });
+
+  it("merges Shop catalog copy and category tile configuration", () => {
+    const merged = mergeShopHomeContent(SHOP_HOME_PAGE_DEFAULTS, {
+      catalog: {
+        copy: { title: "Каталог путешествий" },
+        tiles: [{
+          categoryId: "4",
+          categorySlug: "outdoor",
+          title: "Путешествия",
+          visible: true,
+          sortOrder: 2,
+          carouselVisible: true,
+          carouselImageUrl: "/media/outdoor.jpg",
+        }],
+      },
+    });
+
+    expect(merged.catalog.copy.title).toBe("Каталог путешествий");
+    expect(merged.catalog.copy.lead).toBe(SHOP_HOME_PAGE_DEFAULTS.catalog.copy.lead);
+    expect(merged.catalog.tiles[0]).toMatchObject({
+      categoryId: "4",
+      categorySlug: "outdoor",
+      sortOrder: 2,
+      carouselImageUrl: "/media/outdoor.jpg",
+    });
+  });
+
+  it("supplies catalog page defaults for legacy Shop page patches", () => {
+    const merged = mergeShopHomeContent(SHOP_HOME_PAGE_DEFAULTS, {});
+    expect(merged.catalog.copy).toEqual(SHOP_HOME_PAGE_DEFAULTS.catalog.copy);
+    expect(merged.catalog.tiles).toEqual([]);
+  });
 });

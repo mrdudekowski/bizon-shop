@@ -3,11 +3,18 @@ import Link from "next/link";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { shopCategoryIndexCards } from "@/lib/content/shopCategoryPresentation";
 import type { CmsShopCategory } from "@/lib/content/types";
+import type { ShopHomePageContent } from "@/lib/content/pages/types";
 import { ShopResponsiveImage } from "./ShopResponsiveImage";
 import styles from "./ShopCategoriesIndex.module.css";
 
-export function ShopCategoriesIndex({ categories }: { categories: readonly CmsShopCategory[] }) {
-  const cards = shopCategoryIndexCards(categories);
+export function ShopCategoriesIndex({
+  categories,
+  catalog,
+}: {
+  categories: readonly CmsShopCategory[];
+  catalog: ShopHomePageContent["catalog"];
+}) {
+  const cards = shopCategoryIndexCards(categories, catalog.tiles);
 
   return (
     <div className={styles.page}>
@@ -18,9 +25,9 @@ export function ShopCategoriesIndex({ categories }: { categories: readonly CmsSh
             <span aria-hidden="true">/</span>
             <span>Категории</span>
           </nav>
-          <p className={styles.kicker}>BIZON Shop</p>
-          <h1>Движение продолжается вне автомобиля</h1>
-          <p className={styles.lead}>Категории BIZON Shop — диски отдельно, товары по направлениям.</p>
+          <p className={styles.kicker}>{catalog.copy.eyebrow}</p>
+          <h1>{catalog.copy.title}</h1>
+          <p className={styles.lead}>{catalog.copy.lead}</p>
         </div>
       </section>
 
@@ -28,7 +35,7 @@ export function ShopCategoriesIndex({ categories }: { categories: readonly CmsSh
         <div className={styles.inner}>
           <div className={styles.sectionHead}>
             <p className={styles.lightKicker}>Категории</p>
-            <h2 id="shop-categories-title">Выберите направление</h2>
+            <h2 id="shop-categories-title">{catalog.copy.sectionTitle}</h2>
           </div>
           {cards.length > 0 ? (
             <div className={styles.grid}>

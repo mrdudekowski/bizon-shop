@@ -1,6 +1,7 @@
 import { ROUTES } from "@/constants/navigation";
 import { getShopLifestyleCategory } from "@/constants/shopCategories";
 import type { CmsShopCategory } from "./types";
+import type { ShopCatalogTile } from "./pages/types";
 
 export type ShopCategoryPageView = "catalog" | "lifestyle" | "not-found";
 
@@ -60,7 +61,27 @@ export type ShopHomeCategoryCard = {
   iconUrl: string | null;
 };
 
-export function shopHomeCategoryCards(categories: readonly CmsShopCategory[]): ShopHomeCategoryCard[] {
+export function shopHomeCategoryCards(
+  categories: readonly CmsShopCategory[],
+  tiles?: readonly ShopCatalogTile[],
+): ShopHomeCategoryCard[] {
+  if (tiles && tiles.length > 0) {
+    const categoriesBySlug = new Map(categories.map((category) => [category.slug, category]));
+    return tiles
+      .filter((tile) => tile.visible)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .flatMap((tile) => {
+        const category = categoriesBySlug.get(tile.categorySlug);
+        if (!category) return [];
+        return [{
+          slug: category.slug,
+          title: tile.title || category.name,
+          href: `${ROUTES.shop}/${category.slug}`,
+          iconUrl: tile.iconUrl ?? null,
+        }];
+      });
+  }
+
   return categories
     .filter((category) => category.showInMenu)
     .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -79,7 +100,27 @@ export type ShopHomeCarouselSlide = {
   imageUrl: string | null;
 };
 
-export function shopHomeCarouselSlides(categories: readonly CmsShopCategory[]): ShopHomeCarouselSlide[] {
+export function shopHomeCarouselSlides(
+  categories: readonly CmsShopCategory[],
+  tiles?: readonly ShopCatalogTile[],
+): ShopHomeCarouselSlide[] {
+  if (tiles && tiles.length > 0) {
+    const categoriesBySlug = new Map(categories.map((category) => [category.slug, category]));
+    return tiles
+      .filter((tile) => tile.carouselVisible)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .flatMap((tile) => {
+        const category = categoriesBySlug.get(tile.categorySlug);
+        if (!category) return [];
+        return [{
+          id: category.slug,
+          title: tile.title || category.name,
+          href: `${ROUTES.shop}/${category.slug}`,
+          imageUrl: tile.carouselImageUrl ?? null,
+        }];
+      });
+  }
+
   return categories
     .filter((category) => category.showInMenu)
     .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -91,7 +132,33 @@ export function shopHomeCarouselSlides(categories: readonly CmsShopCategory[]): 
     }));
 }
 
-export function shopCategoryIndexCards(categories: readonly CmsShopCategory[]) {
+export function shopCategoryIndexCards(
+  categories: readonly CmsShopCategory[],
+  tiles?: readonly ShopCatalogTile[],
+) {
+  if (tiles && tiles.length > 0) {
+    const categoriesBySlug = new Map(categories.map((category) => [category.slug, category]));
+    return tiles
+      .filter((tile) => tile.visible)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .flatMap((tile) => {
+        const category = categoriesBySlug.get(tile.categorySlug);
+        if (!category) return [];
+        const lifestyle = getShopLifestyleCategory(category.slug);
+        const imageUrl = tile.imageUrl || category.imageUrl || lifestyle?.desktopImage || "";
+        const mobileImage = tile.imageUrl || category.imageUrl || lifestyle?.mobileImage || imageUrl;
+        return [{
+          slug: category.slug,
+          kicker: "",
+          title: tile.title || category.name,
+          href: `${ROUTES.shop}/${category.slug}`,
+          desktopImage: imageUrl,
+          mobileImage,
+          imageAlt: tile.imageAlt || category.name,
+        }];
+      });
+  }
+
   const published = categories
     .filter((category) => category.showInMenu)
     .sort((a, b) => a.sortOrder - b.sortOrder);

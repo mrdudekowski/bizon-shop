@@ -34,8 +34,8 @@ export default async function ShopPage() {
     .filter((model) => model.showInMenu && model.imageUrl)
     .sort((a, b) => a.menuOrder - b.menuOrder)
     .slice(0, 3);
-  const categorySlides = shopHomeCarouselSlides(shopCategories);
-  const categoryCards = shopHomeCategoryCards(shopCategories);
+  const categorySlides = shopHomeCarouselSlides(shopCategories, page.catalog.tiles);
+  const categoryCards = shopHomeCategoryCards(shopCategories, page.catalog.tiles);
 
   return (
     <div className={styles.page}>

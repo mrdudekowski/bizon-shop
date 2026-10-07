@@ -135,6 +135,36 @@ describe("shopCategoryPresentation", () => {
     ]);
   });
 
+  it("uses Shop page tile presentation while taking names and URLs from categories", () => {
+    const tiles = [
+      { categoryId: "1", categorySlug: "pritsepy", title: "Прицепы BIZON", visible: true, sortOrder: 0, iconUrl: "/page/icon.svg", imageUrl: "/page/trailer.jpg", carouselVisible: true, carouselImageUrl: "/page/trailer-slide.jpg" },
+      { categoryId: "2", categorySlug: "hidden", title: "Скрыто", visible: true, sortOrder: 1, imageUrl: "/page/hidden.jpg", carouselVisible: true },
+      { categoryId: "3", categorySlug: "outdoor", title: "Скрытая плитка", visible: false, sortOrder: 2, carouselVisible: false },
+    ];
+
+    expect(shopHomeCategoryCards(categories, tiles)).toEqual([
+      { slug: "pritsepy", title: "Прицепы BIZON", href: "/shop/pritsepy", iconUrl: "/page/icon.svg" },
+      { slug: "hidden", title: "Скрыто", href: "/shop/hidden", iconUrl: null },
+    ]);
+    expect(shopHomeCarouselSlides(categories, tiles)).toEqual([
+      { id: "pritsepy", title: "Прицепы BIZON", href: "/shop/pritsepy", imageUrl: "/page/trailer-slide.jpg" },
+      { id: "hidden", title: "Скрыто", href: "/shop/hidden", imageUrl: null },
+    ]);
+  });
+
+  it("builds the catalog index from visible Shop tiles in configured order", () => {
+    const cards = shopCategoryIndexCards(categories, [
+      { categoryId: "1", categorySlug: "pritsepy", title: "Тяговые решения", visible: true, sortOrder: 0, carouselVisible: false, imageUrl: "/page/trailers.jpg" },
+      { categoryId: "2", categorySlug: "missing", title: "Несуществующая категория", visible: true, sortOrder: 1, carouselVisible: false },
+      { categoryId: "3", categorySlug: "outdoor", title: "Походы", visible: true, sortOrder: 2, carouselVisible: false, imageUrl: "/page/outdoor.jpg" },
+      { categoryId: "4", categorySlug: "accessories", title: "Скрыто", visible: false, sortOrder: 3, carouselVisible: false },
+    ]);
+    expect(cards.map((card) => ({ title: card.title, href: card.href, desktopImage: card.desktopImage }))).toEqual([
+      { title: "Тяговые решения", href: "/shop/pritsepy", desktopImage: "/page/trailers.jpg" },
+      { title: "Походы", href: "/shop/outdoor", desktopImage: "/page/outdoor.jpg" },
+    ]);
+  });
+
   it("falls back to lifestyle images when a published category has no photo", () => {
     const cards = shopCategoryIndexCards([
       {

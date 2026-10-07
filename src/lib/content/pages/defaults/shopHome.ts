@@ -37,6 +37,15 @@ export const SHOP_HOME_PAGE_DEFAULTS: ShopHomePageContent = {
     mobileImage: category.mobileImage,
     alt: category.imageAlt,
   })),
+  catalog: {
+    copy: {
+      eyebrow: "BIZON Shop",
+      title: "Движение продолжается вне автомобиля",
+      lead: "Категории BIZON Shop — диски отдельно, товары по направлениям.",
+      sectionTitle: "Выберите направление",
+    },
+    tiles: [],
+  },
   vehicles: {
     eyebrow: "BIZON Forged",
     title: "Созданы менять характер",

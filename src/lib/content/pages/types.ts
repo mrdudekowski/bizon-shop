@@ -76,6 +76,28 @@ export type ShopVehicleSlide = {
   alt: string;
 };
 
+export type ShopCatalogTile = {
+  categoryId: string;
+  categorySlug: string;
+  title: string;
+  visible: boolean;
+  sortOrder: number;
+  carouselVisible: boolean;
+  iconUrl?: string;
+  imageUrl?: string;
+  carouselImageUrl?: string;
+  iconAlt?: string;
+  imageAlt?: string;
+  carouselImageAlt?: string;
+};
+
+export type ShopCatalogCopy = {
+  eyebrow: string;
+  title: string;
+  lead: string;
+  sectionTitle: string;
+};
+
 export type ShopVehiclesContent = PageShell & {
   cta: PageCta;
   slides: ShopVehicleSlide[];
@@ -89,6 +111,7 @@ export type ShopHomePageContent = {
   wheelsIntro: PageShell & { kicker: string };
   orderSteps: ShopOrderStep[];
   categoryCarousel: ShopCategorySlide[];
+  catalog: { copy: ShopCatalogCopy; tiles: ShopCatalogTile[] };
   vehicles: ShopVehiclesContent;
   /** Developer-owned preferred wheel card order (not editable on page). */
   preferredWheelSlugs: readonly string[];

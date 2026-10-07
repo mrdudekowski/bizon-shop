@@ -3,7 +3,9 @@ import type {
   PageCta,
   PageShell,
   ShopCategorySlide,
+  ShopCatalogCopy,
   ShopHomePageContent,
+  ShopCatalogTile,
   ShopOrderStep,
   ShopVehicleSlide,
   StubMarketingPageContent,
@@ -119,6 +121,10 @@ export function mergeShopHomeContent(
     wheelsIntro?: Partial<ShopHomePageContent["wheelsIntro"]>;
     orderSteps?: ShopOrderStep[];
     categoryCarousel?: ShopCategorySlide[];
+    catalog?: {
+      copy?: Partial<ShopCatalogCopy>;
+      tiles?: ShopCatalogTile[];
+    };
     vehicles?: Partial<Omit<ShopHomePageContent["vehicles"], "cta" | "slides">> & {
       cta?: CtaPatch;
       slides?: ShopVehicleSlide[];
@@ -147,6 +153,15 @@ export function mergeShopHomeContent(
       patch.categoryCarousel && patch.categoryCarousel.length > 0
         ? patch.categoryCarousel
         : defaults.categoryCarousel,
+    catalog: {
+      copy: {
+        eyebrow: pickText(patch.catalog?.copy?.eyebrow, defaults.catalog.copy.eyebrow),
+        title: pickText(patch.catalog?.copy?.title, defaults.catalog.copy.title),
+        lead: pickText(patch.catalog?.copy?.lead, defaults.catalog.copy.lead),
+        sectionTitle: pickText(patch.catalog?.copy?.sectionTitle, defaults.catalog.copy.sectionTitle),
+      },
+      tiles: patch.catalog?.tiles ?? defaults.catalog.tiles,
+    },
     vehicles: {
       ...pickShell(patch.vehicles, defaults.vehicles),
       cta: pickCta(patch.vehicles?.cta, defaults.vehicles.cta),
