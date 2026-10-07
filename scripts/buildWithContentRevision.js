@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const markerPath = path.join(root, "out", "content-revision.json");
 const markerTempPath = `${markerPath}.tmp`;
+const MAX_REVISION_ATTEMPTS = 3;
 
 function validRevision(value) {
   return value != null
@@ -15,22 +16,60 @@ function validRevision(value) {
     && /^sha256:[a-f0-9]{64}$/.test(value.revision);
 }
 
-async function fetchRevision() {
-  const baseUrl = process.env.CONTENT_API_URL?.trim();
+export async function fetchRevision({
+  baseUrl = process.env.CONTENT_API_URL?.trim(),
+  fetchImpl = fetch,
+  wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
+} = {}) {
   if (!baseUrl) throw new Error("CONTENT_API_URL is required to build a verified static site");
   const parsedBase = new URL(baseUrl);
   if (!new Set(["http:", "https:"]).has(parsedBase.protocol) || parsedBase.username || parsedBase.password || parsedBase.search || parsedBase.hash) {
     throw new Error("CONTENT_API_URL must be an HTTP(S) base URL without credentials, query, or fragment");
   }
-  const response = await fetch(new URL(`${parsedBase.href.replace(/\/+$/, "")}/v1/content/revision`), {
-    cache: "no-store",
-    redirect: "error",
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!response.ok) throw new Error(`Content revision API returned HTTP ${response.status}`);
-  const payload = await response.json();
-  if (!validRevision(payload)) throw new Error("Content revision API returned an invalid payload");
-  return payload;
+  const url = new URL(`${parsedBase.href.replace(/\/+$/, "")}/v1/content/revision`);
+
+  for (let attempt = 1; attempt <= MAX_REVISION_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetchImpl(url, {
+        cache: "no-store",
+        redirect: "error",
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!response.ok) {
+        const error = new Error(`Content revision API returned HTTP ${response.status}`);
+        error.retryable = new Set([408, 425, 429, 500, 502, 503, 504]).has(response.status);
+        throw error;
+      }
+      const payload = await response.json();
+      if (!validRevision(payload)) throw new Error("Content revision API returned an invalid payload");
+      return payload;
+    } catch (error) {
+      const retryable = error?.retryable === true
+        || error?.name === "AbortError"
+        || error?.name === "TimeoutError"
+        || error instanceof TypeError;
+      if (!retryable || attempt === MAX_REVISION_ATTEMPTS) throw error;
+      await wait(500 * (2 ** (attempt - 1)));
+    }
+  }
+
+  throw new Error("Content revision API request attempts exhausted");
+}
+
+export async function runStableRevisionBuild({ fetchRevision, runBuild, writeMarker }) {
+  const before = await fetchRevision();
+  await runBuild();
+  const after = await fetchRevision();
+  if (before.revision !== after.revision) {
+    throw new Error("Published content changed during the static build; refusing to mark this export as current");
+  }
+  await writeMarker(after);
+}
+
+async function writeRevisionMarker(revision) {
+  await mkdir(path.dirname(markerPath), { recursive: true });
+  await writeFile(markerTempPath, `${JSON.stringify({ ...revision, builtAt: new Date().toISOString() }, null, 2)}\n`, "utf8");
+  await rename(markerTempPath, markerPath);
 }
 
 function runNextBuild() {
@@ -53,16 +92,11 @@ async function main() {
   try {
     await rm(markerPath, { force: true });
     await rm(markerTempPath, { force: true });
-    const before = await fetchRevision();
-    await runNextBuild();
-    const after = await fetchRevision();
-    if (before.revision !== after.revision) {
-      throw new Error("Published content changed during the static build; refusing to mark this export as current");
-    }
-
-    await mkdir(path.dirname(markerPath), { recursive: true });
-    await writeFile(markerTempPath, `${JSON.stringify({ ...after, builtAt: new Date().toISOString() }, null, 2)}\n`, "utf8");
-    await rename(markerTempPath, markerPath);
+    await runStableRevisionBuild({
+      fetchRevision,
+      runBuild: runNextBuild,
+      writeMarker: writeRevisionMarker,
+    });
   } catch (error) {
     await rm(markerPath, { force: true });
     await rm(markerTempPath, { force: true });
@@ -71,4 +105,6 @@ async function main() {
   }
 }
 
-await main();
+const isDirectExecution = process.argv[1]
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isDirectExecution) await main();
