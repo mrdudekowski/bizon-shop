@@ -87,6 +87,12 @@ export function ShopProductList() {
     return assets.find((asset) => asset.id === assetId)?.dataUrl ?? null;
   }
 
+  function tileImageUrl(category: EntityRecord<ShopCategoryDraft>) {
+    const assetId = category.draft.carousel.find((slide) => slide.image?.assetId)?.image?.assetId
+      ?? category.draft.mainImage?.assetId;
+    return assets.find((asset) => asset.id === assetId)?.dataUrl ?? null;
+  }
+
   return (
     <main>
       <div className={styles.pageHead}>
@@ -123,6 +129,7 @@ export function ShopProductList() {
                 meta={`/${category.draft.slug} · ${productCounts[category.id] ?? 0} товаров`}
                 icon="shop"
                 imageUrl={imageUrl(category)}
+                tileImageUrl={tileImageUrl(category)}
                 imageOnWhiteBackground
                 largeShopCategory
                 status={category.hidden ? "hidden" : category.publishedSnapshot == null ? "draft" : "on_site"}

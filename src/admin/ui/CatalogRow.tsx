@@ -24,6 +24,7 @@ export function CatalogRow({
   meta,
   icon,
   imageUrl,
+  tileImageUrl,
   imageOnWhiteBackground = false,
   largeShopCategory = false,
   view = "list",
@@ -37,6 +38,7 @@ export function CatalogRow({
   meta?: string;
   icon: IconName;
   imageUrl?: string | null;
+  tileImageUrl?: string | null;
   imageOnWhiteBackground?: boolean;
   largeShopCategory?: boolean;
   view?: CatalogView;
@@ -51,6 +53,7 @@ export function CatalogRow({
 
   const titleId = useId();
   const resolvedImageUrl = resolveMediaPreviewUrl(imageUrl);
+  const resolvedTileImageUrl = resolveMediaPreviewUrl(tileImageUrl ?? imageUrl);
 
   function openDelete(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -92,7 +95,7 @@ export function CatalogRow({
   const tileVisual = (
     <>
       <span className={styles.tileMedia} aria-hidden="true">
-        {resolvedImageUrl ? <Image unoptimized width={480} height={480} className={styles.tileImage} src={resolvedImageUrl} alt="" /> : <Icon className={styles.tileIcon} name={icon} size={42} />}
+        {resolvedTileImageUrl ? <Image unoptimized width={480} height={480} className={styles.tileImage} src={resolvedTileImageUrl} alt="" /> : <Icon className={styles.tileIcon} name={icon} size={42} />}
       </span>
       <span className={styles.tileOverlay} />
       <span className={styles.tileBody}>
