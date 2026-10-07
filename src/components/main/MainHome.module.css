@@ -443,9 +443,18 @@
   text-transform: uppercase;
 }
 .assortmentStatus {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   color: rgba(255, 255, 255, 0.62);
   font-size: 0.82rem;
   font-weight: 400;
+}
+.assortmentApplicationIcon {
+  display: block;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
 }
 .assortmentArrow {
   display: grid;
