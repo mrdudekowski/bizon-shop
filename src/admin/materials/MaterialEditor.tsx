@@ -14,6 +14,7 @@ import { DOCUMENT_STATUS, actionErrorText } from "@/admin/client/actionFeedback"
 import { browserAdminClient } from "@/admin/client/localStore";
 import { articlePublishBlockers } from "@/admin/domain/publishRules";
 import type { ArticleDraft, EntityRecord } from "@/admin/domain/types";
+import { TIRE_IQ_TAXONOMY } from "@/admin/domain/tireIqTaxonomy";
 import { PlacementFields } from "@/admin/media/PlacementFields";
 import type { PublishBlockerHint } from "@/admin/ui/documentTabs";
 
@@ -128,6 +129,24 @@ export function MaterialEditor({ id }: { id: string }) {
           Порядок в меню
           <input type="number" value={draft.menuOrder} onChange={(event) => patch({ menuOrder: Number(event.target.value) })} />
         </label>
+        <fieldset>
+          <legend>Темы Tire IQ</legend>
+          {TIRE_IQ_TAXONOMY.map((topic) => (
+            <label key={topic.value}>
+              <input
+                type="checkbox"
+                checked={(draft.taxonomy ?? []).includes(topic.value)}
+                onChange={(event) => {
+                  const selected = new Set(draft.taxonomy ?? []);
+                  if (event.target.checked) selected.add(topic.value);
+                  else selected.delete(topic.value);
+                  patch({ taxonomy: TIRE_IQ_TAXONOMY.map(({ value }) => value).filter((value) => selected.has(value)) });
+                }}
+              />
+              {topic.label}
+            </label>
+          ))}
+        </fieldset>
       </section>
       <section className={styles.section}>
         <h2>Фото</h2>

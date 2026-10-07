@@ -47,6 +47,38 @@ const ADMIN_SCREEN_ROUTES = [
   "/users",
 ] as const;
 
+const SITE_DEPLOY_STORAGE_KEY = "bizon-site-deploy-id";
+const SITE_DEPLOY_FAILURE_STATUSES = new Set(["failure", "access_error", "stopped"]);
+const CONTENT_REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/;
+
+function parsePendingDeploy(raw: string | null): { deploymentId: string; expectedRevision: string | null } | null {
+  if (!raw) return null;
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (value != null && typeof value === "object") {
+      const record = value as { deploymentId?: unknown; expectedRevision?: unknown };
+      if (typeof record.deploymentId === "string" && /^[a-zA-Z0-9_-]{1,128}$/.test(record.deploymentId)) {
+        return {
+          deploymentId: record.deploymentId,
+          expectedRevision: typeof record.expectedRevision === "string" && CONTENT_REVISION_PATTERN.test(record.expectedRevision)
+            ? record.expectedRevision
+            : null,
+        };
+      }
+    }
+    if (/^[a-zA-Z0-9_-]{1,128}$/.test(raw)) return { deploymentId: raw, expectedRevision: null };
+  } catch {
+    if (/^[a-zA-Z0-9_-]{1,128}$/.test(raw)) return { deploymentId: raw, expectedRevision: null };
+  }
+  return null;
+}
+
+function siteDeployProgressMessage(status: string): string {
+  if (status === "building_code") return "Timeweb собирает публичный сайт…";
+  if (status === "running_container") return "Timeweb запускает новую версию сайта…";
+  return "Timeweb выполняет пересборку публичного сайта…";
+}
+
 function warmAdminScreens(currentPath: string): () => void {
   if (process.env.NODE_ENV === "production") return () => {};
   let cancelled = false;
@@ -77,10 +109,22 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const [siteDeployMessage, setSiteDeployMessage] = useState<string | null>(null);
   const [siteDeployRetryAvailable, setSiteDeployRetryAvailable] = useState(false);
   const [siteDeployRetrying, setSiteDeployRetrying] = useState(false);
+  const [siteDeployId, setSiteDeployId] = useState<string | null>(null);
+  const [siteDeployExpectedRevision, setSiteDeployExpectedRevision] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
+    try {
+      const pending = parsePendingDeploy(window.localStorage.getItem(SITE_DEPLOY_STORAGE_KEY));
+      if (pending) {
+        setSiteDeployId(pending.deploymentId);
+        setSiteDeployExpectedRevision(pending.expectedRevision);
+        setSiteDeployMessage("Проверяем состояние пересборки публичного сайта…");
+      }
+    } catch {
+      // Status polling still works for the current page if browser storage is unavailable.
+    }
     const client = browserAdminClient();
     void client.getSession().then((next) => {
       setSession({ ...next, capabilities: next.capabilities ?? [] });
@@ -94,16 +138,45 @@ export function AdminShell({ children }: { children: ReactNode }) {
       event.preventDefault();
       event.returnValue = "";
     };
-    const handleExpiredSession = () => setSession(null);
+    const handleExpiredSession = () => {
+      setSession(null);
+      setSiteDeployId(null);
+    };
     const handleSiteDeployStatus = (event: Event) => {
-      const status = (event as CustomEvent<{ status?: string }>).detail?.status;
+      const detail = (event as CustomEvent<{ status?: string; deploymentId?: string | null; expectedRevision?: string | null }>).detail;
+      const status = detail?.status;
       if (status === "started") {
-        setSiteDeployMessage("Публикация сохранена. Пересборка публичного сайта запущена.");
+        const deploymentId = detail?.deploymentId;
+        const expectedRevision = detail?.expectedRevision;
+        if (deploymentId && /^[a-zA-Z0-9_-]{1,128}$/.test(deploymentId)) {
+          const pending = {
+            deploymentId,
+            expectedRevision: expectedRevision && CONTENT_REVISION_PATTERN.test(expectedRevision) ? expectedRevision : null,
+          };
+          try {
+            window.localStorage.setItem(SITE_DEPLOY_STORAGE_KEY, JSON.stringify(pending));
+          } catch {
+            // The current page can still poll even if status cannot survive a reload.
+          }
+          setSiteDeployId(deploymentId);
+          setSiteDeployExpectedRevision(pending.expectedRevision);
+          setSiteDeployMessage(pending.expectedRevision
+            ? "Публикация сохранена. Пересборка публичного сайта запущена."
+            : "Пересборка запущена, но редакцию контента проверить пока нельзя.");
+        } else {
+          setSiteDeployMessage("Публикация сохранена. Пересборка запущена, но её статус пока недоступен.");
+        }
         setSiteDeployRetryAvailable(false);
       } else if (status === "failed") {
+        setSiteDeployId(null);
+        setSiteDeployExpectedRevision(null);
+        try { window.localStorage.removeItem(SITE_DEPLOY_STORAGE_KEY); } catch {}
         setSiteDeployMessage("Публикация сохранена, но пересборку сайта запустить не удалось.");
         setSiteDeployRetryAvailable(true);
       } else if (status === "not_configured") {
+        setSiteDeployId(null);
+        setSiteDeployExpectedRevision(null);
+        try { window.localStorage.removeItem(SITE_DEPLOY_STORAGE_KEY); } catch {}
         setSiteDeployMessage("Публикация сохранена. Автоматическая пересборка сайта ещё не настроена.");
         setSiteDeployRetryAvailable(false);
       }
@@ -118,6 +191,78 @@ export function AdminShell({ children }: { children: ReactNode }) {
       window.removeEventListener("beforeunload", warnBeforeUnload);
     };
   }, []);
+
+  useEffect(() => {
+    if (!siteDeployId) return;
+    let active = true;
+    let timer: number | undefined;
+    let attempts = 0;
+
+    const finish = () => {
+      try { window.localStorage.removeItem(SITE_DEPLOY_STORAGE_KEY); } catch {}
+      setSiteDeployId(null);
+      setSiteDeployExpectedRevision(null);
+    };
+
+    const poll = async () => {
+      attempts += 1;
+      try {
+        const result = await browserAdminClient().getSiteDeployStatus(siteDeployId, siteDeployExpectedRevision);
+        if (!active) return;
+        if (result.status === "found") {
+          const deployStatus = result.deploy.status;
+          if (deployStatus === "success") {
+            if (result.contentStatus === "matches") {
+              finish();
+              setSiteDeployMessage("Сайт обновлён: опубликованная редакция подтверждена на публичной странице.");
+              setSiteDeployRetryAvailable(false);
+              return;
+            }
+            setSiteDeployMessage(result.contentStatus === "mismatch"
+              ? "Сборка завершена, но опубликованная редакция пока не совпадает с сайтом. Проверяем повторно…"
+              : "Сборка завершена, но проверить редакцию на сайте пока не удалось. Проверяем повторно…");
+          } else if (SITE_DEPLOY_FAILURE_STATUSES.has(deployStatus)) {
+            finish();
+            setSiteDeployMessage("Timeweb не завершил пересборку сайта. Можно запустить её повторно.");
+            setSiteDeployRetryAvailable(true);
+            return;
+          } else {
+            setSiteDeployMessage(siteDeployProgressMessage(deployStatus));
+          }
+        } else if (result.status === "not_configured") {
+          finish();
+          setSiteDeployMessage("Не удалось проверить пересборку: API Timeweb не настроен.");
+          setSiteDeployRetryAvailable(false);
+          return;
+        } else if (result.status === "not_found") {
+          setSiteDeployMessage("Timeweb пока не вернул статус этой пересборки…");
+        } else {
+          setSiteDeployMessage("Не удалось получить статус пересборки. Повторяем проверку…");
+        }
+      } catch (error) {
+        if (!active) return;
+        // A session timeout should stop polling until an administrator signs in again.
+        if (error instanceof AdminClientError && error.code === "unauthorized") {
+          setSiteDeployId(null);
+          setSiteDeployMessage("Войдите в CMS повторно, чтобы продолжить проверку пересборки.");
+          return;
+        }
+        setSiteDeployMessage("Не удалось получить статус пересборки. Повторяем проверку…");
+      }
+
+      if (attempts >= 150) {
+        setSiteDeployMessage("Проверка заняла больше обычного. Статус сборки сохранён; обновите страницу, чтобы продолжить.");
+        return;
+      }
+      timer = window.setTimeout(() => void poll(), 4_000);
+    };
+
+    void poll();
+    return () => {
+      active = false;
+      if (timer != null) window.clearTimeout(timer);
+    };
+  }, [siteDeployId, siteDeployExpectedRevision]);
 
   useEffect(() => {
     setMoreOpen(false);
@@ -141,6 +286,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       await browserAdminClient().logout();
     } finally {
       setSession(null);
+      setSiteDeployId(null);
     }
   }
 
@@ -176,7 +322,18 @@ export function AdminShell({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  if (!session) return <LoginScreen onLogin={(next) => setSession({ ...next, capabilities: next.capabilities ?? [] })} />;
+  if (!session) return <LoginScreen onLogin={(next) => {
+    setSession({ ...next, capabilities: next.capabilities ?? [] });
+    try {
+      const pending = parsePendingDeploy(window.localStorage.getItem(SITE_DEPLOY_STORAGE_KEY));
+      if (pending) {
+        setSiteDeployId(pending.deploymentId);
+        setSiteDeployExpectedRevision(pending.expectedRevision);
+      }
+    } catch {
+      // Status lookup can continue from a publication made during this session.
+    }
+  }} />;
 
   const role = session.role;
   const capabilities = session.capabilities ?? [];

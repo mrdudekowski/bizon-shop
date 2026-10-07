@@ -38,7 +38,7 @@ import type {
   StatusEntity,
 } from "@/admin/domain/types";
 
-import type { AdminClient, SiteDeployResult } from "./adminClient";
+import type { AdminClient, SiteDeployLookup, SiteDeployResult } from "./adminClient";
 import { AdminClientError } from "./errors";
 import { actorSession, cancelOverlappingPacks, currentUser, recordEditorMutation, requirePermission } from "./applyChangeSet";
 import {
@@ -744,6 +744,9 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     async retrySiteDeploy(): Promise<SiteDeployResult> {
       throw new AdminClientError("site_deploy_not_configured");
     },
+    async getSiteDeployStatus() {
+      return { status: "not_configured" };
+    },
     async changeDocumentStatus(entity, id, status) {
       if (entity === "page") {
         if (status === "on_site") return this.publishPage(id as PageKey);
@@ -1418,6 +1421,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         gallery: [],
         showInMenu: false,
         menuOrder: 0,
+        taxonomy: [],
       }), "material", "edit_site_pages");
     },
 
@@ -1655,8 +1659,10 @@ function remoteAdminClient(): AdminClient {
       window.dispatchEvent(new CustomEvent("bizon-session-expired"));
     }
     const deployStatus = response.headers.get("x-bizon-site-deploy");
+    const deploymentId = response.headers.get("x-bizon-site-deploy-id");
+    const expectedRevision = response.headers.get("x-bizon-content-revision");
     if (typeof window !== "undefined" && (deployStatus === "started" || deployStatus === "failed" || deployStatus === "not_configured")) {
-      window.dispatchEvent(new CustomEvent("bizon-site-deploy-status", { detail: { status: deployStatus } }));
+      window.dispatchEvent(new CustomEvent("bizon-site-deploy-status", { detail: { status: deployStatus, deploymentId, expectedRevision } }));
     }
     const body = (await response.json()) as { ok: boolean; result?: unknown; code?: AdminClientError["code"] };
     if (!body.ok) throw new AdminClientError(body.code ?? "publish_blocked");
@@ -1729,6 +1735,10 @@ function remoteAdminClient(): AdminClient {
     },
     async retrySiteDeploy() {
       return await request("/v1/admin/site-deploy/retry", { method: "POST" }) as SiteDeployResult;
+    },
+    async getSiteDeployStatus(deploymentId: string, expectedRevision: string | null) {
+      const params = new URLSearchParams({ deploymentId, expectedRevision: expectedRevision ?? "" });
+      return await request(`/v1/admin/site-deploy/status?${params}`, { method: "GET" }) as SiteDeployLookup;
     },
     async login(login: string, password: string) {
       return withCapabilities((await request("/v1/admin/auth/login", {

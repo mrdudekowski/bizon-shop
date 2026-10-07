@@ -27,6 +27,7 @@ import type {
 
 export type AdminClient = {
   retrySiteDeploy(): Promise<SiteDeployResult>;
+  getSiteDeployStatus(deploymentId: string, expectedRevision: string | null): Promise<SiteDeployLookup>;
   changeDocumentStatus(entity: StatusEntity, id: string, status: DocumentStatus): Promise<unknown>;
   login(login: string, password: string): Promise<AdminSession>;
   logout(): Promise<void>;
@@ -125,6 +126,27 @@ export type AdminClient = {
 };
 
 export type SiteDeployResult = {
-  status: "started";
+  status: "started" | "failed" | "not_configured";
   message: string;
+  deploymentId?: string;
 };
+
+export type TimewebDeployStatus =
+  | "created"
+  | "started"
+  | "preparing_environment"
+  | "cloning_code"
+  | "installing_dependencies"
+  | "building_code"
+  | "checking_ssl_certs"
+  | "cleaning_up"
+  | "running_container"
+  | "stopping"
+  | "stopped"
+  | "failure"
+  | "success"
+  | "access_error";
+
+export type SiteDeployLookup =
+  | { status: "found"; deploy: { deploymentId: string; status: TimewebDeployStatus; commitSha: string | null; startedAt: string | null; endedAt: string | null }; contentStatus: "pending" | "matches" | "mismatch" | "unavailable" }
+  | { status: "not_found" | "unavailable" | "not_configured" };
