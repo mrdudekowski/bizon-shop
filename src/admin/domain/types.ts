@@ -1,10 +1,12 @@
 // Публичная форма карточки совпадает с main-app src/lib/content/types.ts.
 // Код сайта сюда не импортируется.
 
-import type { CatalogAxle, OperatingCondition, TireCategory, VehicleType } from "./options";
+import type { CatalogAxle, OperatingCondition, VehicleType } from "./options";
 
 export type ImagePlacement = {
   assetId: string;
+  /** Temporary uploaded file that will replace this asset after publication. */
+  replacementAssetId?: string;
   alt: string;
   focalX: number;
   focalY: number;
@@ -70,7 +72,6 @@ export type TireModelDraft = {
   brand: string;
   descriptionShort: string;
   descriptionLong: string;
-  applicationCategory: TireCategory | "";
   treadType: string;
   modelCode?: string;
   features?: { id: string; key: string; title: string; description: string }[];
@@ -237,12 +238,20 @@ export type WheelModelDraft = {
   variants: WheelVariantDraft[];
 };
 
+export type ShopCategoryCarouselSlide = {
+  id: string;
+  title?: string;
+  image?: ImagePlacement;
+};
+
 export type ShopCategoryDraft = {
   id: string;
   name: string;
   slug: string;
   description: string;
+  /** Иконка пункта меню. Одно фото галереи Shop живёт в carousel. */
   mainImage?: ImagePlacement;
+  carousel: ShopCategoryCarouselSlide[];
   sortOrder: number;
   showInMenu: boolean;
 };
@@ -370,7 +379,7 @@ export type PageDraft = HomePageDraft | ShopHomePageDraft | StubPageDraft;
 
 export type ArticleDraft = {
   id: string;
-  kind: "article" | "story";
+  kind: "article";
   title: string;
   slug: string;
   excerpt: string;
@@ -379,8 +388,6 @@ export type ArticleDraft = {
   gallery: ImagePlacement[];
   showInMenu: boolean;
   menuOrder: number;
-  clientName: string;
-  industry: string;
 };
 
 export type MediaListItem = {
@@ -389,6 +396,22 @@ export type MediaListItem = {
   mimeType: string;
   dataUrl: string;
   usedBy: string[];
+  replacementPending?: boolean;
+};
+
+export type MediaDeletionHistoryItem = {
+  id: string;
+  mediaId: string;
+  filename: string;
+  deletedBy: string;
+  deletedAt: string;
+};
+
+export type PasswordResetHistoryItem = {
+  id: string;
+  targetLogin: string;
+  resetBy: string;
+  resetAt: string;
 };
 
 export type EntityRecord<T> = {

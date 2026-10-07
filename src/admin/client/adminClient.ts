@@ -2,9 +2,14 @@ import type {
   AdminSession,
   AdminUser,
   ArticleDraft,
+  ChangeSet,
+  ChangeSetStatus,
   DocumentStatus,
+  EditorCapability,
   EntityRecord,
   MediaListItem,
+  MediaDeletionHistoryItem,
+  PasswordResetHistoryItem,
   PageDraft,
   PageKey,
   ShopCategoryDraft,
@@ -32,7 +37,9 @@ export type AdminClient = {
   publishTireDirection(id: string): Promise<EntityRecord<TireDirectionDraft>>;
   hideTireDirection(id: string): Promise<EntityRecord<TireDirectionDraft>>;
   deleteTireDirection(id: string): Promise<void>;
-  createAsset(file: { name: string; mimeType: string; dataUrl: string }): Promise<{ id: string }>;
+  createAsset(file: { name: string; mimeType: string; body?: Blob; dataUrl?: string }): Promise<{ id: string }>;
+  replaceAsset(id: string, file: { name: string; mimeType: string; body?: Blob; dataUrl?: string }): Promise<{ id: string; replacementAssetId: string }>;
+  cancelAssetReplacement(id: string): Promise<void>;
   listTireModels(): Promise<TireModelListItem[]>;
   getTireModel(id: string): Promise<TireModelRecord>;
   createTireModel(input: { name: string; directionId: string }): Promise<TireModelRecord>;
@@ -85,23 +92,33 @@ export type AdminClient = {
     {
       id: string;
       title: string;
-      kind: ArticleDraft["kind"];
+      kind: "article";
       imageAssetId: string | null;
       status: DocumentStatus;
       hasUnpublishedDraft: boolean;
     }[]
   >;
   getMaterial(id: string): Promise<EntityRecord<ArticleDraft>>;
-  createMaterial(input: { title: string; kind: ArticleDraft["kind"] }): Promise<EntityRecord<ArticleDraft>>;
+  createMaterial(input: { title: string; kind: "article" }): Promise<EntityRecord<ArticleDraft>>;
   saveMaterial(id: string, draft: ArticleDraft): Promise<EntityRecord<ArticleDraft>>;
   publishMaterial(id: string): Promise<EntityRecord<ArticleDraft>>;
   hideMaterial(id: string): Promise<EntityRecord<ArticleDraft>>;
   deleteMaterial(id: string): Promise<void>;
   listAssets(): Promise<MediaListItem[]>;
   deleteAsset(id: string): Promise<void>;
+  listMediaDeletionHistory(): Promise<MediaDeletionHistoryItem[]>;
   listUsers(): Promise<AdminUser[]>;
-  createUser(input: { login: string; role: AdminUser["role"]; password: string }): Promise<AdminUser>;
+  createUser(input: { login: string; role: AdminUser["role"]; password: string; capabilities?: EditorCapability[] }): Promise<AdminUser>;
   disableUser(id: string): Promise<AdminUser>;
   setUserRole(id: string, role: AdminUser["role"]): Promise<AdminUser>;
+  setUserCapabilities(userId: string, capabilities: EditorCapability[]): Promise<AdminUser>;
+  resetUserPassword(userId: string, password: string): Promise<void>;
+  listPasswordResetHistory(): Promise<PasswordResetHistoryItem[]>;
+  listChangeSets(filter?: { status?: ChangeSetStatus; authorUserId?: string }): Promise<ChangeSet[]>;
+  getChangeSet(id: string): Promise<ChangeSet>;
+  submitChangeSet(id: string): Promise<ChangeSet>;
+  publishChangeSet(id: string): Promise<ChangeSet>;
+  returnChangeSet(id: string, comment: string): Promise<ChangeSet>;
+  cancelChangeSet(id: string): Promise<ChangeSet>;
   storageNotice(): Promise<string | null>;
 };

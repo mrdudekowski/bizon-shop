@@ -7,7 +7,7 @@ import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
 import { slugifyTitle } from "@/admin/domain/slug";
 import type { DocumentStatus, MediaListItem, ShopSubcategoryDraft } from "@/admin/domain/types";
-import { useAdminRole } from "@/admin/ui/DocumentUI";
+import { useAdminRole, useCanPerform } from "@/admin/ui/DocumentUI";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
 import { CatalogFilters } from "@/admin/ui/CatalogFilters";
@@ -34,6 +34,7 @@ export function ShopCategoryProducts({ categoryId, categoryName }: { categoryId:
   const [subcategories, setSubcategories] = useState<ShopSubcategoryDraft[]>([]);
   const [assets, setAssets] = useState<MediaListItem[]>([]);
   const [role, setRole] = useAdminRole();
+  const canCreate = useCanPerform("create_catalog_items");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | DocumentStatus>("all");
   const [subcategoryId, setSubcategoryId] = useState("");
@@ -122,7 +123,7 @@ export function ShopCategoryProducts({ categoryId, categoryName }: { categoryId:
           <h2 id="shop-category-products-title">Товары</h2>
           <p className="subheading">{products.length} {products.length === 1 ? "товар" : "товаров"} в категории «{categoryName}»</p>
         </div>
-        <button className="primary" type="button" onClick={openCreateDialog}>Добавить товар</button>
+        {canCreate ? <button className="primary" type="button" onClick={openCreateDialog}>Добавить товар</button> : null}
       </div>
 
       <CatalogFilters
@@ -142,7 +143,7 @@ export function ShopCategoryProducts({ categoryId, categoryName }: { categoryId:
         <div className={styles.empty}>
           <h3>В этой категории пока нет товаров</h3>
           <p>Добавьте карточку сейчас или вернитесь позже, когда будут готовы её характеристики.</p>
-          <button className="primary" type="button" onClick={openCreateDialog}>Добавить товар</button>
+          {canCreate ? <button className="primary" type="button" onClick={openCreateDialog}>Добавить товар</button> : null}
         </div>
       ) : null}
       {!loading && !error && products.length > 0 && visibleProducts.length === 0 ? (

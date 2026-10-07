@@ -10,8 +10,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-import { AdminClientError } from "@/admin/client/errors";
-import { ERROR_TEXT } from "@/admin/client/errorText";
+import { DOCUMENT_STATUS, actionErrorText } from "@/admin/client/actionFeedback";
 import { browserAdminClient } from "@/admin/client/localStore";
 import { articlePublishBlockers } from "@/admin/domain/publishRules";
 import type { ArticleDraft, EntityRecord } from "@/admin/domain/types";
@@ -60,8 +59,9 @@ export function MaterialEditor({ id }: { id: string }) {
     setMessage("");
     try {
       setRecord(await browserAdminClient().saveMaterial(id, draft));
+      setMessage(DOCUMENT_STATUS.saved);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось сохранить");
+      setMessage(actionErrorText(error, "Не удалось сохранить"));
     } finally {
       setSaving(false);
     }
@@ -72,10 +72,29 @@ export function MaterialEditor({ id }: { id: string }) {
     setMessage("");
     try {
       setRecord(await browserAdminClient().publishMaterial(id));
+      setMessage(DOCUMENT_STATUS.published);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось опубликовать");
+      setMessage(actionErrorText(error, "Не удалось опубликовать"));
     } finally {
       setPublishing(false);
+    }
+  }
+
+  async function onHide() {
+    try {
+      setRecord(await browserAdminClient().hideMaterial(id));
+      setMessage(DOCUMENT_STATUS.hidden);
+    } catch (error) {
+      setMessage(actionErrorText(error, "Не удалось скрыть"));
+    }
+  }
+
+  async function onDelete() {
+    try {
+      await browserAdminClient().deleteMaterial(id);
+      router.push("/materials");
+    } catch (error) {
+      setMessage(actionErrorText(error, "Не удалось удалить"));
     }
   }
 
@@ -101,18 +120,6 @@ export function MaterialEditor({ id }: { id: string }) {
           Текст
           <textarea value={draft.body} onChange={(event) => patch({ body: event.target.value })} />
         </label>
-        {draft.kind === "story" ? (
-          <label>
-            Клиент
-            <input value={draft.clientName} onChange={(event) => patch({ clientName: event.target.value })} />
-          </label>
-        ) : null}
-        {draft.kind === "story" ? (
-          <label>
-            Отрасль
-            <input value={draft.industry} onChange={(event) => patch({ industry: event.target.value })} />
-          </label>
-        ) : null}
         <label>
           <input type="checkbox" checked={draft.showInMenu} onChange={(event) => patch({ showInMenu: event.target.checked })} />
           Показывать в меню
@@ -153,14 +160,11 @@ export function MaterialEditor({ id }: { id: string }) {
               {publishing ? "Публикуем…" : "Опубликовать"}
             </button>
             {record.publishedSnapshot != null ? (
-              <button type="button" onClick={() => void browserAdminClient().hideMaterial(id).then(setRecord)}>
+              <button type="button" onClick={() => void onHide()}>
                 Скрыть с сайта
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={() => void browserAdminClient().deleteMaterial(id).then(() => router.push("/materials"))}
-              >
+              <button type="button" onClick={() => void onDelete()}>
                 Удалить
               </button>
             )}

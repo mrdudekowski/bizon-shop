@@ -9,8 +9,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
-import { AdminClientError } from "@/admin/client/errors";
-import { ERROR_TEXT } from "@/admin/client/errorText";
+import { DOCUMENT_STATUS, actionErrorText } from "@/admin/client/actionFeedback";
 import {
   AXLE_OPTIONS,
   TIRE_ADVANTAGE_OPTIONS,
@@ -187,8 +186,9 @@ export function TireModelEditor({ id }: { id: string }) {
       const saved = await browserAdminClient().saveTireModel(id, model);
       setRecord(saved);
       setDraft(saved.draft);
+      setMessage(DOCUMENT_STATUS.saved);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось сохранить");
+      setMessage(actionErrorText(error, "Не удалось сохранить"));
     } finally {
       setSaving(false);
     }
@@ -201,21 +201,30 @@ export function TireModelEditor({ id }: { id: string }) {
       const published = await browserAdminClient().publishTireModel(id);
       setRecord(published);
       setDraft(published.draft);
+      setMessage(DOCUMENT_STATUS.published);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось опубликовать");
+      setMessage(actionErrorText(error, "Не удалось опубликовать"));
     } finally {
       setPublishing(false);
     }
   }
 
   async function onHide() {
-    const hidden = await browserAdminClient().hideTireModel(id);
-    setRecord(hidden);
+    try {
+      setRecord(await browserAdminClient().hideTireModel(id));
+      setMessage(DOCUMENT_STATUS.hidden);
+    } catch (error) {
+      setMessage(actionErrorText(error, "Не удалось скрыть"));
+    }
   }
 
   async function onDelete() {
-    await browserAdminClient().deleteTireModel(id);
-    router.push("/");
+    try {
+      await browserAdminClient().deleteTireModel(id);
+      router.push("/");
+    } catch (error) {
+      setMessage(actionErrorText(error, "Не удалось удалить"));
+    }
   }
 
   function toggle<T extends string>(list: T[], value: T): T[] {
@@ -282,6 +291,7 @@ export function TireModelEditor({ id }: { id: string }) {
                 checked={(draft.applicationTypes ?? []).includes(category.value)}
                 onChange={() => patch({ applicationTypes: toggle(draft.applicationTypes ?? [], category.value) })}
               />
+              <img className="choiceIcon" src={category.icon} alt="" width={28} height={28} />
               {category.name}
             </label>
           ))}

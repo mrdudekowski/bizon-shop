@@ -1,38 +1,40 @@
 .fields, .productPhotos { display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; width: 100%; max-width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; }
 .fields > label, .productPhotos > label, .controls > label { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
-.dropzone { display: grid; justify-items: center; gap: 4px; padding: 26px 18px; border: 1px dashed #c2cad6; border-radius: 10px; background: #fafbfc; color: var(--ink-muted); font-size: 12px; font-weight: 400; text-align: center; cursor: pointer; }
-.dropzone strong { color: var(--ink); font-size: 13px; }
-.dropzone:hover, .dropzoneActive { border-color: var(--accent); background: var(--accent-wash); color: var(--ink); }
-.dropzone input[type=file], .fileButton input[type=file], .thumbAdd input[type=file] {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-.dropzone:has(input:focus-visible), .fileButton:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 3px; }
-.fileButton {
+.filePick {
   position: relative;
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: fit-content;
   max-width: 100%;
   min-width: 0;
-  min-height: var(--control);
-  padding: 0 16px;
+  min-height: 36px;
+  padding: 8px 12px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 8px;
+  background: #fff;
   cursor: pointer;
 }
-.fileButton:hover { background: var(--surface-muted); }
-.fileButtonDisabled { cursor: not-allowed; opacity: 0.65; }
+.filePick input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.fields input[type=file], .productPhotos > label input[type=file], .controls input[type=file] {
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 4px;
+  background: #fafbfc;
+}
 .stage {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -50,21 +52,6 @@
   max-width: 100%;
   min-width: 0;
 }
-.controls { gap: 14px; }
-@media (min-width: 800px) {
-  .stage { grid-template-columns: minmax(0, min(100%, var(--cms-preview-max, 22rem))) minmax(16rem, 1fr); }
-  .controls { max-width: 22rem; align-self: start; }
-}
-.controlGroup { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; width: 100%; max-width: 100%; min-width: 0; }
-.controlHeading { margin: 0; font-size: 15px; font-weight: 650; }
-.dangerOutline {
-  justify-self: start;
-  border-color: #cfd5df;
-  background: var(--surface);
-  color: #a13d34;
-  font-weight: 600;
-}
-.dangerOutline:hover { background: #fbe9e6; border-color: #e8b4ad; }
 .thumbs {
   display: grid;
   grid-auto-flow: column;
@@ -97,21 +84,6 @@
   object-fit: cover;
 }
 .thumbActive { border-color: var(--ink); }
-.thumbSelected { box-shadow: 0 0 0 2px var(--accent); }
-.thumbBadge {
-  position: absolute;
-  z-index: 1;
-  top: 4px;
-  left: 4px;
-  padding: 2px 5px;
-  border-radius: 4px;
-  background: #17212ecc;
-  color: #fff;
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1.2;
-  pointer-events: none;
-}
 .thumbAdd {
   display: grid;
   place-items: center;
@@ -124,8 +96,8 @@
   line-height: 1.2;
   text-align: center;
 }
-.thumbAddDisabled { opacity: 0.65; cursor: not-allowed; }
 .thumbAdd input {
+  position: absolute;
   inset: 0;
   width: 100%;
   max-width: 100%;
@@ -157,17 +129,6 @@
   scroll-margin-top: calc(var(--cms-sticky-top) + var(--cms-sticky-tabs) + 8px);
   scroll-margin-bottom: calc(var(--cms-chrome-bottom) + 8px);
 }
-.catalogBlock { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; width: 100%; max-width: 100%; min-width: 0; }
-.catalogPreview {
-  width: 132px;
-  max-width: 100%;
-  min-width: 0;
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #e9ecf1;
-}
 .preview {
   display: block;
   width: 100%;
@@ -194,4 +155,7 @@
 }
 .focusPoint:active { cursor: grabbing; }
 .focusPoint::after { content: ''; display: block; width: 12px; height: 12px; margin: auto; border: 2px solid white; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px #17212e; }
-.caption { color: var(--ink-muted); font-size: 12px; font-weight: 400; margin: 0; }
+.caption { color: var(--ink-muted); font-size: 12px; font-weight: 400; }
+@media (min-width: 800px) {
+  .stage { grid-template-columns: minmax(0, min(100%, var(--cms-preview-max, 22rem))) minmax(16rem, 1fr); }
+}

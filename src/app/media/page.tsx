@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { MediaLibrary } from "@/admin/media/MediaLibrary";
 
 export default function MediaPage() {
-  redirect("/");
+  return <MediaLibrary />;
 }

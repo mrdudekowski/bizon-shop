@@ -10,7 +10,7 @@ import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
-import { ERROR_TEXT } from "@/admin/client/errorText";
+import { DOCUMENT_STATUS, actionErrorText } from "@/admin/client/actionFeedback";
 import { shopProductPublishBlockers } from "@/admin/domain/publishRules";
 import type {
   EntityRecord,
@@ -180,8 +180,9 @@ export function ShopProductEditor({ id }: { id: string }) {
       const saved = await browserAdminClient().saveShopProduct(id, product);
       setRecord(saved);
       setDraft(saved.draft);
+      setMessage(DOCUMENT_STATUS.saved);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось сохранить");
+      setMessage(actionErrorText(error, "Не удалось сохранить"));
     } finally {
       setSaving(false);
     }
@@ -194,10 +195,29 @@ export function ShopProductEditor({ id }: { id: string }) {
       const published = await browserAdminClient().publishShopProduct(id);
       setRecord(published);
       setDraft(published.draft);
+      setMessage(DOCUMENT_STATUS.published);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось опубликовать");
+      setMessage(actionErrorText(error, "Не удалось опубликовать"));
     } finally {
       setPublishing(false);
+    }
+  }
+
+  async function onHide() {
+    try {
+      setRecord(await browserAdminClient().hideShopProduct(id));
+      setMessage(DOCUMENT_STATUS.hidden);
+    } catch (error) {
+      setMessage(actionErrorText(error, "Не удалось скрыть"));
+    }
+  }
+
+  async function onDelete() {
+    try {
+      await browserAdminClient().deleteShopProduct(id);
+      router.push("/shop");
+    } catch (error) {
+      setMessage(actionErrorText(error, "Не удалось удалить"));
     }
   }
 
@@ -420,14 +440,11 @@ export function ShopProductEditor({ id }: { id: string }) {
               {publishing ? "Публикуем…" : "Опубликовать"}
             </button>
             {record.publishedSnapshot != null ? (
-              <button type="button" onClick={() => void browserAdminClient().hideShopProduct(id).then(setRecord)}>
+              <button type="button" onClick={() => void onHide()}>
                 Скрыть с сайта
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={() => void browserAdminClient().deleteShopProduct(id).then(() => router.push("/shop"))}
-              >
+              <button type="button" onClick={() => void onDelete()}>
                 Удалить
               </button>
             )}

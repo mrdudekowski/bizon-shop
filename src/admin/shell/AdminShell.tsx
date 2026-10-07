@@ -41,6 +41,7 @@ const ADMIN_SCREEN_ROUTES = [
   "/pages/about",
   "/materials",
   "/materials/_",
+  "/media",
   "/publications",
   "/publications/_",
   "/users",
@@ -147,6 +148,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     ...(canEditPages ? CONTENT_NAV : []),
     ...(role === "admin"
       ? [
+          { href: "/media", label: "Файлы", icon: "image" as const },
           { href: "/publications", label: "Публикации", icon: "publications" as const },
           { href: "/users", label: "Пользователи", icon: "users" as const },
         ]

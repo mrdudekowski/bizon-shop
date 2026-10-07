@@ -7,6 +7,16 @@
   min-width: 0;
 }
 
+.tabPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding-bottom: 96px;
+}
+
 .section {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

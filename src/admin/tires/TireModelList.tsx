@@ -13,7 +13,7 @@ import type { DocumentStatus, TireDirection, TireModelListItem, MediaListItem } 
 import { Icon } from "@/admin/ui/Icon";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 import { CatalogRow } from "@/admin/ui/CatalogRow";
-import { useAdminRole } from "@/admin/ui/DocumentUI";
+import { useAdminRole, useCanPerform } from "@/admin/ui/DocumentUI";
 import styles from "@/admin/ui/catalog.module.css";
 
 export function TireModelList() {
@@ -30,6 +30,7 @@ export function TireModelList() {
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [role, setRole] = useAdminRole();
+  const canCreate = useCanPerform("create_catalog_items");
   const [loading, setLoading] = useState(true);
 
   async function reload() {
@@ -100,15 +101,15 @@ export function TireModelList() {
           </div>
           {loading ? <AdminLoading label="Загружаем направления…" /> : <ul className={`${styles.grid} ${styles.directionPicker}`}>
             {directions.map((direction) => {
-              const coverSrc = assets.find((item) => item.id === direction.imageAssetId)?.dataUrl ?? resolveSiteCatalogPreview(direction.slug);
+              const asset = assets.find((item) => item.id === direction.imageAssetId);
               const count = items.filter((item) => item.directionId === direction.id).length;
               return (
                 <li key={direction.id}>
                   <article className={styles.directionChoice}>
                     <Link className={styles.card} href={`/?direction=${encodeURIComponent(direction.id)}`}>
-                      <span className={styles.thumb} aria-hidden="true">{coverSrc ? <Image unoptimized fill sizes="(max-width: 720px) 92vw, 320px" src={coverSrc} alt="" style={{ objectFit: "cover" }} /> : <Icon name="directions" size={48} />}</span>
+                      <span className={styles.thumb}>{asset || resolveSiteCatalogPreview(direction.slug) ? <Image unoptimized width={52} height={56} src={asset?.dataUrl ?? resolveSiteCatalogPreview(direction.slug)!} alt="" /> : <Icon name="directions" size={34} />}</span>
                       <span className={styles.cardBody}><strong>{direction.name}</strong><span className={styles.meta}>{count} моделей</span></span>
-                      <Icon className={styles.cardArrow} name="arrow" size={16} />
+                      <Icon name="arrow" size={16} />
                     </Link>
                     <Link className={styles.directionSettings} href={`/tires/directions/${direction.id}`}>Настроить направление</Link>
                   </article>
@@ -125,9 +126,11 @@ export function TireModelList() {
         <div className={styles.filterGroup}>
           {directions.some((direction) => direction.id === selectedDirectionId) ? <Link className={styles.manageDirections} href={`/tires/directions/${selectedDirectionId}`}>Настроить направление</Link> : null}
           <button type="button" className="ghost" onClick={() => router.push("/")}>Все направления</button>
+          {canCreate ? (
           <button type="button" className="primary" onClick={openCreate}>
             <Icon name="plus" /> Добавить модель
           </button>
+          ) : null}
         </div>
       </div>
       <div className={styles.filters}>
@@ -138,7 +141,7 @@ export function TireModelList() {
         <label>Статус<select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}><option value="all">Все статусы</option><option value="draft">Черновик</option><option value="on_site">На сайте</option><option value="hidden">Скрыто</option></select></label>
       </div>
       {loading ? <AdminLoading label="Загружаем модели шин…" /> : visible.length === 0 && !query.trim() && status === "all" ? (
-        <div className={styles.empty}><Icon name="tires" size={36} /><h2>В этом направлении пока нет моделей</h2><p>Добавьте первую шину, чтобы собрать каталог направления.</p><button type="button" className="primary" onClick={openCreate}>Добавить модель</button></div>
+        <div className={styles.empty}><Icon name="tires" size={36} /><h2>В этом направлении пока нет моделей</h2><p>Добавьте первую шину, чтобы собрать каталог направления.</p>{canCreate ? <button type="button" className="primary" onClick={openCreate}>Добавить модель</button> : null}</div>
       ) : visible.length === 0 ? (
         <p className={styles.empty}>Ничего не найдено</p>
       ) : (

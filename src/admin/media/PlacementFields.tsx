@@ -1,48 +1,25 @@
 "use client";
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type DragEvent as ReactDragEvent,
-  type PointerEvent as ReactPointerEvent,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type ReactNode,
-} from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import type { ImagePlacement, MediaListItem } from "@/admin/domain/types";
 import { resolveMediaPreviewUrl } from "@/admin/domain/catalogPreviewUrl";
-import { AdminClientError } from "@/admin/client/errors";
 import { browserAdminClient } from "@/admin/client/localStore";
-import { reorderGallery, swapWithCover } from "@/admin/media/placementGallery";
+import { uploadErrorText } from "./uploadError";
+import { mediaMimeFromFile } from "./mediaMime";
 import styles from "./PlacementFields.module.css";
-
-function emptyPlacement(assetId: string): ImagePlacement {
-  return { assetId, alt: "", focalX: 0.5, focalY: 0.5, crop: { x: 0, y: 0, width: 1, height: 1 } };
-}
-function clamp(value: number) {
-  return Math.min(1, Math.max(0, value));
-}
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-async function uploadImageFile(file: File): Promise<ImagePlacement> {
-  const dataUrl = await readFileAsDataUrl(file);
-  const asset = await browserAdminClient().createAsset({
+function emptyPlacement(assetId: string): ImagePlacement { return { assetId, alt: "", focalX: .5, focalY: .5, crop: { x: 0, y: 0, width: 1, height: 1 } }; }
+function clamp(value: number) { return Math.min(1, Math.max(0, value)); }
+async function uploadImageFile(file: File, current?: ImagePlacement): Promise<ImagePlacement> {
+  const upload = {
     name: file.name,
-    mimeType: file.type || "image/png",
-    dataUrl,
-  });
+    mimeType: mediaMimeFromFile(file),
+    body: file,
+  };
+  if (current) {
+    const replacement = await browserAdminClient().replaceAsset(current.assetId, upload);
+    return { ...current, replacementAssetId: replacement.replacementAssetId };
+  }
+  const asset = await browserAdminClient().createAsset(upload);
   return emptyPlacement(asset.id);
-}
-function uploadErrorText(error: unknown): string {
-  return error instanceof AdminClientError && error.code === "storage_unavailable"
-    ? "Хранилище S3 не настроено. Добавьте ключи бакета и повторите загрузку."
-    : "Не удалось загрузить фото. Попробуйте другой файл.";
 }
 function fitCmsPreviewToViewport() {
   const footer = document.querySelector(".documentActions");
@@ -51,45 +28,8 @@ function fitCmsPreviewToViewport() {
   const fields = first.closest("[data-cms-image-fields]");
   const room = Math.floor(footer.getBoundingClientRect().top - first.getBoundingClientRect().top - 8);
   const widthCap = Math.floor(fields?.getBoundingClientRect().width ?? window.innerWidth);
-  document.documentElement.style.setProperty(
-    "--cms-preview-max",
-    `${Math.max(72, Math.min(room, widthCap, Math.round(window.innerHeight - 220)))}px`,
-  );
+  document.documentElement.style.setProperty("--cms-preview-max", `${Math.max(72, Math.min(room, widthCap, Math.round(window.innerHeight - 220)))}px`);
 }
-
-function FileUploadButton({
-  label,
-  ariaLabel,
-  accept = "image/*",
-  multiple,
-  disabled,
-  onFiles,
-}: {
-  label: string;
-  ariaLabel: string;
-  accept?: string;
-  multiple?: boolean;
-  disabled?: boolean;
-  onFiles: (files: FileList | null) => void;
-}) {
-  return (
-    <label className={`${styles.fileButton} ${disabled ? styles.fileButtonDisabled : ""}`}>
-      {label}
-      <input
-        aria-label={ariaLabel}
-        type="file"
-        accept={accept}
-        multiple={multiple}
-        disabled={disabled}
-        onChange={(event) => {
-          onFiles(event.target.files);
-          event.target.value = "";
-        }}
-      />
-    </label>
-  );
-}
-
 type Props = {
   value: ImagePlacement | undefined;
   onChange: (value: ImagePlacement | undefined) => void;
@@ -97,27 +37,12 @@ type Props = {
   thumbs?: ReactNode;
   previewSrc?: string | null;
   showFocus?: boolean;
-  catalogPreviewSrc?: string | null;
-  catalogPlacementStyle?: React.CSSProperties;
-  extraControls?: ReactNode;
-  fileUploading?: boolean;
 };
-
-export function PlacementFields({
-  value,
-  onChange,
-  label = "Фото",
-  thumbs,
-  previewSrc,
-  showFocus = true,
-  catalogPreviewSrc,
-  catalogPlacementStyle,
-  extraControls,
-  fileUploading = false,
-}: Props) {
+export function PlacementFields({ value, onChange, label = "Фото", thumbs, previewSrc, showFocus = true }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState("");
-  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [replacementPending, setReplacementPending] = useState(false);
   const frame = useRef<HTMLDivElement>(null);
   const assetId = value?.assetId;
   useEffect(() => {
@@ -126,22 +51,18 @@ export function PlacementFields({
     };
   }, [previewUrl]);
   useEffect(() => {
-    if (!assetId) {
-      setPreviewUrl(null);
-      return;
-    }
+    if (!assetId) { setPreviewUrl(null); return; }
     let cancelled = false;
-    void browserAdminClient()
-      .listAssets()
-      .then((assets: MediaListItem[]) => {
-        if (!cancelled) setPreviewUrl(resolveMediaPreviewUrl(assets.find((asset) => asset.id === assetId)?.dataUrl));
-      });
-    return () => {
-      cancelled = true;
-    };
+    void browserAdminClient().listAssets().then((assets: MediaListItem[]) => {
+      if (cancelled) return;
+      const asset = assets.find((item) => item.id === assetId);
+      setPreviewUrl(resolveMediaPreviewUrl(asset?.dataUrl));
+      setReplacementPending(Boolean(asset?.replacementPending));
+    });
+    return () => { cancelled = true; };
   }, [assetId]);
   useLayoutEffect(() => {
-    if (!previewUrl && !previewSrc) return;
+    if (!previewUrl) return;
     const node = frame.current;
     if (!node) return;
     const fit = () => fitCmsPreviewToViewport();
@@ -159,39 +80,45 @@ export function PlacementFields({
         if (!document.querySelector("[data-cms-image-fields]")) document.documentElement.style.removeProperty("--cms-preview-max");
       });
     };
-  }, [previewUrl, previewSrc]);
+  }, [previewUrl]);
   async function onFile(file?: File) {
-    if (!file || fileUploading) return;
+    if (!file) return;
     setUploadError("");
+    setUploading(true);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      const asset = await browserAdminClient().createAsset({
-        name: file.name,
-        mimeType: file.type || "image/png",
-        dataUrl,
-      });
-      const placement = emptyPlacement(asset.id);
-      setPreviewUrl(dataUrl);
+      const placement = await uploadImageFile(file, value);
+      setPreviewUrl(URL.createObjectURL(file));
+      if (value) setReplacementPending(true);
       onChange(placement);
     } catch (error) {
       setUploadError(uploadErrorText(error));
+    } finally {
+      setUploading(false);
     }
   }
-  function onDrop(event: ReactDragEvent<HTMLLabelElement>) {
-    event.preventDefault();
-    setDragging(false);
-    void onFile(event.dataTransfer.files?.[0]);
+  async function cancelReplacement() {
+    if (!assetId || !value) return;
+    setUploadError("");
+    setUploading(true);
+    try {
+      await browserAdminClient().cancelAssetReplacement(assetId);
+      setReplacementPending(false);
+      const next = { ...value };
+      delete next.replacementAssetId;
+      onChange(next);
+      const assets = await browserAdminClient().listAssets();
+      setPreviewUrl(resolveMediaPreviewUrl(assets.find((asset) => asset.id === assetId)?.dataUrl));
+    } catch (error) {
+      setUploadError(uploadErrorText(error));
+    } finally {
+      setUploading(false);
+    }
   }
-  function patch(next: Partial<ImagePlacement>) {
-    if (value) onChange({ ...value, ...next });
-  }
+  function patch(next: Partial<ImagePlacement>) { if (value) onChange({ ...value, ...next }); }
   function pointAt(event: ReactPointerEvent) {
     if (!showFocus || !value || !frame.current) return;
     const bounds = frame.current.getBoundingClientRect();
-    patch({
-      focalX: clamp((event.clientX - bounds.left) / bounds.width),
-      focalY: clamp((event.clientY - bounds.top) / bounds.height),
-    });
+    patch({ focalX: clamp((event.clientX - bounds.left) / bounds.width), focalY: clamp((event.clientY - bounds.top) / bounds.height) });
   }
   function dragFocus(event: ReactPointerEvent<HTMLButtonElement>) {
     if (!showFocus || !value) return;
@@ -205,128 +132,60 @@ export function PlacementFields({
   }
   function moveFocus(event: ReactKeyboardEvent<HTMLButtonElement>) {
     if (!value) return;
-    const step = event.shiftKey ? 0.05 : 0.01;
-    const delta = ({ ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] } as const)[
-      event.key as "ArrowLeft" | "ArrowRight" | "ArrowUp" | "ArrowDown"
-    ];
-    if (delta) {
-      event.preventDefault();
-      patch({ focalX: clamp(value.focalX + delta[0]), focalY: clamp(value.focalY + delta[1]) });
-    }
+    const step = event.shiftKey ? .05 : .01;
+    const delta = ({ ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] } as const)[event.key as "ArrowLeft" | "ArrowRight" | "ArrowUp" | "ArrowDown"];
+    if (delta) { event.preventDefault(); patch({ focalX: clamp(value.focalX + delta[0]), focalY: clamp(value.focalY + delta[1]) }); }
   }
-  const placementStyle = value
-    ? ({ "--focus-x": `${value.focalX * 100}%`, "--focus-y": `${value.focalY * 100}%` } as React.CSSProperties)
-    : undefined;
+  const placementStyle = value ? ({ "--focus-x": `${value.focalX * 100}%`, "--focus-y": `${value.focalY * 100}%` } as React.CSSProperties) : undefined;
   const displayUrl = previewSrc || previewUrl;
-  const catalogUrl = catalogPreviewSrc ?? (showFocus ? displayUrl : null);
-  const catalogStyle = catalogPlacementStyle ?? placementStyle;
-  const dropzone = (
-    <label
-      className={`${styles.dropzone} ${dragging ? styles.dropzoneActive : ""}`}
-      data-cms-photo-anchor="main"
-      onDragOver={(event) => {
-        event.preventDefault();
-        setDragging(true);
-      }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={onDrop}
-    >
-      <strong>Загрузить фото</strong>
-      Перетащите файл сюда или нажмите, чтобы выбрать
+  const replaceLabel = (
+    <label className={styles.filePick}>
+      {uploading ? "Загружаем…" : value ? "Заменить фото" : "Загрузить фото"}
       <input
         aria-label={`${label}: файл`}
         type="file"
         accept="image/*"
-        disabled={fileUploading}
-        onChange={(event) => void onFile(event.target.files?.[0])}
+        disabled={uploading}
+        onChange={(event) => {
+          void onFile(event.target.files?.[0]);
+          event.target.value = "";
+        }}
       />
     </label>
   );
-  return (
-    <fieldset className={styles.fields} data-cms-image-fields>
-      <legend>{label}</legend>
-      {displayUrl ? null : dropzone}
-      {uploadError ? <p role="alert">{uploadError}</p> : null}
-      {displayUrl ? (
-        <>
-          {thumbs}
-          <div className={styles.stage}>
-            <div className={styles.previewColumn}>
-              <div className={styles.previewFrame}>
-                <div
-                  ref={frame}
-                  className={styles.previewShot}
-                  style={showFocus ? placementStyle : undefined}
-                  aria-label="Предпросмотр фото и точки фокуса"
-                >
-                  <img className={styles.preview} src={displayUrl} alt={value?.alt || label} />
-                  {showFocus && value ? (
-                    <button
-                      className={styles.focusPoint}
-                      style={placementStyle}
-                      type="button"
-                      aria-label="Точка фокуса: перетащите кружок; стрелки на клавиатуре"
-                      onPointerDown={dragFocus}
-                      onPointerMove={moveDrag}
-                      onKeyDown={moveFocus}
-                    />
-                  ) : null}
-                </div>
+  return <fieldset className={styles.fields} data-cms-image-fields><legend>{label}</legend>
+    {displayUrl ? null : replaceLabel}
+    {uploadError ? <p role="alert">{uploadError}</p> : null}
+    {displayUrl ? (
+      <>
+        {thumbs}
+        <div className={styles.stage}>
+          <div className={styles.previewColumn}>
+            <div className={styles.previewFrame}>
+              <div ref={frame} className={styles.previewShot} style={showFocus ? placementStyle : undefined} aria-label="Предпросмотр фото и точки фокуса">
+                <img className={styles.preview} src={displayUrl} alt={value?.alt || label} />
+                {showFocus && value ? <button className={styles.focusPoint} style={placementStyle} type="button" aria-label="Точка фокуса: перетащите кружок; стрелки на клавиатуре" onPointerDown={dragFocus} onPointerMove={moveDrag} onKeyDown={moveFocus} /> : null}
               </div>
-              {showFocus && catalogUrl ? (
-                <div className={styles.catalogBlock}>
-                  <p className={styles.caption}>На сайте</p>
-                  <div className={styles.catalogPreview} style={catalogStyle}>
-                    <img className={styles.preview} src={catalogUrl} alt="" />
-                  </div>
-                </div>
-              ) : null}
             </div>
-            {value ? (
-              <div className={styles.controls}>
-                <div className={styles.controlGroup}>
-                  <h3 className={styles.controlHeading}>Файл</h3>
-                  <FileUploadButton
-                    label={fileUploading ? "Загружаем…" : value ? "Заменить фото" : "Загрузить фото"}
-                    ariaLabel={`${label}: файл`}
-                    disabled={fileUploading}
-                    onFiles={(files) => void onFile(files?.[0])}
-                  />
-                </div>
-                {showFocus ? (
-                  <div className={styles.controlGroup}>
-                    <p className={styles.caption}>Точка фокуса — центр кадра на карточке каталога.</p>
-                    <button type="button" className="ghost" onClick={() => patch({ focalX: 0.5, focalY: 0.5 })}>
-                      По центру
-                    </button>
-                  </div>
-                ) : null}
-                {extraControls}
-                <div className={styles.controlGroup}>
-                  <h3 className={styles.controlHeading}>Подпись</h3>
-                  <p className={styles.caption}>Для поиска и доступности.</p>
-                  <label>
-                    Подпись к фото
-                    <input value={value.alt} onChange={(event) => patch({ alt: event.target.value })} />
-                  </label>
-                </div>
-                <button
-                  type="button"
-                  className={styles.dangerOutline}
-                  onClick={() => {
-                    onChange(undefined);
-                    setPreviewUrl(null);
-                  }}
-                >
-                  Убрать фото
-                </button>
-              </div>
-            ) : null}
           </div>
-        </>
-      ) : null}
-    </fieldset>
-  );
+          {value ? (
+            <div className={styles.controls}>
+              {replaceLabel}
+              {replacementPending ? <>
+                <p className={styles.caption}>Новое фото появится на сайте после публикации.</p>
+                <button type="button" className="ghost" disabled={uploading} onClick={() => void cancelReplacement()}>
+                  Отменить замену
+                </button>
+              </> : null}
+              {showFocus ? <p className={styles.caption}>Перетащите кружок, чтобы сдвинуть кадр на карточке.</p> : null}
+              <label>Подпись к фото<input value={value.alt} onChange={(event) => patch({ alt: event.target.value })} /></label>
+              <button type="button" className="ghost" onClick={() => { onChange(undefined); setPreviewUrl(null); }}>Убрать фото</button>
+            </div>
+          ) : null}
+        </div>
+      </>
+    ) : null}
+  </fieldset>;
 }
 
 export function ProductPhotoFields({
@@ -344,7 +203,6 @@ export function ProductPhotoFields({
   const slots = [cover, ...photos];
   const [pinned, setPinned] = useState(0);
   const [hovered, setHovered] = useState<number | null>(null);
-  const [dragGalleryIndex, setDragGalleryIndex] = useState<number | null>(null);
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [uploadError, setUploadError] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -360,9 +218,7 @@ export function ProductPhotoFields({
       }
       setUrls(next);
     });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [assetKey]);
   useEffect(() => {
     setPinned((current) => Math.min(current, Math.max(0, slots.length - 1)));
@@ -372,10 +228,6 @@ export function ProductPhotoFields({
   const pinnedPlacement = slots[pinned];
   const shownPlacement = slots[shown];
   const shownUrl = shownPlacement ? urls[shownPlacement.assetId] : null;
-  const coverStyle = cover
-    ? ({ "--focus-x": `${cover.focalX * 100}%`, "--focus-y": `${cover.focalY * 100}%` } as React.CSSProperties)
-    : undefined;
-  const coverUrl = cover ? urls[cover.assetId] : null;
   function pin(index: number) {
     setPinned(index);
     setHovered(null);
@@ -384,21 +236,13 @@ export function ProductPhotoFields({
     if (pinned === 0) onCoverChange(next);
     else if (!next) {
       onGalleryChange(photos.filter((_, index) => index !== pinned - 1));
-      setPinned((current) => (current === pinned ? Math.max(0, pinned - 1) : current > pinned ? current - 1 : current));
+      setPinned(0);
     } else {
       onGalleryChange(photos.map((photo, index) => (index === pinned - 1 ? next : photo)));
     }
   }
-  function makeMain() {
-    if (pinned <= 0) return;
-    const next = swapWithCover(cover, photos, pinned - 1);
-    onCoverChange(next.cover);
-    onGalleryChange(next.gallery);
-    setPinned(0);
-    setHovered(null);
-  }
   async function onFiles(files: FileList | null) {
-    if (!files?.length || uploading) return;
+    if (!files?.length) return;
     setUploadError("");
     setUploading(true);
     try {
@@ -411,71 +255,41 @@ export function ProductPhotoFields({
       setUploading(false);
     }
   }
-  function onGalleryDrop(targetGalleryIndex: number) {
-    if (dragGalleryIndex == null || dragGalleryIndex === targetGalleryIndex) return;
-    onGalleryChange(reorderGallery(photos, dragGalleryIndex, targetGalleryIndex));
-    setDragGalleryIndex(null);
-  }
   const addPhoto = (
-    <label className={`${styles.thumbAdd} ${uploading ? styles.thumbAddDisabled : ""}`} data-cms-photo-anchor="main">
+    <label className={styles.thumbAdd}>
       {uploading ? "Загружаем…" : "Добавить фото"}
       <input
-        aria-label="Добавить фото"
+        aria-label="Фотографии товара: файлы"
         type="file"
         accept="image/*"
         multiple
-        disabled={uploading}
         onChange={(event) => {
           void onFiles(event.target.files);
+          event.target.value = "";
         }}
       />
     </label>
   );
   return (
-    <div className={styles.productPhotos} data-cms-photo-anchor={cover ? undefined : "main"}>
+    <div className={styles.productPhotos}>
       <PlacementFields
         label={pinned === 0 ? "Главное фото" : `Фото ${pinned}`}
         value={pinnedPlacement}
         onChange={onPinnedChange}
         previewSrc={shown === pinned ? undefined : shownUrl}
-        showFocus={pinned === 0 && shown === pinned && Boolean(pinnedPlacement)}
-        catalogPreviewSrc={coverUrl}
-        catalogPlacementStyle={coverStyle}
-        fileUploading={uploading}
-        extraControls={
-          pinned > 0 && pinnedPlacement ? (
-            <div className={styles.controlGroup}>
-              <button type="button" onClick={makeMain}>
-                Сделать главным
-              </button>
-            </div>
-          ) : null
-        }
+        showFocus={shown === pinned && Boolean(pinnedPlacement)}
         thumbs={
           <div className={styles.thumbs} aria-label="Фотографии товара" onMouseLeave={() => setHovered(null)}>
             {slots.map((slot, index) => (
               <button
                 key={slot?.assetId ?? `empty-${index}`}
                 type="button"
-                className={index === pinned ? `${styles.thumbActive} ${styles.thumbSelected}` : undefined}
+                className={index === pinned ? styles.thumbActive : undefined}
                 aria-pressed={index === pinned}
                 aria-label={index === 0 ? "Главное фото" : `Фото ${index}`}
-                draggable={index > 0 && Boolean(slot)}
-                onDragStart={() => {
-                  if (index > 0) setDragGalleryIndex(index - 1);
-                }}
-                onDragEnd={() => setDragGalleryIndex(null)}
-                onDragOver={(event) => {
-                  if (index > 0) event.preventDefault();
-                }}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  if (index > 0) onGalleryDrop(index - 1);
-                }}
                 onMouseEnter={() => setHovered(index)}
                 onClick={() => pin(index)}
               >
-                {index === 0 && slot ? <span className={styles.thumbBadge}>Главное</span> : null}
                 {slot && urls[slot.assetId] ? <img src={urls[slot.assetId]} alt="" /> : <span>{index === 0 ? "Главное" : index}</span>}
               </button>
             ))}

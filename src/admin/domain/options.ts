@@ -19,11 +19,11 @@ export const AXLE_OPTIONS = [
 ] as const;
 
 export const TIRE_CATEGORIES = [
-  { value: "long_haul", name: "Long Haul — магистральные" },
-  { value: "regional", name: "Regional — региональные" },
-  { value: "off_road", name: "Off-Road — карьерные и бездорожье" },
-  { value: "construction", name: "Construction — строительные" },
-  { value: "urban", name: "Urban — городские" },
+  { value: "long_haul", name: "Long Haul — магистральные", icon: "/images/application/long-haul-m.svg" },
+  { value: "regional", name: "Regional — региональные", icon: "/images/application/regional-m.svg" },
+  { value: "off_road", name: "Off-Road — карьерные и бездорожье", icon: "/images/application/off-road-m.svg" },
+  { value: "construction", name: "Construction — строительные", icon: "/images/application/construction-m.svg" },
+  { value: "urban", name: "Urban — городские", icon: "/images/application/urban-m.svg" },
 ] as const;
 
 export const TIRE_ADVANTAGE_OPTIONS = [

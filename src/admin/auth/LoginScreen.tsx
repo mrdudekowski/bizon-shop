@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import Image from "next/image";
 
 import { AdminClientError } from "@/admin/client/errors";
+import { ERROR_TEXT } from "@/admin/client/errorText";
 import { browserAdminClient } from "@/admin/client/localStore";
 import type { AdminSession } from "@/admin/domain/types";
 
@@ -25,6 +26,8 @@ export function LoginScreen({ onLogin }: { onLogin: (session: AdminSession) => v
     } catch (reason) {
       if (reason instanceof AdminClientError && reason.code === "invalid_credentials") {
         setError("Неверный логин или пароль.");
+      } else if (reason instanceof AdminClientError && reason.code === "login_throttled") {
+        setError(ERROR_TEXT.login_throttled);
       } else {
         setError("Не удалось войти. Проверьте подключение и попробуйте ещё раз.");
       }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { AdminClientError } from "./errors";
 import { createLocalAdminClient, type AdminStorage } from "./localStore";
-import type { TireModelDraft } from "@/admin/domain/types";
+import type { AdminUser, TireModelDraft } from "@/admin/domain/types";
 
 function memory(): AdminStorage {
   let value: string | null = null;
@@ -128,12 +128,12 @@ describe("createLocalAdminClient", () => {
     await seeded.listUsers();
     const raw = JSON.parse(storage.read() ?? "{}") as {
       session: { login: string };
-      users: { id: string; login: string; role: string; disabled: boolean }[];
+      users: { id: string; login: string; role: string; disabled: boolean; capabilities?: string[] }[];
     };
     raw.session.login = "editor-session";
-    raw.users.push({ id: "user-editor", login: "editor-session", role: "editor", disabled: false });
+    raw.users.push({ id: "user-editor", login: "editor-session", role: "editor", disabled: false, capabilities: [] });
     storage.write(JSON.stringify(raw));
-    await expect(seeded.disableUser("user-admin")).rejects.toMatchObject({ code: "last_admin" });
+    await expect(seeded.disableUser("user-admin")).rejects.toMatchObject({ code: "forbidden" });
   });
 
   it("discards a user password", async () => {
@@ -155,6 +155,12 @@ describe("createLocalAdminClient", () => {
     expect(JSON.parse(storage.read() ?? "")).toMatchObject({
       directions: [{ id: "dir-long-haul" }],
     });
+    const repairedState = JSON.parse(storage.read() ?? "") as {
+      session: { capabilities?: unknown };
+      users: { capabilities?: unknown }[];
+    };
+    expect(repairedState.session.capabilities).toEqual([]);
+    expect(repairedState.users[0]?.capabilities).toEqual([]);
   });
 
   it("publishes a tire direction without a cover image", async () => {
@@ -314,16 +320,18 @@ describe("createLocalAdminClient", () => {
 
     const wheelType = await client.createWheelType({ name: "Кованые" });
     const wheel = await client.createWheelModel({ name: "Atlas", wheelTypeId: wheelType.id });
-    await client.saveWheelModel(wheel.id, { ...wheel.draft, mainImage: image });
+    await client.saveWheelModel(wheel.id, { ...wheel.draft, mainImage: image, gallery: [image] });
 
     const category = await client.createShopCategory({ name: "Аксессуары" });
     const product = await client.createShopProduct({ name: "Колпак", categoryId: category.id });
-    await client.saveShopProduct(product.id, { ...product.draft, mainImage: image });
+    await client.saveShopProduct(product.id, { ...product.draft, mainImage: image, gallery: [image] });
     const material = await client.createMaterial({ title: "Tire IQ", kind: "article" });
     await client.saveMaterial(material.id, { ...material.draft, image });
 
     expect((await client.listWheelModels()).find((item) => item.id === wheel.id)).toMatchObject({ imageAssetId: asset.id });
+    expect((await client.getWheelModel(wheel.id)).draft.gallery).toEqual([image]);
     expect((await client.listShopProducts()).find((item) => item.id === product.id)).toMatchObject({ imageAssetId: asset.id });
+    expect((await client.getShopProduct(product.id)).draft.gallery).toEqual([image]);
     expect((await client.listMaterials()).find((item) => item.id === material.id)).toMatchObject({ imageAssetId: asset.id });
   });
 
@@ -377,5 +385,86 @@ describe("createLocalAdminClient", () => {
 
     const productRow = (await client.listShopProducts())[0];
     expect(productRow).toMatchObject({ status: "on_site", categoryPublished: true, isPublished: true });
+  });
+
+  function switchSession(storage: AdminStorage, login: string, role: "admin" | "editor", capabilities: AdminUser["capabilities"] = []) {
+    const raw = JSON.parse(storage.read() ?? "{}") as { session: { login: string; role: string; capabilities: string[] } };
+    raw.session = { login, role, capabilities };
+    storage.write(JSON.stringify(raw));
+    return createLocalAdminClient(storage);
+  }
+
+  async function asEditor(
+    storage: AdminStorage,
+    capabilities: AdminUser["capabilities"] = [],
+  ): Promise<{ client: ReturnType<typeof createLocalAdminClient>; editorId: string }> {
+    const admin = createLocalAdminClient(storage);
+    const editor = await admin.createUser({ login: "editor", role: "editor", password: "secret-password", capabilities });
+    return { client: switchSession(storage, "editor", "editor", capabilities), editorId: editor.id };
+  }
+
+  it("forbids an editor from publishing or creating models without capability", async () => {
+    const storage = memory();
+    const { client } = await asEditor(storage);
+    await expect(client.createTireModel({ name: "LH01", directionId: "dir-long-haul" })).rejects.toMatchObject({
+      code: "forbidden",
+    });
+    await expect(client.createTireDirection({ name: "Регион" })).rejects.toMatchObject({ code: "forbidden" });
+    const page = await client.getPage("about");
+    await expect(client.savePage("about", page.draft)).rejects.toMatchObject({ code: "forbidden" });
+  });
+
+  it("records editor saves into one pack and publishes only after admin approval", async () => {
+    const storage = memory();
+    const admin = createLocalAdminClient(storage);
+    const created = await admin.createTireModel({ name: "LH01", directionId: "dir-long-haul" });
+    const ready = publishable(created.draft);
+    await admin.saveTireModel(created.id, ready);
+    await admin.publishTireModel(created.id);
+
+    const editor = await admin.createUser({
+      login: "editor",
+      role: "editor",
+      password: "secret-password",
+      capabilities: ["create_catalog_items"],
+    });
+    const asEditorClient = switchSession(storage, "editor", "editor", ["create_catalog_items"]);
+
+    const first = await asEditorClient.saveTireModel(created.id, { ...ready, name: "LH01 a" });
+    const second = await asEditorClient.saveTireModel(created.id, { ...first.savedDraft!, name: "LH01 b" });
+    expect(second.publishedSnapshot?.name).toBe("LH01");
+    const mine = await asEditorClient.listChangeSets();
+    expect(mine).toHaveLength(1);
+    expect(mine[0].entries[0].fieldChanges.some((change) => change.path === "name")).toBe(true);
+
+    const submitted = await asEditorClient.submitChangeSet(mine[0].id);
+    expect(submitted.status).toBe("pending_review");
+    await expect(asEditorClient.publishChangeSet(submitted.id)).rejects.toMatchObject({ code: "forbidden" });
+
+    const asAdmin = switchSession(storage, "admin", "admin");
+    const published = await asAdmin.publishChangeSet(submitted.id);
+    expect(published.status).toBe("published");
+    expect((await asAdmin.getTireModel(created.id)).publishedSnapshot?.name).toBe("LH01 b");
+    expect(editor.login).toBe("editor");
+  });
+
+  it("cancels a pack and restores the previous draft", async () => {
+    const storage = memory();
+    const admin = createLocalAdminClient(storage);
+    const created = await admin.createTireModel({ name: "LH01", directionId: "dir-long-haul" });
+    const ready = publishable(created.draft);
+    await admin.saveTireModel(created.id, ready);
+    await admin.publishTireModel(created.id);
+    await admin.createUser({ login: "editor", role: "editor", password: "secret-password" });
+    const editorClient = switchSession(storage, "editor", "editor");
+    await editorClient.saveTireModel(created.id, { ...ready, descriptionShort: "новое" });
+    const pack = (await editorClient.listChangeSets())[0];
+    await editorClient.submitChangeSet(pack.id);
+
+    const asAdmin = switchSession(storage, "admin", "admin");
+    await asAdmin.cancelChangeSet(pack.id);
+    const restored = await asAdmin.getTireModel(created.id);
+    expect(restored.savedDraft?.descriptionShort).toBe("");
+    expect(restored.publishedSnapshot?.name).toBe("LH01");
   });
 });

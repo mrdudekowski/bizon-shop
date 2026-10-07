@@ -9,8 +9,7 @@ import Link from "next/link";
 
 import { useEffect, useRef, useState } from "react";
 
-import { AdminClientError } from "@/admin/client/errors";
-import { ERROR_TEXT } from "@/admin/client/errorText";
+import { DOCUMENT_STATUS, actionErrorText } from "@/admin/client/actionFeedback";
 import { browserAdminClient } from "@/admin/client/localStore";
 import {
   LEGAL_PAGE_KEYS,
@@ -25,6 +24,9 @@ import {
   type StubPageDraft,
 } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
+import { mediaMimeFromFile } from "@/admin/media/mediaMime";
+import { uploadErrorText } from "@/admin/media/uploadError";
+import placementStyles from "@/admin/media/PlacementFields.module.css";
 
 import { PAGE_LABELS } from "./pageLabels";
 import styles from "./PageEditor.module.css";
@@ -107,14 +109,20 @@ function StubFields({
   draft: StubPageDraft;
   onChange: (next: StubPageDraft) => void;
 }) {
+  const [documentError, setDocumentError] = useState("");
   async function onDocumentFile(file: File | undefined) {
     if (file == null) return;
-    const asset = await browserAdminClient().createAsset({
-      name: file.name,
-      mimeType: file.type || "application/pdf",
-      body: file,
-    });
-    onChange({ ...draft, documents: [...draft.documents, { assetId: asset.id, title: file.name }] });
+    setDocumentError("");
+    try {
+      const asset = await browserAdminClient().createAsset({
+        name: file.name,
+        mimeType: mediaMimeFromFile(file),
+        body: file,
+      });
+      onChange({ ...draft, documents: [...draft.documents, { assetId: asset.id, title: file.name }] });
+    } catch (error) {
+      setDocumentError(uploadErrorText(error));
+    }
   }
 
   return (
@@ -159,7 +167,7 @@ function StubFields({
               </button>
             </div>
           ))}
-          <label>
+          <label className={placementStyles.filePick}>
             PDF
             <input
               type="file"
@@ -170,6 +178,7 @@ function StubFields({
               }}
             />
           </label>
+          {documentError ? <p role="alert">{documentError}</p> : null}
         </section>
       ) : null}
     </>
@@ -257,85 +266,6 @@ function ShopHomeFields({
 }) {
   return (
     <>
-      <SectionFields
-        title="Hero"
-        value={draft.hero}
-        onChange={(hero) => onChange({ ...draft, hero: { ...draft.hero, ...hero } })}
-      />
-      <PlacementFields
-        label="Картинка hero"
-        value={draft.hero.image}
-        onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image } })}
-      />
-      <CtaFields
-        label="Кнопка hero"
-        value={draft.hero.cta}
-        onChange={(cta) => onChange({ ...draft, hero: { ...draft.hero, cta } })}
-      />
-      <SectionFields
-        title="Ввод дисков"
-        value={draft.wheelsIntro}
-        onChange={(wheelsIntro) => onChange({ ...draft, wheelsIntro: { ...draft.wheelsIntro, ...wheelsIntro } })}
-      />
-      <label>
-        Kicker
-        <input
-          value={draft.wheelsIntro.kicker}
-          onChange={(event) =>
-            onChange({ ...draft, wheelsIntro: { ...draft.wheelsIntro, kicker: event.target.value } })
-          }
-        />
-      </label>
-
-      <section className={styles.section}>
-        <h2>Шаги заказа</h2>
-        {draft.orderSteps.map((step, index) => (
-          <div key={step.id} className={styles.row}>
-            <label>
-              Заголовок
-              <input
-                value={step.title}
-                onChange={(event) => {
-                  const orderSteps = draft.orderSteps.slice();
-                  orderSteps[index] = { ...step, title: event.target.value };
-                  onChange({ ...draft, orderSteps });
-                }}
-              />
-            </label>
-            <label>
-              Описание
-              <textarea
-                value={step.description}
-                onChange={(event) => {
-                  const orderSteps = draft.orderSteps.slice();
-                  orderSteps[index] = { ...step, description: event.target.value };
-                  onChange({ ...draft, orderSteps });
-                }}
-              />
-            </label>
-            <button
-              type="button"
-              onClick={() =>
-                onChange({ ...draft, orderSteps: draft.orderSteps.filter((row) => row.id !== step.id) })
-              }
-            >
-              Убрать
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          onClick={() =>
-            onChange({
-              ...draft,
-              orderSteps: [...draft.orderSteps, { id: crypto.randomUUID(), title: "", description: "" }],
-            })
-          }
-        >
-          Добавить шаг
-        </button>
-      </section>
-
       <section className={styles.section}>
         <h2>Карусель категорий</h2>
         {draft.categoryCarousel.map((slide, index) => (
@@ -446,6 +376,84 @@ function ShopHomeFields({
           }
         >
           Добавить слайд категории
+        </button>
+      </section>
+      <SectionFields
+        title="Hero"
+        value={draft.hero}
+        onChange={(hero) => onChange({ ...draft, hero: { ...draft.hero, ...hero } })}
+      />
+      <PlacementFields
+        label="Картинка hero"
+        value={draft.hero.image}
+        onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image } })}
+      />
+      <CtaFields
+        label="Кнопка hero"
+        value={draft.hero.cta}
+        onChange={(cta) => onChange({ ...draft, hero: { ...draft.hero, cta } })}
+      />
+      <SectionFields
+        title="Ввод дисков"
+        value={draft.wheelsIntro}
+        onChange={(wheelsIntro) => onChange({ ...draft, wheelsIntro: { ...draft.wheelsIntro, ...wheelsIntro } })}
+      />
+      <label>
+        Kicker
+        <input
+          value={draft.wheelsIntro.kicker}
+          onChange={(event) =>
+            onChange({ ...draft, wheelsIntro: { ...draft.wheelsIntro, kicker: event.target.value } })
+          }
+        />
+      </label>
+
+      <section className={styles.section}>
+        <h2>Шаги заказа</h2>
+        {draft.orderSteps.map((step, index) => (
+          <div key={step.id} className={styles.row}>
+            <label>
+              Заголовок
+              <input
+                value={step.title}
+                onChange={(event) => {
+                  const orderSteps = draft.orderSteps.slice();
+                  orderSteps[index] = { ...step, title: event.target.value };
+                  onChange({ ...draft, orderSteps });
+                }}
+              />
+            </label>
+            <label>
+              Описание
+              <textarea
+                value={step.description}
+                onChange={(event) => {
+                  const orderSteps = draft.orderSteps.slice();
+                  orderSteps[index] = { ...step, description: event.target.value };
+                  onChange({ ...draft, orderSteps });
+                }}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() =>
+                onChange({ ...draft, orderSteps: draft.orderSteps.filter((row) => row.id !== step.id) })
+              }
+            >
+              Убрать
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() =>
+            onChange({
+              ...draft,
+              orderSteps: [...draft.orderSteps, { id: crypto.randomUUID(), title: "", description: "" }],
+            })
+          }
+        >
+          Добавить шаг
         </button>
       </section>
 
@@ -560,8 +568,9 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
     setMessage("");
     try {
       setRecord(await browserAdminClient().savePage(pageKey, draft));
+      setMessage(DOCUMENT_STATUS.saved);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось сохранить");
+      setMessage(actionErrorText(error, "Не удалось сохранить"));
     } finally {
       setSaving(false);
     }
@@ -572,8 +581,9 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
     setMessage("");
     try {
       setRecord(await browserAdminClient().publishPage(pageKey));
+      setMessage(DOCUMENT_STATUS.published);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось опубликовать");
+      setMessage(actionErrorText(error, "Не удалось опубликовать"));
     } finally {
       setPublishing(false);
     }
@@ -581,7 +591,12 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
 
   async function onReset() {
     resetDialogRef.current?.close();
-    setRecord(await browserAdminClient().resetPage(pageKey));
+    try {
+      setRecord(await browserAdminClient().resetPage(pageKey));
+      setMessage(DOCUMENT_STATUS.saved);
+    } catch (error) {
+      setMessage(actionErrorText(error, "Не удалось сбросить страницу"));
+    }
   }
 
   return (

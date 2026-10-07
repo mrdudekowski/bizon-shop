@@ -1,5 +1,11 @@
+import { fileURLToPath } from "node:url";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Keep the CMS independent from the public site's lockfile in the parent folder.
+  turbopack: {
+    root: fileURLToPath(new URL(".", import.meta.url)),
+  },
   reactStrictMode: true,
   images: {
     remotePatterns: [

@@ -9,8 +9,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
-import { AdminClientError } from "@/admin/client/errors";
-import { ERROR_TEXT } from "@/admin/client/errorText";
+import { DOCUMENT_STATUS, actionErrorText } from "@/admin/client/actionFeedback";
 import { wheelModelPublishBlockers } from "@/admin/domain/publishRules";
 import type {
   EntityRecord,
@@ -109,8 +108,9 @@ export function WheelModelEditor({ id }: { id: string }) {
       const saved = await browserAdminClient().saveWheelModel(id, model);
       setRecord(saved);
       setDraft(saved.draft);
+      setMessage(DOCUMENT_STATUS.saved);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось сохранить");
+      setMessage(actionErrorText(error, "Не удалось сохранить"));
     } finally {
       setSaving(false);
     }
@@ -123,10 +123,29 @@ export function WheelModelEditor({ id }: { id: string }) {
       const published = await browserAdminClient().publishWheelModel(id);
       setRecord(published);
       setDraft(published.draft);
+      setMessage(DOCUMENT_STATUS.published);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось опубликовать");
+      setMessage(actionErrorText(error, "Не удалось опубликовать"));
     } finally {
       setPublishing(false);
+    }
+  }
+
+  async function onHide() {
+    try {
+      setRecord(await browserAdminClient().hideWheelModel(id));
+      setMessage(DOCUMENT_STATUS.hidden);
+    } catch (error) {
+      setMessage(actionErrorText(error, "Не удалось скрыть"));
+    }
+  }
+
+  async function onDelete() {
+    try {
+      await browserAdminClient().deleteWheelModel(id);
+      router.push("/wheels");
+    } catch (error) {
+      setMessage(actionErrorText(error, "Не удалось удалить"));
     }
   }
 
@@ -338,14 +357,11 @@ export function WheelModelEditor({ id }: { id: string }) {
               {publishing ? "Публикуем…" : "Опубликовать"}
             </button>
             {record.publishedSnapshot != null ? (
-              <button type="button" onClick={() => void browserAdminClient().hideWheelModel(id).then(setRecord)}>
+              <button type="button" onClick={() => void onHide()}>
                 Скрыть с сайта
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={() => void browserAdminClient().deleteWheelModel(id).then(() => router.push("/wheels"))}
-              >
+              <button type="button" onClick={() => void onDelete()}>
                 Удалить
               </button>
             )}

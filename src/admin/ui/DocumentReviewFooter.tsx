@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { AdminClientError } from "@/admin/client/errors";
 import { ERROR_TEXT } from "@/admin/client/errorText";
+import { feedbackRole } from "@/admin/client/actionFeedback";
 import { browserAdminClient } from "@/admin/client/localStore";
 import type { ChangeSet, StatusEntity } from "@/admin/domain/types";
 import { DocumentActions, useAdminSession } from "@/admin/ui/DocumentUI";
@@ -98,8 +99,8 @@ export function DocumentReviewFooter({
     <DocumentActions>
       {lastSavedBy != null ? <p>Сохранил: {lastSavedBy || "—"}</p> : null}
       {lastPublishedBy != null ? <p>Опубликовал: {lastPublishedBy || "—"}</p> : null}
-      {message ? <p>{message}</p> : null}
-      {localMessage ? <p>{localMessage}</p> : null}
+      {message ? <p role={feedbackRole(message)}>{message}</p> : null}
+      {localMessage ? <p role={feedbackRole(localMessage)}>{localMessage}</p> : null}
       {blockers.map((blocker) => (
         <p key={blocker.text}>
           <button type="button" className="blockerLink" onClick={() => focusPublishBlocker(blocker)}>

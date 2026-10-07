@@ -73,7 +73,6 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
       descriptionShort: { tab: "Карточка", field: "Короткое описание" },
       descriptionLong: { tab: "Карточка", field: "Полное описание" },
       treadType: { tab: "Карточка", field: "Тип протектора" },
-      applicationCategory: { tab: "Карточка", field: "Категория применения" },
       applicationTypes: { tab: "Карточка", field: "Применение шины" },
       documents: { tab: "Карточка", children: DOCUMENT },
       selectionVehicleTypes: { tab: "Карточка", field: "Техника" },
@@ -163,7 +162,14 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
       description: { tab: "Карточка категории", field: "Описание" },
       sortOrder: { tab: "Карточка категории", field: "Порядок" },
       showInMenu: { tab: "Карточка категории", field: "Показывать в меню" },
-      mainImage: { tab: "Фото", field: "Главное фото", children: IMAGE_CHILDREN },
+      mainImage: { tab: "Настройки категории", field: "Иконка", children: IMAGE_CHILDREN },
+      carousel: {
+        tab: "Настройки категории",
+        itemLabelKey: "id",
+        children: {
+          image: { field: "Фото галереи", children: IMAGE_CHILDREN },
+        },
+      },
     },
   },
   "shop-product": {
@@ -247,8 +253,6 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
       slug: { tab: "Карточка", field: "Адрес" },
       excerpt: { tab: "Карточка", field: "Анонс" },
       body: { tab: "Карточка", field: "Текст" },
-      clientName: { tab: "Карточка", field: "Клиент" },
-      industry: { tab: "Карточка", field: "Отрасль" },
       showInMenu: { tab: "Карточка", field: "Показывать в меню" },
       menuOrder: { tab: "Карточка", field: "Порядок в меню" },
       image: { tab: "Фото", field: "Главное фото", children: IMAGE_CHILDREN },

@@ -10,7 +10,7 @@ import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
-import { ERROR_TEXT } from "@/admin/client/errorText";
+import { DOCUMENT_STATUS, actionErrorText } from "@/admin/client/actionFeedback";
 import { tireDirectionPublishBlockers } from "@/admin/domain/publishRules";
 import type { EntityRecord, TireDirectionDraft } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
@@ -56,8 +56,9 @@ export function TireDirectionEditor({ id }: { id: string }) {
       const saved = await browserAdminClient().saveTireDirection(id, draft!);
       setRecord(saved);
       setDraft(saved.draft);
+      setMessage(DOCUMENT_STATUS.saved);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось сохранить");
+      setMessage(actionErrorText(error, "Не удалось сохранить"));
     } finally {
       setSaving(false);
     }
@@ -70,16 +71,21 @@ export function TireDirectionEditor({ id }: { id: string }) {
       const published = await browserAdminClient().publishTireDirection(id);
       setRecord(published);
       setDraft(published.draft);
+      setMessage(DOCUMENT_STATUS.published);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось опубликовать");
+      setMessage(actionErrorText(error, "Не удалось опубликовать"));
     } finally {
       setPublishing(false);
     }
   }
 
   async function onHide() {
-    const hidden = await browserAdminClient().hideTireDirection(id);
-    setRecord(hidden);
+    try {
+      setRecord(await browserAdminClient().hideTireDirection(id));
+      setMessage(DOCUMENT_STATUS.hidden);
+    } catch (error) {
+      setMessage(actionErrorText(error, "Не удалось скрыть"));
+    }
   }
 
   async function onDelete() {
@@ -90,7 +96,7 @@ export function TireDirectionEditor({ id }: { id: string }) {
       setMessage(
         error instanceof AdminClientError && error.code === "publish_blocked"
           ? "Нельзя удалить: есть связанные записи"
-          : "Не удалось удалить",
+          : actionErrorText(error, "Не удалось удалить"),
       );
     }
   }

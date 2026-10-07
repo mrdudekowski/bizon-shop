@@ -10,7 +10,7 @@ import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
-import { ERROR_TEXT } from "@/admin/client/errorText";
+import { DOCUMENT_STATUS, actionErrorText } from "@/admin/client/actionFeedback";
 import { wheelTypePublishBlockers } from "@/admin/domain/publishRules";
 import type { EntityRecord, WheelTypeDraft } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
@@ -63,8 +63,9 @@ export function WheelTypeEditor({ id }: { id: string }) {
       const saved = await browserAdminClient().saveWheelType(id, draft!);
       setRecord(saved);
       setDraft(saved.draft);
+      setMessage(DOCUMENT_STATUS.saved);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось сохранить");
+      setMessage(actionErrorText(error, "Не удалось сохранить"));
     } finally {
       setSaving(false);
     }
@@ -77,8 +78,9 @@ export function WheelTypeEditor({ id }: { id: string }) {
       const published = await browserAdminClient().publishWheelType(id);
       setRecord(published);
       setDraft(published.draft);
+      setMessage(DOCUMENT_STATUS.published);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось опубликовать");
+      setMessage(actionErrorText(error, "Не удалось опубликовать"));
     } finally {
       setPublishing(false);
     }
@@ -92,8 +94,17 @@ export function WheelTypeEditor({ id }: { id: string }) {
       setMessage(
         error instanceof AdminClientError && error.code === "publish_blocked"
           ? "Нельзя удалить: есть связанные записи"
-          : "Не удалось удалить",
+          : actionErrorText(error, "Не удалось удалить"),
       );
+    }
+  }
+
+  async function onHide() {
+    try {
+      setRecord(await browserAdminClient().hideWheelType(id));
+      setMessage(DOCUMENT_STATUS.hidden);
+    } catch (error) {
+      setMessage(actionErrorText(error, "Не удалось скрыть"));
     }
   }
 
@@ -164,7 +175,7 @@ export function WheelTypeEditor({ id }: { id: string }) {
               {publishing ? "Публикуем…" : "Опубликовать"}
             </button>
             {record.publishedSnapshot != null ? (
-              <button type="button" onClick={() => void browserAdminClient().hideWheelType(id).then(setRecord)}>
+              <button type="button" onClick={() => void onHide()}>
                 Скрыть с сайта
               </button>
             ) : (

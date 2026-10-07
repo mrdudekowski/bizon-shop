@@ -10,9 +10,9 @@ import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
-import { ERROR_TEXT } from "@/admin/client/errorText";
+import { DOCUMENT_STATUS, actionErrorText } from "@/admin/client/actionFeedback";
 import { wheelTypePublishBlockers } from "@/admin/domain/publishRules";
-import type { EntityRecord, ShopCategoryDraft } from "@/admin/domain/types";
+import type { EntityRecord, ImagePlacement, ShopCategoryDraft } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
 import type { PublishBlockerHint } from "@/admin/ui/documentTabs";
 import { ShopCategoryProducts } from "./ShopCategoryProducts";
@@ -22,8 +22,11 @@ import styles from "./ShopDocument.module.css";
 const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
   name: { text: "Укажите название", tab: "Карточка категории", field: "Название" },
   slug: { text: "Укажите адрес страницы", tab: "Карточка категории", field: "Адрес" },
-  mainImage: { text: "Добавьте главное фото", tab: "Фото", anchor: "main" },
+  mainImage: { text: "Добавьте иконку", tab: "Настройки категории", field: "Иконка" },
 };
+
+const CATEGORY_TABS = ["products", "settings"] as const;
+type CategoryTab = (typeof CATEGORY_TABS)[number];
 
 export function ShopCategoryEditor({ id }: { id: string }) {
   const router = useRouter();
@@ -31,7 +34,7 @@ export function ShopCategoryEditor({ id }: { id: string }) {
   const [record, setRecord] = useState<EntityRecord<ShopCategoryDraft> | null>(null);
   const [draft, setDraft] = useState<ShopCategoryDraft | null>(null);
   const [role, setRole] = useAdminRole();
-  const [activeTab, setActiveTab] = useState<"products" | "settings">("products");
+  const [activeTab, setActiveTab] = useState<CategoryTab>("products");
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
@@ -58,7 +61,7 @@ export function ShopCategoryEditor({ id }: { id: string }) {
     setDraft((current) => (current == null ? current : { ...current, ...next }));
   }
 
-  function selectTab(tab: "products" | "settings") {
+  function selectTab(tab: CategoryTab) {
     setActiveTab(tab);
   }
 
@@ -69,7 +72,13 @@ export function ShopCategoryEditor({ id }: { id: string }) {
     const currentIndex = tabs.indexOf(event.currentTarget);
     const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (currentIndex + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length;
     tabs[nextIndex]?.focus();
-    setActiveTab(nextIndex === 0 ? "products" : "settings");
+    const nextTab = CATEGORY_TABS[nextIndex];
+    if (nextTab) setActiveTab(nextTab);
+  }
+
+  function patchGallery(image: ImagePlacement | undefined) {
+    const id = draft?.carousel[0]?.id ?? "gallery";
+    patch({ carousel: image ? [{ id, image }] : [] });
   }
 
   async function onSave() {
@@ -79,8 +88,9 @@ export function ShopCategoryEditor({ id }: { id: string }) {
       const saved = await browserAdminClient().saveShopCategory(id, draft!);
       setRecord(saved);
       setDraft(saved.draft);
+      setMessage(DOCUMENT_STATUS.saved);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось сохранить");
+      setMessage(actionErrorText(error, "Не удалось сохранить"));
     } finally {
       setSaving(false);
     }
@@ -93,8 +103,9 @@ export function ShopCategoryEditor({ id }: { id: string }) {
       const published = await browserAdminClient().publishShopCategory(id);
       setRecord(published);
       setDraft(published.draft);
+      setMessage(DOCUMENT_STATUS.published);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось опубликовать");
+      setMessage(actionErrorText(error, "Не удалось опубликовать"));
     } finally {
       setPublishing(false);
     }
@@ -108,7 +119,7 @@ export function ShopCategoryEditor({ id }: { id: string }) {
       setMessage(
         error instanceof AdminClientError && error.code === "publish_blocked"
           ? "Нельзя удалить: есть связанные записи"
-          : "Не удалось удалить",
+          : actionErrorText(error, "Не удалось удалить"),
       );
     }
   }
@@ -117,8 +128,9 @@ export function ShopCategoryEditor({ id }: { id: string }) {
     setMessage("");
     try {
       setRecord(await browserAdminClient().hideShopCategory(id));
+      setMessage(DOCUMENT_STATUS.hidden);
     } catch (error) {
-      setMessage(error instanceof AdminClientError ? ERROR_TEXT[error.code] : "Не удалось скрыть категорию");
+      setMessage(actionErrorText(error, "Не удалось скрыть категорию"));
     }
   }
 
@@ -135,7 +147,7 @@ export function ShopCategoryEditor({ id }: { id: string }) {
         <ShopCategoryProducts categoryId={id} categoryName={draft.name || "Без названия"} />
       </div>
 
-      <div id="shop-category-settings-panel" role="tabpanel" aria-labelledby="shop-category-settings-tab" tabIndex={0} hidden={activeTab !== "settings"}>
+      <div id="shop-category-settings-panel" className={styles.tabPanel} role="tabpanel" aria-labelledby="shop-category-settings-tab" tabIndex={0} hidden={activeTab !== "settings"}>
         <section className={styles.section}>
           <h2>Карточка категории</h2>
           <label className={styles.field}>
@@ -172,14 +184,26 @@ export function ShopCategoryEditor({ id }: { id: string }) {
           </label>
         </section>
         <section className={styles.section}>
-          <h2>Фото</h2>
+          <h2>Иконка</h2>
+          <p className={styles.inlineHint}>Показывается в меню Shop.</p>
           <PlacementFields
-            label="Главное фото"
+            label="Иконка"
             value={draft.mainImage}
             onChange={(mainImage) => patch({ mainImage })}
           />
         </section>
-        <DocumentReviewFooter
+        <section className={styles.section}>
+          <h2>Карусель</h2>
+          <p className={styles.inlineHint}>Одно фото направления на главной Shop.</p>
+          <PlacementFields
+            label="Фото галереи"
+            value={draft.carousel[0]?.image}
+            onChange={patchGallery}
+          />
+        </section>
+      </div>
+
+      <DocumentReviewFooter
           entityType="shop-category"
           entityId={id}
           dirty={dirty}
@@ -208,7 +232,6 @@ export function ShopCategoryEditor({ id }: { id: string }) {
             </>
           }
         />
-      </div>
     </main>
   );
 }

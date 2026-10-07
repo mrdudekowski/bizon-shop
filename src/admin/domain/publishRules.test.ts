@@ -19,7 +19,6 @@ function model(patch: Partial<TireModelDraft> = {}): TireModelDraft {
     brand: "",
     descriptionShort: "",
     descriptionLong: "",
-    applicationCategory: "",
     treadType: "",
     selectionVehicleTypes: [],
     selectionConditions: [],
