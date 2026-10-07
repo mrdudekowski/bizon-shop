@@ -10,7 +10,7 @@
     "start": "next start",
     "test": "vitest run",
     "lint": "eslint src next.config.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
     "next": "15.5.27",
