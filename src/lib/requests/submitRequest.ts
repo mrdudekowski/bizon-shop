@@ -2,6 +2,7 @@ import { HONEYPOT_FIELD } from "./validateRequest";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 import { trackEvent } from "@/lib/analytics/yandexMetrika";
 import type { ApiRequestSuccess } from "./types";
+import { publicApiUrl } from "@/lib/publicApi";
 
 export type SubmitRequestOptions = {
   sourceForm: string;
@@ -10,9 +11,12 @@ export type SubmitRequestOptions = {
 };
 
 export async function submitRequest({ sourceForm, sourcePage, body }: SubmitRequestOptions): Promise<ApiRequestSuccess> {
-  const response = await fetch("/api/requests", {
+  const endpoint = publicApiUrl("/v1/requests");
+  if (!endpoint) throw new Error("Отправка заявок пока не настроена.");
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({
       ...body,
       sourceForm,

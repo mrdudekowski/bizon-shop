@@ -73,8 +73,12 @@ Desktop.ini
 
 # Project documentation (local only, not in repo)
 docs/
+!docs/
+docs/*
 !docs/implementation/
-!docs/implementation/**
+docs/implementation/*
+!docs/implementation/2026-10-07-remove-frontend-ssr.md
+!docs/implementation/static-runtime-contract.md
 !docs/client-data-blockers-audit.md
 
 # Other apps: edited here, pushed from their own branches

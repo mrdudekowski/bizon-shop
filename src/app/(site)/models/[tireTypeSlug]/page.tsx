@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import {
@@ -6,13 +7,11 @@ import {
   getTireTypeBySlug,
 } from "@/lib/content";
 import { TireDirectionPage } from "@/components/catalog/TireDirectionPage";
-import { parseTireFilters } from "@/lib/catalog/tireFilters";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { loadPublished } from "@/lib/content/loadPublished";
 
 type PageProps = {
   params: Promise<{ tireTypeSlug: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export async function generateStaticParams() {
@@ -33,11 +32,8 @@ export async function generateMetadata({ params }: PageProps) {
   });
 }
 
-export default async function TireTypeModelsPage({ params, searchParams }: PageProps) {
-  const [{ tireTypeSlug }, rawFilters] = await Promise.all([
-    params,
-    searchParams,
-  ]);
+export default async function TireTypeModelsPage({ params }: PageProps) {
+  const { tireTypeSlug } = await params;
   const loaded = await loadPublished(getPublishedTireCatalog);
   if (loaded.kind === "unavailable") {
     return (
@@ -52,5 +48,5 @@ export default async function TireTypeModelsPage({ params, searchParams }: PageP
 
   if (!direction) notFound();
 
-  return <TireDirectionPage direction={direction} filters={parseTireFilters(rawFilters)} />;
+  return <Suspense fallback={null}><TireDirectionPage direction={direction} filters={{}} /></Suspense>;
 }

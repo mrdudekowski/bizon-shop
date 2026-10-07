@@ -2,7 +2,7 @@ import { getPageDefaults } from "./pages/defaults";
 import type { PageKey } from "./pages/keys";
 import { mergeHomeContent, mergeShopHomeContent } from "./pages/merge";
 import type { HomePageContent, PageContentByKey, ShopHomePageContent } from "./pages/types";
-import { fetchPublishedJson, PublishedApiError, publishedApiEnabled } from "./publishedClient";
+import { fetchPublishedJson, isStaticBuild, PublishedApiError, publishedApiEnabled } from "./publishedClient";
 
 export type PublishedStubOverlay = {
   seoTitle?: string;
@@ -27,7 +27,11 @@ const STUB_KEYS = new Set([
 ]);
 
 export async function getPublishedStubOverlay(key: string): Promise<PublishedStubOverlay | null> {
-  if (!publishedApiEnabled() || !STUB_KEYS.has(key)) return null;
+  if (!STUB_KEYS.has(key)) return null;
+  if (!publishedApiEnabled()) {
+    if (isStaticBuild()) throw new Error("CONTENT_API_URL is required to build the static public site.");
+    return null;
+  }
   return fetchPagePatch<PublishedStubOverlay>(`/v1/pages/${encodeURIComponent(key)}`);
 }
 
@@ -36,7 +40,10 @@ async function fetchPagePatch<T>(path: string): Promise<T | null> {
     return await fetchPublishedJson<T>(path);
   } catch (error) {
     // These editorial pages have complete code defaults; keep them available if the API is down.
-    if (error instanceof PublishedApiError) return null;
+    if (error instanceof PublishedApiError) {
+      if (isStaticBuild()) throw error;
+      return null;
+    }
     throw error;
   }
 }
@@ -51,6 +58,7 @@ export async function getPageContent<K extends PageKey>(
   const defaults = getPageDefaults(key);
 
   if (!publishedApiEnabled()) {
+    if (isStaticBuild()) throw new Error("CONTENT_API_URL is required to build the static public site.");
     return defaults;
   }
 

@@ -1,10 +1,10 @@
+import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { TireDirectionPage } from "@/components/catalog/TireDirectionPage";
 import { TireModelStage } from "@/components/catalog/TireModelStage";
 import { getTireCategoryBySlug } from "@/lib/catalog/tireCategories";
-import { parseTireFilters } from "@/lib/catalog/tireFilters";
 import { getPublishedTireCatalog } from "@/lib/catalog/getPublishedTireCatalog";
 import {
   getAllTireModelRouteParams,
@@ -18,7 +18,6 @@ import { loadPublished } from "@/lib/content/loadPublished";
 
 type PageProps = {
   params: Promise<{ tireTypeSlug: string; segments: string[] }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export async function generateStaticParams() {
@@ -84,11 +83,9 @@ export async function generateMetadata({ params }: PageProps) {
 async function TireCategoryRoute({
   tireTypeSlug,
   categorySlug,
-  rawFilters,
 }: {
   tireTypeSlug: string;
   categorySlug: string;
-  rawFilters: Record<string, string | string[] | undefined>;
 }) {
   const loaded = await loadPublished(getPublishedTireCatalog);
   if (loaded.kind === "unavailable") {
@@ -104,11 +101,11 @@ async function TireCategoryRoute({
   if (!direction || !getTireCategoryBySlug(categorySlug)) notFound();
 
   return (
-    <TireDirectionPage
+    <Suspense fallback={null}><TireDirectionPage
       direction={direction}
-      filters={parseTireFilters(rawFilters)}
+      filters={{}}
       categorySlug={categorySlug}
-    />
+    /></Suspense>
   );
 }
 
@@ -190,17 +187,13 @@ async function TireModelRoute({
   );
 }
 
-export default async function TireRoutePage({ params, searchParams }: PageProps) {
-  const [{ tireTypeSlug, segments }, rawFilters] = await Promise.all([
-    params,
-    searchParams,
-  ]);
+export default async function TireRoutePage({ params }: PageProps) {
+  const { tireTypeSlug, segments } = await params;
   if (segments.length === 1 && getTireCategoryBySlug(segments[0])) {
     return (
       <TireCategoryRoute
         tireTypeSlug={tireTypeSlug}
         categorySlug={segments[0]}
-        rawFilters={rawFilters}
       />
     );
   }

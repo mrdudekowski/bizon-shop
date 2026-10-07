@@ -6,7 +6,6 @@
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev -p 3001",
     "dev:clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && cross-env NODE_OPTIONS=--no-deprecation next dev",
     "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
-    "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium firefox webkit",

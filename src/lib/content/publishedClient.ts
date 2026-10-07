@@ -14,6 +14,10 @@ export class PublishedApiError extends Error {
   }
 }
 
+export function isStaticBuild(): boolean {
+  return process.env.NODE_ENV === "production";
+}
+
 export function publishedApiEnabled(): boolean {
   const url = process.env.CONTENT_API_URL;
   return typeof url === "string" && url.trim().length > 0;
@@ -82,7 +86,7 @@ export async function fetchPublishedResult<T>(path: string): Promise<PublishedFe
   let response: Response;
   const startedAt = Date.now();
   try {
-    response = await fetch(joinContentApiUrl(path), { cache: "no-store" });
+    response = await fetch(joinContentApiUrl(path), { cache: "force-cache" });
   } catch {
     logPublishedFailure(path, "network_error", null, null, Date.now() - startedAt);
     return { kind: "unavailable" };

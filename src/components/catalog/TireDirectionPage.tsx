@@ -1,10 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import { TireCatalogFilters } from "@/components/catalog/TireCatalogFilters";
 import { TireModelCard } from "@/components/catalog/TireModelCard";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { getTireCategoryBySlug } from "@/lib/catalog/tireCategories";
-import { filterTireModels, type TireFilters } from "@/lib/catalog/tireFilters";
+import { filterTireModels, parseTireFilters, type TireFilters } from "@/lib/catalog/tireFilters";
 import type { TireCatalogDirection } from "@/lib/catalog/tireReadModel";
 
 import styles from "./TireCatalog.module.css";
@@ -28,10 +31,11 @@ export function TireDirectionPage({
   filters,
   categorySlug,
 }: TireDirectionPageProps) {
+  const queryFilters = parseTireFilters(useSearchParams());
   const category = categorySlug ? getTireCategoryBySlug(categorySlug) : undefined;
   const effectiveFilters = category
-    ? { ...filters, application: category.value }
-    : filters;
+    ? { ...filters, ...queryFilters, application: category.value }
+    : { ...filters, ...queryFilters };
   const models = filterTireModels(direction.models, effectiveFilters);
   const typePath = `/models/${direction.slug}`;
   const pagePath = category ? `${typePath}/${category.slug}` : typePath;

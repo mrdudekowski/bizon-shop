@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { CatalogImage } from "@/components/catalog/CatalogImage";
@@ -41,7 +44,13 @@ export function EditorialListing({
   beforeContent,
   activeTopic,
 }: EditorialListingProps) {
+  const searchParams = useSearchParams();
   const taxonomy = Array.from(new Set(items.flatMap((item) => item.taxonomy ?? [])));
+  const queryTopic = searchParams.get("topic");
+  const selectedTopic = taxonomy.includes(queryTopic ?? "") ? queryTopic : activeTopic;
+  const visibleItems = selectedTopic
+    ? items.filter((item) => item.taxonomy?.includes(selectedTopic))
+    : items;
 
   return (
     <div data-main-chrome-tone="light">
@@ -57,18 +66,18 @@ export function EditorialListing({
           <nav className={styles.taxonomy} aria-label="Темы Tire IQ">
             <span className={styles.taxonomyLabel}>Темы</span>
             <Link
-              className={!activeTopic ? styles.taxonomyLinkActive : styles.taxonomyLink}
+              className={!selectedTopic ? styles.taxonomyLinkActive : styles.taxonomyLink}
               href="/tire-iq#knowledge"
-              aria-current={!activeTopic ? "page" : undefined}
+              aria-current={!selectedTopic ? "page" : undefined}
             >
               Все темы
             </Link>
             {taxonomy.map((topic) => (
               <Link
                 key={topic}
-                className={topic === activeTopic ? styles.taxonomyLinkActive : styles.taxonomyLink}
+                className={topic === selectedTopic ? styles.taxonomyLinkActive : styles.taxonomyLink}
                 href={`/tire-iq?topic=${encodeURIComponent(topic)}#knowledge`}
-                aria-current={topic === activeTopic ? "page" : undefined}
+                aria-current={topic === selectedTopic ? "page" : undefined}
               >
                 {getTireIqTaxonomyLabel(topic)}
               </Link>
@@ -79,9 +88,9 @@ export function EditorialListing({
           <h2 id="knowledge-heading" className={styles.sectionTitle}>
             База знаний
           </h2>
-        {items.length > 0 ? (
+        {visibleItems.length > 0 ? (
           <div className={styles.grid}>
-            {items.map((item, index) => (
+            {visibleItems.map((item, index) => (
               <article
                 key={item.key}
                 className={index === 0 ? styles.featured : styles.card}
@@ -116,7 +125,7 @@ export function EditorialListing({
         ) : (
           <div className={styles.empty}>
             <p className={styles.meta}>База знаний готовится</p>
-            <h2>{emptyMessage}</h2>
+            <h2>{selectedTopic ? "По выбранной теме материалов пока нет." : emptyMessage}</h2>
             <p>Пока опубликованных материалов нет. Передайте задачу специалисту, чтобы получить следующий практический шаг.</p>
             <Link className="btn-accent" href="/contact">
               Передать задачу специалисту

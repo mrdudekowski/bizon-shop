@@ -1,4 +1,5 @@
 import type { RequestItemInput } from "@/types/requestItem";
+import { publicApiUrl } from "@/lib/publicApi";
 
 export const CART_STORAGE_KEY = "bizon-cart";
 export const CART_COOKIE_NAME = "bizon-cart-v1";
@@ -98,16 +99,21 @@ export function replaceCartFromServer(items: RequestItemInput[]): void {
 
 function syncCartToServer(items: RequestItemInput[]): void {
   if (typeof window === "undefined") return;
-  void fetch("/api/cart", {
+  const endpoint = publicApiUrl("/v1/cart");
+  if (!endpoint) return;
+  void fetch(endpoint, {
     method: "PUT",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ items }),
+    credentials: "include",
   });
 }
 
 export async function loadServerCart(): Promise<RequestItemInput[] | null> {
   if (typeof window === "undefined") return null;
-  const response = await fetch("/api/cart");
+  const endpoint = publicApiUrl("/v1/cart");
+  if (!endpoint) return null;
+  const response = await fetch(endpoint, { credentials: "include" });
   if (!response.ok) return null;
   const body = (await response.json()) as { hasSession?: boolean; items?: RequestItemInput[] };
   if (body.hasSession !== true) return null;

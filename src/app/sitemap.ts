@@ -13,6 +13,8 @@ import { SITEMAP_CONTENT_LIST_ROUTES, SITEMAP_STATIC_ROUTES } from "@/constants/
 import { loadPublished } from "@/lib/content/loadPublished";
 import { getSiteUrl } from "@/lib/seo/metadata";
 
+export const dynamic = "force-static";
+
 function listRouteEntry(path: string): MetadataRoute.Sitemap[number] {
   return {
     url: `${getSiteUrl()}${path}`,

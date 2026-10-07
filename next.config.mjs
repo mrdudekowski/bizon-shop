@@ -7,12 +7,22 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const imageRemotePatterns = buildImageRemotePatterns();
 
+if (process.env.NODE_ENV === "production") {
+  for (const key of ["CONTENT_API_URL", "NEXT_PUBLIC_API_URL"]) {
+    if (!process.env[key]?.trim()) {
+      throw new Error(`${key} is required to build the static public site.`);
+    }
+  }
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "export",
   reactStrictMode: true,
-  ...(imageRemotePatterns.length > 0
-    ? { images: { remotePatterns: imageRemotePatterns } }
-    : {}),
+  images: {
+    unoptimized: true,
+    ...(imageRemotePatterns.length > 0 ? { remotePatterns: imageRemotePatterns } : {}),
+  },
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
       ".cjs": [".cts", ".cjs"],
