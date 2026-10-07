@@ -1,8 +1,9 @@
 import { Pool, type PoolClient } from "pg";
+import { afterTransactionCommit, getTransactionClient, withTransaction } from "../../databaseTransaction";
 
 import { AdminClientError } from "../client/errors";
 import type { AdminClient } from "../client/adminClient";
-import { hashPassword, parseCapabilities, storedRole, type AuthenticatedAccount } from "./adminAuth";
+import { hashPassword, parseCapabilities, resetUserPassword as resetAccountPassword, storedRole, type AuthenticatedAccount } from "./adminAuth";
 import {
   articlePublishBlockers,
   shopProductPublishBlockers,
@@ -23,8 +24,11 @@ import type {
   ImagePlacement,
   PageDraft,
   PageKey,
+  MediaDeletionHistoryItem,
+  PasswordResetHistoryItem,
   ShopCategoryDraft,
   ShopProductDraft,
+  ShopSubcategoryDraft,
   ShopVariantDraft,
   StatusEntity,
   TireDirection,
@@ -50,8 +54,13 @@ import {
   assertCanReturnChangeSet,
   assertCanSubmitChangeSet,
 } from "../domain/changeSetTransitions";
+import { assertDraftVersion } from "../domain/draftConcurrency";
+import { publishPackAtomically } from "./publishPackAtomically";
 import { getObjectStore } from "../../storage/objectStore";
-import { MediaRejected, putMedia } from "../../storage/putMedia";
+import type { ObjectStore } from "../../storage/objectStore";
+import { assertMediaUploadReady, MediaCleanupRequired, MediaRejected, uploadAndPersistMedia } from "../../storage/putMedia";
+import { hasMediaReference } from "../../storage/mediaReferences";
+import { collectPendingMediaReplacements } from "../domain/mediaReplacement";
 import { shopHomeChildRows, shopHomeParentValues } from "../shopHomeWrite";
 
 function databaseUri(): string {
@@ -66,8 +75,6 @@ function getPool(): Pool {
   pool ??= new Pool({ connectionString: databaseUri() });
   return pool;
 }
-
-let draftsReady: Promise<void> | null = null;
 
 type Row = Record<string, unknown>;
 
@@ -127,20 +134,76 @@ function placement(assetId: unknown, alt = ""): ImagePlacement | undefined {
 }
 
 async function query(text: string, params: unknown[] = [], client?: PoolClient): Promise<Row[]> {
-  const result = await (client ?? getPool()).query(text, params);
+  const result = await (client ?? getTransactionClient() ?? getPool()).query(text, params);
   return result.rows as Row[];
 }
 
-function ensureDrafts(): Promise<void> {
-  draftsReady ??= getPool()
-    .query(`CREATE TABLE IF NOT EXISTS cms_drafts (
-      collection text NOT NULL,
-      doc_id text NOT NULL,
-      draft jsonb NOT NULL,
-      PRIMARY KEY (collection, doc_id)
-    )`)
-    .then(() => undefined);
-  return draftsReady;
+async function retryQueuedMediaCleanup(store: ObjectStore): Promise<void> {
+  const pending = await query(
+    "SELECT object_key FROM cms_media_cleanup ORDER BY created_at LIMIT 20",
+  );
+  for (const row of pending) {
+    const key = str(row.object_key);
+    try {
+      if (!key.startsWith("bizon/media/")) throw new Error("cleanup key outside CMS media prefix");
+      await store.delete({ key });
+      await query("DELETE FROM cms_media_cleanup WHERE object_key = $1", [key]);
+    } catch {
+      try {
+        await query(
+          "UPDATE cms_media_cleanup SET attempts = attempts + 1, last_attempt_at = now() WHERE object_key = $1",
+          [key],
+        );
+      } catch {
+        console.error("media.cleanup_attempt_record_failed", { key });
+      }
+      console.error("media.orphan_cleanup_retry_failed", { key });
+    }
+  }
+}
+
+async function applyPendingMediaReplacements(draft: unknown): Promise<void> {
+  for (const replacement of collectPendingMediaReplacements(draft)) {
+    const rows = await query(
+      `SELECT target.id AS target_id, target.object_key AS old_key,
+        staged.id AS staged_id, staged.title, staged.filename, staged.mime_type,
+        staged.url, staged.object_key, staged.declared_mime_type, staged.sha256, staged.filesize
+       FROM cms_media_replacements AS pending
+       JOIN media AS target ON target.id = pending.target_media_id
+       JOIN media AS staged ON staged.id = pending.staged_media_id
+       WHERE pending.target_media_id = $1
+       FOR UPDATE OF target, staged`,
+      [Number(replacement.targetMediaId)],
+    );
+    const row = rows[0];
+    // Another published placement may already have applied this shared replacement.
+    if (!row) continue;
+    const oldKey = str(row.old_key);
+    if (oldKey.startsWith("bizon/media/")) {
+      await query(
+        `INSERT INTO cms_media_cleanup (object_key, reason)
+         VALUES ($1, 'media_replaced') ON CONFLICT (object_key) DO NOTHING`,
+        [oldKey],
+      );
+    }
+    await query("DELETE FROM cms_media_replacements WHERE target_media_id = $1", [row.target_id]);
+    await query("DELETE FROM media WHERE id = $1", [row.staged_id]);
+    await query(
+      `UPDATE media SET title=$2, filename=$3, mime_type=$4, url=$5, object_key=$6,
+        declared_mime_type=$7, sha256=$8, filesize=$9 WHERE id=$1`,
+      [row.target_id, row.title, row.title, row.mime_type, row.url, row.object_key, row.declared_mime_type, row.sha256, row.filesize],
+    );
+    if (oldKey.startsWith("bizon/media/")) {
+      afterTransactionCommit(async () => {
+        try {
+          await getObjectStore().delete({ key: oldKey });
+          await query("DELETE FROM cms_media_cleanup WHERE object_key = $1", [oldKey]);
+        } catch {
+          console.error("media.replaced_object_cleanup_queued", { key: oldKey });
+        }
+      });
+    }
+  }
 }
 
 function collectionOf(entityType: StatusEntity): string {
@@ -241,13 +304,11 @@ async function restoreEntry(client: AdminClient, entry: { entityType: StatusEnti
 }
 
 async function readOverlay<T>(collection: string, id: string): Promise<T | null> {
-  await ensureDrafts();
   const rows = await query("SELECT draft FROM cms_drafts WHERE collection = $1 AND doc_id = $2", [collection, id]);
   return (rows[0]?.draft as T | undefined) ?? null;
 }
 
 async function writeOverlay(collection: string, id: string, draft: unknown): Promise<void> {
-  await ensureDrafts();
   await query(
     `INSERT INTO cms_drafts (collection, doc_id, draft) VALUES ($1, $2, $3::jsonb)
      ON CONFLICT (collection, doc_id) DO UPDATE SET draft = EXCLUDED.draft`,
@@ -256,7 +317,6 @@ async function writeOverlay(collection: string, id: string, draft: unknown): Pro
 }
 
 async function clearOverlay(collection: string, id: string): Promise<void> {
-  await ensureDrafts();
   await query("DELETE FROM cms_drafts WHERE collection = $1 AND doc_id = $2", [collection, id]);
 }
 
@@ -288,6 +348,10 @@ function documentStatus(record: { hidden: boolean; publishedSnapshot: unknown })
 
 function sameJson(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return error != null && typeof error === "object" && "code" in error && error.code === "23505";
 }
 
 function assertSaved<T>(record: EntityRecord<T>): T {
@@ -367,7 +431,6 @@ async function mapTireModel(row: Row): Promise<TireModelDraft> {
     brand: str(row.series),
     descriptionShort: str(row.short_description),
     descriptionLong: plainText(row.full_description),
-    applicationCategory: (str(row.application_category) || "") as TireModelDraft["applicationCategory"],
     treadType: str(row.tread_type),
     modelCode: str(row.model_code),
     features: features
@@ -468,6 +531,7 @@ async function mapProduct(row: Row): Promise<ShopProductDraft> {
     name: str(row.name),
     slug: str(row.slug),
     categoryId: str(row.shop_category_id),
+    subcategoryId: row.subcategory_id == null ? undefined : str(row.subcategory_id),
     descriptionShort: str(row.short_description),
     descriptionLong: plainText(row.full_description),
     price: num(row.price),
@@ -488,26 +552,49 @@ async function mapProduct(row: Row): Promise<ShopProductDraft> {
   };
 }
 
-function mapCategory(row: Row): ShopCategoryDraft {
+async function mapCategory(row: Row): Promise<ShopCategoryDraft> {
+  const slides = await query(
+    "SELECT id, title, image_id FROM shop_category_carousel WHERE shop_category_id = $1 ORDER BY sort_order, id",
+    [row.id],
+  );
   return {
     id: str(row.id),
     name: str(row.name),
     slug: str(row.slug),
     description: str(row.description),
     mainImage: placement(row.cover_image_id),
+    carousel: slides.slice(0, 1).map((slide) => ({
+      id: str(slide.id),
+      image: placement(slide.image_id),
+    })),
     sortOrder: num(row.sort_order) ?? 0,
     showInMenu: Boolean(row.show_in_menu),
   };
 }
 
-async function mapArticle(row: Row, kind: ArticleDraft["kind"]): Promise<ArticleDraft> {
-  const taxonomy =
-    kind === "article"
-      ? await valuesOf("tire_iq_articles_taxonomy", "parent_id", Number(row.id))
-      : [];
+function withCarousel(draft: ShopCategoryDraft | null): ShopCategoryDraft | null {
+  if (draft == null) return null;
+  const photo = (draft.carousel ?? []).find((slide) => slide.image);
   return {
-    id: `${kind}-${row.id}`,
-    kind,
+    ...draft,
+    carousel: photo?.image ? [{ id: photo.id, image: photo.image }] : [],
+  };
+}
+
+async function presentCategory(row: Row, status = str(row.status)): Promise<EntityRecord<ShopCategoryDraft>> {
+  const record = await present("shop-categories", str(row.id), await mapCategory(row), status);
+  return {
+    ...record,
+    draft: withCarousel(record.draft)!,
+    savedDraft: withCarousel(record.savedDraft),
+    publishedSnapshot: withCarousel(record.publishedSnapshot),
+  };
+}
+
+function mapArticle(row: Row): ArticleDraft {
+  return {
+    id: `article-${row.id}`,
+    kind: "article",
     title: str(row.title),
     slug: str(row.slug),
     excerpt: str(row.excerpt),
@@ -516,8 +603,6 @@ async function mapArticle(row: Row, kind: ArticleDraft["kind"]): Promise<Article
     gallery: [],
     showInMenu: Boolean(row.show_in_menu),
     menuOrder: num(row.menu_order) ?? 0,
-    clientName: str(row.client_name),
-    industry: taxonomy.join(", ") || str(row.industry),
   };
 }
 
@@ -812,7 +897,12 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
     );
   }
 
+  async function lockChangeSets(): Promise<void> {
+    await query("SELECT pg_advisory_xact_lock(84201933, 1)");
+  }
+
   async function mutatePacks(fn: (state: ChangeSetState) => void): Promise<ChangeSetState> {
+    await lockChangeSets();
     const state: ChangeSetState = {
       session,
       users: [actor],
@@ -839,7 +929,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
     return pack;
   }
 
-  return {
+  const adminClient: AdminClient = {
     async getSession() {
       return session;
     },
@@ -885,10 +975,11 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const row = await requireRow("tire_types", id);
       return present("tire-directions", id, await mapDirection(row), str(row.status));
     },
-    async saveTireDirection(id, draft) {
+    async saveTireDirection(id, draft, expectedSavedDraft?: unknown) {
       requirePermission("edit_catalog");
       if (!isValidSlug(draft.slug)) throw new AdminClientError("invalid_slug");
       const current = await this.getTireDirection(id);
+      assertDraftVersion(expectedSavedDraft, current.savedDraft);
       const next = { ...draft, id };
       await writeOverlay("tire-directions", id, next);
       await rememberMutation({
@@ -906,9 +997,11 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const current = await this.getTireDirection(id);
       const draft = assertSaved(current);
       if (tireDirectionPublishBlockers(draft).length > 0) throw new AdminClientError("publish_blocked");
-      const client = await getPool().connect();
+      await applyPendingMediaReplacements(draft);
+      const transactionClient = getTransactionClient();
+      const client = transactionClient ?? await getPool().connect();
       try {
-        await client.query("BEGIN");
+        if (!transactionClient) await client.query("BEGIN");
         await client.query(
           "UPDATE tire_types SET name=$2, slug=$3, description=$4, short_description=$5, sort_order=$6, show_in_menu=$7, cover_image_id=$8, status='published', updated_at=now() WHERE id=$1",
           [
@@ -924,12 +1017,12 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         );
         await replaceValues(client, "tire_types_selection_vehicle_types", "parent_id", Number(id), draft.selectionVehicleTypes);
         await replaceValues(client, "tire_types_selection_conditions", "parent_id", Number(id), draft.selectionConditions);
-        await client.query("COMMIT");
+        if (!transactionClient) await client.query("COMMIT");
       } catch (error) {
-        await client.query("ROLLBACK");
+        if (!transactionClient) await client.query("ROLLBACK");
         throw error;
       } finally {
-        client.release();
+        if (!transactionClient) client.release();
       }
       await clearOverlay("tire-directions", id);
       await releaseLocks("tire-direction", id);
@@ -990,12 +1083,13 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       });
       return record;
     },
-    async saveTireModel(id, draft) {
+    async saveTireModel(id, draft, expectedSavedDraft?: unknown) {
       requirePermission("edit_catalog");
       const currentRow = await requireRow("tire_models", id);
       if (str(currentRow.status) === "published" && draft.slug !== str(currentRow.slug)) throw new AdminClientError("invalid_slug");
       if (!isValidSlug(draft.slug)) throw new AdminClientError("invalid_slug");
       const current = await this.getTireModel(id);
+      assertDraftVersion(expectedSavedDraft, current.savedDraft);
       const next = { ...draft, id };
       await writeOverlay("tire-models", id, next);
       await rememberMutation({
@@ -1014,16 +1108,18 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const draft = assertSaved(current);
       const directions = await query("SELECT id FROM tire_types WHERE id = $1", [Number(draft.directionId)]);
       if (tireModelPublishBlockers(draft, directions.length > 0).length > 0) throw new AdminClientError("publish_blocked");
-      const client = await getPool().connect();
+      await applyPendingMediaReplacements(draft);
+      const transactionClient = getTransactionClient();
+      const client = transactionClient ?? await getPool().connect();
       try {
-        await client.query("BEGIN");
+        if (!transactionClient) await client.query("BEGIN");
         await writeTireModel(client, draft, "published");
-        await client.query("COMMIT");
+        if (!transactionClient) await client.query("COMMIT");
       } catch (error) {
-        await client.query("ROLLBACK");
+        if (!transactionClient) await client.query("ROLLBACK");
         throw error;
       } finally {
-        client.release();
+        if (!transactionClient) client.release();
       }
       await clearOverlay("tire-models", id);
       await releaseLocks("tire-model", id);
@@ -1044,53 +1140,290 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       requirePermission("edit_catalog");
       const body = bufferFromUpload(file);
       try {
-        const stored = await putMedia(getObjectStore(), {
-          name: file.name,
-          mimeType: file.mimeType,
-          body,
-        });
-        const rows = await query(
-          "INSERT INTO media (title, alt, filename, mime_type, url) VALUES ($1, '', $1, $2, $3) RETURNING id",
-          [stored.name, stored.mimeType, stored.url],
+        const objectStore = getObjectStore();
+        await assertMediaUploadReady(objectStore, () => query("SELECT 1"));
+        await retryQueuedMediaCleanup(objectStore);
+        return await uploadAndPersistMedia(
+          objectStore,
+          { name: file.name, mimeType: file.mimeType, body },
+          async (stored) => {
+            const rows = await query(
+              "INSERT INTO media (title, alt, filename, mime_type, url, object_key, declared_mime_type, sha256, filesize) VALUES ($1, '', $1, $2, $3, $4, $5, $6, $7) RETURNING id",
+              [stored.name, stored.mimeType, stored.url, stored.key, stored.declaredMimeType, stored.sha256, stored.byteSize],
+            );
+            return { id: str(rows[0].id) };
+          },
+          async (key) => {
+            await query(
+              "INSERT INTO cms_media_cleanup (object_key, reason) VALUES ($1, 'media_metadata_insert_failed') ON CONFLICT (object_key) DO NOTHING",
+              [key],
+            );
+          },
         );
-        return { id: str(rows[0].id) };
       } catch (error) {
-        if (error instanceof MediaRejected) throw new AdminClientError(error.code);
-        throw error;
+        if (error instanceof MediaRejected) {
+          if (error.code === "database_save_failed") {
+            const cause = error.cause;
+            console.error("media.metadata_save_failed", {
+              error: cause instanceof Error ? cause.message : "unknown",
+            });
+          }
+          throw new AdminClientError(error.code);
+        }
+        if (error instanceof MediaCleanupRequired) {
+          console.error("media.cleanup_pending", { key: error.key, cleanupRecorded: error.cleanupRecorded });
+          throw new AdminClientError("media_cleanup_pending");
+        }
+        throw new AdminClientError("database_unavailable");
+      }
+    },
+    async replaceAsset(id, file) {
+      requirePermission("edit_catalog");
+      const targetId = numericId(id);
+      if (targetId == null) throw new AdminClientError("publish_blocked");
+      const body = bufferFromUpload(file);
+      try {
+        const objectStore = getObjectStore();
+        await assertMediaUploadReady(objectStore, () => query("SELECT 1"));
+        await retryQueuedMediaCleanup(objectStore);
+        return await uploadAndPersistMedia(
+          objectStore,
+          { name: file.name, mimeType: file.mimeType, body },
+          async (stored) => {
+            if (!stored.mimeType.startsWith("image/")) throw new MediaRejected("publish_blocked");
+            return withTransaction(getPool(), async () => {
+            const target = await query("SELECT id FROM media WHERE id = $1 FOR UPDATE", [targetId]);
+            if (target.length === 0) throw new AdminClientError("publish_blocked");
+            const previous = await query(
+              `SELECT staged.id, staged.object_key FROM cms_media_replacements AS pending
+               JOIN media AS staged ON staged.id = pending.staged_media_id
+               WHERE pending.target_media_id = $1 FOR UPDATE OF staged`,
+              [targetId],
+            );
+            const inserted = await query(
+              "INSERT INTO media (title, alt, filename, mime_type, url, object_key, declared_mime_type, sha256, filesize) VALUES ($1, '', $2, $3, $4, $5, $6, $7, $8) RETURNING id",
+              [stored.name, stored.key.split("/").pop(), stored.mimeType, stored.url, stored.key, stored.declaredMimeType, stored.sha256, stored.byteSize],
+            );
+            const stagedId = str(inserted[0].id);
+            await query(
+              `INSERT INTO cms_media_replacements (target_media_id, staged_media_id)
+               VALUES ($1, $2)
+               ON CONFLICT (target_media_id) DO UPDATE SET staged_media_id = EXCLUDED.staged_media_id, created_at = now()`,
+              [targetId, Number(stagedId)],
+            );
+            if (previous.length > 0) {
+              const previousId = str(previous[0].id);
+              const previousKey = str(previous[0].object_key);
+              if (previousKey.startsWith("bizon/media/")) {
+                await query(
+                  `INSERT INTO cms_media_cleanup (object_key, reason)
+                   VALUES ($1, 'media_replacement_superseded') ON CONFLICT (object_key) DO NOTHING`,
+                  [previousKey],
+                );
+              }
+              await query("DELETE FROM media WHERE id = $1", [Number(previousId)]);
+              if (previousKey.startsWith("bizon/media/")) {
+                afterTransactionCommit(async () => {
+                  try {
+                    await objectStore.delete({ key: previousKey });
+                    await query("DELETE FROM cms_media_cleanup WHERE object_key = $1", [previousKey]);
+                  } catch {
+                    console.error("media.superseded_replacement_cleanup_queued", { key: previousKey });
+                  }
+                });
+              }
+            }
+              return { id, replacementAssetId: stagedId };
+            });
+          },
+          async (key) => {
+            await query(
+              "INSERT INTO cms_media_cleanup (object_key, reason) VALUES ($1, 'media_metadata_insert_failed') ON CONFLICT (object_key) DO NOTHING",
+              [key],
+            );
+          },
+        );
+      } catch (error) {
+        if (error instanceof MediaRejected) {
+          if (error.code === "database_save_failed") {
+            const cause = error.cause;
+            console.error("media.replacement_metadata_save_failed", {
+              error: cause instanceof Error ? cause.message : "unknown",
+            });
+          }
+          throw new AdminClientError(error.code);
+        }
+        if (error instanceof MediaCleanupRequired) {
+          console.error("media.replacement_cleanup_pending", { key: error.key, cleanupRecorded: error.cleanupRecorded });
+          throw new AdminClientError("media_cleanup_pending");
+        }
+        if (error instanceof AdminClientError) throw error;
+        throw new AdminClientError("database_unavailable");
+      }
+    },
+    async cancelAssetReplacement(id) {
+      requirePermission("edit_catalog");
+      const targetId = numericId(id);
+      if (targetId == null) throw new AdminClientError("publish_blocked");
+      const staged = await query(
+        `SELECT media.id, media.object_key FROM cms_media_replacements AS pending
+         JOIN media ON media.id = pending.staged_media_id
+         WHERE pending.target_media_id = $1 FOR UPDATE OF media`,
+        [targetId],
+      );
+      if (staged.length === 0) return;
+      const stagedId = str(staged[0].id);
+      const key = str(staged[0].object_key);
+      if (key.startsWith("bizon/media/")) {
+        await query(
+          `INSERT INTO cms_media_cleanup (object_key, reason)
+           VALUES ($1, 'media_replacement_cancelled') ON CONFLICT (object_key) DO NOTHING`,
+          [key],
+        );
+      }
+      await query("DELETE FROM cms_media_replacements WHERE target_media_id = $1", [targetId]);
+      await query("DELETE FROM media WHERE id = $1", [Number(stagedId)]);
+      if (key.startsWith("bizon/media/")) {
+        afterTransactionCommit(async () => {
+          try {
+            await getObjectStore().delete({ key });
+            await query("DELETE FROM cms_media_cleanup WHERE object_key = $1", [key]);
+          } catch {
+            console.error("media.cancelled_replacement_cleanup_queued", { key });
+          }
+        });
       }
     },
     async listAssets() {
-      const rows = await query("SELECT id, title, filename, mime_type, url FROM media ORDER BY id");
-      return rows.map((row) => ({
-        id: str(row.id),
-        name: str(row.filename || row.title),
-        mimeType: str(row.mime_type),
-        dataUrl: str(row.url),
-        usedBy: [],
-      }));
+      const rows = await query(
+        `SELECT media.id, COALESCE(staged.title, media.title) AS title,
+          COALESCE(staged.title, media.filename) AS filename,
+          COALESCE(staged.mime_type, media.mime_type) AS mime_type,
+          COALESCE(staged.url, media.url) AS url,
+          (staged.id IS NOT NULL) AS replacement_pending
+         FROM media
+         LEFT JOIN cms_media_replacements AS pending ON pending.target_media_id = media.id
+         LEFT JOIN media AS staged ON staged.id = pending.staged_media_id
+         WHERE NOT EXISTS (SELECT 1 FROM cms_media_replacements AS hidden WHERE hidden.staged_media_id = media.id)
+         ORDER BY media.id`,
+      );
+      const drafts = await query("SELECT collection, doc_id, draft FROM cms_drafts");
+      const changeSets = await query("SELECT id, pack FROM cms_change_sets");
+      const result = [];
+      for (const row of rows) {
+        const id = str(row.id);
+        const usedBy: string[] = [];
+        const refs = await query(
+          `SELECT label FROM (
+             SELECT 'Тип шин: ' || name AS label FROM tire_types WHERE cover_image_id = $1
+             UNION ALL SELECT 'Шина: ' || name FROM tire_models WHERE main_image_id = $1
+             UNION ALL SELECT 'Тип дисков: ' || name FROM wheel_types WHERE cover_image_id = $1
+             UNION ALL SELECT 'Модель дисков: ' || name FROM wheel_models WHERE main_image_id = $1
+             UNION ALL SELECT 'Категория Shop: ' || name FROM shop_categories WHERE cover_image_id = $1
+             UNION ALL SELECT 'Товар Shop: ' || name FROM products WHERE main_image_id = $1
+             UNION ALL SELECT 'Материал Tire IQ: ' || title FROM tire_iq_articles WHERE featured_image_id = $1
+             UNION ALL SELECT 'Карусель категории Shop: ' || c.name FROM shop_category_carousel AS s JOIN shop_categories AS c ON c.id = s.shop_category_id WHERE s.image_id = $1
+             UNION ALL SELECT 'Главный экран сайта: ' || "key" FROM pages WHERE home_hero_image_id = $1
+             UNION ALL SELECT 'Блок выбора шин на главной: ' || "key" FROM pages WHERE home_selection_entry_image_id = $1
+             UNION ALL SELECT 'Рекламный блок Shop на главной: ' || "key" FROM pages WHERE home_shop_campaign_image_id = $1
+             UNION ALL SELECT 'Обложка страницы Shop: ' || "key" FROM pages WHERE shop_hero_image_id = $1
+             UNION ALL SELECT 'Обложка страницы-заглушки: ' || "key" FROM pages WHERE stub_hero_image_id = $1
+             UNION ALL SELECT 'Изображение карусели Shop на странице' FROM pages_shop_category_carousel WHERE desktop_image_id = $1 OR mobile_image_id = $1
+             UNION ALL SELECT 'Изображение слайда транспорта на странице' FROM pages_shop_vehicles_slides WHERE image_id = $1
+             UNION ALL SELECT 'Галерея шины: ' || tire_models.name FROM tire_models_rels JOIN tire_models ON tire_models.id = tire_models_rels.parent_id WHERE media_id = $1
+             UNION ALL SELECT 'Галерея дисков: ' || wheel_models.name FROM wheel_models_rels JOIN wheel_models ON wheel_models.id = wheel_models_rels.parent_id WHERE media_id = $1
+             UNION ALL SELECT 'Галерея товара Shop: ' || products.name FROM products_rels JOIN products ON products.id = products_rels.parent_id WHERE media_id = $1
+           ) AS usages`,
+          [Number(id)],
+        );
+        for (const ref of refs) usedBy.push(str(ref.label));
+        for (const draft of drafts) {
+          if (hasMediaReference(draft.draft, id)) usedBy.push(`Черновик: ${str(draft.collection)} / ${str(draft.doc_id)}`);
+        }
+        for (const pack of changeSets) {
+          if (hasMediaReference(pack.pack, id)) usedBy.push(`Пакет изменений: ${str(pack.id)}`);
+        }
+        result.push({
+          id,
+          name: str(row.filename || row.title),
+          mimeType: str(row.mime_type),
+          dataUrl: str(row.url),
+          usedBy: [...new Set(usedBy)],
+          replacementPending: row.replacement_pending === true,
+        });
+      }
+      return result;
     },
     async deleteAsset(id) {
       requirePermission("delete");
+      const mediaRows = await query("SELECT object_key, filename, title, mime_type FROM media WHERE id = $1 FOR UPDATE", [Number(id)]);
+      if (mediaRows.length === 0) return;
+      const objectKey = str(mediaRows[0].object_key);
+      if (!objectKey) throw new AdminClientError("media_storage_key_missing");
+      const pendingReplacement = await query("SELECT 1 FROM cms_media_replacements WHERE target_media_id = $1 LIMIT 1", [Number(id)]);
+      if (pendingReplacement.length > 0) throw new AdminClientError("media_in_use");
       const used = await query(
-        `SELECT id FROM tire_types WHERE tire_types.cover_image_id = $1
-         UNION ALL SELECT id FROM tire_models WHERE main_image_id = $1
-         UNION ALL SELECT id FROM wheel_types WHERE cover_image_id = $1
-         UNION ALL SELECT id FROM wheel_models WHERE main_image_id = $1
-         UNION ALL SELECT id FROM shop_categories WHERE cover_image_id = $1
-         UNION ALL SELECT id FROM products WHERE main_image_id = $1
-         UNION ALL SELECT id FROM pages WHERE home_hero_image_id = $1 OR home_selection_entry_image_id = $1 OR home_shop_campaign_image_id = $1 OR shop_hero_image_id = $1 OR stub_hero_image_id = $1
-         UNION ALL SELECT id FROM pages_shop_category_carousel WHERE desktop_image_id = $1 OR mobile_image_id = $1
-         UNION ALL SELECT id FROM pages_shop_vehicles_slides WHERE image_id = $1
-         UNION ALL SELECT id FROM tire_iq_articles WHERE featured_image_id = $1
-         UNION ALL SELECT id FROM people_stories WHERE featured_image_id = $1
-         UNION ALL SELECT parent_id FROM tire_models_rels WHERE media_id = $1
-         UNION ALL SELECT parent_id FROM wheel_models_rels WHERE media_id = $1
-         UNION ALL SELECT parent_id FROM products_rels WHERE media_id = $1
+        // Project a uniform literal: related record IDs are mixed integer/varchar types.
+        `SELECT 1 FROM tire_types WHERE tire_types.cover_image_id = $1
+         UNION ALL SELECT 1 FROM tire_models WHERE main_image_id = $1
+         UNION ALL SELECT 1 FROM wheel_types WHERE cover_image_id = $1
+         UNION ALL SELECT 1 FROM wheel_models WHERE main_image_id = $1
+         UNION ALL SELECT 1 FROM shop_categories WHERE cover_image_id = $1
+         UNION ALL SELECT 1 FROM shop_category_carousel WHERE image_id = $1
+         UNION ALL SELECT 1 FROM products WHERE main_image_id = $1
+         UNION ALL SELECT 1 FROM pages WHERE home_hero_image_id = $1 OR home_selection_entry_image_id = $1 OR home_shop_campaign_image_id = $1 OR shop_hero_image_id = $1 OR stub_hero_image_id = $1
+         UNION ALL SELECT 1 FROM pages_shop_category_carousel WHERE desktop_image_id = $1 OR mobile_image_id = $1
+         UNION ALL SELECT 1 FROM pages_shop_vehicles_slides WHERE image_id = $1
+         UNION ALL SELECT 1 FROM tire_iq_articles WHERE featured_image_id = $1
+         UNION ALL SELECT 1 FROM tire_models_rels WHERE media_id = $1
+         UNION ALL SELECT 1 FROM wheel_models_rels WHERE media_id = $1
+         UNION ALL SELECT 1 FROM products_rels WHERE media_id = $1
          LIMIT 1`,
         [Number(id)],
       );
       if (used.length > 0) throw new AdminClientError("media_in_use");
+      const drafts = await query("SELECT draft FROM cms_drafts FOR SHARE");
+      const changeSets = await query("SELECT pack FROM cms_change_sets FOR SHARE");
+      if (
+        drafts.some((row) => hasMediaReference(row.draft, id)) ||
+        changeSets.some((row) => hasMediaReference(row.pack, id))
+      ) {
+        throw new AdminClientError("media_in_use");
+      }
+      await query(
+        `INSERT INTO cms_media_cleanup (object_key, reason)
+         VALUES ($1, 'media_delete_requested')
+         ON CONFLICT (object_key) DO UPDATE SET reason = EXCLUDED.reason`,
+        [objectKey],
+      );
       await query("DELETE FROM media WHERE id = $1", [Number(id)]);
+      await query(
+        `INSERT INTO cms_media_deletion_history
+          (media_id, filename, mime_type, object_key, deleted_by_user_id, deleted_by_login)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [String(id), str(mediaRows[0].filename || mediaRows[0].title), str(mediaRows[0].mime_type), objectKey, actor.id, actor.login],
+      );
+      afterTransactionCommit(async () => {
+        try {
+          await getObjectStore().delete({ key: objectKey });
+          await query("DELETE FROM cms_media_cleanup WHERE object_key = $1", [objectKey]);
+        } catch {
+          console.error("media.delete_retry_queued", { key: objectKey });
+        }
+      });
+    },
+    async listMediaDeletionHistory(): Promise<MediaDeletionHistoryItem[]> {
+      if (session.role !== "admin") throw new AdminClientError("forbidden");
+      const rows = await query(
+        "SELECT id, media_id, filename, deleted_by_login, deleted_at FROM cms_media_deletion_history ORDER BY deleted_at DESC, id DESC LIMIT 200",
+      );
+      return rows.map((row) => ({
+        id: str(row.id),
+        mediaId: str(row.media_id),
+        filename: str(row.filename),
+        deletedBy: str(row.deleted_by_login),
+        deletedAt: new Date(str(row.deleted_at)).toISOString(),
+      }));
     },
     async listWheelTypes() {
       const rows = await query("SELECT * FROM wheel_types ORDER BY sort_order, name");
@@ -1121,10 +1454,11 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       });
       return record;
     },
-    async saveWheelType(id, draft) {
+    async saveWheelType(id, draft, expectedSavedDraft?: unknown) {
       requirePermission("edit_catalog");
       if (!isValidSlug(draft.slug)) throw new AdminClientError("invalid_slug");
       const current = await this.getWheelType(id);
+      assertDraftVersion(expectedSavedDraft, current.savedDraft);
       const next = { ...draft, id };
       await writeOverlay("wheel-types", id, next);
       await rememberMutation({
@@ -1142,6 +1476,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const current = await this.getWheelType(id);
       const draft = assertSaved(current);
       if (wheelTypePublishBlockers(draft).length > 0) throw new AdminClientError("publish_blocked");
+      await applyPendingMediaReplacements(draft);
       await query(
         "UPDATE wheel_types SET name=$2, slug=$3, description=$4, sort_order=$5, cover_image_id=$6, status='published', updated_at=now() WHERE id=$1",
         [Number(id), draft.name, draft.slug, draft.description, draft.sortOrder, draft.mainImage ? Number(draft.mainImage.assetId) : null],
@@ -1204,10 +1539,11 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const row = await requireRow("wheel_models", id);
       return present("wheel-models", id, await mapWheelModel(row), str(row.status));
     },
-    async saveWheelModel(id, draft) {
+    async saveWheelModel(id, draft, expectedSavedDraft?: unknown) {
       requirePermission("edit_catalog");
       if (!isValidSlug(draft.slug)) throw new AdminClientError("invalid_slug");
       const current = await this.getWheelModel(id);
+      assertDraftVersion(expectedSavedDraft, current.savedDraft);
       const next = { ...draft, id };
       await writeOverlay("wheel-models", id, next);
       await rememberMutation({
@@ -1226,9 +1562,11 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const draft = assertSaved(current);
       const types = await query("SELECT id FROM wheel_types WHERE id = $1", [Number(draft.wheelTypeId)]);
       if (wheelModelPublishBlockers(draft, types.length > 0).length > 0) throw new AdminClientError("publish_blocked");
-      const client = await getPool().connect();
+      await applyPendingMediaReplacements(draft);
+      const transactionClient = getTransactionClient();
+      const client = transactionClient ?? await getPool().connect();
       try {
-        await client.query("BEGIN");
+        if (!transactionClient) await client.query("BEGIN");
         await client.query(
           `UPDATE wheel_models SET name=$2, slug=$3, wheel_type_id=$4, series=$5, design_style=$6, material=$7, construction_method=$8, fitment_notes=$9, short_description=$10, full_description=$11::jsonb, main_image_id=$12, show_in_menu=$13, menu_order=$14, status='published', updated_at=now() WHERE id=$1`,
           [
@@ -1285,12 +1623,12 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           );
         }
         await replaceGallery("wheel_models_rels", Number(id), draft.gallery, client);
-        await client.query("COMMIT");
+        if (!transactionClient) await client.query("COMMIT");
       } catch (error) {
-        await client.query("ROLLBACK");
+        if (!transactionClient) await client.query("ROLLBACK");
         throw error;
       } finally {
-        client.release();
+        if (!transactionClient) client.release();
       }
       await clearOverlay("wheel-models", id);
       await releaseLocks("wheel-model", id);
@@ -1310,12 +1648,12 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
     async listShopCategories() {
       const rows = await query("SELECT * FROM shop_categories ORDER BY sort_order, name");
       const records = [];
-      for (const row of rows) records.push(await present("shop-categories", str(row.id), mapCategory(row), str(row.status)));
+      for (const row of rows) records.push(await presentCategory(row));
       return records;
     },
     async getShopCategory(id) {
       const row = await requireRow("shop_categories", id);
-      return present("shop-categories", id, mapCategory(row), str(row.status));
+      return presentCategory(row);
     },
     async createShopCategory(input) {
       requirePermission("create_catalog_structure");
@@ -1325,7 +1663,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         input.name.trim(),
         slug,
       ]);
-      const record = await present("shop-categories", str(rows[0].id), mapCategory(rows[0]), "draft");
+      const record = await presentCategory(rows[0], "draft");
       await rememberMutation({
         entityType: "shop-category",
         entityId: record.id,
@@ -1336,10 +1674,11 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       });
       return record;
     },
-    async saveShopCategory(id, draft) {
+    async saveShopCategory(id, draft, expectedSavedDraft?: unknown) {
       requirePermission("edit_catalog");
       if (!isValidSlug(draft.slug)) throw new AdminClientError("invalid_slug");
       const current = await this.getShopCategory(id);
+      assertDraftVersion(expectedSavedDraft, current.savedDraft);
       const next = { ...draft, id };
       await writeOverlay("shop-categories", id, next);
       await rememberMutation({
@@ -1357,10 +1696,19 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const current = await this.getShopCategory(id);
       const draft = assertSaved(current);
       if (wheelTypePublishBlockers(draft).length > 0) throw new AdminClientError("publish_blocked");
+      await applyPendingMediaReplacements(draft);
       await query(
         "UPDATE shop_categories SET name=$2, slug=$3, description=$4, sort_order=$5, show_in_menu=$6, cover_image_id=$7, status='published', updated_at=now() WHERE id=$1",
         [Number(id), draft.name, draft.slug, draft.description, draft.sortOrder, draft.showInMenu, draft.mainImage ? Number(draft.mainImage.assetId) : null],
       );
+      await query("DELETE FROM shop_category_carousel WHERE shop_category_id = $1", [Number(id)]);
+      const photo = (draft.carousel ?? []).find((slide) => slide.image);
+      if (photo?.image) {
+        await query(
+          "INSERT INTO shop_category_carousel (shop_category_id, sort_order, title, image_id) VALUES ($1, $2, $3, $4)",
+          [Number(id), 0, "", Number(photo.image.assetId)],
+        );
+      }
       await clearOverlay("shop-categories", id);
       await releaseLocks("shop-category", id);
       return this.getShopCategory(id);
@@ -1376,19 +1724,100 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       if (children.length > 0) throw new AdminClientError("publish_blocked");
       const row = await requireRow("shop_categories", id);
       if (str(row.status) === "published") throw new AdminClientError("publish_blocked");
+      await query("DELETE FROM shop_subcategories WHERE category_id = $1", [Number(id)]);
+      await query("DELETE FROM shop_category_carousel WHERE shop_category_id = $1", [Number(id)]);
       await query("DELETE FROM shop_categories WHERE id = $1", [Number(id)]);
+    },
+    async listShopSubcategories(categoryId) {
+      const category = numericId(categoryId);
+      if (category == null) throw new AdminClientError("invalid_slug");
+      const rows = await query(
+        "SELECT id, category_id, name, slug, sort_order FROM shop_subcategories WHERE category_id = $1 ORDER BY sort_order, name, id",
+        [category],
+      );
+      return rows.map((row): ShopSubcategoryDraft => ({
+        id: str(row.id), categoryId: str(row.category_id), name: str(row.name), slug: str(row.slug), sortOrder: num(row.sort_order) ?? 0,
+      }));
+    },
+    async createShopSubcategory(input) {
+      requirePermission("create_catalog_structure");
+      const categoryId = numericId(input.categoryId);
+      const name = input.name.trim();
+      const slug = input.slug.trim();
+      if (categoryId == null || !name || !isValidSlug(slug)) throw new AdminClientError("invalid_slug");
+      const category = await query("SELECT id FROM shop_categories WHERE id = $1", [categoryId]);
+      if (category.length === 0) throw new AdminClientError("publish_blocked");
+      const duplicate = await query(
+        "SELECT id FROM shop_subcategories WHERE category_id = $1 AND (lower(name) = lower($2) OR lower(slug) = lower($3)) LIMIT 1",
+        [categoryId, name, slug],
+      );
+      if (duplicate.length > 0) throw new AdminClientError("slug_taken");
+      let rows: Row[];
+      try {
+        rows = await query(
+          "INSERT INTO shop_subcategories (category_id, name, slug, sort_order) SELECT $1, $2, $3, COALESCE(MAX(sort_order), -1) + 1 FROM shop_subcategories WHERE category_id = $1 RETURNING id, category_id, name, slug, sort_order",
+          [categoryId, name, slug],
+        );
+      } catch (error) {
+        if (isUniqueViolation(error)) throw new AdminClientError("slug_taken");
+        throw error;
+      }
+      const row = rows[0];
+      return { id: str(row.id), categoryId: str(row.category_id), name: str(row.name), slug: str(row.slug), sortOrder: num(row.sort_order) ?? 0 };
+    },
+    async saveShopSubcategory(id, input) {
+      requirePermission("create_catalog_structure");
+      const subcategoryId = numericId(id);
+      const name = input.name.trim();
+      const slug = input.slug.trim();
+      if (subcategoryId == null || !name || !isValidSlug(slug)) throw new AdminClientError("invalid_slug");
+      const current = await requireRow("shop_subcategories", id);
+      const duplicate = await query(
+        "SELECT id FROM shop_subcategories WHERE category_id = $1 AND id <> $2 AND (lower(name) = lower($3) OR lower(slug) = lower($4)) LIMIT 1",
+        [Number(current.category_id), subcategoryId, name, slug],
+      );
+      if (duplicate.length > 0) throw new AdminClientError("slug_taken");
+      let rows: Row[];
+      try {
+        rows = await query(
+          "UPDATE shop_subcategories SET name = $2, slug = $3, updated_at = now() WHERE id = $1 RETURNING id, category_id, name, slug, sort_order",
+          [subcategoryId, name, slug],
+        );
+      } catch (error) {
+        if (isUniqueViolation(error)) throw new AdminClientError("slug_taken");
+        throw error;
+      }
+      const row = rows[0];
+      return { id: str(row.id), categoryId: str(row.category_id), name: str(row.name), slug: str(row.slug), sortOrder: num(row.sort_order) ?? 0 };
+    },
+    async deleteShopSubcategory(id) {
+      requirePermission("delete");
+      const subcategoryId = numericId(id);
+      if (subcategoryId == null) throw new AdminClientError("invalid_slug");
+      await query("SELECT id FROM shop_subcategories WHERE id = $1 FOR UPDATE", [subcategoryId]);
+      const savedProduct = await query("SELECT id FROM products WHERE subcategory_id = $1 LIMIT 1", [subcategoryId]);
+      const draftProduct = await query(
+        "SELECT doc_id FROM cms_drafts WHERE collection = 'shop-products' AND draft->>'subcategoryId' = $1 LIMIT 1",
+        [id],
+      );
+      if (savedProduct.length > 0 || draftProduct.length > 0) throw new AdminClientError("publish_blocked");
+      const deleted = await query("DELETE FROM shop_subcategories WHERE id = $1 RETURNING id", [subcategoryId]);
+      if (deleted.length === 0) throw new AdminClientError("not_found");
     },
     async listShopProducts() {
       const rows = await query("SELECT * FROM products ORDER BY name");
       const items = [];
       for (const row of rows) {
         const record = await present("shop-products", str(row.id), await mapProduct(row), str(row.status));
-        const category = await query("SELECT name FROM shop_categories WHERE id = $1", [Number(record.draft.categoryId)]);
+        const category = await query("SELECT name, status FROM shop_categories WHERE id = $1", [Number(record.draft.categoryId)]);
         items.push({
           id: record.id,
           name: record.draft.name,
           categoryId: record.draft.categoryId,
           categoryName: str(category[0]?.name),
+          categoryPublished: str(category[0]?.status) === "published",
+          isPublished: record.publishedSnapshot != null && !record.hidden,
+          subcategoryId: record.draft.subcategoryId,
           status: documentStatus(record),
           hasUnpublishedDraft: record.publishedSnapshot != null && !sameJson(record.draft, record.publishedSnapshot),
           imageAssetId: record.draft.mainImage?.assetId ?? null,
@@ -1419,10 +1848,20 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const row = await requireRow("products", id);
       return present("shop-products", id, await mapProduct(row), str(row.status));
     },
-    async saveShopProduct(id, draft) {
+    async saveShopProduct(id, draft, expectedSavedDraft?: unknown) {
       requirePermission("edit_catalog");
       if (!isValidSlug(draft.slug)) throw new AdminClientError("invalid_slug");
+      if (draft.subcategoryId) {
+        const subcategoryId = numericId(draft.subcategoryId);
+        if (subcategoryId == null) throw new AdminClientError("publish_blocked");
+        const subcategory = await query(
+          "SELECT id FROM shop_subcategories WHERE id = $1 AND category_id = $2 FOR KEY SHARE",
+          [subcategoryId, Number(draft.categoryId)],
+        );
+        if (subcategory.length === 0) throw new AdminClientError("publish_blocked");
+      }
       const current = await this.getShopProduct(id);
+      assertDraftVersion(expectedSavedDraft, current.savedDraft);
       const next = { ...draft, id };
       await writeOverlay("shop-products", id, next);
       await rememberMutation({
@@ -1441,13 +1880,22 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const draft = assertSaved(current);
       const categories = await query("SELECT id FROM shop_categories WHERE id = $1", [Number(draft.categoryId)]);
       if (shopProductPublishBlockers(draft, categories.length > 0).length > 0) throw new AdminClientError("publish_blocked");
+      await applyPendingMediaReplacements(draft);
+      if (draft.subcategoryId) {
+        const subcategories = await query(
+          "SELECT id FROM shop_subcategories WHERE id = $1 AND category_id = $2",
+          [Number(draft.subcategoryId), Number(draft.categoryId)],
+        );
+        if (subcategories.length === 0) throw new AdminClientError("publish_blocked");
+      }
       await query(
-        "UPDATE products SET name=$2, slug=$3, shop_category_id=$4, short_description=$5, full_description=$6::jsonb, price=$7, price_on_request=$8, main_image_id=$9, status='published', updated_at=now() WHERE id=$1",
+        "UPDATE products SET name=$2, slug=$3, shop_category_id=$4, subcategory_id=$5, short_description=$6, full_description=$7::jsonb, price=$8, price_on_request=$9, main_image_id=$10, status='published', updated_at=now() WHERE id=$1",
         [
           Number(id),
           draft.name,
           draft.slug,
           Number(draft.categoryId),
+          draft.subcategoryId ? Number(draft.subcategoryId) : null,
           draft.descriptionShort,
           JSON.stringify(lexical(draft.descriptionLong)),
           draft.price ?? null,
@@ -1515,9 +1963,10 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       if (row == null) throw new AdminClientError("publish_blocked");
       return present("pages", key, await mapPage(row), str(row.status));
     },
-    async savePage(key, draft) {
+    async savePage(key, draft, expectedSavedDraft?: unknown) {
       requirePermission("edit_site_pages");
       const current = await this.getPage(key);
+      assertDraftVersion(expectedSavedDraft, current.savedDraft);
       await writeOverlay("pages", key, draft);
       await rememberMutation({
         entityType: "page",
@@ -1533,6 +1982,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       requirePermission("publish");
       const current = await this.getPage(key);
       const draft = assertSaved(current);
+      await applyPendingMediaReplacements(draft);
       await writePage(draft);
       await clearOverlay("pages", key);
       await releaseLocks("page", key);
@@ -1546,10 +1996,9 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
     },
     async listMaterials() {
       const articles = await query("SELECT * FROM tire_iq_articles ORDER BY title");
-      const stories = await query("SELECT * FROM people_stories ORDER BY title");
       const items = [];
       for (const row of articles) {
-        const record = await present("materials", `article-${row.id}`, await mapArticle(row, "article"), str(row.status));
+        const record = await present("materials", `article-${row.id}`, await mapArticle(row), str(row.status));
         items.push({
           id: record.id,
           title: record.draft.title,
@@ -1559,37 +2008,25 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           imageAssetId: record.draft.image?.assetId ?? null,
         });
       }
-      for (const row of stories) {
-        const record = await present("materials", `story-${row.id}`, await mapArticle(row, "story"), str(row.status));
-        items.push({
-          id: record.id,
-          title: record.draft.title,
-          kind: "story" as const,
-          status: documentStatus(record),
-          hasUnpublishedDraft: false,
-          imageAssetId: record.draft.image?.assetId ?? null,
-        });
-      }
       return items;
     },
     async getMaterial(id) {
-      const [kind, rawId] = id.split("-") as [ArticleDraft["kind"], string];
-      const table = kind === "story" ? "people_stories" : "tire_iq_articles";
-      const row = await requireRow(table, rawId);
-      return present("materials", id, await mapArticle(row, kind), str(row.status));
+      const match = /^article-(\d+)$/.exec(id);
+      if (!match) throw new AdminClientError("not_found");
+      const row = await requireRow("tire_iq_articles", match[1]);
+      return present("materials", id, await mapArticle(row), str(row.status));
     },
     async createMaterial(input) {
       requirePermission("edit_site_pages");
       const slug = slugifyTitle(input.title);
       if (!isValidSlug(slug)) throw new AdminClientError("invalid_slug");
-      const table = input.kind === "story" ? "people_stories" : "tire_iq_articles";
-      const rows = await query(`INSERT INTO ${table} (title, slug, content, status) VALUES ($1, $2, $3::jsonb, 'draft') RETURNING *`, [
+      const rows = await query("INSERT INTO tire_iq_articles (title, slug, content, status) VALUES ($1, $2, $3::jsonb, 'draft') RETURNING *", [
         input.title.trim(),
         slug,
         JSON.stringify(lexical("")),
       ]);
-      const id = `${input.kind}-${rows[0].id}`;
-      const record = await present("materials", id, await mapArticle(rows[0], input.kind), "draft");
+      const id = `article-${rows[0].id}`;
+      const record = await present("materials", id, await mapArticle(rows[0]), "draft");
       await rememberMutation({
         entityType: "material",
         entityId: record.id,
@@ -1600,10 +2037,11 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       });
       return record;
     },
-    async saveMaterial(id, draft) {
+    async saveMaterial(id, draft, expectedSavedDraft?: unknown) {
       requirePermission("edit_site_pages");
       if (!isValidSlug(draft.slug)) throw new AdminClientError("invalid_slug");
       const current = await this.getMaterial(id);
+      assertDraftVersion(expectedSavedDraft, current.savedDraft);
       const next = { ...draft, id };
       await writeOverlay("materials", id, next);
       await rememberMutation({
@@ -1621,10 +2059,10 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const current = await this.getMaterial(id);
       const draft = assertSaved(current);
       if (articlePublishBlockers(draft).length > 0) throw new AdminClientError("publish_blocked");
-      const rawId = id.split("-").slice(1).join("-");
-      const table = draft.kind === "story" ? "people_stories" : "tire_iq_articles";
+      await applyPendingMediaReplacements(draft);
+      const rawId = id.slice("article-".length);
       await query(
-        `UPDATE ${table} SET title=$2, slug=$3, excerpt=$4, content=$5::jsonb, featured_image_id=$6, status='published', updated_at=now() WHERE id=$1`,
+        "UPDATE tire_iq_articles SET title=$2, slug=$3, excerpt=$4, content=$5::jsonb, featured_image_id=$6, status='published', updated_at=now() WHERE id=$1",
         [Number(rawId), draft.title, draft.slug, draft.excerpt, JSON.stringify(lexical(draft.body)), draft.image ? Number(draft.image.assetId) : null],
       );
       await clearOverlay("materials", id);
@@ -1634,16 +2072,14 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
     async hideMaterial(id) {
       requirePermission("hide");
       const current = await this.getMaterial(id);
-      const table = current.draft.kind === "story" ? "people_stories" : "tire_iq_articles";
-      await publishStatus(table, id.split("-").slice(1).join("-"), "archived");
+      await publishStatus("tire_iq_articles", id.slice("article-".length), "archived");
       return this.getMaterial(id);
     },
     async deleteMaterial(id) {
       requirePermission("delete");
       const current = await this.getMaterial(id);
       if (current.publishedSnapshot != null) throw new AdminClientError("publish_blocked");
-      const table = current.draft.kind === "story" ? "people_stories" : "tire_iq_articles";
-      await query(`DELETE FROM ${table} WHERE id = $1`, [Number(id.split("-").slice(1).join("-"))]);
+      await query("DELETE FROM tire_iq_articles WHERE id = $1", [Number(id.slice("article-".length))]);
     },
     async listUsers() {
       requirePermission("manage_users");
@@ -1713,6 +2149,23 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       ]);
       return { ...user, capabilities: next };
     },
+    async resetUserPassword(userId, password) {
+      requirePermission("manage_users");
+      await resetAccountPassword(query, { id: actor.id, login: actor.login }, userId, password);
+    },
+    async listPasswordResetHistory(): Promise<PasswordResetHistoryItem[]> {
+      requirePermission("manage_users");
+      const rows = await query(
+        `SELECT id, target_login, actor_login, created_at
+         FROM cms_password_reset_history ORDER BY created_at DESC, id DESC LIMIT 100`,
+      );
+      return rows.map((row) => ({
+        id: str(row.id),
+        targetLogin: str(row.target_login),
+        resetBy: str(row.actor_login),
+        resetAt: new Date(str(row.created_at)).toISOString(),
+      }));
+    },
     async listChangeSets(filter) {
       const packs = await loadPacks();
       let visible = packs;
@@ -1731,6 +2184,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return pack;
     },
     async submitChangeSet(id) {
+      await lockChangeSets();
       const pack = await requirePack(id);
       assertCanSubmitChangeSet(pack, actor.id);
       const next = {
@@ -1744,7 +2198,10 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
     },
     async publishChangeSet(id) {
       requirePermission("review_queue");
-      const pack = await requirePack(id);
+      await lockChangeSets();
+      const rows = await query("SELECT pack FROM cms_change_sets WHERE id = $1 FOR UPDATE", [id]);
+      const pack = rows[0]?.pack as ChangeSet | undefined;
+      if (pack == null) throw new AdminClientError("publish_blocked");
       assertCanPublishChangeSet(pack);
       const published = {
         ...pack,
@@ -1752,14 +2209,17 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         reviewedAt: new Date().toISOString(),
         reviewedByLogin: session.login,
       };
-      await upsertPack(published);
-      for (const entry of pack.entries) {
-        await publishEntry(this, entry.entityType, entry.entityId);
-      }
+      await publishPackAtomically(
+        getPool(),
+        pack.entries,
+        (entry) => publishEntry(this, entry.entityType, entry.entityId),
+        () => upsertPack(published),
+      );
       return published;
     },
     async returnChangeSet(id, comment) {
       requirePermission("review_queue");
+      await lockChangeSets();
       const pack = await requirePack(id);
       assertCanReturnChangeSet(pack, comment);
       const next = {
@@ -1774,6 +2234,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
     },
     async cancelChangeSet(id) {
       requirePermission("review_queue");
+      await lockChangeSets();
       const pack = await requirePack(id);
       assertCanCancelChangeSet(pack);
       for (const entry of pack.entries) {
@@ -1789,6 +2250,22 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return next;
     },
   };
+
+  return new Proxy(adminClient, {
+    get(target, property, receiver) {
+      const value = Reflect.get(target, property, receiver) as unknown;
+      if (
+        typeof property !== "string" ||
+        typeof value !== "function" ||
+        property === "createAsset" ||
+        property === "replaceAsset" ||
+        !/^(create|save|publish|hide|delete|reset|submit|return|cancel|update|assign|set)/.test(property)
+      ) {
+        return value;
+      }
+      return (...args: unknown[]) => withTransaction(getPool(), () => value.apply(receiver, args));
+    },
+  });
 }
 
 async function writePage(draft: PageDraft) {
@@ -1805,6 +2282,8 @@ async function writePage(draft: PageDraft) {
         home_shop_campaign_eyebrow=$20, home_shop_campaign_title=$21, home_shop_campaign_lead=$22,
         home_shop_campaign_image_id=$23, home_shop_campaign_image_alt=$24,
         home_shop_campaign_cta_label=$25, home_shop_campaign_cta_href=$26,
+        home_directions_eyebrow=$27, home_directions_title=$28, home_directions_lead=$29,
+        home_expertise_eyebrow=$30, home_expertise_title=$31, home_expertise_lead=$32,
         status='published', updated_at=now()
        WHERE key='home'`,
       [
@@ -1834,6 +2313,12 @@ async function writePage(draft: PageDraft) {
         draft.shopCampaign.image?.alt || null,
         draft.shopCampaign.cta.label,
         draft.shopCampaign.cta.href,
+        draft.directions.eyebrow,
+        draft.directions.title,
+        draft.directions.lead,
+        draft.expertise.eyebrow,
+        draft.expertise.title,
+        draft.expertise.lead,
       ],
     );
     return;
@@ -1896,8 +2381,8 @@ async function writePage(draft: PageDraft) {
   );
 }
 
-export async function catalogPublishGaps(): Promise<string[]> {
-  const client = createPostgresAdminClient();
+export async function catalogPublishGaps(account: AuthenticatedAccount): Promise<string[]> {
+  const client = createPostgresAdminClient(account);
   const gaps: string[] = [];
   for (const item of await client.listTireModels()) {
     const record = await client.getTireModel(item.id);

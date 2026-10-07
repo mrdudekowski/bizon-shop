@@ -1,7 +1,9 @@
 import { s3ObjectStore } from "./s3ObjectStore";
 
 export type ObjectStore = {
+  checkAvailable(): Promise<void>;
   put(input: { key: string; body: Buffer; contentType: string }): Promise<void>;
+  delete(input: { key: string }): Promise<void>;
 };
 
 let override: ObjectStore | null = null;

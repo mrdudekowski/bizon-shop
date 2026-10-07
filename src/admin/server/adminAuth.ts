@@ -1,4 +1,5 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { AdminClientError } from "../client/errors";
 import type { AdminSession, EditorCapability } from "../domain/types";
 
 export type Query = (sql: string, params?: unknown[]) => Promise<Record<string, unknown>[]>;
@@ -26,6 +27,7 @@ const SCRYPT_KEY_LENGTH = 64;
  * hash from ever being fed to scrypt and accidentally accepted.
  */
 const HASH_TAG = "scrypt";
+export const MIN_ADMIN_PASSWORD_LENGTH = 12;
 
 export function hashPassword(password: string): string {
   const salt = randomBytes(16).toString("hex");
@@ -41,6 +43,32 @@ export function verifyPassword(password: string, encoded: string | null | undefi
   if (expected.length !== SCRYPT_KEY_LENGTH) return false;
 
   return timingSafeEqual(expected, scryptSync(password, salt, SCRYPT_KEY_LENGTH));
+}
+
+export async function resetUserPassword(
+  query: Query,
+  actor: { id: string; login: string },
+  targetUserId: string,
+  password: string,
+): Promise<void> {
+  if (password.length < MIN_ADMIN_PASSWORD_LENGTH) throw new AdminClientError("password_too_short");
+
+  const numericId = Number(targetUserId);
+  if (!Number.isSafeInteger(numericId) || numericId <= 0) throw new AdminClientError("user_not_found");
+  const actorId = Number(actor.id);
+  if (!Number.isSafeInteger(actorId) || actorId <= 0) throw new AdminClientError("forbidden");
+  if (actorId === numericId) throw new AdminClientError("cannot_reset_self");
+  const users = await query("SELECT id, email FROM users WHERE id = $1", [numericId]);
+  const user = users[0];
+  if (user == null) throw new AdminClientError("user_not_found");
+
+  await query("UPDATE users SET hash = $2, updated_at = now() WHERE id = $1", [numericId, hashPassword(password)]);
+  await query("DELETE FROM cms_auth_sessions WHERE user_id = $1", [numericId]);
+  await query(
+    `INSERT INTO cms_password_reset_history (actor_user_id, actor_login, target_user_id, target_login)
+     VALUES ($1, $2, $3, $4)`,
+    [actorId, actor.login, numericId, String(user.email)],
+  );
 }
 
 export function readSessionCookie(header: string | undefined): string | null {
@@ -74,28 +102,15 @@ function cookie(token: string, maxAgeSeconds: number, secure: boolean): string {
   return attributes.join("; ");
 }
 
-export function sessionRole(storedValue: unknown): AdminSession["role"] {
-  return String(storedValue) === "admin" ? "admin" : "editor";
+export function sessionRole(storedValue: unknown): AdminSession["role"] | null {
+  const value = String(storedValue);
+  if (value === "admin") return "admin";
+  if (value === "content_manager" || value === "editor") return "editor";
+  return null;
 }
 
 export function storedRole(role: AdminSession["role"]): "admin" | "content_manager" {
   return role === "admin" ? "admin" : "content_manager";
-}
-
-export async function ensureAuthSchema(query: Query): Promise<void> {
-  await query(`CREATE TABLE IF NOT EXISTS cms_auth_sessions (
-    token_hash char(64) PRIMARY KEY,
-    user_id bigint NOT NULL,
-    expires_at timestamptz NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT now()
-  )`);
-  await query(`CREATE INDEX IF NOT EXISTS cms_auth_sessions_user_expiry_idx
-    ON cms_auth_sessions (user_id, expires_at)`);
-  await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cms_capabilities jsonb NOT NULL DEFAULT '[]'::jsonb`);
-  await query(`CREATE TABLE IF NOT EXISTS cms_change_sets (
-    id text PRIMARY KEY,
-    pack jsonb NOT NULL
-  )`);
 }
 
 export type BootstrapEnv = Record<string, string | undefined>;
@@ -105,8 +120,26 @@ export type BootstrapEnv = Record<string, string | undefined>;
  * password keeps it, so editing the environment can never take over an existing login.
  */
 export async function bootstrapAccounts(query: Query, env: BootstrapEnv): Promise<void> {
-  await ensureAccount(query, env.CMS_BOOTSTRAP_ADMIN_LOGIN, env.CMS_BOOTSTRAP_ADMIN_PASSWORD, "admin");
-  await ensureAccount(query, env.CMS_BOOTSTRAP_EDITOR_LOGIN, env.CMS_BOOTSTRAP_EDITOR_PASSWORD, "editor");
+  const hasAdminConfig = Boolean(env.CMS_BOOTSTRAP_ADMIN_LOGIN?.trim() && env.CMS_BOOTSTRAP_ADMIN_PASSWORD);
+  const hasEditorConfig = Boolean(env.CMS_BOOTSTRAP_EDITOR_LOGIN?.trim() && env.CMS_BOOTSTRAP_EDITOR_PASSWORD);
+  if (!hasAdminConfig && !hasEditorConfig) return;
+
+  const users = await query("SELECT id FROM users LIMIT 1");
+  const allowInitialCreation = users.length === 0;
+  await ensureAccount(
+    query,
+    env.CMS_BOOTSTRAP_ADMIN_LOGIN,
+    env.CMS_BOOTSTRAP_ADMIN_PASSWORD,
+    "admin",
+    allowInitialCreation,
+  );
+  await ensureAccount(
+    query,
+    env.CMS_BOOTSTRAP_EDITOR_LOGIN,
+    env.CMS_BOOTSTRAP_EDITOR_PASSWORD,
+    "editor",
+    allowInitialCreation,
+  );
 }
 
 async function ensureAccount(
@@ -114,12 +147,14 @@ async function ensureAccount(
   login: string | undefined,
   password: string | undefined,
   role: AdminSession["role"],
+  allowInitialCreation: boolean,
 ): Promise<void> {
   const name = login?.trim();
   if (!name || !password) return;
 
   const rows = await query("SELECT id, hash FROM users WHERE email = $1", [name]);
   if (rows.length === 0) {
+    if (!allowInitialCreation) return;
     await query(
       `INSERT INTO users (name, email, role, status, hash, created_at, updated_at)
        VALUES ($1, $1, $2, 'active', $3, now(), now())`,
@@ -147,12 +182,14 @@ export async function authenticate(
   ]);
   const row = rows[0];
   if (row == null || String(row.status) !== "active") return null;
+  const role = sessionRole(row.role);
+  if (role == null) return null;
   if (!verifyPassword(password, row.hash == null ? null : String(row.hash))) return null;
 
   return {
     id: String(row.id),
     login: String(row.email),
-    role: sessionRole(row.role),
+    role,
     capabilities: parseCapabilities(row.cms_capabilities),
   };
 }
@@ -182,11 +219,13 @@ export async function readSession(
   );
   const row = rows[0];
   if (row == null || String(row.status) !== "active") return null;
+  const role = sessionRole(row.role);
+  if (role == null) return null;
 
   return {
     id: String(row.id),
     login: String(row.email),
-    role: sessionRole(row.role),
+    role,
     capabilities: parseCapabilities(row.cms_capabilities),
   };
 }

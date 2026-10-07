@@ -12,8 +12,13 @@ describe("deleteAsset", () => {
     expect(block).toContain("products");
     expect(block).toContain("pages");
     expect(block).toContain("tire_iq_articles");
-    expect(block).toContain("people_stories");
+    expect(block).not.toContain("people_stories");
     expect(block).toContain("tire_models_rels");
+    expect(block).toContain("object_key");
+    expect(block).toContain("getObjectStore().delete");
+    expect(block).toContain("cms_drafts");
+    expect(block).toContain("cms_change_sets");
+    expect(block).toContain("FOR UPDATE");
   });
 });
 

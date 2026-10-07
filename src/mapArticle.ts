@@ -1,4 +1,4 @@
-import { lexicalToHtml, normalizeImageUrl } from "./mapTire";
+import { lexicalToHtml, normalizeImageUrl, toFiniteNumber } from "./mapTire";
 
 type ArticleRow = {
   title: string;
@@ -31,6 +31,6 @@ export function mapArticle(row: ArticleRow): CmsArticle {
     content: lexicalToHtml(row.content),
     imageUrl: normalizeImageUrl(row.image_url),
     showInMenu: row.show_in_menu,
-    menuOrder: row.menu_order,
+    menuOrder: toFiniteNumber(row.menu_order) ?? 0,
   };
 }

@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { readS3Env } from "./env";
 import type { ObjectStore } from "./objectStore";
 
@@ -21,6 +21,10 @@ function s3Client(): S3Client {
 
 export function s3ObjectStore(): ObjectStore {
   return {
+    async checkAvailable() {
+      const env = readS3Env();
+      await s3Client().send(new HeadBucketCommand({ Bucket: env.bucket }));
+    },
     async put({ key, body, contentType }) {
       const env = readS3Env();
       await s3Client().send(
@@ -31,6 +35,10 @@ export function s3ObjectStore(): ObjectStore {
           ContentType: contentType,
         }),
       );
+    },
+    async delete({ key }) {
+      const env = readS3Env();
+      await s3Client().send(new DeleteObjectCommand({ Bucket: env.bucket, Key: key }));
     },
   };
 }

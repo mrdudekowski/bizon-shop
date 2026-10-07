@@ -35,6 +35,13 @@ type ShopProductRow = {
   size: string | null;
   material: string | null;
   category_slug: string;
+  subcategory_slug?: string | null;
+  subcategory_name?: string | null;
+};
+
+export type CmsShopCategoryCarouselFrame = {
+  title: string;
+  imageUrl: string | null;
 };
 
 export type CmsShopCategory = {
@@ -44,6 +51,7 @@ export type CmsShopCategory = {
   imageUrl: string | null;
   showInMenu: boolean;
   sortOrder: number;
+  carousel: CmsShopCategoryCarouselFrame[];
 };
 
 export type CmsProductVariant = {
@@ -64,6 +72,8 @@ export type CmsProduct = {
   slug: string;
   name: string;
   categorySlug: string;
+  subcategorySlug?: string;
+  subcategoryName?: string;
   type: string;
   brand: string;
   descriptionShort: string;
@@ -88,7 +98,10 @@ function sortOrder(value: unknown): number {
   return toFiniteNumber(value) ?? 0;
 }
 
-export function mapShopCategory(row: ShopCategoryRow): CmsShopCategory {
+export function mapShopCategory(
+  row: ShopCategoryRow,
+  slides: { title?: string | null; image_url?: string | null }[] = [],
+): CmsShopCategory {
   return {
     slug: row.slug,
     name: row.name,
@@ -96,6 +109,10 @@ export function mapShopCategory(row: ShopCategoryRow): CmsShopCategory {
     imageUrl: normalizeImageUrl(row.image_url),
     showInMenu: row.show_in_menu === true,
     sortOrder: sortOrder(row.sort_order),
+    carousel: slides.slice(0, 1).map((slide) => ({
+      title: slide.title ?? "",
+      imageUrl: normalizeImageUrl(slide.image_url),
+    })),
   };
 }
 
@@ -129,6 +146,8 @@ export function mapShopProduct(
     slug: row.slug,
     name: row.name,
     categorySlug: row.category_slug,
+    ...(row.subcategory_slug ? { subcategorySlug: row.subcategory_slug } : {}),
+    ...(row.subcategory_name ? { subcategoryName: row.subcategory_name } : {}),
     type: "",
     brand: "",
     descriptionShort: row.short_description ?? "",

@@ -1,7 +1,7 @@
 import { Readable } from "node:stream";
 import { describe, expect, it } from "vitest";
 import { MediaRejected } from "./storage/putMedia";
-import { readRequestBody } from "./readRequestBody";
+import { readJsonRequestBody, RequestBodyTooLarge, readRequestBody } from "./readRequestBody";
 
 describe("readRequestBody", () => {
   it("stops after MAX_MEDIA_BYTES + 1", async () => {
@@ -12,5 +12,10 @@ describe("readRequestBody", () => {
   it("returns the body under the limit", async () => {
     const stream = Readable.from([Buffer.from("ab"), Buffer.from("cd")]);
     await expect(readRequestBody(stream, 10)).resolves.toEqual(Buffer.from("abcd"));
+  });
+
+  it("rejects JSON bodies that exceed their configured limit", async () => {
+    const stream = Readable.from([Buffer.from('{"method":"save"}')]);
+    await expect(readJsonRequestBody(stream, 8)).rejects.toBeInstanceOf(RequestBodyTooLarge);
   });
 });

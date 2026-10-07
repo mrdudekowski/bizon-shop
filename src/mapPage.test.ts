@@ -113,6 +113,37 @@ describe("mapHomePatch", () => {
       imageAlt: "Магазин",
     });
   });
+
+  it("maps directions and expertise so the site can leave defaults behind", () => {
+    expect(
+      mapHomePatch({
+        seo_seo_title: "",
+        seo_seo_description: "",
+        home_hero_eyebrow: "",
+        home_hero_title: "Шины",
+        home_hero_lead: "",
+        home_hero_primary_cta_label: "",
+        home_hero_primary_cta_href: "",
+        home_hero_secondary_cta_label: "",
+        home_hero_secondary_cta_href: "",
+        home_hero_metric_label: "",
+        home_hero_metric_text: "",
+        home_directions_title: "Шины под рабочую среду",
+        home_directions_lead: "Каждое направление уже содержит модели.",
+        home_expertise_title: "Экспертиза и поддержка",
+        home_expertise_eyebrow: "Практика",
+      }),
+    ).toMatchObject({
+      directions: {
+        title: "Шины под рабочую среду",
+        lead: "Каждое направление уже содержит модели.",
+      },
+      expertise: {
+        eyebrow: "Практика",
+        title: "Экспертиза и поддержка",
+      },
+    });
+  });
 });
 
 const emptyShopHomeRow = {

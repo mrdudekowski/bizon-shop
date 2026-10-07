@@ -25,6 +25,12 @@ type HomeRow = {
   home_shop_campaign_image_alt?: string | null;
   home_shop_campaign_cta_label?: string | null;
   home_shop_campaign_cta_href?: string | null;
+  home_directions_eyebrow?: string | null;
+  home_directions_title?: string | null;
+  home_directions_lead?: string | null;
+  home_expertise_eyebrow?: string | null;
+  home_expertise_title?: string | null;
+  home_expertise_lead?: string | null;
 };
 
 type HomeCta = {
@@ -54,6 +60,8 @@ export type HomePatch = {
     imageAlt?: string;
     cta?: HomeCta;
   };
+  directions?: { eyebrow?: string; title?: string; lead?: string };
+  expertise?: { eyebrow?: string; title?: string; lead?: string };
 };
 
 function publicImageUrl(value: string | null | undefined): string | undefined {
@@ -80,28 +88,53 @@ export function mapHomePatch(row: HomeRow): HomePatch {
   const primaryCta = mapCta(row.home_hero_primary_cta_label, row.home_hero_primary_cta_href);
   const secondaryCta = mapCta(row.home_hero_secondary_cta_label, row.home_hero_secondary_cta_href);
   const shopCampaign = mapHomeShopCampaign(row);
+  const directions = mapHomeShell(
+    row.home_directions_eyebrow,
+    row.home_directions_title,
+    row.home_directions_lead,
+  );
+  const expertise = mapHomeShell(
+    row.home_expertise_eyebrow,
+    row.home_expertise_title,
+    row.home_expertise_lead,
+  );
 
   return {
-    ...(nonEmptyString(row.seo_seo_title) ? { seoTitle: row.seo_seo_title } : {}),
+    ...(nonEmptyString(row.seo_seo_title) ? { seoTitle: nonEmptyString(row.seo_seo_title) } : {}),
     ...(nonEmptyString(row.seo_seo_description)
-      ? { seoDescription: row.seo_seo_description }
+      ? { seoDescription: nonEmptyString(row.seo_seo_description) }
       : {}),
     hero: {
-      ...(nonEmptyString(row.home_hero_eyebrow) ? { eyebrow: row.home_hero_eyebrow } : {}),
-      ...(nonEmptyString(row.home_hero_title) ? { title: row.home_hero_title } : {}),
-      ...(nonEmptyString(row.home_hero_lead) ? { lead: row.home_hero_lead } : {}),
+      ...(nonEmptyString(row.home_hero_eyebrow) ? { eyebrow: nonEmptyString(row.home_hero_eyebrow) } : {}),
+      ...(nonEmptyString(row.home_hero_title) ? { title: nonEmptyString(row.home_hero_title) } : {}),
+      ...(nonEmptyString(row.home_hero_lead) ? { lead: nonEmptyString(row.home_hero_lead) } : {}),
       ...(primaryCta ? { primaryCta } : {}),
       ...(secondaryCta ? { secondaryCta } : {}),
       ...(nonEmptyString(row.home_hero_metric_label)
-        ? { metricLabel: row.home_hero_metric_label }
+        ? { metricLabel: nonEmptyString(row.home_hero_metric_label) }
         : {}),
-      ...(nonEmptyString(row.home_hero_metric_text) ? { metricText: row.home_hero_metric_text } : {}),
+      ...(nonEmptyString(row.home_hero_metric_text) ? { metricText: nonEmptyString(row.home_hero_metric_text) } : {}),
       ...(publicImageUrl(row.home_hero_image_url)
         ? { imageUrl: publicImageUrl(row.home_hero_image_url) }
         : {}),
     },
     ...(shopCampaign ? { shopCampaign } : {}),
+    ...(directions ? { directions } : {}),
+    ...(expertise ? { expertise } : {}),
   };
+}
+
+function mapHomeShell(
+  eyebrow: string | null | undefined,
+  title: string | null | undefined,
+  lead: string | null | undefined,
+): { eyebrow?: string; title?: string; lead?: string } | undefined {
+  const shell = {
+    ...(nonEmptyString(eyebrow ?? null) ? { eyebrow: nonEmptyString(eyebrow ?? null) } : {}),
+    ...(nonEmptyString(title ?? null) ? { title: nonEmptyString(title ?? null) } : {}),
+    ...(nonEmptyString(lead ?? null) ? { lead: nonEmptyString(lead ?? null) } : {}),
+  };
+  return Object.keys(shell).length > 0 ? shell : undefined;
 }
 
 function mapHomeShopCampaign(row: HomeRow): HomePatch["shopCampaign"] | undefined {
@@ -144,16 +177,16 @@ type StubRow = {
 
 export function mapStubPatch(row: StubRow): StubPatch {
   return {
-    ...(nonEmptyString(row.seo_seo_title) ? { seoTitle: row.seo_seo_title } : {}),
-    ...(nonEmptyString(row.seo_seo_description) ? { seoDescription: row.seo_seo_description } : {}),
+    ...(nonEmptyString(row.seo_seo_title) ? { seoTitle: nonEmptyString(row.seo_seo_title) } : {}),
+    ...(nonEmptyString(row.seo_seo_description) ? { seoDescription: nonEmptyString(row.seo_seo_description) } : {}),
     hero: {
-      ...(nonEmptyString(row.stub_hero_eyebrow) ? { eyebrow: row.stub_hero_eyebrow } : {}),
-      ...(nonEmptyString(row.stub_hero_title) ? { title: row.stub_hero_title } : {}),
-      ...(nonEmptyString(row.stub_hero_lead) ? { lead: row.stub_hero_lead } : {}),
+      ...(nonEmptyString(row.stub_hero_eyebrow) ? { eyebrow: nonEmptyString(row.stub_hero_eyebrow) } : {}),
+      ...(nonEmptyString(row.stub_hero_title) ? { title: nonEmptyString(row.stub_hero_title) } : {}),
+      ...(nonEmptyString(row.stub_hero_lead) ? { lead: nonEmptyString(row.stub_hero_lead) } : {}),
       ...(publicImageUrl(row.stub_hero_image_url)
         ? { imageUrl: publicImageUrl(row.stub_hero_image_url) }
         : {}),
-      ...(nonEmptyString(row.stub_hero_image_alt) ? { imageAlt: row.stub_hero_image_alt } : {}),
+      ...(nonEmptyString(row.stub_hero_image_alt) ? { imageAlt: nonEmptyString(row.stub_hero_image_alt) } : {}),
     },
   };
 }
@@ -237,27 +270,27 @@ export function mapShopHomePatch(input: {
   const cta = mapCta(row.shop_hero_cta_label, row.shop_hero_cta_href);
   const vehiclesCta = mapCta(row.shop_vehicles_cta_label ?? null, row.shop_vehicles_cta_href ?? null);
   const wheelsIntro = {
-    ...(optionalText(row.shop_wheels_intro_kicker) ? { kicker: row.shop_wheels_intro_kicker } : {}),
-    ...(optionalText(row.shop_wheels_intro_eyebrow) ? { eyebrow: row.shop_wheels_intro_eyebrow } : {}),
-    ...(optionalText(row.shop_wheels_intro_title) ? { title: row.shop_wheels_intro_title } : {}),
-    ...(optionalText(row.shop_wheels_intro_lead) ? { lead: row.shop_wheels_intro_lead } : {}),
+    ...(optionalText(row.shop_wheels_intro_kicker) ? { kicker: optionalText(row.shop_wheels_intro_kicker) } : {}),
+    ...(optionalText(row.shop_wheels_intro_eyebrow) ? { eyebrow: optionalText(row.shop_wheels_intro_eyebrow) } : {}),
+    ...(optionalText(row.shop_wheels_intro_title) ? { title: optionalText(row.shop_wheels_intro_title) } : {}),
+    ...(optionalText(row.shop_wheels_intro_lead) ? { lead: optionalText(row.shop_wheels_intro_lead) } : {}),
   };
   const vehicleShell = {
-    ...(optionalText(row.shop_vehicles_eyebrow) ? { eyebrow: row.shop_vehicles_eyebrow } : {}),
-    ...(optionalText(row.shop_vehicles_title) ? { title: row.shop_vehicles_title } : {}),
-    ...(optionalText(row.shop_vehicles_lead) ? { lead: row.shop_vehicles_lead } : {}),
+    ...(optionalText(row.shop_vehicles_eyebrow) ? { eyebrow: optionalText(row.shop_vehicles_eyebrow) } : {}),
+    ...(optionalText(row.shop_vehicles_title) ? { title: optionalText(row.shop_vehicles_title) } : {}),
+    ...(optionalText(row.shop_vehicles_lead) ? { lead: optionalText(row.shop_vehicles_lead) } : {}),
     ...(vehiclesCta ? { cta: vehiclesCta } : {}),
   };
 
   return {
-    ...(optionalText(row.seo_seo_title) ? { seoTitle: row.seo_seo_title } : {}),
-    ...(optionalText(row.seo_seo_description) ? { seoDescription: row.seo_seo_description } : {}),
+    ...(optionalText(row.seo_seo_title) ? { seoTitle: optionalText(row.seo_seo_title) } : {}),
+    ...(optionalText(row.seo_seo_description) ? { seoDescription: optionalText(row.seo_seo_description) } : {}),
     hero: {
-      ...(optionalText(row.shop_hero_eyebrow) ? { eyebrow: row.shop_hero_eyebrow } : {}),
-      ...(optionalText(row.shop_hero_title) ? { title: row.shop_hero_title } : {}),
-      ...(optionalText(row.shop_hero_lead) ? { lead: row.shop_hero_lead } : {}),
+      ...(optionalText(row.shop_hero_eyebrow) ? { eyebrow: optionalText(row.shop_hero_eyebrow) } : {}),
+      ...(optionalText(row.shop_hero_title) ? { title: optionalText(row.shop_hero_title) } : {}),
+      ...(optionalText(row.shop_hero_lead) ? { lead: optionalText(row.shop_hero_lead) } : {}),
       ...(publicImageUrl(row.shop_hero_image_url) ? { imageUrl: publicImageUrl(row.shop_hero_image_url) } : {}),
-      ...(optionalText(row.shop_hero_image_alt) ? { imageAlt: row.shop_hero_image_alt } : {}),
+      ...(optionalText(row.shop_hero_image_alt) ? { imageAlt: optionalText(row.shop_hero_image_alt) } : {}),
       ...(cta ? { cta } : {}),
     },
     ...(Object.keys(wheelsIntro).length > 0 ? { wheelsIntro } : {}),

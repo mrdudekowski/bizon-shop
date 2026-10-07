@@ -20,6 +20,7 @@ type TireModelInput = {
   gallery: unknown[];
   advantages: unknown[];
   selectionAxles?: string[];
+  applicationTypes?: string[];
 };
 
 type TireTypeRow = {
@@ -85,6 +86,7 @@ export type CmsTireModel = {
   gallery: unknown[];
   advantages: unknown[];
   selectionAxles: string[];
+  applicationTypes: string[];
 };
 
 export type CmsTireVariant = {
@@ -147,7 +149,7 @@ export function mapTireType(row: TireTypeRow, selection: TireTypeSelection): Cms
     slug: row.slug,
     description: row.description,
     descriptionShort: row.short_description,
-    sortOrder: row.sort_order,
+    sortOrder: toFiniteNumber(row.sort_order) ?? 0,
     showInMenu: row.show_in_menu,
     imageUrl: normalizeImageUrl(row.image_url),
     vehicleTypes: selection.vehicleTypes,
@@ -172,6 +174,7 @@ export function mapTireModel(input: TireModelInput): CmsTireModel {
     gallery: input.gallery,
     advantages: input.advantages,
     selectionAxles: input.selectionAxles ?? [],
+    applicationTypes: input.applicationTypes ?? [],
   };
 }
 

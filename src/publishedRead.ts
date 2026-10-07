@@ -112,7 +112,7 @@ export async function readTireModelsByType(
 
   return Promise.all(
     modelRows.map(async (modelRow) => {
-      const [axleRows, featureRows, gallery] = await Promise.all([
+      const [axleRows, featureRows, gallery, applicationRows] = await Promise.all([
         db.query("SELECT value FROM tire_models_positions WHERE parent_id = $1", [modelRow.id]),
         db.query(
           `
@@ -124,6 +124,7 @@ export async function readTireModelsByType(
           [modelRow.id],
         ),
         readGalleryUrls(db, "tire_models_rels", modelRow.id),
+        db.query("SELECT value FROM tire_models_application_types WHERE parent_id = $1", [modelRow.id]),
       ]);
 
       return mapTireModel({
@@ -136,6 +137,7 @@ export async function readTireModelsByType(
         gallery,
         advantages: featureRows.map(({ key, title, description }) => ({ key, title, description })),
         selectionAxles: readStringColumn(axleRows, "value"),
+        applicationTypes: readStringColumn(applicationRows, "value"),
       });
     }),
   );
@@ -165,7 +167,7 @@ export async function readTireModel(
     return null;
   }
 
-  const [axleRows, featureRows, gallery] = await Promise.all([
+  const [axleRows, featureRows, gallery, applicationRows] = await Promise.all([
     db.query("SELECT value FROM tire_models_positions WHERE parent_id = $1", [modelRow.id]),
     db.query(
       `
@@ -177,6 +179,7 @@ export async function readTireModel(
       [modelRow.id],
     ),
     readGalleryUrls(db, "tire_models_rels", modelRow.id),
+    db.query("SELECT value FROM tire_models_application_types WHERE parent_id = $1", [modelRow.id]),
   ]);
 
   return mapTireModel({
@@ -189,6 +192,7 @@ export async function readTireModel(
     gallery,
     advantages: featureRows.map(({ key, title, description }) => ({ key, title, description })),
     selectionAxles: readStringColumn(axleRows, "value"),
+    applicationTypes: readStringColumn(applicationRows, "value"),
   });
 }
 
@@ -222,7 +226,9 @@ export async function readHomePatch(db: ReadDatabase): Promise<HomePatch | null>
       selection_media.url AS home_selection_entry_image_url,
       pages.home_shop_campaign_eyebrow, pages.home_shop_campaign_title, pages.home_shop_campaign_lead,
       pages.home_shop_campaign_image_alt, pages.home_shop_campaign_cta_label, pages.home_shop_campaign_cta_href,
-      campaign_media.url AS home_shop_campaign_image_url
+      campaign_media.url AS home_shop_campaign_image_url,
+      pages.home_directions_eyebrow, pages.home_directions_title, pages.home_directions_lead,
+      pages.home_expertise_eyebrow, pages.home_expertise_title, pages.home_expertise_lead
     FROM pages
     LEFT JOIN media AS hero_media ON hero_media.id = pages.home_hero_image_id
     LEFT JOIN media AS selection_media ON selection_media.id = pages.home_selection_entry_image_id
@@ -282,8 +288,8 @@ export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch
   ]);
   return mapShopHomePatch({
     row: row as Parameters<typeof mapShopHomePatch>[0]["row"],
-    carousel,
-    vehicles,
+    carousel: carousel as Parameters<typeof mapShopHomePatch>[0]["carousel"],
+    vehicles: vehicles as Parameters<typeof mapShopHomePatch>[0]["vehicles"],
     orderSteps,
   });
 }
@@ -458,7 +464,22 @@ export async function readShopCategories(db: ReadDatabase): Promise<CmsShopCateg
     WHERE shop_categories.status = 'published'
     ORDER BY shop_categories.sort_order, shop_categories.name
   `);
-  return rows.map((row) => mapShopCategory(row as Parameters<typeof mapShopCategory>[0]));
+  const slides = await db.query(`
+    SELECT slides.shop_category_id, slides.title, media.url AS image_url
+    FROM shop_category_carousel slides
+    LEFT JOIN media ON media.id = slides.image_id
+    ORDER BY slides.sort_order, slides.id
+  `);
+  const slidesByCategory = new Map<string, { title?: string | null; image_url?: string | null }[]>();
+  for (const slide of slides) {
+    const categoryId = String(slide.shop_category_id);
+    const frames = slidesByCategory.get(categoryId) ?? [];
+    if (frames.length < 1) frames.push(slide);
+    slidesByCategory.set(categoryId, frames);
+  }
+  return rows.map((row) =>
+    mapShopCategory(row as Parameters<typeof mapShopCategory>[0], slidesByCategory.get(String(row.id)) ?? []),
+  );
 }
 
 async function readShopProductRows(db: ReadDatabase, slug?: string, categorySlug?: string) {
@@ -477,9 +498,12 @@ async function readShopProductRows(db: ReadDatabase, slug?: string, categorySlug
   }
   return db.query(
     `
-      SELECT products.*, shop_categories.slug AS category_slug, media.url AS image_url
+      SELECT products.*, shop_categories.slug AS category_slug,
+        shop_subcategories.slug AS subcategory_slug, shop_subcategories.name AS subcategory_name,
+        media.url AS image_url
       FROM products
       JOIN shop_categories ON shop_categories.id = products.shop_category_id
+      LEFT JOIN shop_subcategories ON shop_subcategories.id = products.subcategory_id
       LEFT JOIN media ON media.id = products.main_image_id
       WHERE ${filters.join(" AND ")}
       ORDER BY products.name, products.id

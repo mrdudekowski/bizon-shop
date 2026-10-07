@@ -64,6 +64,7 @@ describe("published catalog readers", () => {
         return [{ key: "handling", title: "Управление", description: "Держит колею" }];
       }
       if (sql.includes("tire_models_rels")) return [{ image_url: "/media/gallery.jpg" }];
+      if (sql.includes("FROM tire_models_application_types")) return [{ value: "long_haul" }];
       return [
         {
           id: 24,
@@ -86,6 +87,7 @@ describe("published catalog readers", () => {
       gallery: ["/media/gallery.jpg"],
       selectionAxles: ["drive"],
       advantages: [{ key: "handling" }],
+      applicationTypes: ["long_haul"],
     });
     expect(calls[0]).toMatchObject({ params: ["tbr", "dsr188"] });
     expect(calls[0].sql).toContain("FROM tire_models");
@@ -113,6 +115,7 @@ describe("published catalog readers", () => {
         return [{ key: "safety", title: "Безопасность", description: "Стабильно" }];
       }
       if (sql.includes("tire_models_rels")) return [];
+      if (sql.includes("FROM tire_models_application_types")) return [{ value: "regional" }];
       return [
         {
           id: 24,
@@ -130,7 +133,7 @@ describe("published catalog readers", () => {
     });
 
     await expect(readTireModelsByType(db, "tbr")).resolves.toMatchObject([
-      { id: "24", slug: "dsr188", tireTypeSlug: "tbr", selectionAxles: ["steer"] },
+      { id: "24", slug: "dsr188", tireTypeSlug: "tbr", selectionAxles: ["steer"], applicationTypes: ["regional"] },
     ]);
     expect(calls[0]).toMatchObject({ params: ["tbr"] });
     expect(calls[0].sql).toContain("FROM tire_models");
@@ -178,6 +181,8 @@ describe("published content readers", () => {
     expect(published.calls[0].sql).toContain("key = 'home'");
     expect(published.calls[0].sql).toContain("status = 'published'");
     expect(published.calls[0].sql).toContain("home_shop_campaign_image_id");
+    expect(published.calls[0].sql).toContain("home_directions_title");
+    expect(published.calls[0].sql).toContain("home_expertise_title");
   });
 
   it("reads published articles and returns null for an absent draft slug", async () => {

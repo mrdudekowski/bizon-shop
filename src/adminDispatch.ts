@@ -28,6 +28,7 @@ export async function dispatchAdminCall(
     return { status: 200, body: { ok: true, result: result ?? null } };
   } catch (error) {
     const code = error instanceof AdminClientError ? error.code : "publish_blocked";
-    return { status: code === "forbidden" ? 403 : 400, body: { ok: false, code } };
+    const status = code === "forbidden" ? 403 : code === "conflict" ? 409 : 400;
+    return { status, body: { ok: false, code } };
   }
 }

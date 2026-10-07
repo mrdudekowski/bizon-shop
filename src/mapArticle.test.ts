@@ -48,4 +48,19 @@ describe("mapArticle", () => {
       imageUrl: null,
     });
   });
+
+  it("normalizes a numeric database string for menu order", () => {
+    const article = mapArticle({
+      title: "Статья",
+      slug: "article",
+      excerpt: "",
+      content: "Текст",
+      published_at: null,
+      image_url: null,
+      show_in_menu: true,
+      menu_order: "4" as unknown as number,
+    });
+
+    expect(article.menuOrder).toBe(4);
+  });
 });

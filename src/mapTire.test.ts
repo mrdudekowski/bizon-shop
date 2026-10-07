@@ -1,5 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { lexicalToHtml, mapTireModel, mapTireVariant, normalizeImageUrl } from "./mapTire";
+import { lexicalToHtml, mapTireModel, mapTireType, mapTireVariant, normalizeImageUrl } from "./mapTire";
+
+describe("mapTireType", () => {
+  it("normalizes numeric strings from the database to numbers", () => {
+    const type = mapTireType({
+      name: "TBR",
+      slug: "tbr",
+      description: null,
+      short_description: null,
+      sort_order: "2" as unknown as number,
+      show_in_menu: true,
+      image_url: null,
+    }, { vehicleTypes: [], conditions: [] });
+
+    expect(type.sortOrder).toBe(2);
+  });
+});
 
 describe("mapTireModel", () => {
   it("maps a published row into the card the site renders", () => {
@@ -19,6 +35,7 @@ describe("mapTireModel", () => {
       gallery: [],
       advantages: [{ key: "handling", title: "Управление", description: "Держит колею" }],
       selectionAxles: ["steer"],
+      applicationTypes: ["long_haul"],
     });
     expect(model).toMatchObject({
       id: "24",
@@ -31,6 +48,7 @@ describe("mapTireModel", () => {
       imageUrl: "/media/dsr188.jpg",
       gallery: [],
       selectionAxles: ["steer"],
+      applicationTypes: ["long_haul"],
     });
   });
 

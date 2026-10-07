@@ -8,10 +8,13 @@ import type {
   EditorCapability,
   EntityRecord,
   MediaListItem,
+  MediaDeletionHistoryItem,
+  PasswordResetHistoryItem,
   PageDraft,
   PageKey,
   ShopCategoryDraft,
   ShopProductDraft,
+  ShopSubcategoryDraft,
   TireDirection,
   TireDirectionDraft,
   TireModelDraft,
@@ -32,6 +35,8 @@ export type AdminClient = {
   hideTireDirection(id: string): Promise<EntityRecord<TireDirectionDraft>>;
   deleteTireDirection(id: string): Promise<void>;
   createAsset(file: { name: string; mimeType: string; body?: Buffer; dataUrl?: string }): Promise<{ id: string }>;
+  replaceAsset(id: string, file: { name: string; mimeType: string; body?: Buffer; dataUrl?: string }): Promise<{ id: string; replacementAssetId: string }>;
+  cancelAssetReplacement(id: string): Promise<void>;
   listTireModels(): Promise<TireModelListItem[]>;
   getTireModel(id: string): Promise<TireModelRecord>;
   createTireModel(input: { name: string; directionId: string }): Promise<TireModelRecord>;
@@ -62,8 +67,12 @@ export type AdminClient = {
   publishShopCategory(id: string): Promise<EntityRecord<ShopCategoryDraft>>;
   hideShopCategory(id: string): Promise<EntityRecord<ShopCategoryDraft>>;
   deleteShopCategory(id: string): Promise<void>;
+  listShopSubcategories(categoryId: string): Promise<ShopSubcategoryDraft[]>;
+  createShopSubcategory(input: { categoryId: string; name: string; slug: string }): Promise<ShopSubcategoryDraft>;
+  saveShopSubcategory(id: string, input: { name: string; slug: string }): Promise<ShopSubcategoryDraft>;
+  deleteShopSubcategory(id: string): Promise<void>;
   listShopProducts(): Promise<
-    { id: string; name: string; categoryName: string; categoryId: string; imageAssetId: string | null; status: DocumentStatus; hasUnpublishedDraft: boolean }[]
+    { id: string; name: string; categoryName: string; categoryId: string; categoryPublished: boolean; isPublished: boolean; subcategoryId?: string; imageAssetId: string | null; status: DocumentStatus; hasUnpublishedDraft: boolean }[]
   >;
   createShopProduct(input: { name: string; categoryId: string }): Promise<EntityRecord<ShopProductDraft>>;
   getShopProduct(id: string): Promise<EntityRecord<ShopProductDraft>>;
@@ -80,25 +89,28 @@ export type AdminClient = {
     {
       id: string;
       title: string;
-      kind: ArticleDraft["kind"];
+      kind: "article";
       imageAssetId: string | null;
       status: DocumentStatus;
       hasUnpublishedDraft: boolean;
     }[]
   >;
   getMaterial(id: string): Promise<EntityRecord<ArticleDraft>>;
-  createMaterial(input: { title: string; kind: ArticleDraft["kind"] }): Promise<EntityRecord<ArticleDraft>>;
+  createMaterial(input: { title: string; kind: "article" }): Promise<EntityRecord<ArticleDraft>>;
   saveMaterial(id: string, draft: ArticleDraft): Promise<EntityRecord<ArticleDraft>>;
   publishMaterial(id: string): Promise<EntityRecord<ArticleDraft>>;
   hideMaterial(id: string): Promise<EntityRecord<ArticleDraft>>;
   deleteMaterial(id: string): Promise<void>;
   listAssets(): Promise<MediaListItem[]>;
   deleteAsset(id: string): Promise<void>;
+  listMediaDeletionHistory(): Promise<MediaDeletionHistoryItem[]>;
   listUsers(): Promise<AdminUser[]>;
   createUser(input: { login: string; role: AdminUser["role"]; password: string; capabilities?: EditorCapability[] }): Promise<AdminUser>;
   disableUser(id: string): Promise<AdminUser>;
   setUserRole(id: string, role: AdminUser["role"]): Promise<AdminUser>;
   setUserCapabilities(userId: string, capabilities: EditorCapability[]): Promise<AdminUser>;
+  resetUserPassword(userId: string, password: string): Promise<void>;
+  listPasswordResetHistory(): Promise<PasswordResetHistoryItem[]>;
   listChangeSets(filter?: { status?: ChangeSetStatus; authorUserId?: string }): Promise<ChangeSet[]>;
   getChangeSet(id: string): Promise<ChangeSet>;
   submitChangeSet(id: string): Promise<ChangeSet>;

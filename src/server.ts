@@ -1,23 +1,28 @@
 import http from "node:http";
+import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { dispatchAdminCall } from "./adminDispatch";
+import { isAdminRequestOriginAllowed, localOriginHeaders } from "./adminCors";
 import {
   authenticate,
   bootstrapAccounts,
   clearedSessionCookie,
   endSession,
-  ensureAuthSchema,
   readSession,
   readSessionCookie,
   sessionCookie,
   startSession,
   type AuthenticatedAccount,
 } from "./admin/server/adminAuth";
+import { assertSchemaReady } from "./schemaReadiness";
+import { checkBackendReadiness } from "./readiness";
+import { createContentRevision, createRequestLogRecord } from "./requestTelemetry";
 import { deleteCartSession, readCartSession, saveCartSession } from "./cartSession";
 import { insertRequest, type StoredRequestInput } from "./insertRequest";
 import { AdminClientError } from "./admin/client/errors";
+import { LoginThrottle, type LoginAttemptTicket } from "./admin/server/loginThrottle";
 import { createPostgresAdminClient } from "./admin/server/postgresAdmin";
-import { readRequestBody } from "./readRequestBody";
+import { readJsonRequestBody, readRequestBody, RequestBodyTooLarge } from "./readRequestBody";
 import { MediaRejected, MAX_MEDIA_BYTES } from "./storage/putMedia";
 import {
   readArticleBySlug,
@@ -43,6 +48,7 @@ import {
 /** Only used to turn a request path into a URL; the request never leaves this process. */
 const URL_BASE = "http://localhost";
 const PORT = 4000;
+const loginThrottle = new LoginThrottle();
 
 type JsonBody = unknown;
 
@@ -61,23 +67,16 @@ function sendJson(
   res.end(payload);
 }
 
-function localOriginHeaders(origin: string | undefined): Record<string, string> {
-  if (!origin || !/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin)) return {};
-  return {
-    "access-control-allow-origin": origin,
-    "access-control-allow-methods": "GET, POST, OPTIONS",
-    "access-control-allow-headers": "content-type",
-    // The CMS session lives in a cookie, so the browser only sends it when credentials are allowed.
-    "access-control-allow-credentials": "true",
-    vary: "origin",
-  };
+function sendPublishedJson(res: http.ServerResponse, status: number, body: JsonBody) {
+  const revision = createContentRevision(JSON.stringify(body));
+  sendJson(res, status, body, {
+    "cache-control": "no-store",
+    "x-content-revision": revision,
+  });
 }
 
 async function readJson(req: http.IncomingMessage): Promise<unknown> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) chunks.push(Buffer.from(chunk));
-  if (chunks.length === 0) return {};
-  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  return readJsonRequestBody(req);
 }
 
 function createPgDatabase(connectionString: string): ReadDatabase & {
@@ -160,6 +159,11 @@ async function handleRequest(
 
   const originHeaders = localOriginHeaders(req.headers.origin);
 
+  if (!isAdminRequestOriginAllowed(path, method, req.headers.origin)) {
+    sendJson(res, 403, { ok: false, code: "origin_not_allowed" });
+    return;
+  }
+
   if (method === "OPTIONS" && (path === "/v1/admin" || path.startsWith("/v1/admin/assets") || path === "/v1/requests" || isAuthPath(path))) {
     res.writeHead(204, originHeaders);
     res.end();
@@ -167,21 +171,40 @@ async function handleRequest(
   }
 
   if (method === "POST" && path === "/v1/admin/auth/login") {
+    let attemptTicket: LoginAttemptTicket | null = null;
     try {
       const body = (await readJson(req)) as { login?: unknown; password?: unknown };
       const login = typeof body.login === "string" ? body.login : "";
       const password = typeof body.password === "string" ? body.password : "";
+      const reservation = loginThrottle.begin(login);
+      if (!reservation.allowed) {
+        sendJson(res, 429, { ok: false, code: "login_throttled" }, {
+          ...originHeaders,
+          "retry-after": String(reservation.retryAfterSeconds),
+        });
+        return;
+      }
+      attemptTicket = reservation.ticket;
       const account = await authenticate(authQuery(), login, password);
       if (account == null) {
+        loginThrottle.finish(attemptTicket, "failed");
+        attemptTicket = null;
         sendJson(res, 401, { ok: false, code: "invalid_credentials" }, originHeaders);
         return;
       }
       const token = await startSession(authQuery(), account.id);
+      loginThrottle.finish(attemptTicket, "succeeded");
+      attemptTicket = null;
       sendJson(res, 200, { ok: true, result: sessionOf(account) }, {
         ...originHeaders,
         "set-cookie": sessionCookie(token, isSecureRequest(req)),
       });
-    } catch {
+    } catch (error) {
+      if (attemptTicket) loginThrottle.finish(attemptTicket, "aborted");
+      if (error instanceof RequestBodyTooLarge) {
+        sendJson(res, 413, { ok: false, code: "request_too_large" }, originHeaders);
+        return;
+      }
       sendJson(res, 500, { ok: false, code: "storage_unavailable" }, originHeaders);
     }
     return;
@@ -215,18 +238,31 @@ async function handleRequest(
     return;
   }
 
-  if (method === "POST" && path.startsWith("/v1/admin/assets")) {
+  const replacementMatch = /^\/v1\/admin\/assets\/(\d+)$/.exec(path);
+  const cancelReplacementMatch = /^\/v1\/admin\/assets\/(\d+)\/replacement$/.exec(path);
+  if (
+    (method === "POST" && path === "/v1/admin/assets") ||
+    (method === "PUT" && replacementMatch) ||
+    (method === "DELETE" && cancelReplacementMatch)
+  ) {
     try {
       const account = await currentAccount(req);
       if (account == null) {
         sendJson(res, 401, { ok: false, code: "unauthorized" }, originHeaders);
         return;
       }
+      const client = createPostgresAdminClient(account);
+      if (cancelReplacementMatch) {
+        await client.cancelAssetReplacement(cancelReplacementMatch[1]);
+        sendJson(res, 200, { ok: true, result: null }, originHeaders);
+        return;
+      }
       const name = url.searchParams.get("name") ?? "upload";
       const mimeType = url.searchParams.get("type") || String(req.headers["content-type"] ?? "");
       const body = await readRequestBody(req, MAX_MEDIA_BYTES);
-      const client = createPostgresAdminClient(account);
-      const result = await client.createAsset({ name, mimeType, body });
+      const result = replacementMatch
+        ? await client.replaceAsset(replacementMatch[1], { name, mimeType, body })
+        : await client.createAsset({ name, mimeType, body });
       sendJson(res, 200, { ok: true, result }, originHeaders);
     } catch (error) {
       const code =
@@ -250,7 +286,11 @@ async function handleRequest(
       const body = (await readJson(req)) as { method?: string; args?: unknown[] };
       const outcome = await dispatchAdminCall(body, account);
       sendJson(res, outcome.status, outcome.body, originHeaders);
-    } catch {
+    } catch (error) {
+      if (error instanceof RequestBodyTooLarge) {
+        sendJson(res, 413, { ok: false, code: "request_too_large" }, originHeaders);
+        return;
+      }
       sendJson(res, 400, { ok: false, code: "publish_blocked" }, originHeaders);
     }
     return;
@@ -281,8 +321,11 @@ async function handleRequest(
         sendJson(res, 200, { ok: true });
         return;
       }
-    } catch {
-      sendJson(res, 500, { ok: false });
+    } catch (error) {
+      sendJson(res, error instanceof RequestBodyTooLarge ? 413 : 500, {
+        ok: false,
+        ...(error instanceof RequestBodyTooLarge ? { code: "request_too_large" } : {}),
+      });
       return;
     }
   }
@@ -301,8 +344,11 @@ async function handleRequest(
         insertRequest({ query }, body),
       );
       sendJson(res, 201, { ok: true, requestId });
-    } catch {
-      sendJson(res, 500, { ok: false });
+    } catch (error) {
+      sendJson(res, error instanceof RequestBodyTooLarge ? 413 : 500, {
+        ok: false,
+        ...(error instanceof RequestBodyTooLarge ? { code: "request_too_large" } : {}),
+      });
     }
     return;
   }
@@ -317,11 +363,21 @@ async function handleRequest(
     return;
   }
 
+  if (path === "/ready") {
+    try {
+      await checkBackendReadiness((sql) => getDatabase().query(sql));
+      sendJson(res, 200, { ok: true });
+    } catch {
+      sendJson(res, 503, { ok: false });
+    }
+    return;
+  }
+
   try {
     const database = getDatabase();
 
     if (path === "/v1/tires/types") {
-      sendJson(res, 200, await readTireTypes(database));
+      sendPublishedJson(res, 200, await readTireTypes(database));
       return;
     }
 
@@ -335,7 +391,7 @@ async function handleRequest(
           sendJson(res, 404, { ok: false });
           return;
         }
-        sendJson(res, 200, tireType);
+        sendPublishedJson(res, 200, tireType);
         return;
       }
     }
@@ -350,7 +406,7 @@ async function handleRequest(
           sendJson(res, 404, { ok: false });
           return;
         }
-        sendJson(res, 200, await readTireModelsByType(database, typeSlug));
+        sendPublishedJson(res, 200, await readTireModelsByType(database, typeSlug));
         return;
       }
     }
@@ -367,7 +423,7 @@ async function handleRequest(
             sendJson(res, 404, { ok: false });
             return;
           }
-          sendJson(res, 200, model);
+          sendPublishedJson(res, 200, model);
           return;
         }
       }
@@ -377,7 +433,7 @@ async function handleRequest(
       const match = path.match(/^\/v1\/tires\/models\/([^/]+)\/variants$/);
       if (match) {
         const modelId = decodeURIComponent(match[1]);
-        sendJson(res, 200, await readTireVariants(database, modelId));
+        sendPublishedJson(res, 200, await readTireVariants(database, modelId));
         return;
       }
     }
@@ -388,7 +444,7 @@ async function handleRequest(
         sendJson(res, 404, { ok: false });
         return;
       }
-      sendJson(res, 200, home);
+      sendPublishedJson(res, 200, home);
       return;
     }
 
@@ -398,7 +454,7 @@ async function handleRequest(
         sendJson(res, 404, { ok: false });
         return;
       }
-      sendJson(res, 200, shopHome);
+      sendPublishedJson(res, 200, shopHome);
       return;
     }
 
@@ -410,13 +466,13 @@ async function handleRequest(
           sendJson(res, 404, { ok: false });
           return;
         }
-        sendJson(res, 200, page);
+        sendPublishedJson(res, 200, page);
         return;
       }
     }
 
     if (path === "/v1/articles") {
-      sendJson(res, 200, await readArticles(database));
+      sendPublishedJson(res, 200, await readArticles(database));
       return;
     }
 
@@ -429,25 +485,25 @@ async function handleRequest(
           sendJson(res, 404, { ok: false });
           return;
         }
-        sendJson(res, 200, article);
+        sendPublishedJson(res, 200, article);
         return;
       }
     }
 
     if (path === "/v1/wheels/types") {
-      sendJson(res, 200, await readWheelTypes(database));
+      sendPublishedJson(res, 200, await readWheelTypes(database));
       return;
     }
 
     {
       const modelsMatch = path.match(/^\/v1\/wheels\/types\/([^/]+)\/models$/);
       if (modelsMatch) {
-        sendJson(res, 200, await readWheelModelsByType(database, decodeURIComponent(modelsMatch[1])));
+        sendPublishedJson(res, 200, await readWheelModelsByType(database, decodeURIComponent(modelsMatch[1])));
         return;
       }
       const variantsMatch = path.match(/^\/v1\/wheels\/types\/([^/]+)\/variants$/);
       if (variantsMatch) {
-        sendJson(
+        sendPublishedJson(
           res,
           200,
           await readWheelVariantsByType(database, decodeURIComponent(variantsMatch[1])),
@@ -463,7 +519,7 @@ async function handleRequest(
           sendJson(res, 404, { ok: false });
           return;
         }
-        sendJson(res, 200, wheelType);
+        sendPublishedJson(res, 200, wheelType);
         return;
       }
     }
@@ -471,7 +527,7 @@ async function handleRequest(
     {
       const match = path.match(/^\/v1\/wheels\/models\/([^/]+)\/variants$/);
       if (match) {
-        sendJson(res, 200, await readWheelVariants(database, decodeURIComponent(match[1])));
+        sendPublishedJson(res, 200, await readWheelVariants(database, decodeURIComponent(match[1])));
         return;
       }
     }
@@ -488,13 +544,13 @@ async function handleRequest(
           sendJson(res, 404, { ok: false });
           return;
         }
-        sendJson(res, 200, model);
+        sendPublishedJson(res, 200, model);
         return;
       }
     }
 
     if (path === "/v1/shop/categories") {
-      sendJson(res, 200, await readShopCategories(database));
+      sendPublishedJson(res, 200, await readShopCategories(database));
       return;
     }
 
@@ -508,14 +564,14 @@ async function handleRequest(
           sendJson(res, 404, { ok: false });
           return;
         }
-        sendJson(res, 200, category);
+        sendPublishedJson(res, 200, category);
         return;
       }
     }
 
     if (path === "/v1/shop/products") {
       const category = url.searchParams.get("category")?.trim();
-      sendJson(res, 200, await readShopProducts(database, category || undefined));
+      sendPublishedJson(res, 200, await readShopProducts(database, category || undefined));
       return;
     }
 
@@ -527,7 +583,7 @@ async function handleRequest(
           sendJson(res, 404, { ok: false });
           return;
         }
-        sendJson(res, 200, product);
+        sendPublishedJson(res, 200, product);
         return;
       }
     }
@@ -546,27 +602,43 @@ const LOOPBACK_HOSTS = ["127.0.0.1", "::1"];
 
 const servers = LOOPBACK_HOSTS.map(() =>
   http.createServer((req, res) => {
+    const requestId = randomUUID();
+    const startedAt = performance.now();
+    res.setHeader("x-request-id", requestId);
+    res.once("finish", () => {
+      console.info(JSON.stringify(createRequestLogRecord({
+        method: req.method,
+        url: req.url ?? "/",
+        statusCode: res.statusCode,
+        durationMs: performance.now() - startedAt,
+        requestId,
+        contentRevision: res.getHeader("x-content-revision")?.toString() ?? null,
+      })));
+    });
     void handleRequest(req, res);
   }),
 );
 
 async function prepareAuth(): Promise<void> {
-  await ensureAuthSchema(authQuery());
+  await assertSchemaReady(authQuery());
   await bootstrapAccounts(authQuery(), process.env);
 }
 
-servers.forEach((server, index) => {
-  const host = LOOPBACK_HOSTS[index];
-  server.on("error", (error: NodeJS.ErrnoException) => {
-    // A machine without IPv6 loopback still serves fine on the other address.
-    console.error(`backend-app cannot listen on ${host}:${PORT}:`, error.message);
-  });
-  server.listen(PORT, host, () => {
-    console.log(`backend-app listening on http://${host === "::1" ? "localhost" : host}:${PORT}`);
-  });
-});
-
 prepareAuth().then(
-  () => console.log("CMS accounts ready"),
-  (error: unknown) => console.error("CMS accounts unavailable:", (error as Error).message),
-);
+  () => {
+    console.log("CMS accounts ready");
+    servers.forEach((server, index) => {
+      const host = LOOPBACK_HOSTS[index];
+      server.on("error", (error: NodeJS.ErrnoException) => {
+        // A machine without IPv6 loopback still serves fine on the other address.
+        console.error(`backend-app cannot listen on ${host}:${PORT}:`, error.message);
+      });
+      server.listen(PORT, host, () => {
+        console.log(`backend-app listening on http://${host === "::1" ? "localhost" : host}:${PORT}`);
+      });
+    });
+  },
+  (error: unknown) => {
+    console.error("Backend schema is not ready; backend was not started:", (error as Error).message);
+    process.exitCode = 1;
+  });

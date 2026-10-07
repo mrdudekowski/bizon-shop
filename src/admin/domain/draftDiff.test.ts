@@ -25,7 +25,6 @@ function tireModel(overrides: Partial<TireModelDraft> = {}): TireModelDraft {
     brand: "BIZON",
     descriptionShort: "",
     descriptionLong: "",
-    applicationCategory: "",
     treadType: "",
     selectionVehicleTypes: [],
     selectionConditions: [],
@@ -134,7 +133,15 @@ describe("field catalog coverage", () => {
     ],
     [
       "shop-category",
-      { id: "c1", name: "Колпаки", slug: "caps", description: "", sortOrder: 1, showInMenu: true },
+      {
+        id: "c1",
+        name: "Колпаки",
+        slug: "caps",
+        description: "",
+        sortOrder: 1,
+        showInMenu: true,
+        carousel: [{ id: "s1", image: placement }],
+      },
     ],
     [
       "shop-product",
@@ -172,8 +179,6 @@ describe("field catalog coverage", () => {
         gallery: [],
         showInMenu: false,
         menuOrder: 0,
-        clientName: "",
-        industry: "",
       },
     ],
   ];

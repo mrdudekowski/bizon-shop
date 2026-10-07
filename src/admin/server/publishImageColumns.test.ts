@@ -9,11 +9,16 @@ describe("publish image columns", () => {
     expect(block).toContain("featured_image_id");
   });
 
-  it("writePage home includes shop campaign image", () => {
+  it("writePage saves home campaign and shop-home hero images to their own columns", () => {
     const source = fs.readFileSync(new URL("./postgresAdmin.ts", import.meta.url), "utf8");
     const start = source.indexOf("async function writePage");
-    const block = source.slice(start, start + 2500);
-    expect(block).toContain("home_shop_campaign_image_id");
-    expect(block).toContain("shop_hero_image_id");
+    const end = source.indexOf("export async function catalogPublishGaps", start);
+    const block = source.slice(start, end);
+    const homeStart = block.indexOf('if (draft.id === "home")');
+    const shopHomeStart = block.indexOf('if (draft.id === "shop-home")');
+    const homeBlock = block.slice(homeStart, shopHomeStart);
+    const shopHomeBlock = block.slice(shopHomeStart);
+    expect(homeBlock).toContain("home_shop_campaign_image_id");
+    expect(shopHomeBlock).toContain("shop_hero_image_id");
   });
 });
