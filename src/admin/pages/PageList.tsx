@@ -8,6 +8,8 @@ import type { DocumentStatus, EntityRecord, MediaListItem, PageDraft } from "@/a
 import { PAGE_LABELS } from "./pageLabels";
 import styles from "@/admin/ui/catalog.module.css";
 import { CatalogRow } from "@/admin/ui/CatalogRow";
+import { CatalogViewToggle } from "@/admin/ui/CatalogViewToggle";
+import { useCatalogView } from "@/admin/ui/catalogView";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 import { useAdminRole, useAdminSession } from "@/admin/ui/DocumentUI";
 import { canEditorPerform } from "@/admin/domain/editorPermissions";
@@ -44,6 +46,7 @@ export function PageList() {
   const [pages, setPages] = useState<EntityRecord<PageDraft>[]>([]);
   const [assets, setAssets] = useState<MediaListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { view, setView } = useCatalogView("pages", pages.length);
 
   async function reload() {
     const client = browserAdminClient();
@@ -67,11 +70,14 @@ export function PageList() {
 
   return (
     <main>
-      <div><h1>Страницы</h1><p className="subheading">Девять страниц сайта. Откройте страницу, чтобы изменить её содержимое.</p></div>
-      {loading ? <AdminLoading label="Загружаем страницы…" /> : <ul className={styles.catalogList}>
+      <div className={styles.pageHead}>
+        <div><h1>Страницы</h1><p className="subheading">Девять страниц сайта. Откройте страницу, чтобы изменить её содержимое.</p></div>
+        <CatalogViewToggle view={view} onChange={setView} />
+      </div>
+      {loading ? <AdminLoading label="Загружаем страницы…" /> : <ul className={view === "tiles" ? styles.catalogTiles : styles.catalogList}>
         {pages.map((page) => (
           <li key={page.id}>
-            <CatalogRow href={`/pages/editor?key=${encodeURIComponent(page.draft.id)}`} title={PAGE_LABELS[page.draft.id]} icon="pages" imageUrl={assets.find((asset) => asset.id === previewAssetId(page.draft))?.dataUrl} status={statusOf(page)} hasUnpublishedDraft={hasDraft(page)} onStatusChange={role === "admin" ? (status) => changeStatus(page.draft.id, status) : undefined} />
+            <CatalogRow view={view} href={`/pages/editor?key=${encodeURIComponent(page.draft.id)}`} title={PAGE_LABELS[page.draft.id]} icon="pages" imageUrl={assets.find((asset) => asset.id === previewAssetId(page.draft))?.dataUrl} status={statusOf(page)} hasUnpublishedDraft={hasDraft(page)} onStatusChange={role === "admin" ? (status) => changeStatus(page.draft.id, status) : undefined} />
           </li>
         ))}
       </ul>}

@@ -13,6 +13,8 @@ import type { DocumentStatus, TireDirection, TireModelListItem, MediaListItem } 
 import { Icon } from "@/admin/ui/Icon";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 import { CatalogRow } from "@/admin/ui/CatalogRow";
+import { CatalogViewToggle } from "@/admin/ui/CatalogViewToggle";
+import { useCatalogView } from "@/admin/ui/catalogView";
 import { useAdminRole, useCanPerform } from "@/admin/ui/DocumentUI";
 import styles from "@/admin/ui/catalog.module.css";
 
@@ -71,6 +73,8 @@ export function TireModelList() {
     return matchesName && matchesStatus && item.directionId === selectedDirectionId;
   });
   const visible = status === "all" ? sortModelsByPublicationStatus(filteredModels) : filteredModels;
+  const modelsInDirection = items.filter((item) => item.directionId === selectedDirectionId).length;
+  const { view, setView } = useCatalogView("tire-models", modelsInDirection);
 
   function openCreate() {
     setName("");
@@ -133,12 +137,15 @@ export function TireModelList() {
           ) : null}
         </div>
       </div>
-      <div className={styles.filters}>
-        <label>
-          Поиск
-          <input type="search" placeholder="Поиск по названию модели…" value={query} onChange={(event) => setQuery(event.target.value)} />
-        </label>
-        <label>Статус<select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}><option value="all">Все статусы</option><option value="draft">Черновик</option><option value="on_site">На сайте</option><option value="hidden">Скрыто</option></select></label>
+      <div className={styles.catalogControls}>
+        <div className={styles.filters}>
+          <label>
+            Поиск
+            <input type="search" placeholder="Поиск по названию модели…" value={query} onChange={(event) => setQuery(event.target.value)} />
+          </label>
+          <label>Статус<select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}><option value="all">Все статусы</option><option value="draft">Черновик</option><option value="on_site">На сайте</option><option value="hidden">Скрыто</option></select></label>
+        </div>
+        <CatalogViewToggle view={view} onChange={setView} />
       </div>
       {loading ? <AdminLoading label="Загружаем модели шин…" /> : visible.length === 0 && !query.trim() && status === "all" ? (
         <div className={styles.empty}><Icon name="tires" size={36} /><h2>В этом направлении пока нет моделей</h2><p>Добавьте первую шину, чтобы собрать каталог направления.</p>{canCreate ? <button type="button" className="primary" onClick={openCreate}>Добавить модель</button> : null}</div>
@@ -146,10 +153,10 @@ export function TireModelList() {
         <p className={styles.empty}>Ничего не найдено</p>
       ) : (
         <>
-          <ul className={styles.catalogList}>
+          <ul className={view === "tiles" ? styles.catalogTiles : styles.catalogList}>
             {visible.map((item) => (
               <li key={item.id}>
-                <CatalogRow href={`/tires/editor?id=${encodeURIComponent(item.id)}`} title={item.name} meta={`${item.sizeCount} размеров`} icon="tires" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onDelete={role === "admin" ? () => deleteModel(item.id, item.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(item.id, nextStatus) : undefined} />
+                <CatalogRow view={view} href={`/tires/editor?id=${encodeURIComponent(item.id)}`} title={item.name} meta={`${item.sizeCount} размеров`} icon="tires" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onDelete={role === "admin" ? () => deleteModel(item.id, item.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(item.id, nextStatus) : undefined} />
               </li>
             ))}
           </ul>

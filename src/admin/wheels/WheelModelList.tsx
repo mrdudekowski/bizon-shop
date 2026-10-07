@@ -10,6 +10,8 @@ import { slugifyTitle } from "@/admin/domain/slug";
 import type { DocumentStatus, EntityRecord, MediaListItem, WheelTypeDraft } from "@/admin/domain/types";
 import { CatalogFilters } from "@/admin/ui/CatalogFilters";
 import { CatalogRow } from "@/admin/ui/CatalogRow";
+import { CatalogViewToggle } from "@/admin/ui/CatalogViewToggle";
+import { useCatalogView } from "@/admin/ui/catalogView";
 import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
 import { useAdminRole, useCanPerform } from "@/admin/ui/DocumentUI";
 
@@ -68,6 +70,7 @@ export function WheelModelList() {
     return matchesQuery && matchesStatus;
   });
   const filteredModels = status === "all" ? sortModelsByPublicationStatus(matchingModels) : matchingModels;
+  const { view, setView } = useCatalogView("wheel-models", models.length);
 
   function openModelDialog() {
     setName("");
@@ -98,9 +101,12 @@ export function WheelModelList() {
     <main>
       <div className={styles.pageHead}><div><h1>Диски</h1><p className="subheading">Модели кованых дисков, размеры и публикация на сайте.</p></div></div>
       <div className={styles.pageHead}><h2>Модели дисков</h2>{canCreate ? <button className="primary" type="button" onClick={openModelDialog}>Добавить модель</button> : null}</div>
-      <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название модели…" />
+      <div className={styles.catalogControls}>
+        <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название модели…" />
+        <CatalogViewToggle view={view} onChange={setView} />
+      </div>
       {filteredModels.length === 0 ? <p className={styles.empty}>{models.length > 0 ? "По заданным фильтрам модели не найдены" : "Моделей дисков пока нет"}</p> : <>
-        <ul className={styles.catalogList}>{filteredModels.map((model) => <li key={model.id}><CatalogRow href={`/wheels/editor?id=${encodeURIComponent(model.id)}`} title={model.name} icon="wheels" imageUrl={assets.find((asset) => asset.id === model.imageAssetId)?.dataUrl} status={model.status} hasUnpublishedDraft={model.hasUnpublishedDraft} onDelete={role === "admin" ? () => deleteModel(model.id, model.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(model.id, nextStatus) : undefined} /></li>)}</ul>
+        <ul className={view === "tiles" ? styles.catalogTiles : styles.catalogList}>{filteredModels.map((model) => <li key={model.id}><CatalogRow view={view} href={`/wheels/editor?id=${encodeURIComponent(model.id)}`} title={model.name} icon="wheels" imageUrl={assets.find((asset) => asset.id === model.imageAssetId)?.dataUrl} status={model.status} hasUnpublishedDraft={model.hasUnpublishedDraft} onDelete={role === "admin" ? () => deleteModel(model.id, model.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(model.id, nextStatus) : undefined} /></li>)}</ul>
         <div className={styles.listFoot}>Показано {filteredModels.length} моделей</div>
       </>}
       <CatalogCreateDialog

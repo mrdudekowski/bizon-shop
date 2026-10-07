@@ -8,6 +8,8 @@ import { slugifyTitle } from "@/admin/domain/slug";
 import type { EntityRecord, ShopCategoryDraft } from "@/admin/domain/types";
 import { Icon } from "@/admin/ui/Icon";
 import { CatalogRow } from "@/admin/ui/CatalogRow";
+import { CatalogViewToggle } from "@/admin/ui/CatalogViewToggle";
+import { useCatalogView } from "@/admin/ui/catalogView";
 import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 import { useAdminRole, useCanPerform } from "@/admin/ui/DocumentUI";
@@ -27,6 +29,7 @@ export function ShopProductList() {
   const [assets, setAssets] = useState<{ id: string; dataUrl: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { view, setView } = useCatalogView("shop-categories", categories.length);
 
   async function reload() {
     setError("");
@@ -91,7 +94,10 @@ export function ShopProductList() {
           <h1>Shop</h1>
           <p className="subheading">Категории каталога и товары с ценами и вариантами.</p>
         </div>
-        {canCreate ? <button className="primary" type="button" onClick={openCategoryDialog}>Добавить категорию</button> : null}
+        <div className={styles.filterGroup}>
+          <CatalogViewToggle view={view} onChange={setView} />
+          {canCreate ? <button className="primary" type="button" onClick={openCategoryDialog}>Добавить категорию</button> : null}
+        </div>
       </div>
 
       {loading ? <AdminLoading label="Загружаем категории…" /> : null}
@@ -107,10 +113,11 @@ export function ShopProductList() {
       ) : null}
 
       {!loading && !error && categories.length > 0 ? (
-        <ul className={styles.catalogList} aria-label="Категории Shop">
+        <ul className={view === "tiles" ? styles.catalogTiles : styles.catalogList} aria-label="Категории Shop">
           {categories.map((category) => (
             <li key={category.id}>
               <CatalogRow
+                view={view}
                 href={`/shop/category-editor?id=${encodeURIComponent(category.id)}`}
                 title={category.draft.name || "Без названия"}
                 meta={`/${category.draft.slug} · ${productCounts[category.id] ?? 0} товаров`}

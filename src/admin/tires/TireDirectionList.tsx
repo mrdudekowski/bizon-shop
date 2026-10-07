@@ -9,6 +9,8 @@ import type { DocumentStatus, TireDirection, MediaListItem } from "@/admin/domai
 import { CatalogFilters } from "@/admin/ui/CatalogFilters";
 import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
 import { CatalogRow } from "@/admin/ui/CatalogRow";
+import { CatalogViewToggle } from "@/admin/ui/CatalogViewToggle";
+import { useCatalogView } from "@/admin/ui/catalogView";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 import { useAdminRole, useCanPerform } from "@/admin/ui/DocumentUI";
 import styles from "@/admin/ui/catalog.module.css";
@@ -70,15 +72,19 @@ export function TireDirectionList() {
     const matchesStatus = status === "all" || direction.status === status;
     return matchesQuery && matchesStatus;
   });
+  const { view, setView } = useCatalogView("tire-directions", directions.length);
 
   return (
     <main>
       <div className={styles.pageHead}><div><h1>Направления</h1><p className="subheading">Направления каталога шин.</p></div>{canCreate ? <button className="primary" type="button" onClick={openCreate}>Добавить направление</button> : null}</div>
-      <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название направления…" />
-      {loading ? <AdminLoading label="Загружаем направления…" /> : <ul className={styles.catalogList}>
+      <div className={styles.catalogControls}>
+        <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название направления…" />
+        <CatalogViewToggle view={view} onChange={setView} />
+      </div>
+      {loading ? <AdminLoading label="Загружаем направления…" /> : <ul className={view === "tiles" ? styles.catalogTiles : styles.catalogList}>
         {visibleDirections.map((direction) => (
           <li key={direction.id}>
-          <CatalogRow href={`/tires/directions/editor?id=${encodeURIComponent(direction.id)}`} title={direction.name} meta={`/${direction.slug}`} icon="directions" imageUrl={assets.find((asset) => asset.id === direction.imageAssetId)?.dataUrl ?? resolveSiteCatalogPreview(direction.slug)} status={direction.status} hasUnpublishedDraft={direction.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeDirectionStatus(direction.id, nextStatus) : undefined} />
+          <CatalogRow view={view} href={`/tires/directions/editor?id=${encodeURIComponent(direction.id)}`} title={direction.name} meta={`/${direction.slug}`} icon="directions" imageUrl={assets.find((asset) => asset.id === direction.imageAssetId)?.dataUrl ?? resolveSiteCatalogPreview(direction.slug)} status={direction.status} hasUnpublishedDraft={direction.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeDirectionStatus(direction.id, nextStatus) : undefined} />
           </li>
         ))}
       </ul>}

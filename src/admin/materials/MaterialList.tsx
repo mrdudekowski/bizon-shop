@@ -11,6 +11,8 @@ import styles from "@/admin/ui/catalog.module.css";
 import { Icon } from "@/admin/ui/Icon";
 import { CatalogFilters } from "@/admin/ui/CatalogFilters";
 import { CatalogRow } from "@/admin/ui/CatalogRow";
+import { CatalogViewToggle } from "@/admin/ui/CatalogViewToggle";
+import { useCatalogView } from "@/admin/ui/catalogView";
 import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 import { useAdminRole, useAdminSession, useCanPerform } from "@/admin/ui/DocumentUI";
@@ -40,6 +42,7 @@ export function MaterialList() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | DocumentStatus>("all");
   const [loading, setLoading] = useState(true);
+  const { view, setView } = useCatalogView("materials", items.length);
 
   async function reload() {
     try {
@@ -90,10 +93,13 @@ export function MaterialList() {
   return (
     <main>
       <div className={styles.pageHead}><div><h1>Материалы</h1><p className="subheading">Экспертные статьи Tire IQ.</p></div>{canCreate ? <button className="primary" type="button" onClick={openCreate}>Добавить материал</button> : null}</div>
-      <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название материала…" />
+      <div className={styles.catalogControls}>
+        <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название материала…" />
+        <CatalogViewToggle view={view} onChange={setView} />
+      </div>
       {loading ? <AdminLoading label="Загружаем материалы…" /> : items.length === 0 ? <div className={styles.empty}><Icon name="materials" size={36} /><h2>Материалов пока нет</h2><p>Создайте статью Tire IQ.</p>{canCreate ? <button className="primary" type="button" onClick={openCreate}>Добавить материал</button> : null}</div> : visibleItems.length === 0 ? <div className={styles.empty}><h2>Ничего не найдено</h2><p>Измените запрос или выберите другой статус.</p></div> : <>
-        <ul className={styles.catalogList}>{visibleItems.map((item) => (
-          <li key={item.id}><CatalogRow href={`/materials/editor?id=${encodeURIComponent(item.id)}`} title={item.title} meta="Tire IQ" icon="materials" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeStatus(item.id, nextStatus) : undefined} /></li>
+        <ul className={view === "tiles" ? styles.catalogTiles : styles.catalogList}>{visibleItems.map((item) => (
+          <li key={item.id}><CatalogRow view={view} href={`/materials/editor?id=${encodeURIComponent(item.id)}`} title={item.title} meta="Tire IQ" icon="materials" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeStatus(item.id, nextStatus) : undefined} /></li>
         ))}</ul>
         <div className={styles.listFoot}>Показано {visibleItems.length} из {items.length} материалов</div>
       </>}
