@@ -28,7 +28,7 @@ import { normalizeRequest } from "./requests/normalizeRequest";
 import { parseRequestBody, validateRequest } from "./requests/validateRequest";
 import { checkRateLimit, trustedClientAddress } from "./security/rateLimit";
 import { getStaticSiteDeployStatus, isSiteAffectingPublicationMethod, triggerStaticSiteDeploy } from "./deploy/timewebApps";
-import { readPublishedContentRevision } from "./contentRevision";
+import { publishedContentFailureDetails, readPublishedContentRevision } from "./contentRevision";
 import {
   readArticleBySlug,
   readArticles,
@@ -546,7 +546,11 @@ async function handleRequest(
       try {
         const revision = await readPublishedContentRevision(database);
         sendJson(res, 200, revision, { "cache-control": "no-store" });
-      } catch {
+      } catch (error) {
+        console.error(JSON.stringify({
+          event: "published_content.revision_failed",
+          ...publishedContentFailureDetails(error),
+        }));
         sendJson(res, 503, { ok: false, code: "published_content_unavailable" }, { "cache-control": "no-store" });
       }
       return;

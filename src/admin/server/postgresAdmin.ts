@@ -2043,7 +2043,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
     async listMaterials() {
       const articles = await query(`SELECT tire_iq_articles.*,
         ARRAY(SELECT taxonomy.value FROM tire_iq_articles_taxonomy taxonomy
-          WHERE taxonomy._parent_id = tire_iq_articles.id ORDER BY taxonomy._order) AS taxonomy
+          WHERE taxonomy.parent_id = tire_iq_articles.id ORDER BY taxonomy."order") AS taxonomy
         FROM tire_iq_articles ORDER BY title`);
       const items = [];
       for (const row of articles) {
@@ -2064,7 +2064,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       if (!match) throw new AdminClientError("not_found");
       const [row] = await query(`SELECT tire_iq_articles.*,
         ARRAY(SELECT taxonomy.value FROM tire_iq_articles_taxonomy taxonomy
-          WHERE taxonomy._parent_id = tire_iq_articles.id ORDER BY taxonomy._order) AS taxonomy
+          WHERE taxonomy.parent_id = tire_iq_articles.id ORDER BY taxonomy."order") AS taxonomy
         FROM tire_iq_articles WHERE id = $1`, [Number(match[1])]);
       if (!row) throw new AdminClientError("not_found");
       return present("materials", id, await mapArticle(row), str(row.status));
@@ -2121,9 +2121,9 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const allowedTaxonomy = new Set(["selection", "wear", "pressure", "load", "axles", "quarry", "construction", "tco", "diagnostics"]);
       const taxonomy = [...new Set(Array.isArray(draft.taxonomy) ? draft.taxonomy : [])]
         .filter((value): value is string => typeof value === "string" && allowedTaxonomy.has(value));
-      await query("DELETE FROM tire_iq_articles_taxonomy WHERE _parent_id = $1", [Number(rawId)]);
+      await query('DELETE FROM tire_iq_articles_taxonomy WHERE parent_id = $1', [Number(rawId)]);
       for (const [index, value] of taxonomy.entries()) {
-        await query("INSERT INTO tire_iq_articles_taxonomy (_parent_id, _order, value) VALUES ($1, $2, $3)", [Number(rawId), index, value]);
+        await query('INSERT INTO tire_iq_articles_taxonomy (parent_id, "order", value) VALUES ($1, $2, $3)', [Number(rawId), index, value]);
       }
       await clearOverlay("materials", id);
       await releaseLocks("material", id);

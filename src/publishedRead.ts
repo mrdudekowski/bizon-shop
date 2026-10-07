@@ -325,7 +325,7 @@ export async function readArticles(db: ReadDatabase): Promise<CmsArticle[]> {
   const articleRows = await db.query(`
     SELECT tire_iq_articles.*, media.url AS image_url,
       ARRAY(SELECT taxonomy.value FROM tire_iq_articles_taxonomy taxonomy
-        WHERE taxonomy._parent_id = tire_iq_articles.id ORDER BY taxonomy._order) AS taxonomy
+        WHERE taxonomy.parent_id = tire_iq_articles.id ORDER BY taxonomy."order") AS taxonomy
     FROM tire_iq_articles
     LEFT JOIN media ON media.id = tire_iq_articles.featured_image_id
     WHERE tire_iq_articles.status = 'published'
@@ -342,7 +342,7 @@ export async function readArticleBySlug(
     `
       SELECT tire_iq_articles.*, media.url AS image_url,
         ARRAY(SELECT taxonomy.value FROM tire_iq_articles_taxonomy taxonomy
-          WHERE taxonomy._parent_id = tire_iq_articles.id ORDER BY taxonomy._order) AS taxonomy
+          WHERE taxonomy.parent_id = tire_iq_articles.id ORDER BY taxonomy."order") AS taxonomy
       FROM tire_iq_articles
       LEFT JOIN media ON media.id = tire_iq_articles.featured_image_id
       WHERE tire_iq_articles.status = 'published' AND tire_iq_articles.slug = $1

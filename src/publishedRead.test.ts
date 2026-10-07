@@ -206,8 +206,13 @@ describe("published content readers", () => {
     expect(list.calls[0].sql).toContain("FROM tire_iq_articles");
     expect(list.calls[0].sql).toContain("LEFT JOIN media");
     expect(list.calls[0].sql).toContain("status = 'published'");
+    expect(list.calls[0].sql).toContain("taxonomy.parent_id = tire_iq_articles.id");
+    expect(list.calls[0].sql).toContain('ORDER BY taxonomy."order"');
+    expect(list.calls[0].sql).not.toContain("taxonomy._parent_id");
     expect(missing.calls[0]).toMatchObject({ params: ["draft-article"] });
     expect(missing.calls[0].sql).toContain("status = 'published'");
+    expect(missing.calls[0].sql).toContain("taxonomy.parent_id = tire_iq_articles.id");
+    expect(missing.calls[0].sql).toContain('ORDER BY taxonomy."order"');
   });
 
   it("reads a published wheel model gallery and drops data urls", async () => {

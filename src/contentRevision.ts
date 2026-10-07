@@ -21,6 +21,18 @@ export type PublishedContentRevision = {
   revision: `sha256:${string}`;
 };
 
+export function publishedContentFailureDetails(error: unknown): { errorClass: string; databaseCode?: string } {
+  if (error == null || typeof error !== "object") return { errorClass: "unknown" };
+  const candidate = error as { name?: unknown; code?: unknown };
+  const errorClass = typeof candidate.name === "string" && /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(candidate.name)
+    ? candidate.name
+    : "unknown";
+  const databaseCode = typeof candidate.code === "string" && /^[0-9A-Z]{5}$/.test(candidate.code)
+    ? candidate.code
+    : undefined;
+  return databaseCode ? { errorClass, databaseCode } : { errorClass };
+}
+
 async function readPublishedSnapshot(db: ReadDatabase): Promise<unknown> {
   const [home, shopHome, stubs, articles, tireTypes, wheelTypes, shopCategories, shopProducts] = await Promise.all([
     readHomePatch(db),
