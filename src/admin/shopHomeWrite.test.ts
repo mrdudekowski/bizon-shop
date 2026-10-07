@@ -1,68 +1,52 @@
 import { describe, expect, it } from "vitest";
-
-import type { ShopHomePageDraft } from "./domain/types";
 import { shopHomeChildRows, shopHomeParentValues } from "./shopHomeWrite";
+import type { ShopHomePageDraft } from "./domain/types";
+
+function placement(assetId: string) {
+  return { assetId, alt: "Shop tile", focalX: 0.5, focalY: 0.5, crop: { x: 0, y: 0, width: 1, height: 1 } };
+}
 
 const draft: ShopHomePageDraft = {
   id: "shop-home",
-  seoTitle: "Shop",
-  seoDescription: "Desc",
-  hero: {
-    eyebrow: "E",
-    title: "T",
-    lead: "L",
-    cta: { label: "Go", href: "#wheels" },
-    image: { assetId: "12", alt: "Hero" },
+  seoTitle: "",
+  seoDescription: "",
+  hero: { eyebrow: "", title: "", lead: "", cta: { label: "", href: "" } },
+  wheelsIntro: { eyebrow: "", title: "", lead: "", kicker: "" },
+  orderSteps: [],
+  categoryCarousel: [],
+  catalog: {
+    copy: { eyebrow: "Shop", title: "Catalog", lead: "Pick a category", sectionTitle: "Categories" },
+    tiles: [{ categoryId: "5", title: "Camp", visible: true, sortOrder: 2, carouselVisible: true, icon: placement("11"), image: placement("12"), carouselImage: placement("13") }],
   },
-  wheelsIntro: { eyebrow: "", title: "Intro", lead: "Lead", kicker: "K" },
-  orderSteps: [{ id: "step-1", title: "One", description: "Do" }],
-  categoryCarousel: [
-    {
-      id: "acc",
-      kicker: "Accessories",
-      title: "Детали",
-      action: "Open",
-      href: "/shop/accessories",
-      alt: "Acc",
-      desktopImage: { assetId: "21", alt: "" },
-    },
-  ],
-  vehicles: {
-    eyebrow: "VE",
-    title: "VT",
-    lead: "VL",
-    cta: { label: "Cta", href: "#wheels" },
-    slides: [{ id: "v1", title: "Rubicon", alt: "R", image: { assetId: "33", alt: "" } }],
-  },
-} as ShopHomePageDraft;
+  vehicles: { eyebrow: "", title: "", lead: "", cta: { label: "", href: "" }, slides: [] },
+};
 
-describe("shopHomeWrite", () => {
-  it("includes wheels intro and vehicles shell in the parent page values", () => {
-    const values = shopHomeParentValues(draft);
-    expect(values).toContain("Intro");
-    expect(values).toContain("K");
-    expect(values).toContain("VT");
-    expect(values).toContain(12);
+describe("shopHomeChildRows catalog tiles", () => {
+  it("maps tile presentation and media placements to page-owned child rows", () => {
+    expect(shopHomeChildRows(7, draft).catalogTiles).toEqual([
+      {
+        categoryId: 5,
+        parentId: 7,
+        order: 2,
+        title: "Camp",
+        visible: true,
+        iconId: 11,
+        imageId: 12,
+        carouselImageId: 13,
+        carouselVisible: true,
+        iconAlt: "Shop tile",
+        imageAlt: "Shop tile",
+        carouselImageAlt: "Shop tile",
+      },
+    ]);
   });
 
-  it("replaces child rows instead of updating existing ids only", () => {
-    expect(shopHomeChildRows(2, draft)).toEqual({
-      steps: [{ id: "step-1", parentId: 2, order: 1, title: "One", description: "Do" }],
-      carousel: [
-        {
-          id: "acc",
-          parentId: 2,
-          order: 1,
-          kicker: "Accessories",
-          title: "Детали",
-          action: "Open",
-          href: "/shop/accessories",
-          alt: "Acc",
-          desktopImageId: 21,
-          mobileImageId: null,
-        },
-      ],
-      vehicles: [{ id: "v1", parentId: 2, order: 1, title: "Rubicon", alt: "R", imageId: 33 }],
-    });
+  it("includes catalog page copy in the Shop page row values", () => {
+    expect(shopHomeParentValues(draft).slice(-4)).toEqual([
+      "Shop",
+      "Catalog",
+      "Pick a category",
+      "Categories",
+    ]);
   });
 });

@@ -155,6 +155,10 @@ const emptyShopHomeRow = {
   shop_hero_cta_label: "",
   shop_hero_cta_href: "",
   shop_hero_image_alt: "",
+  shop_catalog_eyebrow: "",
+  shop_catalog_title: "",
+  shop_catalog_lead: "",
+  shop_catalog_section_title: "",
 };
 
 describe("mapShopHomePatch", () => {
@@ -171,6 +175,60 @@ describe("mapShopHomePatch", () => {
         orderSteps: [],
       }).hero.imageUrl,
     ).toBe("https://s3.twcstorage.ru/bucket/bizon/media/hero.png");
+  });
+
+  it("maps catalog page copy and tile routes from the selected category", () => {
+    expect(
+      mapShopHomePatch({
+        row: {
+          ...emptyShopHomeRow,
+          shop_catalog_eyebrow: "Shop",
+          shop_catalog_title: "Дорожные вещи",
+          shop_catalog_lead: "Подберите товары для поездки.",
+          shop_catalog_section_title: "Направления",
+        },
+        carousel: [],
+        vehicles: [],
+        orderSteps: [],
+        catalogTiles: [
+          {
+            category_id: 5,
+            category_slug: "outdoor",
+            title: "Кемпинг",
+            visible: true,
+            sort_order: 3,
+            icon_url: "/media/outdoor-icon.png",
+            image_url: "/media/outdoor-card.png",
+            carousel_image_url: "/media/outdoor-carousel.png",
+            carousel_visible: true,
+            icon_alt: "Кемпинг",
+            image_alt: "Товары для кемпинга",
+          },
+        ],
+      }),
+    ).toMatchObject({
+      catalog: {
+        copy: {
+          eyebrow: "Shop",
+          title: "Дорожные вещи",
+          lead: "Подберите товары для поездки.",
+          sectionTitle: "Направления",
+        },
+        tiles: [
+          {
+            categoryId: "5",
+            categorySlug: "outdoor",
+            title: "Кемпинг",
+            visible: true,
+            sortOrder: 3,
+            iconUrl: "/media/outdoor-icon.png",
+            imageUrl: "/media/outdoor-card.png",
+            carouselImageUrl: "/media/outdoor-carousel.png",
+            carouselVisible: true,
+          },
+        ],
+      },
+    });
   });
 
   it("maps wheels intro, order steps and vehicle shell so the site can leave defaults behind", () => {

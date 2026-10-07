@@ -246,14 +246,15 @@ export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch
       media.url AS shop_hero_image_url,
       pages.shop_wheels_intro_kicker, pages.shop_wheels_intro_eyebrow, pages.shop_wheels_intro_title, pages.shop_wheels_intro_lead,
       pages.shop_vehicles_eyebrow, pages.shop_vehicles_title, pages.shop_vehicles_lead,
-      pages.shop_vehicles_cta_label, pages.shop_vehicles_cta_href
+      pages.shop_vehicles_cta_label, pages.shop_vehicles_cta_href,
+      pages.shop_catalog_eyebrow, pages.shop_catalog_title, pages.shop_catalog_lead, pages.shop_catalog_section_title
     FROM pages
     LEFT JOIN media ON media.id = pages.shop_hero_image_id
     WHERE pages.key = 'shop-home' AND pages.status = 'published'
   `);
   if (!row) return null;
   const parentId = row.id;
-  const [carousel, vehicles, orderSteps] = await Promise.all([
+  const [carousel, catalogTiles, vehicles, orderSteps] = await Promise.all([
     db.query(
       `
         SELECT slides.id, slides.kicker, slides.title, slides.action, slides.href, slides.alt,
@@ -264,6 +265,20 @@ export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch
         WHERE slides._parent_id = $1
         ORDER BY slides._order
       `,
+      [parentId],
+    ),
+    db.query(
+      `SELECT tiles.category_id, categories.slug AS category_slug, tiles.title, tiles.visible,
+        tiles._order AS sort_order, icon.url AS icon_url, image.url AS image_url,
+        carousel.url AS carousel_image_url, tiles.icon_alt, tiles.image_alt,
+        tiles.carousel_image_alt, (tiles.carousel_image_media_id IS NOT NULL) AS carousel_visible
+       FROM pages_shop_catalog_tiles tiles
+       JOIN shop_categories categories ON categories.id = tiles.category_id AND categories.status = 'published'
+       LEFT JOIN media AS icon ON icon.id = tiles.icon_media_id
+       LEFT JOIN media AS image ON image.id = tiles.image_media_id
+       LEFT JOIN media AS carousel ON carousel.id = tiles.carousel_image_media_id
+       WHERE tiles._parent_id = $1
+       ORDER BY tiles._order, tiles.id`,
       [parentId],
     ),
     db.query(
@@ -291,6 +306,7 @@ export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch
     carousel: carousel as Parameters<typeof mapShopHomePatch>[0]["carousel"],
     vehicles: vehicles as Parameters<typeof mapShopHomePatch>[0]["vehicles"],
     orderSteps,
+    catalogTiles: catalogTiles as Parameters<typeof mapShopHomePatch>[0]["catalogTiles"],
   });
 }
 

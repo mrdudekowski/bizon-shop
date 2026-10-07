@@ -646,11 +646,15 @@ async function mapPage(row: Row): Promise<PageDraft> {
     };
   }
   if (key === "shop-home") {
-    const [steps, carousel, vehicles] = await Promise.all([
+    const [steps, carousel, vehicles, catalogTiles] = await Promise.all([
       query("SELECT * FROM pages_shop_order_steps WHERE _parent_id = $1 ORDER BY _order", [row.id]),
       query("SELECT * FROM pages_shop_category_carousel WHERE _parent_id = $1 ORDER BY _order", [row.id]),
       query("SELECT * FROM pages_shop_vehicles_slides WHERE _parent_id = $1 ORDER BY _order", [row.id]),
+      query("SELECT * FROM pages_shop_catalog_tiles WHERE _parent_id = $1 ORDER BY _order, id", [row.id]),
     ]);
+    const legacyCatalogTiles = catalogTiles.length > 0
+      ? catalogTiles
+      : await query("SELECT id, name, sort_order, show_in_menu, cover_image_id FROM shop_categories ORDER BY sort_order, id");
     return {
       id: "shop-home",
       seoTitle,
@@ -675,6 +679,29 @@ async function mapPage(row: Row): Promise<PageDraft> {
         desktopImage: placement(slide.desktop_image_id),
         mobileImage: placement(slide.mobile_image_id),
       })),
+      catalog: {
+        copy: {
+          eyebrow: str(row.shop_catalog_eyebrow),
+          title: str(row.shop_catalog_title),
+          lead: str(row.shop_catalog_lead),
+          sectionTitle: str(row.shop_catalog_section_title),
+        },
+        tiles: legacyCatalogTiles.map((tile) => {
+          const categoryId = str(tile.category_id ?? tile.id);
+          const imageId = tile.image_media_id ?? tile.cover_image_id;
+          const iconId = tile.icon_media_id ?? tile.cover_image_id;
+          return {
+            categoryId,
+            title: str(tile.title ?? tile.name),
+            visible: tile.visible == null ? Boolean(tile.show_in_menu) : Boolean(tile.visible),
+            carouselVisible: Boolean(tile.carousel_visible),
+            sortOrder: num(tile._order ?? tile.sort_order) ?? 0,
+            icon: placement(iconId, str(tile.icon_alt ?? tile.name)),
+            image: placement(imageId, str(tile.image_alt ?? tile.name)),
+            carouselImage: placement(tile.carousel_image_media_id, str(tile.carousel_image_alt ?? tile.name)),
+          };
+        }),
+      },
       vehicles: {
         ...section(row.shop_vehicles_eyebrow, row.shop_vehicles_title, row.shop_vehicles_lead),
         cta: { label: str(row.shop_vehicles_cta_label), href: str(row.shop_vehicles_cta_href) },
@@ -2365,7 +2392,7 @@ async function writePage(draft: PageDraft) {
     if (page == null) return;
     const parentId = Number(page.id);
     await query(
-      `UPDATE pages SET seo_seo_title=$1, seo_seo_description=$2, shop_hero_eyebrow=$3, shop_hero_title=$4, shop_hero_lead=$5, shop_hero_cta_label=$6, shop_hero_cta_href=$7, shop_hero_image_id=$8, shop_hero_image_alt=$9, shop_wheels_intro_eyebrow=$10, shop_wheels_intro_title=$11, shop_wheels_intro_lead=$12, shop_wheels_intro_kicker=$13, shop_vehicles_eyebrow=$14, shop_vehicles_title=$15, shop_vehicles_lead=$16, shop_vehicles_cta_label=$17, shop_vehicles_cta_href=$18, status='published', updated_at=now() WHERE key='shop-home'`,
+      `UPDATE pages SET seo_seo_title=$1, seo_seo_description=$2, shop_hero_eyebrow=$3, shop_hero_title=$4, shop_hero_lead=$5, shop_hero_cta_label=$6, shop_hero_cta_href=$7, shop_hero_image_id=$8, shop_hero_image_alt=$9, shop_wheels_intro_eyebrow=$10, shop_wheels_intro_title=$11, shop_wheels_intro_lead=$12, shop_wheels_intro_kicker=$13, shop_vehicles_eyebrow=$14, shop_vehicles_title=$15, shop_vehicles_lead=$16, shop_vehicles_cta_label=$17, shop_vehicles_cta_href=$18, shop_catalog_eyebrow=$19, shop_catalog_title=$20, shop_catalog_lead=$21, shop_catalog_section_title=$22, status='published', updated_at=now() WHERE key='shop-home'`,
       shopHomeParentValues(draft),
     );
     const children = shopHomeChildRows(parentId, draft);
@@ -2392,6 +2419,13 @@ async function writePage(draft: PageDraft) {
           slide.desktopImageId,
           slide.mobileImageId,
         ],
+      );
+    }
+    await query(`DELETE FROM pages_shop_catalog_tiles WHERE _parent_id=$1`, [parentId]);
+    for (const tile of children.catalogTiles) {
+      await query(
+        `INSERT INTO pages_shop_catalog_tiles (_parent_id, category_id, _order, title, visible, icon_media_id, image_media_id, carousel_image_media_id, carousel_visible, icon_alt, image_alt, carousel_image_alt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+        [tile.parentId, tile.categoryId, tile.order, tile.title, tile.visible, tile.iconId, tile.imageId, tile.carouselImageId, tile.carouselVisible, tile.iconAlt, tile.imageAlt, tile.carouselImageAlt],
       );
     }
     await query(`DELETE FROM pages_shop_vehicles_slides WHERE _parent_id=$1`, [parentId]);

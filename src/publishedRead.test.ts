@@ -283,6 +283,7 @@ describe("published content readers", () => {
       if (sql.includes("FROM pages_shop_order_steps")) {
         return [{ title: "Выберите дизайн", description: "Посмотрите модели." }];
       }
+      if (sql.includes("FROM pages_shop_catalog_tiles")) return [];
       if (sql.includes("FROM pages_shop_category_carousel")) return [];
       if (sql.includes("FROM pages_shop_vehicles_slides")) return [];
       return [
@@ -314,5 +315,47 @@ describe("published content readers", () => {
     });
     expect(calls[0].sql).toContain("shop_wheels_intro_title");
     expect(calls.some((call) => call.sql.includes("pages_shop_order_steps"))).toBe(true);
+  });
+
+  it("reads Shop page catalog tiles linked to current published category slugs", async () => {
+    const { db, calls } = createRecordingDb((sql) => {
+      if (sql.includes("FROM pages_shop_catalog_tiles")) return [{
+        category_id: 8,
+        category_slug: "outdoor-current",
+        title: "Путешествия",
+        visible: true,
+        sort_order: 1,
+        icon_url: "/media/icon.png",
+        image_url: "/media/tile.png",
+        carousel_image_url: "/media/slide.png",
+        carousel_visible: true,
+        icon_alt: "Иконка",
+        image_alt: "Плитка",
+      }];
+      if (sql.includes("FROM pages_shop_category_carousel") || sql.includes("FROM pages_shop_vehicles_slides") || sql.includes("FROM pages_shop_order_steps")) return [];
+      return [{
+        id: 3,
+        shop_catalog_eyebrow: "Shop",
+        shop_catalog_title: "Каталог",
+        shop_catalog_lead: "Выберите товары",
+        shop_catalog_section_title: "Направления",
+      }];
+    });
+
+    await expect(readShopHomePatch(db)).resolves.toMatchObject({
+      catalog: {
+        copy: { title: "Каталог" },
+        tiles: [{
+          categoryId: "8",
+          categorySlug: "outdoor-current",
+          visible: true,
+          carouselVisible: true,
+          carouselImageUrl: "/media/slide.png",
+        }],
+      },
+    });
+    const tileQuery = calls.find((call) => call.sql.includes("FROM pages_shop_catalog_tiles"));
+    expect(tileQuery?.sql).toContain("categories.status = 'published'");
+    expect(tileQuery?.sql).toContain("categories.slug AS category_slug");
   });
 });
