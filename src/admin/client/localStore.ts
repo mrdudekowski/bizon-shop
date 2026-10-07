@@ -1643,9 +1643,10 @@ function adminApiBase(): string {
   return base.replace(/\/+$/, "");
 }
 
+const savedDraftByEntity = new Map<string, unknown>();
+
 function remoteAdminClient(): AdminClient {
   const adminApi = adminApiBase();
-  const savedDraftByEntity = new Map<string, unknown>();
   const cloneDraft = <T,>(draft: T): T => (draft == null ? draft : JSON.parse(JSON.stringify(draft)) as T);
   const request = async (path: string, init: RequestInit) => {
     if (!adminApi) throw new AdminClientError("network");
