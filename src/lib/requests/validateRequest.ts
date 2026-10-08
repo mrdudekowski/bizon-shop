@@ -49,7 +49,7 @@ export function validateRequest(body: IncomingRequestBody): ValidationResult {
   }
 
   const isQuickOrder = sourceForm === "product_quick_order";
-  const isCart = sourceForm === "cart";
+  const isCart = sourceForm === "cart" || sourceForm === "tire_cart" || sourceForm === "shop_cart";
 
   if (isCart) {
     if (!Array.isArray(body.items) || body.items.length === 0) {

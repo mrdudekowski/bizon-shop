@@ -8,7 +8,7 @@ import { cartItemKey, isCartItemAllowed } from "@/lib/cart/cartStorage";
 import type { CartKind } from "@/lib/cart/cartTypes";
 import { submitRequest } from "@/lib/requests/submitRequest";
 import { HONEYPOT_FIELD } from "@/lib/requests/validateRequest";
-import type { RequestItemInput } from "@/types/requestItem";
+import type { RequestItemInput, SourceForm } from "@/types/requestItem";
 import styles from "./CartPage.module.css";
 
 const currencyFormatter = new Intl.NumberFormat("ru-RU", {
@@ -103,7 +103,7 @@ function CartItemsGroup({ title, items, onRemove, onQuantityChange }: CartItemsG
 
 type CartPageProps = {
   kind: CartKind;
-  sourceForm: string;
+  sourceForm: SourceForm;
   sourcePage: string;
   returnLinks: { href: string; label: string }[];
   successHref: string;
@@ -122,9 +122,11 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
   const wheelItems = items.filter((item) => item.itemType === "wheel");
   const shopItems = items.filter((item) => item.itemType === "shopProduct");
 
+  const submittedItems = kind === "bizon" ? tireItems : [...wheelItems, ...shopItems];
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (items.length === 0) return;
+    if (submittedItems.length === 0) return;
 
     setStatus("loading");
     const form = event.currentTarget;
@@ -133,7 +135,7 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
     if (formData.get(HONEYPOT_FIELD)) {
       setStatus("success");
       setMessage("Заявка отправлена.");
-      cart.clear();
+
       return;
     }
 
@@ -160,7 +162,7 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
           position: formData.get("position"),
           purchaseVolume: formData.get("purchaseVolume"),
           message: messageWithRequisites,
-          items,
+          items: submittedItems,
         },
       });
 

@@ -18,7 +18,7 @@ export default function CartRoutePage() {
       />
       <CartPage
         kind="bizon"
-        sourceForm="cart"
+        sourceForm="tire_cart"
         sourcePage="/cart"
         returnLinks={[{ href: "/models", label: "Шины BIZON" }]}
         successHref="/models"

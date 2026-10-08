@@ -19,7 +19,7 @@ export default function ShopCartRoutePage() {
       />
       <CartPage
         kind="shop"
-        sourceForm="cart"
+        sourceForm="shop_cart"
         sourcePage={ROUTES.shopCart}
         returnLinks={[
           { href: "/shop/wheels/forged", label: "Кованые диски" },
