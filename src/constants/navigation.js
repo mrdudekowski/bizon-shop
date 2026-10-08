@@ -13,6 +13,7 @@ export const ROUTES = {
   branding: "/branding",
   privacyPolicy: "/privacy-policy",
   cart: "/cart",
+  shopCart: "/shop/cart",
   shopCategories: "/shop/categories",
   shopDeliveryAndReturns: "/shop/delivery-and-returns",
 };
@@ -36,6 +37,7 @@ export const SITEMAP_STATIC_ROUTES = [
   ROUTES.branding,
   ROUTES.privacyPolicy,
   ROUTES.cart,
+  ROUTES.shopCart,
   ROUTES.shopCategories,
   ROUTES.shopDeliveryAndReturns,
 ];

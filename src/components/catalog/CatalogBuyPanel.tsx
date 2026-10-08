@@ -124,6 +124,7 @@ export function CatalogBuyPanel({
       <div className={styles.actions}>
         {canAdd ? (
           <AddToCartButton
+            cartKind="bizon"
             item={item}
             label="Добавить в корзину"
             className="btn-accent"

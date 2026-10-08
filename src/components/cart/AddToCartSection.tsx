@@ -42,7 +42,7 @@ export function AddToCartSection({ baseItem, variants = [] }: AddToCartSectionPr
 
   return (
     <div className="mt-6 flex flex-wrap items-center gap-4">
-      <AddToCartButton item={item} />
+      <AddToCartButton cartKind="bizon" item={item} />
       {hint && <p className="text-sm text-muted">{hint}</p>}
     </div>
   );

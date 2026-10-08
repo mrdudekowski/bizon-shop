@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect } from "react";
 
 import { cartItemKey } from "@/lib/cart/cartStorage";
+import type { CartKind } from "@/lib/cart/cartTypes";
+import { ROUTES } from "@/constants/navigation";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { RequestItemInput } from "@/types/requestItem";
 import styles from "./CartDrawer.module.css";
@@ -23,6 +25,7 @@ function displayPrice(item: RequestItemInput, quantity: number): string | null {
 }
 
 type CartDrawerProps = {
+  cartKind: CartKind;
   open: boolean;
   items: RequestItemInput[];
   onClose: () => void;
@@ -37,6 +40,7 @@ function displayName(item: RequestItemInput): string {
 }
 
 export function CartDrawer({
+  cartKind,
   open,
   items,
   onClose,
@@ -78,7 +82,7 @@ export function CartDrawer({
         </header>
 
         <div className={styles.body}>
-          <p className={styles.context}>Единая заявка BIZON</p>
+          <p className={styles.context}>{cartKind === "shop" ? "Заявка BIZON Shop" : "Заявка BIZON Tires"}</p>
           {items.length === 0 ? (
             <p className={styles.empty}>Корзина пуста. Добавьте шины, конфигурацию дисков или товар.</p>
           ) : (
@@ -137,7 +141,7 @@ export function CartDrawer({
 
           {items.length > 0 && (
             <p className="mt-6">
-              <Link href="/cart" className="btn-secondary inline-flex" onClick={onClose}>
+              <Link href={cartKind === "shop" ? ROUTES.shopCart : ROUTES.cart} className="btn-secondary inline-flex" onClick={onClose}>
                 Перейти к заявке
               </Link>
             </p>

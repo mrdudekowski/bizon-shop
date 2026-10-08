@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { useCart } from "@/hooks/useCart";
-import { cartItemKey } from "@/lib/cart/cartStorage";
+import { cartItemKey, isCartItemAllowed } from "@/lib/cart/cartStorage";
+import type { CartKind } from "@/lib/cart/cartTypes";
 import { submitRequest } from "@/lib/requests/submitRequest";
 import { HONEYPOT_FIELD } from "@/lib/requests/validateRequest";
 import type { RequestItemInput } from "@/types/requestItem";
@@ -100,21 +101,29 @@ function CartItemsGroup({ title, items, onRemove, onQuantityChange }: CartItemsG
   );
 }
 
-export function CartPage() {
-  const cart = useCart();
+type CartPageProps = {
+  kind: CartKind;
+  sourceForm: string;
+  sourcePage: string;
+  returnLinks: { href: string; label: string }[];
+  successHref: string;
+  successLabel: string;
+};
+
+export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHref, successLabel }: CartPageProps) {
+  const cart = useCart(kind);
   const [clientType, setClientType] = useState<"individual" | "company">("individual");
   const [status, setStatus] = useState<SubmitStatus>("idle");
   const [message, setMessage] = useState("");
 
-  const tireItems = cart.items.filter((item) => item.itemType === "tire");
-  const wheelItems = cart.items.filter((item) => item.itemType === "wheel");
-  const shopItems = cart.items.filter((item) =>
-    item.itemType !== "tire" && item.itemType !== "wheel",
-  );
+  const items = cart.items.filter((item) => isCartItemAllowed(kind, item));
+  const tireItems = items.filter((item) => item.itemType === "tire");
+  const wheelItems = items.filter((item) => item.itemType === "wheel");
+  const shopItems = items.filter((item) => item.itemType === "shopProduct");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (cart.items.length === 0) return;
+    if (items.length === 0) return;
 
     setStatus("loading");
     const form = event.currentTarget;
@@ -136,8 +145,8 @@ export function CartPage() {
 
     try {
       await submitRequest({
-        sourceForm: "cart",
-        sourcePage: "/cart",
+        sourceForm,
+        sourcePage,
         body: {
           clientType,
           name: formData.get("name"),
@@ -150,7 +159,7 @@ export function CartPage() {
           position: formData.get("position"),
           purchaseVolume: formData.get("purchaseVolume"),
           message: messageWithRequisites,
-          items: cart.items,
+          items,
         },
       });
 
@@ -164,13 +173,12 @@ export function CartPage() {
     }
   }
 
-  if (cart.items.length === 0 && status !== "success") {
+  if (items.length === 0 && status !== "success") {
     return (
       <section className="card-base info-card max-w-3xl">
-        <p className="info-card-text">Корзина пуста. Добавьте шины, диски или аксессуары из каталога.</p>
+        <p className="info-card-text">Корзина пуста. Добавьте товары из соответствующего каталога.</p>
         <div className={styles.emptyActions}>
-          <Link href="/shop/wheels/forged" className="btn-accent inline-flex">Кованые диски</Link>
-          <Link href="/models" className="btn-secondary inline-flex">Шины BIZON</Link>
+          {returnLinks.map((link) => <Link key={link.href} href={link.href} className="btn-secondary inline-flex">{link.label}</Link>)}
         </div>
       </section>
     );
@@ -182,13 +190,13 @@ export function CartPage() {
         <section className="card-base info-card max-w-3xl">
           <h2 className="info-card-title">Спасибо</h2>
           <p className="info-card-text">{message}</p>
-          <p className="mt-6"><Link href="/shop" className="btn-accent inline-flex">Вернуться в BIZON Shop</Link></p>
+          <p className="mt-6"><Link href={successHref} className="btn-accent inline-flex">{successLabel}</Link></p>
         </section>
       ) : (
         <>
-          <CartItemsGroup title="Шины" items={tireItems} onRemove={cart.removeItem} onQuantityChange={cart.setQuantity} />
-          <CartItemsGroup title="Кованые диски" items={wheelItems} onRemove={cart.removeItem} onQuantityChange={cart.setQuantity} />
-          <CartItemsGroup title="Товары BIZON Shop" items={shopItems} onRemove={cart.removeItem} onQuantityChange={cart.setQuantity} />
+          {tireItems.length > 0 && <CartItemsGroup title="Шины" items={tireItems} onRemove={cart.removeItem} onQuantityChange={cart.setQuantity} />}
+          {wheelItems.length > 0 && <CartItemsGroup title="Кованые диски" items={wheelItems} onRemove={cart.removeItem} onQuantityChange={cart.setQuantity} />}
+          {shopItems.length > 0 && <CartItemsGroup title="Товары BIZON Shop" items={shopItems} onRemove={cart.removeItem} onQuantityChange={cart.setQuantity} />}
 
           <form className="card-base info-card form-card max-w-3xl" onSubmit={handleSubmit}>
             <h2 className="info-card-title">Контакты для общей заявки</h2>

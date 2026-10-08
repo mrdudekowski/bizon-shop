@@ -26,7 +26,7 @@ function configurationKey(vehicle: string, year: string): string {
 }
 
 export function ForgedConfigurator({ model }: { model: ForgedConfiguratorModel }) {
-  const cart = useCart();
+  const cart = useCart("shop");
   const maxYear = new Date().getFullYear() + 1;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -59,7 +59,7 @@ export function ForgedConfigurator({ model }: { model: ForgedConfiguratorModel }
       variantLabel,
       notes,
     });
-    requestOpenCart();
+    requestOpenCart("shop");
   }
 
   return (

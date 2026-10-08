@@ -40,7 +40,7 @@ export function ShopProductConfigurator({ product }: { product: CmsProduct }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const cart = useCart();
+  const cart = useCart("shop");
   const [pinned, setPinned] = useState(0);
   const [hovered, setHovered] = useState<number | null>(null);
   const [missingGroup, setMissingGroup] = useState<OptionKey | null>(null);
@@ -181,7 +181,7 @@ export function ShopProductConfigurator({ product }: { product: CmsProduct }) {
 
   function addToCart() {
     if (inCart) {
-      requestOpenCart();
+      requestOpenCart("shop");
       return;
     }
 
@@ -194,7 +194,7 @@ export function ShopProductConfigurator({ product }: { product: CmsProduct }) {
     if (!available || (optionGroups.length > 0 && !selectedVariant)) return;
 
     cart.addItem(item);
-    requestOpenCart();
+    requestOpenCart("shop");
   }
 
   return (

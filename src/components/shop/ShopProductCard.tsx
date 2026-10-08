@@ -14,7 +14,7 @@ function formatPrice(value: number): string {
 }
 
 export function ShopProductCard({ product }: { product: CmsProduct }) {
-  const cart = useCart();
+  const cart = useCart("shop");
   const hasVariants = product.variants.length > 0;
   const item: RequestItemInput = {
     itemType: "shopProduct",
@@ -32,7 +32,7 @@ export function ShopProductCard({ product }: { product: CmsProduct }) {
 
   function handleAdd() {
     if (inCart) {
-      requestOpenCart();
+      requestOpenCart("shop");
       return;
     }
     cart.addItem(item);

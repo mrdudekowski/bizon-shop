@@ -22,9 +22,10 @@ import { ROUTES } from "@/constants/navigation";
 export function SiteShell({ children, mainMenu, shopMenu }) {
   const { menuOpen, closeMenu, toggleMenu } = useMenuToggle();
   const lenis = useLenis();
-  const cart = useCart();
   const pathname = usePathname();
   const isShop = pathname === ROUTES.shop || pathname.startsWith(`${ROUTES.shop}/`);
+  const cartKind = isShop ? "shop" : "bizon";
+  const cart = useCart(cartKind);
   const menu = isShop ? shopMenu : mainMenu;
   const categoryItems = shopMenu?.sections?.find((section) => section.id === "categories")?.items ?? [];
   const categoryLinks = [
@@ -78,11 +79,12 @@ export function SiteShell({ children, mainMenu, shopMenu }) {
         featuredItem={isShop ? { name: "Выбрать диски", link: "/shop#wheels" } : null}
         cartItem={{
           name: `Корзина${cart.count > 0 ? ` · ${cart.count}` : ""}`,
-          link: "/cart",
+          link: isShop ? ROUTES.shopCart : ROUTES.cart,
         }}
       />
 
       <CartDrawer
+        cartKind={cartKind}
         open={cart.open}
         items={cart.items}
         onClose={() => cart.setOpen(false)}
