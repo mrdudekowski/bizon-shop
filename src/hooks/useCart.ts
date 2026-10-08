@@ -41,7 +41,7 @@ export function useCart(kind: CartKind) {
       return loadServerCart(kind).then((serverItems) => {
         if (!active || !serverItems) return;
         replaceCartFromServer(kind, serverItems);
-        setItems(serverItems);
+        setItems(readCart(kind));
       });
     }).catch(() => undefined);
 

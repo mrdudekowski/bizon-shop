@@ -19,6 +19,9 @@ type PendingMigration = {
   recoveryBaseItems: RequestItemInput[];
   recoveryItems: RequestItemInput[];
   serverRecoveryCaptured?: boolean;
+  dirtyKinds?: CartKind[];
+  baseBizonItems?: RequestItemInput[];
+  baseShopItems?: RequestItemInput[];
 };
 
 export function cartStorageKey(kind: CartKind): string {
@@ -79,9 +82,10 @@ export function writeCart(kind: CartKind, items: RequestItemInput[]): void {
   if (typeof window === "undefined") return;
   const allowed = items.filter((item) => isCartItemAllowed(kind, item));
   const compact = compactCart(allowed);
+  const migrationPending = window.localStorage.getItem(PENDING_MIGRATION_KEY) !== null;
   if (!updatePendingMigrationCart(kind, compact)) return;
   window.localStorage.setItem(cartStorageKey(kind), JSON.stringify(compact));
-  syncCartToServer(kind, compact);
+  if (!migrationPending) syncCartToServer(kind, compact);
 }
 function updatePendingMigrationCart(kind: CartKind, items: RequestItemInput[]): boolean {
   if (typeof window === "undefined") return true;
@@ -92,6 +96,7 @@ function updatePendingMigrationCart(kind: CartKind, items: RequestItemInput[]): 
     const pending = JSON.parse(raw) as PendingMigration;
     if (kind === "bizon") pending.bizonItems = items;
     else pending.shopItems = items;
+    pending.dirtyKinds = [...new Set([...(pending.dirtyKinds ?? []), kind])];
     pending.recoveryItems = [
       ...(pending.recoveryBaseItems ?? pending.recoveryItems ?? []),
       ...pending.bizonItems.slice(MAX_CART_LINES),
@@ -106,6 +111,9 @@ function updatePendingMigrationCart(kind: CartKind, items: RequestItemInput[]): 
 }
 export function replaceCartFromServer(kind: CartKind, items: RequestItemInput[]): void {
   if (typeof window === "undefined") return;
+  // A failed migration save leaves a replayable local snapshot. Do not let a
+  // subsequent GET replace it with the pre-edit server state.
+  if (window.localStorage.getItem(PENDING_MIGRATION_KEY)) return;
   const compact = compactCart(items.filter((item) => isCartItemAllowed(kind, item)));
   if (!updatePendingMigrationCart(kind, compact)) return;
   window.localStorage.setItem(cartStorageKey(kind), JSON.stringify(compact));
@@ -160,10 +168,37 @@ export async function migrateLegacyCart(): Promise<CartSplit> {
     const legacyCookie = parseStoredCart(readCookie(CART_COOKIE_NAME));
     const rawPending = storage.getItem(pendingKey);
     let pending = rawPending ? JSON.parse(rawPending) as PendingMigration : null;
+    if (storage.getItem(MIGRATION_KEY) === "true" && !rawPending &&
+        !legacyStorage.length && !legacyCookie.length && !publicApiUrl("/v1/cart/migrate")) return empty;
     const existingBizon = pending?.bizonItems ??
       parseStoredCart(storage.getItem(cartStorageKey("bizon")));
     const existingShop = pending?.shopItems ??
       parseStoredCart(storage.getItem(cartStorageKey("shop")));
+
+    // Publish a replayable snapshot before yielding to the migration request. Cart
+    // mutations during the request update this record synchronously via writeCart.
+    if (!pending) {
+      const source = legacyCookie.length ? legacyCookie : legacyStorage;
+      const combine = (existing: RequestItemInput[], additions: RequestItemInput[]) =>
+        additions.reduce((items, item) => mergeCartItem(items, item), existing);
+      const bizonItems = combine(existingBizon.filter((item) => isCartItemAllowed("bizon", item)),
+        source.filter((item) => isCartItemAllowed("bizon", item)));
+      const shopItems = combine(existingShop.filter((item) => isCartItemAllowed("shop", item)),
+        source.filter((item) => isCartItemAllowed("shop", item)));
+      const unmappedItems = source.filter((item) => !isCartItemAllowed("bizon", item) && !isCartItemAllowed("shop", item));
+      const previousRecovery = parseStoredCart(storage.getItem(LEGACY_UNMAPPED_CART_KEY));
+      const recoveryBaseItems = [
+        ...previousRecovery, ...unmappedItems,
+        ...bizonItems.slice(MAX_CART_LINES), ...shopItems.slice(MAX_CART_LINES),
+      ];
+      pending = {
+        bizonItems, shopItems, unmappedItems, recoveryBaseItems, recoveryItems: recoveryBaseItems,
+        dirtyKinds: [], baseBizonItems: bizonItems, baseShopItems: shopItems,
+      };
+      storage.setItem(pendingKey, JSON.stringify(pending));
+      storage.setItem(cartStorageKey("bizon"), JSON.stringify(compactCart(bizonItems)));
+      storage.setItem(cartStorageKey("shop"), JSON.stringify(compactCart(shopItems)));
+    }
 
     let serverSplit: CartSplit | null = null;
     const endpoint = publicApiUrl("/v1/cart/migrate");
@@ -196,6 +231,11 @@ export async function migrateLegacyCart(): Promise<CartSplit> {
         // Keep the local fallback and retry server migration on a later load.
       }
     }
+
+    // Mutations update the serialized pending record while fetch is suspended;
+    // refresh the in-memory reference before reconciling the server response.
+    const latestPending = storage.getItem(pendingKey);
+    if (latestPending) pending = JSON.parse(latestPending) as PendingMigration;
 
     if (!pending) {
       const source = legacyCookie.length ? legacyCookie : legacyStorage;
@@ -234,28 +274,75 @@ export async function migrateLegacyCart(): Promise<CartSplit> {
       }
       pending = { bizonItems, shopItems, unmappedItems, recoveryBaseItems, recoveryItems: recoveryBaseItems, serverRecoveryCaptured: serverSplit !== null };
       storage.setItem(pendingKey, JSON.stringify(pending));
-    } else if (serverSplit && !pending.serverRecoveryCaptured) {
-      // A prior local write may have been interrupted. Keep that snapshot authoritative.
-      // Newly discovered server lines stay recoverable instead of overwriting later edits.
-      const serverOnly = [
-        ...serverSplit.bizonItems.filter((item) => !pending.bizonItems.some((saved) => cartItemKey(saved) === cartItemKey(item))),
-        ...serverSplit.shopItems.filter((item) => !pending.shopItems.some((saved) => cartItemKey(saved) === cartItemKey(item))),
-      ];
+    } else if (pending && serverSplit && !pending.serverRecoveryCaptured) {
+      // The server's old session is authoritative unless the user edited that cart
+      // while the request was pending. Keep displaced local lines recoverable.
+      const dirtyKinds = new Set(pending.dirtyKinds ?? []);
+      for (const [kind, migrated] of [["bizon", serverSplit.bizonItems], ["shop", serverSplit.shopItems]] as const) {
+        const current = kind === "bizon" ? pending.bizonItems : pending.shopItems;
+        const baseline = kind === "bizon" ? (pending.baseBizonItems ?? []) : (pending.baseShopItems ?? []);
+        const displaced = dirtyKinds.has(kind)
+          ? baseline.filter((original) => {
+              const currentLine = current.find((item) => cartItemKey(item) === cartItemKey(original));
+              return currentLine && JSON.stringify(currentLine) === JSON.stringify(original) &&
+                !migrated.some((saved) => cartItemKey(saved) === cartItemKey(original));
+            })
+          : current.filter((item) => !migrated.some((saved) => cartItemKey(saved) === cartItemKey(item)));
+        pending.recoveryBaseItems = [...(pending.recoveryBaseItems ?? []), ...displaced];
+        if (dirtyKinds.has(kind)) {
+          // Apply only edits relative to the pre-request snapshot. Unchanged legacy
+          // client lines remain recoverable and cannot defeat server precedence.
+          let updated = [...migrated];
+          for (const original of baseline) {
+            const key = cartItemKey(original);
+            const edited = current.find((item) => cartItemKey(item) === key);
+            const serverIndex = updated.findIndex((item) => cartItemKey(item) === key);
+            if (!edited) {
+              if (serverIndex >= 0) updated.splice(serverIndex, 1);
+            } else if (JSON.stringify(edited) !== JSON.stringify(original)) {
+              if (serverIndex >= 0) updated[serverIndex] = edited;
+              else updated = mergeCartItem(updated, edited);
+            }
+          }
+          for (const edited of current.filter((item) => !baseline.some((original) => cartItemKey(original) === cartItemKey(item)))) {
+            updated = mergeCartItem(updated, edited);
+          }
+          if (kind === "bizon") pending.bizonItems = updated;
+          else pending.shopItems = updated;
+        } else if (kind === "bizon") pending.bizonItems = migrated;
+        else pending.shopItems = migrated;
+      }
       pending.recoveryBaseItems = [
-        ...(pending.recoveryBaseItems ?? pending.recoveryItems ?? []),
-        ...serverSplit.unmappedItems, ...serverOnly,
+        ...(pending.recoveryBaseItems ?? pending.recoveryItems ?? []), ...serverSplit.unmappedItems,
       ];
-      pending.recoveryItems = pending.recoveryBaseItems;
+      pending.recoveryItems = [
+        ...pending.recoveryBaseItems,
+        ...pending.bizonItems.slice(MAX_CART_LINES), ...pending.shopItems.slice(MAX_CART_LINES),
+      ];
       pending.serverRecoveryCaptured = true;
       storage.setItem(pendingKey, JSON.stringify(pending));
     }
 
+    if (!pending) return empty;
     storage.setItem(LEGACY_UNMAPPED_CART_KEY, JSON.stringify(pending.recoveryItems));
     storage.setItem(cartStorageKey("bizon"), JSON.stringify(compactCart(pending.bizonItems)));
     storage.setItem(cartStorageKey("shop"), JSON.stringify(compactCart(pending.shopItems)));
     if (serverSplit) {
-      await persistMigratedCart("bizon", pending.bizonItems);
-      await persistMigratedCart("shop", pending.shopItems);
+      // Mutations were queued locally while migration ran. Persist their latest
+      // snapshots only after the migration transaction has committed.
+      const persistedSnapshots = new Map<CartKind, string>();
+      for (;;) {
+        const nextKind = (pending.dirtyKinds ?? []).find((kind) => {
+          const items = kind === "bizon" ? pending!.bizonItems : pending!.shopItems;
+          return persistedSnapshots.get(kind) !== JSON.stringify(items);
+        });
+        if (!nextKind) break;
+        const items = nextKind === "bizon" ? pending.bizonItems : pending.shopItems;
+        await persistMigratedCart(nextKind, items);
+        persistedSnapshots.set(nextKind, JSON.stringify(items));
+        const latestRaw = storage.getItem(pendingKey);
+        if (latestRaw) pending = JSON.parse(latestRaw) as PendingMigration;
+      }
       storage.setItem(SERVER_MIGRATION_KEY, "true");
     }
     storage.setItem(MIGRATION_KEY, "true");
