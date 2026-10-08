@@ -35,7 +35,7 @@ test("main site uses the premium floating chrome", async ({ page }, testInfo) =>
     .toBe(heightBefore);
 });
 
-test("main burger exposes the unified cart without a catalog CTA", async ({ page }) => {
+test("main burger links to the Bizon tire cart without a catalog CTA", async ({ page }) => {
   await page.goto("/");
   await page.locator('[aria-controls="burger-menu"]').click();
 

@@ -83,13 +83,13 @@ test("desktop categories menu toggles and restores focus", async ({ page }, test
   await expect(trigger).toBeFocused();
 });
 
-test("shop burger exposes wheel selection and unified cart", async ({ page }) => {
+test("shop burger exposes wheel selection and links to the Shop cart", async ({ page }) => {
   await page.goto("/shop");
   await page.locator('[aria-controls="burger-menu"]').click();
 
   const dialog = page.getByRole("dialog", { name: "Меню BIZON Shop", exact: true });
   await expect(dialog.getByRole("link", { name: "Выбрать диски" })).toHaveAttribute("href", "/shop#wheels");
-  await expect(dialog.getByRole("link", { name: /^Корзина/ })).toHaveAttribute("href", "/cart");
+  await expect(dialog.getByRole("link", { name: /^Корзина/ })).toHaveAttribute("href", "/shop/cart");
 });
 
 test("shop homepage keeps forged wheels, published categories and vehicle stories", async ({ page }) => {
@@ -129,22 +129,6 @@ test("cart drawer preserves the current scroll position", async ({ page }) => {
   await page.keyboard.press("Escape");
 
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(before);
-});
-
-test("unified cart separates commercial intents and submits one request", async ({ page }) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem("bizon-cart", JSON.stringify([
-      { itemType: "tire", itemId: "selection:1", name: "Подбор шин", quantity: 1, priceOnRequest: true },
-      { itemType: "wheel", itemId: "atlas", name: "BIZON Atlas", quantity: 4, priceOnRequest: true },
-      { itemType: "shopProduct", itemId: "cap", name: "BIZON Cap", quantity: 1, priceOnRequest: false, price: 3000 },
-    ]));
-  });
-  await page.goto("/cart");
-
-  await expect(page.getByRole("heading", { name: "Подбор шин" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Кованые диски" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Товары BIZON Shop" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Отправить общую заявку" })).toBeVisible();
 });
 
 test("Forged SEO includes approved static designs", async ({ page, request }) => {
