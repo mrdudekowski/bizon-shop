@@ -3,9 +3,13 @@ import { expect, test } from "@playwright/test";
 const tire = { itemType: "tire", itemId: "e2e-tire", name: "Isolation tire", quantity: 2 };
 const wheel = { itemType: "wheel", itemId: "e2e-wheel", name: "Isolation wheel", quantity: 1 };
 const product = { itemType: "shopProduct", itemId: "e2e-cap", name: "Isolation cap", quantity: 3 };
+const serverTire = { ...tire, name: "Server legacy tire", quantity: 5 };
+const serverWheel = { ...wheel, name: "Server legacy wheel", quantity: 4 };
 
 async function seedTypedCarts(page: import("@playwright/test").Page) {
   await page.addInitScript(({ tireItem, wheelItem, productItem }) => {
+    if (sessionStorage.getItem("e2e:typed-cart-seed") === "true") return;
+    sessionStorage.setItem("e2e:typed-cart-seed", "true");
     localStorage.setItem("bizon-cart:bizon", JSON.stringify([tireItem]));
     localStorage.setItem("bizon-cart:shop", JSON.stringify([wheelItem, productItem]));
     localStorage.setItem("bizon-cart:migrated-v2", "true");
@@ -125,14 +129,13 @@ test("failed request retains cart lines and entered form values", async ({ page 
 for (const firstRoute of ["/cart", "/shop/cart"] as const) {
   test(`legacy local cart splits once when ${firstRoute} loads first and stays stable after reload`, async ({ page }) => {
     await page.addInitScript(({ tireItem, wheelItem, productItem }) => {
+      if (sessionStorage.getItem("e2e:legacy-cart-seed") === "true") return;
+      sessionStorage.setItem("e2e:legacy-cart-seed", "true");
       const legacyItems = [tireItem, wheelItem, productItem];
       localStorage.setItem("bizon-cart", JSON.stringify(legacyItems));
       document.cookie = `bizon-cart-v1=${encodeURIComponent(JSON.stringify(legacyItems))}; Path=/; SameSite=Lax`;
     }, { tireItem: tire, wheelItem: { ...wheel, quantity: 4 }, productItem: product });
     await page.route("**/v1/cart**", async (route) => {
-      if (route.request().method() === "POST") {
-        return route.fulfill({ json: { ok: true, bizonItems: [tire], shopItems: [{ ...wheel, quantity: 4 }, product], unmappedItems: [] } });
-      }
       if (route.request().method() === "GET") return route.fulfill({ json: { ok: true, hasSession: false, items: [] } });
       return route.fulfill({ json: { ok: true } });
     });
@@ -148,3 +151,59 @@ for (const firstRoute of ["/cart", "/shop/cart"] as const) {
     await expect.poll(() => page.evaluate(() => localStorage.getItem("bizon-cart"))).toBeNull();
   });
 }
+
+test("legacy server session wins conflicting local lines and preserves displaced lines", async ({ page }, testInfo) => {
+  test.skip(!process.env.NEXT_PUBLIC_API_URL, "Requires a configured API URL for legacy-session migration");
+  const localOnly = { itemType: "tire", itemId: "local-only", name: "Local-only tire", quantity: 1 };
+  const siteOrigin = new URL(testInfo.project.use.baseURL as string).origin;
+  await page.addInitScript(({ tireItem, wheelItem, productItem, localItem }) => {
+    if (sessionStorage.getItem("e2e:server-migration-seed") === "true") return;
+    sessionStorage.setItem("e2e:server-migration-seed", "true");
+    const legacyItems = [tireItem, localItem, wheelItem, productItem];
+    localStorage.setItem("bizon-cart", JSON.stringify(legacyItems));
+    document.cookie = `bizon-cart-v1=${encodeURIComponent(JSON.stringify(legacyItems))}; Path=/; SameSite=Lax`;
+  }, { tireItem: tire, wheelItem: wheel, productItem: product, localItem: localOnly });
+  await page.context().addCookies([{
+    name: "bizon-cart-session-v1",
+    value: "legacy-e2e-session",
+    url: new URL(process.env.NEXT_PUBLIC_API_URL!).origin,
+    httpOnly: true,
+    sameSite: "Lax",
+  }]);
+
+  const migrationCookies: string[] = [];
+  const corsHeaders = {
+    "access-control-allow-origin": siteOrigin,
+    "access-control-allow-credentials": "true",
+    "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "access-control-allow-headers": "content-type",
+  };
+  await page.route("**/v1/cart**", async (route) => {
+    const method = route.request().method();
+    if (method === "OPTIONS") return route.fulfill({ status: 204, headers: corsHeaders });
+    if (method === "POST") {
+      migrationCookies.push((await route.request().allHeaders()).cookie ?? "");
+      return route.fulfill({
+        headers: corsHeaders,
+        json: { ok: true, bizonItems: [serverTire], shopItems: [serverWheel, product], unmappedItems: [] },
+      });
+    }
+    if (method === "GET") return route.fulfill({ headers: corsHeaders, json: { ok: true, hasSession: false, items: [] } });
+    return route.fulfill({ headers: corsHeaders, json: { ok: true } });
+  });
+
+  await page.goto("/cart");
+  await expect(page.getByText(serverTire.name)).toBeVisible();
+  await expect.poll(() => migrationCookies.length).toBeGreaterThan(0);
+  expect(migrationCookies.every((cookie) => cookie.includes("bizon-cart-session-v1=legacy-e2e-session"))).toBe(true);
+  await expect(page.getByText("Isolation tire")).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("bizon-cart:bizon") || "[]"))).toEqual([serverTire]);
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("bizon-cart:legacy-unmapped") || "[]"))).toContainEqual(localOnly);
+
+  await page.goto("/shop/cart");
+  await expect(page.getByText(serverWheel.name)).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(serverWheel.name)).toHaveCount(1);
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("bizon-cart:shop") || "[]"))).toEqual([serverWheel, product]);
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("bizon-cart:legacy-unmapped") || "[]"))).toContainEqual(localOnly);
+});
