@@ -10,6 +10,14 @@ export const CART_OPEN_EVENT = "bizon-cart-open";
 export const LEGACY_UNMAPPED_CART_KEY = "bizon-cart:legacy-unmapped";
 const MIGRATION_KEY = "bizon-cart:migrated-v2";
 const MAX_CART_LINES = 24;
+const PENDING_MIGRATION_KEY = "bizon-cart:migration-pending-v2";
+type PendingMigration = {
+  bizonItems: RequestItemInput[];
+  shopItems: RequestItemInput[];
+  unmappedItems: RequestItemInput[];
+  recoveryBaseItems: RequestItemInput[];
+  recoveryItems: RequestItemInput[];
+};
 
 export function cartStorageKey(kind: CartKind): string {
   return `bizon-cart:${kind}`;
@@ -69,12 +77,36 @@ export function writeCart(kind: CartKind, items: RequestItemInput[]): void {
   if (typeof window === "undefined") return;
   const allowed = items.filter((item) => isCartItemAllowed(kind, item));
   const compact = compactCart(allowed);
+  if (!updatePendingMigrationCart(kind, compact)) return;
   window.localStorage.setItem(cartStorageKey(kind), JSON.stringify(compact));
   syncCartToServer(kind, compact);
 }
+function updatePendingMigrationCart(kind: CartKind, items: RequestItemInput[]): boolean {
+  if (typeof window === "undefined") return true;
+  const storage = window.localStorage;
+  const raw = storage.getItem(PENDING_MIGRATION_KEY);
+  if (!raw) return true;
+  try {
+    const pending = JSON.parse(raw) as PendingMigration;
+    if (kind === "bizon") pending.bizonItems = items;
+    else pending.shopItems = items;
+    pending.recoveryItems = [
+      ...(pending.recoveryBaseItems ?? pending.recoveryItems ?? []),
+      ...pending.bizonItems.slice(MAX_CART_LINES),
+      ...pending.shopItems.slice(MAX_CART_LINES),
+    ];
+    storage.setItem(PENDING_MIGRATION_KEY, JSON.stringify(pending));
+    return true;
+  } catch {
+    // Do not persist a cart change that cannot also be replayed by a pending migration.
+    return false;
+  }
+}
 export function replaceCartFromServer(kind: CartKind, items: RequestItemInput[]): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(cartStorageKey(kind), JSON.stringify(compactCart(items.filter((item) => isCartItemAllowed(kind, item)))));
+  const compact = compactCart(items.filter((item) => isCartItemAllowed(kind, item)));
+  if (!updatePendingMigrationCart(kind, compact)) return;
+  window.localStorage.setItem(cartStorageKey(kind), JSON.stringify(compact));
 }
 function cartEndpoint(kind: CartKind): string | null {
   const endpoint = publicApiUrl("/v1/cart");
@@ -102,10 +134,10 @@ export async function migrateLegacyCart(): Promise<{ bizonItems: RequestItemInpu
   const empty = { bizonItems: [], shopItems: [], unmappedItems: [] };
   if (typeof window === "undefined") return empty;
   const storage = window.localStorage;
-  const pendingKey = "bizon-cart:migration-pending-v2";
+  const pendingKey = PENDING_MIGRATION_KEY;
   if (storage.getItem(MIGRATION_KEY) === "true" && !storage.getItem(pendingKey)) return empty;
 
-  type PendingMigration = { bizonItems: RequestItemInput[]; shopItems: RequestItemInput[]; unmappedItems: RequestItemInput[]; recoveryItems: RequestItemInput[] };
+
   let pending: PendingMigration | null = null;
   try {
     const rawPending = storage.getItem(pendingKey);
@@ -119,11 +151,11 @@ export async function migrateLegacyCart(): Promise<{ bizonItems: RequestItemInpu
       const allBizon = combine(existingBizon, legacy.filter((item) => isCartItemAllowed("bizon", item)));
       const allShop = combine(existingShop, legacy.filter((item) => isCartItemAllowed("shop", item)));
       const unmappedItems = legacy.filter((item) => !isCartItemAllowed("bizon", item) && !isCartItemAllowed("shop", item));
-      const recoveryItems = [
+      const recoveryBaseItems = [
         ...parseStoredCart(storage.getItem(LEGACY_UNMAPPED_CART_KEY)),
         ...allBizon.slice(MAX_CART_LINES), ...allShop.slice(MAX_CART_LINES), ...unmappedItems,
       ];
-      pending = { bizonItems: allBizon, shopItems: allShop, unmappedItems, recoveryItems };
+      pending = { bizonItems: allBizon, shopItems: allShop, unmappedItems, recoveryBaseItems, recoveryItems: recoveryBaseItems };
       storage.setItem(pendingKey, JSON.stringify(pending));
     }
 

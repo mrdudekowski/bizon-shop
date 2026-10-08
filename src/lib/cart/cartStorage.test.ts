@@ -115,3 +115,27 @@ describe("legacy migration safety regressions", () => {
     expect(memory.has("bizon-cart")).toBe(false);
   });
 });
+
+describe("pending migration follows typed cart mutations", () => {
+  it("replays the latest quantity, removal, and addition after a partial write", async () => {
+    installBrowser();
+    const removed: RequestItemInput = { itemType: "tire", itemId: "remove-me", name: "Remove me", quantity: 1 };
+    const added: RequestItemInput = { itemType: "tire", itemId: "added-later", name: "Added later", quantity: 1 };
+    memory.set("bizon-cart", JSON.stringify([tire, removed]));
+    const originalSet = window.localStorage.setItem;
+    window.localStorage.setItem = (key: string, value: string) => {
+      if (key === "bizon-cart:shop") throw new Error("interrupt migration");
+      originalSet(key, value);
+    };
+    const { migrateLegacyCart } = await import("@/lib/cart/cartStorage");
+    await migrateLegacyCart();
+    window.localStorage.setItem = originalSet;
+
+    updateCartItemQuantity("bizon", cartItemKey(tire), 7);
+    removeCartItem("bizon", cartItemKey(removed));
+    addCartItem("bizon", added);
+    await migrateLegacyCart();
+
+    expect(readCart("bizon")).toEqual([{ ...tire, quantity: 7 }, added]);
+  });
+});
