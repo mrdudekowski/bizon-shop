@@ -9,6 +9,7 @@ export const CART_UPDATED_EVENT = "bizon-cart-updated";
 export const CART_OPEN_EVENT = "bizon-cart-open";
 export const LEGACY_UNMAPPED_CART_KEY = "bizon-cart:legacy-unmapped";
 const MIGRATION_KEY = "bizon-cart:migrated-v2";
+const SERVER_MIGRATION_KEY = "bizon-cart:server-migrated-v2";
 const MAX_CART_LINES = 24;
 const PENDING_MIGRATION_KEY = "bizon-cart:migration-pending-v2";
 type PendingMigration = {
@@ -17,6 +18,7 @@ type PendingMigration = {
   unmappedItems: RequestItemInput[];
   recoveryBaseItems: RequestItemInput[];
   recoveryItems: RequestItemInput[];
+  serverRecoveryCaptured?: boolean;
 };
 
 export function cartStorageKey(kind: CartKind): string {
@@ -130,48 +132,143 @@ export async function loadServerCart(kind: CartKind): Promise<RequestItemInput[]
   return (body.items ?? []).filter((item) => isCartItemAllowed(kind, item));
 }
 
-export async function migrateLegacyCart(): Promise<{ bizonItems: RequestItemInput[]; shopItems: RequestItemInput[]; unmappedItems: RequestItemInput[] }> {
-  const empty = { bizonItems: [], shopItems: [], unmappedItems: [] };
+type CartSplit = { bizonItems: RequestItemInput[]; shopItems: RequestItemInput[]; unmappedItems: RequestItemInput[] };
+
+async function persistMigratedCart(kind: CartKind, items: RequestItemInput[]): Promise<void> {
+  const endpoint = cartEndpoint(kind);
+  if (!endpoint) throw new Error("cart endpoint unavailable");
+  const response = await fetch(endpoint, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ items: compactCart(items) }),
+    credentials: "include",
+  });
+  if (!response.ok) throw new Error("cart persistence failed");
+}
+
+export async function migrateLegacyCart(): Promise<CartSplit> {
+  const empty: CartSplit = { bizonItems: [], shopItems: [], unmappedItems: [] };
   if (typeof window === "undefined") return empty;
   const storage = window.localStorage;
   const pendingKey = PENDING_MIGRATION_KEY;
-  if (storage.getItem(MIGRATION_KEY) === "true" && !storage.getItem(pendingKey)) return empty;
+  if (storage.getItem(MIGRATION_KEY) === "true" &&
+      storage.getItem(SERVER_MIGRATION_KEY) === "true" &&
+      !storage.getItem(pendingKey)) return empty;
 
-
-  let pending: PendingMigration | null = null;
   try {
+    const legacyStorage = parseStoredCart(storage.getItem(LEGACY_CART_STORAGE_KEY));
+    const legacyCookie = parseStoredCart(readCookie(CART_COOKIE_NAME));
     const rawPending = storage.getItem(pendingKey);
-    if (rawPending) pending = JSON.parse(rawPending) as PendingMigration;
+    let pending = rawPending ? JSON.parse(rawPending) as PendingMigration : null;
+    const existingBizon = pending?.bizonItems ??
+      parseStoredCart(storage.getItem(cartStorageKey("bizon")));
+    const existingShop = pending?.shopItems ??
+      parseStoredCart(storage.getItem(cartStorageKey("shop")));
+
+    let serverSplit: CartSplit | null = null;
+    const endpoint = publicApiUrl("/v1/cart/migrate");
+    if (endpoint) {
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            legacyCookieItems: legacyCookie,
+            legacyStorageItems: legacyStorage,
+            typedBizonItems: existingBizon,
+            typedShopItems: existingShop,
+          }),
+          credentials: "include",
+        });
+        if (response.ok) {
+          const result = await response.json() as Partial<CartSplit>;
+          if (Array.isArray(result.bizonItems) &&
+              Array.isArray(result.shopItems) &&
+              Array.isArray(result.unmappedItems)) {
+            serverSplit = {
+              bizonItems: result.bizonItems,
+              shopItems: result.shopItems,
+              unmappedItems: result.unmappedItems,
+            };
+          }
+        }
+      } catch {
+        // Keep the local fallback and retry server migration on a later load.
+      }
+    }
+
     if (!pending) {
-      const legacy = parseStoredCart(storage.getItem(LEGACY_CART_STORAGE_KEY));
-      if (!legacy.length) return empty;
-      const existingBizon = parseStoredCart(storage.getItem(cartStorageKey("bizon"))).filter((item) => isCartItemAllowed("bizon", item));
-      const existingShop = parseStoredCart(storage.getItem(cartStorageKey("shop"))).filter((item) => isCartItemAllowed("shop", item));
-      const combine = (existing: RequestItemInput[], additions: RequestItemInput[]) => additions.reduce((items, item) => mergeCartItem(items, item), existing);
-      const allBizon = combine(existingBizon, legacy.filter((item) => isCartItemAllowed("bizon", item)));
-      const allShop = combine(existingShop, legacy.filter((item) => isCartItemAllowed("shop", item)));
-      const unmappedItems = legacy.filter((item) => !isCartItemAllowed("bizon", item) && !isCartItemAllowed("shop", item));
-      const recoveryBaseItems = [
-        ...parseStoredCart(storage.getItem(LEGACY_UNMAPPED_CART_KEY)),
-        ...allBizon.slice(MAX_CART_LINES), ...allShop.slice(MAX_CART_LINES), ...unmappedItems,
+      const source = legacyCookie.length ? legacyCookie : legacyStorage;
+      if (!serverSplit && !source.length) return empty;
+      const previousRecovery = parseStoredCart(storage.getItem(LEGACY_UNMAPPED_CART_KEY));
+      let bizonItems: RequestItemInput[];
+      let shopItems: RequestItemInput[];
+      let unmappedItems: RequestItemInput[];
+      let recoveryBaseItems: RequestItemInput[];
+      if (serverSplit) {
+        bizonItems = serverSplit.bizonItems.filter((item) => isCartItemAllowed("bizon", item));
+        shopItems = serverSplit.shopItems.filter((item) => isCartItemAllowed("shop", item));
+        unmappedItems = serverSplit.unmappedItems;
+        const orphanedTyped = [
+          ...existingBizon.filter((item) => !bizonItems.some((saved) => cartItemKey(saved) === cartItemKey(item))),
+          ...existingShop.filter((item) => !shopItems.some((saved) => cartItemKey(saved) === cartItemKey(item))),
+        ];
+        recoveryBaseItems = [
+          ...previousRecovery, ...unmappedItems, ...orphanedTyped,
+          ...bizonItems.slice(MAX_CART_LINES), ...shopItems.slice(MAX_CART_LINES),
+        ];
+      } else {
+        const combine = (existing: RequestItemInput[], additions: RequestItemInput[]) =>
+          additions.reduce((items, item) => mergeCartItem(items, item), existing);
+        bizonItems = combine(existingBizon.filter((item) => isCartItemAllowed("bizon", item)),
+          source.filter((item) => isCartItemAllowed("bizon", item)));
+        shopItems = combine(existingShop.filter((item) => isCartItemAllowed("shop", item)),
+          source.filter((item) => isCartItemAllowed("shop", item)));
+        unmappedItems = source.filter((item) => !isCartItemAllowed("bizon", item) && !isCartItemAllowed("shop", item));
+        recoveryBaseItems = [
+          ...previousRecovery, ...unmappedItems,
+          ...existingBizon.filter((item) => !isCartItemAllowed("bizon", item)),
+          ...existingShop.filter((item) => !isCartItemAllowed("shop", item)),
+          ...bizonItems.slice(MAX_CART_LINES), ...shopItems.slice(MAX_CART_LINES),
+        ];
+      }
+      pending = { bizonItems, shopItems, unmappedItems, recoveryBaseItems, recoveryItems: recoveryBaseItems, serverRecoveryCaptured: serverSplit !== null };
+      storage.setItem(pendingKey, JSON.stringify(pending));
+    } else if (serverSplit && !pending.serverRecoveryCaptured) {
+      // A prior local write may have been interrupted. Keep that snapshot authoritative.
+      // Newly discovered server lines stay recoverable instead of overwriting later edits.
+      const serverOnly = [
+        ...serverSplit.bizonItems.filter((item) => !pending.bizonItems.some((saved) => cartItemKey(saved) === cartItemKey(item))),
+        ...serverSplit.shopItems.filter((item) => !pending.shopItems.some((saved) => cartItemKey(saved) === cartItemKey(item))),
       ];
-      pending = { bizonItems: allBizon, shopItems: allShop, unmappedItems, recoveryBaseItems, recoveryItems: recoveryBaseItems };
+      pending.recoveryBaseItems = [
+        ...(pending.recoveryBaseItems ?? pending.recoveryItems ?? []),
+        ...serverSplit.unmappedItems, ...serverOnly,
+      ];
+      pending.recoveryItems = pending.recoveryBaseItems;
+      pending.serverRecoveryCaptured = true;
       storage.setItem(pendingKey, JSON.stringify(pending));
     }
 
-    // Replay this immutable snapshot after any interrupted write; never re-merge legacy lines.
     storage.setItem(LEGACY_UNMAPPED_CART_KEY, JSON.stringify(pending.recoveryItems));
     storage.setItem(cartStorageKey("bizon"), JSON.stringify(compactCart(pending.bizonItems)));
     storage.setItem(cartStorageKey("shop"), JSON.stringify(compactCart(pending.shopItems)));
+    if (serverSplit) {
+      await persistMigratedCart("bizon", pending.bizonItems);
+      await persistMigratedCart("shop", pending.shopItems);
+      storage.setItem(SERVER_MIGRATION_KEY, "true");
+    }
     storage.setItem(MIGRATION_KEY, "true");
     storage.removeItem(LEGACY_CART_STORAGE_KEY);
+    if (typeof document !== "undefined") {
+      document.cookie = CART_COOKIE_NAME + "=; Path=/; Max-Age=0; SameSite=Lax";
+    }
     storage.removeItem(pendingKey);
     return { bizonItems: pending.bizonItems, shopItems: pending.shopItems, unmappedItems: pending.unmappedItems };
   } catch {
     return empty;
   }
 }
-
 export function dispatchCartUpdated(kind: CartKind): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(CART_UPDATED_EVENT, { detail: { cartKind: kind } }));
