@@ -66,20 +66,20 @@ test("Bizon and Shop headers, drawers, and cart pages show only their own lines"
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(shopScroll);
 
   await page.goto("/cart");
-  await expect(page.getByRole("heading", { name: "Шины" })).toBeVisible();
-  await expect(page.getByText("Isolation tire")).toBeVisible();
-  await expect(page.getByText("Isolation wheel")).toHaveCount(0);
-  await expect(page.getByText("Isolation cap")).toHaveCount(0);
+  await expect(page.locator("main").getByRole("heading", { name: "Шины" })).toBeVisible();
+  await expect(page.locator("main").getByText("Isolation tire")).toBeVisible();
+  await expect(page.locator("main").getByText("Isolation wheel")).toHaveCount(0);
+  await expect(page.locator("main").getByText("Isolation cap")).toHaveCount(0);
 
   await page.goto("/shop/cart");
-  await expect(page.getByRole("heading", { name: "Кованые диски" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Товары BIZON Shop" })).toBeVisible();
-  await expect(page.getByText("Isolation tire")).toHaveCount(0);
-  await expect(page.getByText("Isolation wheel")).toBeVisible();
-  await expect(page.getByText("Isolation cap")).toBeVisible();
-  const shopFieldNames = await page.locator("form input, form select, form textarea").evaluateAll((fields) => fields.map((field) => (field as HTMLInputElement).name));
+  await expect(page.locator("main").getByRole("heading", { name: "Кованые диски" })).toBeVisible();
+  await expect(page.locator("main").getByRole("heading", { name: "Товары BIZON Shop" })).toBeVisible();
+  await expect(page.locator("main").getByText("Isolation tire")).toHaveCount(0);
+  await expect(page.locator("main").getByText("Isolation wheel")).toBeVisible();
+  await expect(page.locator("main").getByText("Isolation cap")).toBeVisible();
+  const shopFieldNames = await page.locator("main form input, main form select, main form textarea").evaluateAll((fields) => fields.map((field) => (field as HTMLInputElement).name));
   await page.goto("/cart");
-  const bizonFieldNames = await page.locator("form input, form select, form textarea").evaluateAll((fields) => fields.map((field) => (field as HTMLInputElement).name));
+  const bizonFieldNames = await page.locator("main form input, main form select, main form textarea").evaluateAll((fields) => fields.map((field) => (field as HTMLInputElement).name));
   expect(bizonFieldNames).toEqual(shopFieldNames);
 });
 
@@ -95,7 +95,7 @@ test("Bizon and Shop submit distinct requests and success clears only the submit
   await page.goto("/cart");
   await fillContactForm(page, "Bizon");
   await page.locator('form button[type="submit"]').click();
-  await expect(page.getByRole("heading", { name: "Спасибо" })).toBeVisible();
+  await expect(page.locator("main").getByRole("heading", { name: "Спасибо" })).toBeVisible();
   await expect.poll(() => submitted).toHaveLength(1);
   expect(submitted[0]).toMatchObject({ sourceForm: "tire_cart", sourcePage: "/cart", items: [tire] });
   await expect.poll(() => page.evaluate(() => localStorage.getItem("bizon-cart:bizon"))).toBe("[]");
@@ -104,7 +104,7 @@ test("Bizon and Shop submit distinct requests and success clears only the submit
   await page.goto("/shop/cart");
   await fillContactForm(page, "Shop");
   await page.locator('form button[type="submit"]').click();
-  await expect(page.getByRole("heading", { name: "Спасибо" })).toBeVisible();
+  await expect(page.locator("main").getByRole("heading", { name: "Спасибо" })).toBeVisible();
   await expect.poll(() => submitted).toHaveLength(2);
   expect(submitted[1]).toMatchObject({ sourceForm: "shop_cart", sourcePage: "/shop/cart", items: [wheel, product] });
   await expect.poll(() => page.evaluate(() => localStorage.getItem("bizon-cart:shop"))).toBe("[]");
@@ -118,10 +118,10 @@ test("failed request retains cart lines and entered form values", async ({ page 
   await fillContactForm(page, "Retry");
   await page.locator('form button[type="submit"]').click();
 
-  await expect(page.getByRole("status")).toContainText("Не удалось отправить заявку");
+  await expect(page.locator("main").getByRole("status")).toContainText("Не удалось отправить заявку");
   await expect(page.locator('input[name="name"]')).toHaveValue("E2E Retry");
   await expect(page.locator('input[name="phone"]')).toHaveValue("+79990000000");
-  await expect(page.getByText("Isolation tire")).toBeVisible();
+  await expect(page.locator("main").getByText("Isolation tire")).toBeVisible();
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("bizon-cart:bizon") || "[]"))).toEqual([tire]);
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("bizon-cart:shop") || "[]"))).toEqual([wheel, product]);
 });
@@ -141,11 +141,11 @@ for (const firstRoute of ["/cart", "/shop/cart"] as const) {
     });
 
     await page.goto(firstRoute);
-    await expect(page.getByText(firstRoute === "/cart" ? "Isolation tire" : "Isolation wheel")).toBeVisible();
+    await expect(page.locator("main").getByText(firstRoute === "/cart" ? "Isolation tire" : "Isolation wheel")).toBeVisible();
     await page.goto(firstRoute === "/cart" ? "/shop/cart" : "/cart");
-    await expect(page.getByText(firstRoute === "/cart" ? "Isolation wheel" : "Isolation tire")).toBeVisible();
+    await expect(page.locator("main").getByText(firstRoute === "/cart" ? "Isolation wheel" : "Isolation tire")).toBeVisible();
     await page.reload();
-    await expect(page.getByText(firstRoute === "/cart" ? "Isolation wheel" : "Isolation tire")).toBeVisible();
+    await expect(page.locator("main").getByText(firstRoute === "/cart" ? "Isolation wheel" : "Isolation tire")).toBeVisible();
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("bizon-cart:bizon") || "[]"))).toEqual([tire]);
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("bizon-cart:shop") || "[]"))).toEqual([{ ...wheel, quantity: 4 }, product]);
     await expect.poll(() => page.evaluate(() => localStorage.getItem("bizon-cart"))).toBeNull();
@@ -193,17 +193,17 @@ test("legacy server session wins conflicting local lines and preserves displaced
   });
 
   await page.goto("/cart");
-  await expect(page.getByText(serverTire.name)).toBeVisible();
+  await expect(page.locator("main").getByText(serverTire.name)).toBeVisible();
   await expect.poll(() => migrationCookies.length).toBeGreaterThan(0);
   expect(migrationCookies.every((cookie) => cookie.includes("bizon-cart-session-v1=legacy-e2e-session"))).toBe(true);
-  await expect(page.getByText("Isolation tire")).toHaveCount(0);
+  await expect(page.locator("main").getByText("Isolation tire")).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("bizon-cart:bizon") || "[]"))).toEqual([serverTire]);
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("bizon-cart:legacy-unmapped") || "[]"))).toContainEqual(localOnly);
 
   await page.goto("/shop/cart");
-  await expect(page.getByText(serverWheel.name)).toBeVisible();
+  await expect(page.locator("main").getByText(serverWheel.name)).toBeVisible();
   await page.reload();
-  await expect(page.getByText(serverWheel.name)).toHaveCount(1);
+  await expect(page.locator("main").getByText(serverWheel.name)).toHaveCount(1);
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("bizon-cart:shop") || "[]"))).toEqual([serverWheel, product]);
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("bizon-cart:legacy-unmapped") || "[]"))).toContainEqual(localOnly);
 });
