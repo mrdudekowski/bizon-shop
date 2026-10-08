@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/analytics/yandexMetrika", () => ({ trackEvent: vi.fn() }));
 import { trackEvent } from "@/lib/analytics/yandexMetrika";
 import { trackCartAddIfAllowed } from "@/hooks/useCart";
-import { addCartItem, cartItemKey, clearCart, readCart, removeCartItem, updateCartItemQuantity } from "@/lib/cart/cartStorage";
+import { addCartItem, cartItemKey, clearCart, getCartMutationVersion, readCart, removeCartItem, updateCartItemQuantity } from "@/lib/cart/cartStorage";
 import type { RequestItemInput } from "@/types/requestItem";
 
 const memory = new Map<string, string>();
@@ -18,6 +18,14 @@ function installBrowser() {
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe("typed cart storage", () => {
+  it("advances the cart version after a local mutation so stale server reads can be ignored", () => {
+    installBrowser();
+    const before = getCartMutationVersion("bizon");
+    addCartItem("bizon", tire);
+    expect(getCartMutationVersion("bizon")).toBeGreaterThan(before);
+    expect(getCartMutationVersion("shop")).toBe(0);
+  });
+
   it("keeps cart ownership isolated and merges duplicates only within a cart", () => {
     installBrowser();
     expect(addCartItem("bizon", tire)).toHaveLength(1);
@@ -92,6 +100,28 @@ describe("cart add analytics", () => {
 });
 
 describe("legacy migration safety regressions", () => {
+  it("shares one in-flight migration across concurrent cart mounts", async () => {
+    installBrowser();
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "http://127.0.0.1:4000");
+    memory.set("bizon-cart", JSON.stringify([tire]));
+    let resolveMigration!: (response: { ok: boolean; json: () => Promise<unknown> }) => void;
+    const fetchMock = vi.fn((_, init?: RequestInit) => init?.method === "POST"
+      ? new Promise((resolve) => { resolveMigration = resolve; })
+      : Promise.resolve({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { migrateLegacyCart } = await import("@/lib/cart/cartStorage");
+    const siteMigration = migrateLegacyCart();
+    const pageMigration = migrateLegacyCart();
+    expect(pageMigration).toBe(siteMigration);
+    resolveMigration({ ok: true, json: async () => ({ bizonItems: [tire], shopItems: [], unmappedItems: [] }) });
+    await Promise.all([siteMigration, pageMigration]);
+
+    const added: RequestItemInput = { itemType: "tire", itemId: "after-migration", name: "After migration", quantity: 1 };
+    addCartItem("bizon", added);
+    expect(readCart("bizon")).toEqual([tire, added]);
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
+  });
+
   it("does not promote unchanged legacy client lines over the old server session after another edit", async () => {
     installBrowser();
     vi.stubEnv("NEXT_PUBLIC_API_URL", "http://127.0.0.1:4000");

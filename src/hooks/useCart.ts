@@ -10,8 +10,10 @@ import {
   CART_UPDATED_EVENT,
   cartStorageKey,
   clearCart,
+  getCartMutationVersion,
   loadServerCart,
   migrateLegacyCart,
+  noteCartMutation,
   isCartItemAllowed,
   readCart,
   removeCartItem,
@@ -47,8 +49,13 @@ export function useCart(kind: CartKind) {
     void migrateLegacyCart().then(() => {
       if (!active) return;
       refresh();
+      const mutationVersion = getCartMutationVersion(kind);
       return loadServerCart(kind).then((serverItems) => {
         if (!active || !serverItems) return;
+        if (getCartMutationVersion(kind) !== mutationVersion) {
+          refresh();
+          return;
+        }
         replaceCartFromServer(kind, serverItems);
         setItems(readCart(kind));
       });
@@ -58,7 +65,10 @@ export function useCart(kind: CartKind) {
       if ((event as CustomEvent<{ cartKind?: CartKind }>).detail?.cartKind === kind) refresh();
     };
     const onStorage = (event: StorageEvent) => {
-      if (event.key === cartStorageKey(kind)) refresh();
+      if (event.key === cartStorageKey(kind)) {
+        noteCartMutation(kind);
+        refresh();
+      }
     };
     const onOpenRequest = (event: Event) => {
       if ((event as CustomEvent<{ cartKind?: CartKind }>).detail?.cartKind !== kind) return;

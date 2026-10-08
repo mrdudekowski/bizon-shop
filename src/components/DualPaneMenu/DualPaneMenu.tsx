@@ -317,7 +317,7 @@ export function DualPaneMenu({
               <Link className={styles.cartLink} href={cartItem.link} onClick={handleLinkNavigate}>
                 <span>
                   {cartItem.name}
-                  <small>Единая заявка BIZON</small>
+                  <small>{context === "shop" ? "Заявка BIZON Shop" : "Заявка Bizon Tires"}</small>
                 </span>
                 <SiteArrow />
               </Link>

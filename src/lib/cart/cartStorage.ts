@@ -12,6 +12,7 @@ const MIGRATION_KEY = "bizon-cart:migrated-v2";
 const SERVER_MIGRATION_KEY = "bizon-cart:server-migrated-v2";
 const MAX_CART_LINES = 24;
 const PENDING_MIGRATION_KEY = "bizon-cart:migration-pending-v2";
+const cartMutationVersions: Record<CartKind, number> = { bizon: 0, shop: 0 };
 type PendingMigration = {
   bizonItems: RequestItemInput[];
   shopItems: RequestItemInput[];
@@ -80,12 +81,19 @@ export function readCart(kind: CartKind): RequestItemInput[] {
 }
 export function writeCart(kind: CartKind, items: RequestItemInput[]): void {
   if (typeof window === "undefined") return;
+  noteCartMutation(kind);
   const allowed = items.filter((item) => isCartItemAllowed(kind, item));
   const compact = compactCart(allowed);
   const migrationPending = window.localStorage.getItem(PENDING_MIGRATION_KEY) !== null;
   if (!updatePendingMigrationCart(kind, compact)) return;
   window.localStorage.setItem(cartStorageKey(kind), JSON.stringify(compact));
   if (!migrationPending) syncCartToServer(kind, compact);
+}
+export function getCartMutationVersion(kind: CartKind): number {
+  return cartMutationVersions[kind];
+}
+export function noteCartMutation(kind: CartKind): void {
+  cartMutationVersions[kind] += 1;
 }
 function updatePendingMigrationCart(kind: CartKind, items: RequestItemInput[]): boolean {
   if (typeof window === "undefined") return true;
@@ -141,6 +149,7 @@ export async function loadServerCart(kind: CartKind): Promise<RequestItemInput[]
 }
 
 type CartSplit = { bizonItems: RequestItemInput[]; shopItems: RequestItemInput[]; unmappedItems: RequestItemInput[] };
+let migrationInFlight: Promise<CartSplit> | null = null;
 
 async function persistMigratedCart(kind: CartKind, items: RequestItemInput[]): Promise<void> {
   const endpoint = cartEndpoint(kind);
@@ -154,7 +163,15 @@ async function persistMigratedCart(kind: CartKind, items: RequestItemInput[]): P
   if (!response.ok) throw new Error("cart persistence failed");
 }
 
-export async function migrateLegacyCart(): Promise<CartSplit> {
+export function migrateLegacyCart(): Promise<CartSplit> {
+  if (migrationInFlight) return migrationInFlight;
+  migrationInFlight = performLegacyCartMigration().finally(() => {
+    migrationInFlight = null;
+  });
+  return migrationInFlight;
+}
+
+async function performLegacyCartMigration(): Promise<CartSplit> {
   const empty: CartSplit = { bizonItems: [], shopItems: [], unmappedItems: [] };
   if (typeof window === "undefined") return empty;
   const storage = window.localStorage;
@@ -348,7 +365,9 @@ export async function migrateLegacyCart(): Promise<CartSplit> {
     storage.setItem(MIGRATION_KEY, "true");
     storage.removeItem(LEGACY_CART_STORAGE_KEY);
     if (typeof document !== "undefined") {
-      document.cookie = CART_COOKIE_NAME + "=; Path=/; Max-Age=0; SameSite=Lax";
+      const secure = window.location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = `${CART_COOKIE_NAME}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
+      document.cookie = `${CART_COOKIE_NAME}=; Path=/; Domain=.bizon.ru; Max-Age=0; SameSite=Lax${secure}`;
     }
     storage.removeItem(pendingKey);
     return { bizonItems: pending.bizonItems, shopItems: pending.shopItems, unmappedItems: pending.unmappedItems };
