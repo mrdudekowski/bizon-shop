@@ -133,9 +133,8 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
     const formData = new FormData(form);
 
     if (formData.get(HONEYPOT_FIELD)) {
-      setStatus("success");
-      setMessage("Заявка отправлена.");
-
+      setStatus("idle");
+      setMessage("");
       return;
     }
 
