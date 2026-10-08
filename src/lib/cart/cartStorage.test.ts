@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/lib/analytics/yandexMetrika", () => ({ trackEvent: vi.fn() }));
+import { trackEvent } from "@/lib/analytics/yandexMetrika";
+import { trackCartAddIfAllowed } from "@/hooks/useCart";
 import { addCartItem, cartItemKey, clearCart, readCart, removeCartItem, updateCartItemQuantity } from "@/lib/cart/cartStorage";
 import type { RequestItemInput } from "@/types/requestItem";
 
@@ -69,5 +72,46 @@ describe("legacy cart migration", () => {
     const { migrateLegacyCart } = await import("@/lib/cart/cartStorage");
     await migrateLegacyCart();
     expect(memory.has("bizon-cart")).toBe(true);
+    window.localStorage.setItem = originalSet;
+    await migrateLegacyCart();
+    expect(readCart("bizon")).toEqual([tire]);
+    expect(memory.has("bizon-cart")).toBe(false);
+  });
+});
+
+
+
+describe("cart add analytics", () => {
+  it("does not emit add analytics for an item rejected by cart ownership", () => {
+    vi.mocked(trackEvent).mockClear();
+    expect(trackCartAddIfAllowed("bizon", wheel)).toBe(false);
+    expect(trackEvent).not.toHaveBeenCalled();
+    expect(trackCartAddIfAllowed("bizon", tire)).toBe(true);
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("legacy migration safety regressions", () => {
+  it("preserves and merges existing typed destination lines", async () => {
+    installBrowser();
+    const existing: RequestItemInput = { itemType: "tire", itemId: "existing", name: "Existing", quantity: 2 };
+    memory.set("bizon-cart:bizon", JSON.stringify([existing]));
+    memory.set("bizon-cart", JSON.stringify([tire]));
+    const { migrateLegacyCart } = await import("@/lib/cart/cartStorage");
+    await migrateLegacyCart();
+    expect(readCart("bizon")).toEqual([existing, tire]);
+  });
+
+  it("keeps destination overflow recoverable before removing the source", async () => {
+    installBrowser();
+    const manyWheels = Array.from({ length: 30 }, (_, index): RequestItemInput => ({ itemType: "wheel", itemId: `wheel-${index}`, name: `Wheel ${index}`, quantity: 1 }));
+    memory.set("bizon-cart", JSON.stringify(manyWheels));
+    const { migrateLegacyCart, LEGACY_UNMAPPED_CART_KEY } = await import("@/lib/cart/cartStorage");
+    await migrateLegacyCart();
+    expect(readCart("shop")).toHaveLength(24);
+    const recoverable = JSON.parse(memory.get(LEGACY_UNMAPPED_CART_KEY) ?? "[]") as RequestItemInput[];
+    expect(recoverable).toHaveLength(6);
+    expect(new Set([...readCart("shop"), ...recoverable].map((item) => item.itemId)).size).toBe(30);
+    expect(memory.has("bizon-cart")).toBe(false);
   });
 });

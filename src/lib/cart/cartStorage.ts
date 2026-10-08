@@ -102,24 +102,44 @@ export async function migrateLegacyCart(): Promise<{ bizonItems: RequestItemInpu
   const empty = { bizonItems: [], shopItems: [], unmappedItems: [] };
   if (typeof window === "undefined") return empty;
   const storage = window.localStorage;
-  const alreadyMigrated = storage.getItem(MIGRATION_KEY) === "true";
-  const legacy = parseStoredCart(storage.getItem(LEGACY_CART_STORAGE_KEY));
-  if (alreadyMigrated || legacy.length === 0) return empty;
-  const bizonItems = legacy.filter((item) => isCartItemAllowed("bizon", item));
-  const shopItems = legacy.filter((item) => isCartItemAllowed("shop", item));
-  const unmappedItems = legacy.filter((item) => !isCartItemAllowed("bizon", item) && !isCartItemAllowed("shop", item));
+  const pendingKey = "bizon-cart:migration-pending-v2";
+  if (storage.getItem(MIGRATION_KEY) === "true" && !storage.getItem(pendingKey)) return empty;
+
+  type PendingMigration = { bizonItems: RequestItemInput[]; shopItems: RequestItemInput[]; unmappedItems: RequestItemInput[]; recoveryItems: RequestItemInput[] };
+  let pending: PendingMigration | null = null;
   try {
-    // Do not mark or remove the legacy record until both destination writes succeeded.
-    storage.setItem(cartStorageKey("bizon"), JSON.stringify(compactCart(bizonItems)));
-    storage.setItem(cartStorageKey("shop"), JSON.stringify(compactCart(shopItems)));
-    if (unmappedItems.length) storage.setItem(LEGACY_UNMAPPED_CART_KEY, JSON.stringify(unmappedItems));
+    const rawPending = storage.getItem(pendingKey);
+    if (rawPending) pending = JSON.parse(rawPending) as PendingMigration;
+    if (!pending) {
+      const legacy = parseStoredCart(storage.getItem(LEGACY_CART_STORAGE_KEY));
+      if (!legacy.length) return empty;
+      const existingBizon = parseStoredCart(storage.getItem(cartStorageKey("bizon"))).filter((item) => isCartItemAllowed("bizon", item));
+      const existingShop = parseStoredCart(storage.getItem(cartStorageKey("shop"))).filter((item) => isCartItemAllowed("shop", item));
+      const combine = (existing: RequestItemInput[], additions: RequestItemInput[]) => additions.reduce((items, item) => mergeCartItem(items, item), existing);
+      const allBizon = combine(existingBizon, legacy.filter((item) => isCartItemAllowed("bizon", item)));
+      const allShop = combine(existingShop, legacy.filter((item) => isCartItemAllowed("shop", item)));
+      const unmappedItems = legacy.filter((item) => !isCartItemAllowed("bizon", item) && !isCartItemAllowed("shop", item));
+      const recoveryItems = [
+        ...parseStoredCart(storage.getItem(LEGACY_UNMAPPED_CART_KEY)),
+        ...allBizon.slice(MAX_CART_LINES), ...allShop.slice(MAX_CART_LINES), ...unmappedItems,
+      ];
+      pending = { bizonItems: allBizon, shopItems: allShop, unmappedItems, recoveryItems };
+      storage.setItem(pendingKey, JSON.stringify(pending));
+    }
+
+    // Replay this immutable snapshot after any interrupted write; never re-merge legacy lines.
+    storage.setItem(LEGACY_UNMAPPED_CART_KEY, JSON.stringify(pending.recoveryItems));
+    storage.setItem(cartStorageKey("bizon"), JSON.stringify(compactCart(pending.bizonItems)));
+    storage.setItem(cartStorageKey("shop"), JSON.stringify(compactCart(pending.shopItems)));
     storage.setItem(MIGRATION_KEY, "true");
     storage.removeItem(LEGACY_CART_STORAGE_KEY);
-    return { bizonItems, shopItems, unmappedItems };
+    storage.removeItem(pendingKey);
+    return { bizonItems: pending.bizonItems, shopItems: pending.shopItems, unmappedItems: pending.unmappedItems };
   } catch {
     return empty;
   }
 }
+
 export function dispatchCartUpdated(kind: CartKind): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(CART_UPDATED_EVENT, { detail: { cartKind: kind } }));

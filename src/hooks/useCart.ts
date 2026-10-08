@@ -12,6 +12,7 @@ import {
   clearCart,
   loadServerCart,
   migrateLegacyCart,
+  isCartItemAllowed,
   readCart,
   removeCartItem,
   replaceCartFromServer,
@@ -19,6 +20,12 @@ import {
 } from "@/lib/cart/cartStorage";
 import type { CartKind } from "@/lib/cart/cartTypes";
 import type { RequestItemInput } from "@/types/requestItem";
+
+export function trackCartAddIfAllowed(kind: CartKind, item: RequestItemInput): boolean {
+  if (!isCartItemAllowed(kind, item)) return false;
+  trackEvent(ANALYTICS_EVENTS.addToCart, { cartKind: kind, itemType: String(item.itemType ?? ""), slug: String(item.slug ?? "") });
+  return true;
+}
 
 export function useCart(kind: CartKind) {
   const [items, setItems] = useState<RequestItemInput[]>([]);
@@ -62,7 +69,7 @@ export function useCart(kind: CartKind) {
 
   const addItem = useCallback((item: RequestItemInput) => {
     setItems(addCartItem(kind, item));
-    trackEvent(ANALYTICS_EVENTS.addToCart, { cartKind: kind, itemType: String(item.itemType ?? ""), slug: String(item.slug ?? "") });
+    trackCartAddIfAllowed(kind, item);
   }, [kind]);
   const removeItem = useCallback((key: string) => {
     setItems(removeCartItem(kind, key));
