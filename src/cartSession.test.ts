@@ -92,6 +92,31 @@ function fakeTransactionalDatabase(failSecondInsert = false) {
 }
 
 describe("transactional cart migration", () => {
+  it("merges typed local lines with an existing server cart and deduplicates mirrors", async () => {
+    const db = fakeTransactionalDatabase();
+    const serverLine = { itemType: "tire", itemId: "server", name: "Server", quantity: 2 };
+    const localLine = { itemType: "tire", itemId: "local", name: "Local", quantity: 1 };
+    db.seed("new-bizon", [serverLine]);
+    const result = await migrateCartSessions(db, {
+      legacyToken: null, bizonToken: "new-bizon", shopToken: "new-shop",
+      legacyCookieItems: [], legacyStorageItems: [],
+      typedBizonItems: [serverLine, localLine], typedShopItems: [],
+    });
+    expect(result.bizonItems).toEqual([serverLine, localLine]);
+  });
+
+  it("keeps typed local lines when an existing server row is empty", async () => {
+    const db = fakeTransactionalDatabase();
+    const localLine = { itemType: "tire", itemId: "local", name: "Local", quantity: 1 };
+    db.seed("new-bizon", []);
+    const result = await migrateCartSessions(db, {
+      legacyToken: null, bizonToken: "new-bizon", shopToken: "new-shop",
+      legacyCookieItems: [], legacyStorageItems: [],
+      typedBizonItems: [localLine], typedShopItems: [],
+    });
+    expect(result.bizonItems).toEqual([localLine]);
+  });
+
   it("uses the old server session before client payload and returns identical carts on retry", async () => {
     const db = fakeTransactionalDatabase();
     const oldTire = { itemType: "tire", itemId: "old", quantity: 1 };

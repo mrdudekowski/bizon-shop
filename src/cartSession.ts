@@ -188,10 +188,16 @@ export async function migrateCartSessions(
     const alreadyMigrated = existingRecovery !== null;
     const bizonMerged = alreadyMigrated
       ? { items: sanitizeTypedCartItems("bizon", existingBizon), unmappedItems: [] }
-      : mergeMigrationCartItems("bizon", existingBizon ?? input.typedBizonItems, split.bizonItems);
+      : mergeMigrationCartItems("bizon", [
+          ...(existingBizon ?? []),
+          ...(Array.isArray(input.typedBizonItems) ? input.typedBizonItems : []),
+        ], split.bizonItems);
     const shopMerged = alreadyMigrated
       ? { items: sanitizeTypedCartItems("shop", existingShop), unmappedItems: [] }
-      : mergeMigrationCartItems("shop", existingShop ?? input.typedShopItems, split.shopItems);
+      : mergeMigrationCartItems("shop", [
+          ...(existingShop ?? []),
+          ...(Array.isArray(input.typedShopItems) ? input.typedShopItems : []),
+        ], split.shopItems);
     const bizonItems = bizonMerged.items;
     const shopItems = shopMerged.items;
     const unmappedItems = existingRecovery ?? [...split.unmappedItems, ...bizonMerged.unmappedItems, ...shopMerged.unmappedItems];
