@@ -16,6 +16,8 @@ export const SOURCE_FORMS = [
   { label: "Подбор дисков", value: "wheel_selection" },
   { label: "Быстрый заказ товара", value: "product_quick_order" },
   { label: "Корзина", value: "cart" },
+  { label: "Корзина Bizon", value: "tire_cart" },
+  { label: "Корзина BIZON Shop", value: "shop_cart" },
   { label: "Hero CTA", value: "hero_cta" },
   { label: "Footer CTA", value: "footer_cta" },
   { label: "Другое", value: "custom" },
