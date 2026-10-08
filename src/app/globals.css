@@ -128,6 +128,7 @@ img {
   --container-max: 1600px;
   --content-max: 1180px;
   --page-gutter: 20px;
+  --home-feature-inset: 24px;
   --section-space: 72px;
   --transition-fast: 160ms ease-out;
   --transition-premium: 240ms ease-out;

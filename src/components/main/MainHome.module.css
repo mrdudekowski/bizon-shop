@@ -515,13 +515,14 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: center;
-  width: 100%;
+  width: calc(100% - (var(--home-feature-inset) * 2));
   max-width: 100%;
   min-width: 0;
+  margin-inline: auto;
   min-height: clamp(32rem, 58vw, 48rem);
   overflow: hidden;
   isolation: isolate;
-  border-radius: var(--radius-card);
+  border-radius: 0;
   background: #101313;
   color: #fff;
 }
@@ -595,9 +596,10 @@
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  width: 100%;
+  width: calc(100% - (var(--home-feature-inset) * 2));
   max-width: 100%;
   min-width: 0;
+  margin-inline: auto;
   min-height: min(88svh, 44rem);
   overflow: hidden;
   isolation: isolate;
@@ -951,7 +953,7 @@
 @media (max-width: 639px) {
   .homeShell { --home-section-lead: calc(64px + var(--home-mark-band)); }
   .assortmentIntro h2 { font-size: clamp(2.75rem, 14vw, 4.5rem); }
-  .expertiseBanner { min-height: 38rem; border-radius: var(--radius-card); }
+  .expertiseBanner { min-height: 38rem; border-radius: 0; }
   .expertiseBanner::before {
     background: linear-gradient(90deg, rgba(5, 7, 7, .82), rgba(5, 7, 7, .34)), linear-gradient(0deg, rgba(5, 7, 7, .76), rgba(5, 7, 7, .08) 78%);
   }
