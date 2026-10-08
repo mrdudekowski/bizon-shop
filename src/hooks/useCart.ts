@@ -28,8 +28,17 @@ export function trackCartAddIfAllowed(kind: CartKind, item: RequestItemInput): b
 }
 
 export function useCart(kind: CartKind) {
-  const [items, setItems] = useState<RequestItemInput[]>([]);
-  const [open, setOpen] = useState(false);
+  const [cartState, setCartState] = useState(() => ({ kind, items: [] as RequestItemInput[] }));
+  const items = cartState.kind === kind ? cartState.items : readCart(kind);
+  const setItems = useCallback((next: RequestItemInput[]) => setCartState({ kind, items: next }), [kind]);
+  const [openState, setOpenState] = useState({ kind, open: false });
+  const open = openState.kind === kind && openState.open;
+  const setOpen = useCallback((next: boolean | ((previous: boolean) => boolean)) => {
+    setOpenState((previous) => ({
+      kind,
+      open: typeof next === "function" ? next(previous.kind === kind && previous.open) : next,
+    }));
+  }, [kind]);
 
   const refresh = useCallback(() => setItems(readCart(kind)), [kind]);
 

@@ -84,7 +84,9 @@ export function CartDrawer({
         <div className={styles.body}>
           <p className={styles.context}>{cartKind === "shop" ? "Заявка BIZON Shop" : "Заявка BIZON Tires"}</p>
           {items.length === 0 ? (
-            <p className={styles.empty}>Корзина пуста. Добавьте шины, конфигурацию дисков или товар.</p>
+            <p className={styles.empty}>{cartKind === "shop"
+              ? "Корзина пуста. Добавьте диски или товары BIZON Shop."
+              : "Корзина пуста. Добавьте шины."}</p>
           ) : (
             <ul className={styles.list}>
               {items.map((item) => {

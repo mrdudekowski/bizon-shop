@@ -112,6 +112,7 @@ type CartPageProps = {
 
 export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHref, successLabel }: CartPageProps) {
   const cart = useCart(kind);
+  const requestLabel = kind === "shop" ? "заявку BIZON Shop" : "заявку Bizon";
   const [clientType, setClientType] = useState<"individual" | "company">("individual");
   const [status, setStatus] = useState<SubmitStatus>("idle");
   const [message, setMessage] = useState("");
@@ -199,7 +200,7 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
           {shopItems.length > 0 && <CartItemsGroup title="Товары BIZON Shop" items={shopItems} onRemove={cart.removeItem} onQuantityChange={cart.setQuantity} />}
 
           <form className="card-base info-card form-card max-w-3xl" onSubmit={handleSubmit}>
-            <h2 className="info-card-title">Контакты для общей заявки</h2>
+            <h2 className="info-card-title">Контакты для {requestLabel}</h2>
             <p className="info-card-text">Специалист проверит совместимость, уточнит конфигурацию и только затем подтвердит стоимость.</p>
             <input type="text" name={HONEYPOT_FIELD} tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute left-[-9999px] h-0 w-0 opacity-0" />
             <div className={styles.checkoutGrid}>
@@ -239,7 +240,7 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
               </label>
             </div>
             <button className="btn-accent" type="submit" disabled={status === "loading"}>
-              {status === "loading" ? "Отправка…" : "Отправить общую заявку"}
+              {status === "loading" ? "Отправка…" : `Отправить ${requestLabel}`}
             </button>
             {message && <p className={`${styles.status} ${status === "error" ? styles.statusError : ""}`} role="status" aria-live="polite">{message}</p>}
           </form>
