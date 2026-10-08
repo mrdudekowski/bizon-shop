@@ -17,7 +17,7 @@ import {
 import { assertSchemaReady } from "./schemaReadiness";
 import { checkBackendReadiness } from "./readiness";
 import { createContentRevision, createRequestLogRecord } from "./requestTelemetry";
-import { deleteCartSession, readCartSession, saveCartSession } from "./cartSession";
+import { CART_SESSION_COOKIES, LEGACY_CART_SESSION_COOKIE, deleteCartSession, migratedCartToken, migrateCartSessions, parseCartKind, readCartSession, sanitizeTypedCartItems, saveCartSession } from "./cartSession";
 import { insertRequest, type StoredRequestInput } from "./insertRequest";
 import { AdminClientError } from "./admin/client/errors";
 import { LoginThrottle, type LoginAttemptTicket } from "./admin/server/loginThrottle";
@@ -53,7 +53,6 @@ import {
 /** Only used to turn a request path into a URL; the request never leaves this process. */
 const URL_BASE = "http://localhost";
 const PORT = Number.parseInt(process.env.PORT ?? "4000", 10);
-const CART_SESSION_COOKIE = "bizon-cart-session-v1";
 const CART_SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 const loginThrottle = new LoginThrottle();
 
@@ -86,10 +85,12 @@ async function readJson(req: http.IncomingMessage): Promise<unknown> {
   return readJsonRequestBody(req);
 }
 
-function createPgDatabase(connectionString: string): ReadDatabase & {
+type CartDatabase = ReadDatabase & {
   transaction<T>(run: (query: ReadDatabase["query"]) => Promise<T>): Promise<T>;
   withReadSnapshot<T>(run: (snapshot: ReadDatabase) => Promise<T>): Promise<T>;
-} {
+};
+
+function createPgDatabase(connectionString: string): CartDatabase {
   const pool = new pg.Pool({ connectionString });
 
   return {
@@ -137,7 +138,7 @@ function createPgDatabase(connectionString: string): ReadDatabase & {
   };
 }
 
-function requireDatabase(): ReadDatabase {
+function requireDatabase(): CartDatabase {
   const connectionString = process.env.DATABASE_URI;
   if (!connectionString) {
     throw new Error("DATABASE_URI is required for data routes");
@@ -145,9 +146,9 @@ function requireDatabase(): ReadDatabase {
   return createPgDatabase(connectionString);
 }
 
-let db: ReadDatabase | null = null;
+let db: CartDatabase | null = null;
 
-function getDatabase(): ReadDatabase {
+function getDatabase(): CartDatabase {
   if (!db) {
     db = requireDatabase();
   }
@@ -168,10 +169,10 @@ function isSecureRequest(req: http.IncomingMessage): boolean {
   return process.env.NODE_ENV === "production" || String(protocol ?? "").split(",")[0]?.trim() === "https";
 }
 
-function readCartCookie(header: string | undefined): string | null {
+function readCartCookie(header: string | undefined, name: string): string | null {
   for (const part of (header ?? "").split(";")) {
     const separator = part.indexOf("=");
-    if (separator < 0 || part.slice(0, separator).trim() !== CART_SESSION_COOKIE) continue;
+    if (separator < 0 || part.slice(0, separator).trim() !== name) continue;
     try {
       const token = decodeURIComponent(part.slice(separator + 1).trim());
       return token || null;
@@ -182,9 +183,9 @@ function readCartCookie(header: string | undefined): string | null {
   return null;
 }
 
-function cartCookie(token: string | null, secure: boolean): string {
+function cartCookie(name: string, token: string | null, secure: boolean): string {
   const attributes = [
-    `${CART_SESSION_COOKIE}=${token ?? ""}`,
+    `${name}=${token ?? ""}`,
     "Path=/",
     "HttpOnly",
     "SameSite=Lax",
@@ -193,7 +194,6 @@ function cartCookie(token: string | null, secure: boolean): string {
   if (secure) attributes.push("Secure");
   return attributes.join("; ");
 }
-
 function sessionOf(account: AuthenticatedAccount) {
   return { login: account.login, role: account.role, capabilities: account.capabilities };
 }
@@ -437,28 +437,39 @@ async function handleRequest(
   }
 
   if (path === "/v1/cart") {
-    let cartToken = readCartCookie(req.headers.cookie);
+    const kind = parseCartKind(url.searchParams.get("kind"));
+    if (!kind) {
+      sendJson(res, 400, { ok: false, code: "invalid_cart_kind" });
+      return;
+    }
+    const cookieName = CART_SESSION_COOKIES[kind];
+    let cartToken = readCartCookie(req.headers.cookie, cookieName);
     if (method === "GET" && !cartToken) {
       sendJson(res, 200, { ok: true, hasSession: false, items: [] });
       return;
     }
-    if (method === "PUT" && !cartToken) cartToken = randomBytes(32).toString("base64url");
     try {
       const database = getDatabase();
       if (method === "GET") {
         const items = await readCartSession(database, cartToken!);
-        sendJson(res, 200, { ok: true, hasSession: items != null, items: items ?? [] });
+        sendJson(res, 200, { ok: true, hasSession: items != null, items: sanitizeTypedCartItems(kind, items) });
         return;
       }
       if (method === "PUT") {
-        const body = (await readJson(req)) as { items?: unknown };
-        await saveCartSession(database, cartToken!, body.items);
-        sendJson(res, 200, { ok: true }, { "set-cookie": cartCookie(cartToken, isSecureRequest(req)) });
+        const body = await readJson(req);
+        if (!body || typeof body !== "object" || !Array.isArray((body as { items?: unknown }).items)) {
+          sendJson(res, 400, { ok: false, code: "invalid_cart_items" });
+          return;
+        }
+        if (!cartToken) cartToken = randomBytes(32).toString("base64url");
+        const items = sanitizeTypedCartItems(kind, (body as { items: unknown }).items);
+        await saveCartSession(database, cartToken, items);
+        sendJson(res, 200, { ok: true }, { "set-cookie": cartCookie(cookieName, cartToken, isSecureRequest(req)) });
         return;
       }
       if (method === "DELETE") {
         if (cartToken) await deleteCartSession(database, cartToken);
-        sendJson(res, 200, { ok: true }, { "set-cookie": cartCookie(null, isSecureRequest(req)) });
+        sendJson(res, 200, { ok: true }, { "set-cookie": cartCookie(cookieName, null, isSecureRequest(req)) });
         return;
       }
     } catch (error) {
@@ -470,6 +481,47 @@ async function handleRequest(
     }
   }
 
+  if (method === "POST" && path === "/v1/cart/migrate") {
+    try {
+      const rawBody = await readJson(req);
+      if (!rawBody || typeof rawBody !== "object" || Array.isArray(rawBody)) {
+        sendJson(res, 400, { ok: false, code: "invalid_cart_migration" });
+        return;
+      }
+      const body = rawBody as { legacyCookieItems?: unknown; legacyStorageItems?: unknown; typedBizonItems?: unknown; typedShopItems?: unknown };
+      if ((body.legacyCookieItems !== undefined && !Array.isArray(body.legacyCookieItems)) ||
+          (body.legacyStorageItems !== undefined && !Array.isArray(body.legacyStorageItems)) ||
+          (body.typedBizonItems !== undefined && !Array.isArray(body.typedBizonItems)) ||
+          (body.typedShopItems !== undefined && !Array.isArray(body.typedShopItems))) {
+        sendJson(res, 400, { ok: false, code: "invalid_cart_migration" });
+        return;
+      }
+      const legacyToken = readCartCookie(req.headers.cookie, LEGACY_CART_SESSION_COOKIE);
+      const bizonToken = readCartCookie(req.headers.cookie, CART_SESSION_COOKIES.bizon) ??
+        (legacyToken ? migratedCartToken(legacyToken, "bizon") : randomBytes(32).toString("base64url"));
+      const shopToken = readCartCookie(req.headers.cookie, CART_SESSION_COOKIES.shop) ??
+        (legacyToken ? migratedCartToken(legacyToken, "shop") : randomBytes(32).toString("base64url"));
+      const result = await migrateCartSessions(getDatabase(), {
+        legacyToken, bizonToken, shopToken,
+        legacyCookieItems: body.legacyCookieItems,
+        legacyStorageItems: body.legacyStorageItems,
+        typedBizonItems: body.typedBizonItems,
+        typedShopItems: body.typedShopItems,
+      });
+      res.setHeader("set-cookie", [
+        cartCookie(CART_SESSION_COOKIES.bizon, bizonToken, isSecureRequest(req)),
+        cartCookie(CART_SESSION_COOKIES.shop, shopToken, isSecureRequest(req)),
+        cartCookie(LEGACY_CART_SESSION_COOKIE, null, isSecureRequest(req)),
+      ]);
+      sendJson(res, 200, { ok: true, ...result });
+    } catch (error) {
+      sendJson(res, error instanceof RequestBodyTooLarge ? 413 : 500, {
+        ok: false,
+        code: error instanceof RequestBodyTooLarge ? "request_too_large" : "cart_migration_failed",
+      });
+    }
+    return;
+  }
   if (method === "POST" && path === "/v1/requests") {
     try {
       const rateLimit = checkRateLimit(`requests:${trustedClientAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"]?.toString())}`);
