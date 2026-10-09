@@ -3,11 +3,12 @@
   "version": "2.0.0",
   "description": "BIZON public site — Next.js 15 (main-app branch)",
   "scripts": {
-    "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev -p 3001",
-    "dev:clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && cross-env NODE_OPTIONS=--no-deprecation next dev",
+    "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev -p 3000",
+    "dev:clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && cross-env NODE_OPTIONS=--no-deprecation next dev -p 3000",
     "build": "cross-env NODE_OPTIONS=--no-deprecation node scripts/buildWithContentRevision.js",
+    "build:ci": "node scripts/ciBuildApiFixture.js",
     "test": "vitest run",
-    "test:e2e": "playwright test",
+    "test:e2e": "npm run build:ci && playwright test",
     "test:e2e:install": "playwright install chromium firefox webkit",
     "lint": "eslint src next.config.mjs",
     "typecheck": "tsc --noEmit"

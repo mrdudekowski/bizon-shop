@@ -18,7 +18,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: `node node_modules/next/dist/bin/next start -p ${port}`,
+    command: `python -m http.server ${port} --bind 127.0.0.1 --directory out`,
     url: `${baseURL}/shop`,
     reuseExistingServer,
     timeout: 120_000,

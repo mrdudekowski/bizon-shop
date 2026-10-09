@@ -4,6 +4,12 @@
   color: var(--color-foreground);
 }
 
+.catalogPage {
+  display: flow-root;
+  min-height: calc(100vh - var(--header-height));
+  min-height: calc(100svh - var(--header-height));
+}
+
 /* main already clears fixed chrome via --header-height; don't stack another hero pad */
 .catalogPage :global(.page-header),
 .modelPage :global(.page-header) {
@@ -32,6 +38,26 @@
   padding: 0 var(--page-gutter) var(--section-space);
 }
 
+.catalogPage .pageInner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  min-height: calc(100vh - var(--header-height));
+  min-height: calc(100svh - var(--header-height));
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .directionGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -39,18 +65,19 @@
   max-width: 100%;
   min-width: 0;
   gap: clamp(1rem, 2vw, 1.5rem);
-  margin-top: clamp(2rem, 5vw, 4rem);
+  margin-top: clamp(1rem, 2.5vw, 2rem);
 }
 
 .directionCard {
   position: relative;
+  container-type: inline-size;
   display: block;
   width: 100%;
   max-width: 100%;
   min-width: 0;
   overflow: hidden;
   aspect-ratio: 1.45 / 1;
-  min-height: 18rem;
+  min-height: clamp(18rem, 42svh, 36rem);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
@@ -68,50 +95,74 @@
 }
 
 .directionScrim {
-  background: rgb(0 0 0 / 48%);
+  background: rgb(0 0 0 / 52%);
+  opacity: 0.58;
+  transition: opacity 180ms ease-out;
 }
 
 .directionBody {
   display: flex;
   min-width: 0;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-end;
-  gap: clamp(0.65rem, 1.5vw, 1rem);
+  align-items: flex-end;
   padding: clamp(1.25rem, 3vw, 2.5rem);
 }
 
-.directionBody .eyebrow {
-  color: var(--color-on-dark-subtle);
+.directionTitle,
+.directionDetails {
+  position: absolute;
+  bottom: clamp(1.25rem, 3vw, 2.5rem);
 }
 
 .directionTitle {
+  left: clamp(1.25rem, 3vw, 2.5rem);
   margin: 0;
-  max-width: 22ch;
-  font-size: clamp(1.5rem, 3vw, var(--type-title));
+  font-size: clamp(2.75rem, 13cqi, 5rem);
   font-weight: var(--weight-display);
   letter-spacing: var(--tracking-display);
-  line-height: 1.05;
+  line-height: 0.95;
+  transform: translateX(calc((100cqi - 100%) / 2));
+  transition: transform 180ms ease-out;
   text-wrap: balance;
 }
 
+.directionDetails {
+  left: calc(clamp(1.25rem, 3vw, 2.5rem) + clamp(9rem, 36cqi, 14rem));
+  display: grid;
+  max-width: calc(100% - clamp(1.25rem, 3vw, 2.5rem) - clamp(9rem, 36cqi, 14rem) - 1rem);
+  min-width: 0;
+  gap: 0.55rem;
+  opacity: 0;
+  transform: translateX(0.5rem);
+  transition: opacity 180ms ease-out, transform 180ms ease-out;
+}
+
+.directionDetails .directionCount {
+  color: var(--color-on-dark-subtle);
+}
+
 .directionDescription {
-  max-width: 42ch;
+  max-width: 36ch;
   color: var(--color-on-dark-subtle);
   line-height: 1.5;
   text-wrap: pretty;
 }
 
-.directionLink {
-  display: inline-flex;
-  min-height: 44px;
-  max-width: 100%;
-  align-items: center;
-  gap: 0.4em;
-  color: var(--color-on-dark);
-  font-weight: 650;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
+@media (hover: hover) and (pointer: fine) {
+  .directionCard:hover .directionScrim,
+  .directionCard:focus-visible .directionScrim {
+    opacity: 1;
+  }
+
+  .directionCard:hover .directionTitle,
+  .directionCard:focus-visible .directionTitle {
+    transform: translateX(0);
+  }
+
+  .directionCard:hover .directionDetails,
+  .directionCard:focus-visible .directionDetails {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @media (min-width: 768px) {
@@ -123,6 +174,41 @@
 .directionCard:focus-visible {
   outline: var(--focus-outline);
   outline-offset: var(--focus-offset);
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 767px) {
+  .directionScrim { opacity: 1; }
+
+  .directionCard { min-height: 18rem; }
+
+  .directionBody {
+    align-items: flex-start;
+    justify-content: flex-end;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .directionTitle,
+  .directionDetails {
+    position: static;
+    max-width: 100%;
+    transform: none;
+  }
+
+  .directionTitle { font-size: clamp(2.75rem, 13vw, 4rem); }
+
+  .directionDetails {
+    gap: 0.45rem;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .directionScrim,
+  .directionTitle,
+  .directionDetails {
+    transition: none;
+  }
 }
 
 .filters {

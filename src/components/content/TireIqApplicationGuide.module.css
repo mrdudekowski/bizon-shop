@@ -125,6 +125,13 @@
   }
 }
 
+@media (min-width: 900px) and (max-width: 1199px) {
+  .group {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+}
+
 @media (max-width: 560px) {
   .group {
     grid-template-columns: minmax(0, 1fr);

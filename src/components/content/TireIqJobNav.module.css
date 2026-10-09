@@ -71,11 +71,13 @@
 }
 
 .title {
+  min-width: 0;
   font-family: var(--font-display);
-  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  font-size: clamp(1.2rem, 1.65vw, 1.5rem);
   font-weight: 650;
   line-height: 1.05;
   letter-spacing: var(--tracking-display);
+  text-wrap: balance;
   transition: color 180ms ease;
 }
 
@@ -94,7 +96,7 @@
 
 @media (min-width: 900px) {
   .list {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .item + .item {

@@ -203,4 +203,6 @@ Backend `/v1/content/revision` отвечает 503. Неверный taxonomy S
 
 **Операционный инцидент тестового прогона:** первый `build:ci` был запущен в основном checkout, пока на localhost:3000 работал Next dev с тем же `.next`. После конфликта dev вернул 500 и manifest стал неполным. Локальный dev восстановлен через `npm run dev:clean`; далее CI export проверен в temp checkout с отдельным `.next`. Текущий localhost root снова 200.
 
-**Остаток:** после commit/push подтвердить успешный Front deployment, что `/tire-iq/` и ссылка на статью с конечным `/` отображают нужные страницы, а public revision marker совпадает с backend. Extensionless URL без конечного `/` может по-прежнему попасть в SPA Fallback; это отдельное legacy URL поведение, если такие адреса нужно сохранять.
+**Остаток:** для проверенных CMS canonical routes не выявлен. Extensionless URL без конечного `/` отвечает HTTP 308 на slash-форму.
+
+**Результат проверки 2026-10-08:** Front был закреплён на старом `72452d1`, хотя исправление уже находилось в `main-app` на `b5440a5`. Выбрали актуальный коммит в настройках и запустили сборку; Timeweb показывает `Успешно b5440a5`. Публичная страница `/tire-iq/` отображает каталог, canonical ссылка открывает правильную статью; оба URL без завершающего `/` отвечают 308 на slash-форму. Публичный JSON marker имеет `Content-Type: application/json`, а его revision совпадает с `GET /v1/content/revision` backend: `sha256:32e5d88f84508b6523b69017baf0695973e2088fb88d9976a0cd52fb3918c075`. Фаза 8 завершена для CMS canonical routes.

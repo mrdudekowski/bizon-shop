@@ -43,7 +43,7 @@ test("Bizon and Shop headers, drawers, and cart pages show only their own lines"
   await expect(mainDrawer.getByText("Isolation tire")).toBeVisible();
   await expect(mainDrawer.getByText("Isolation wheel")).toHaveCount(0);
   await expect(mainDrawer.getByText("Isolation cap")).toHaveCount(0);
-  await expect(mainDrawer.getByRole("link", { name: "Перейти к заявке" })).toHaveAttribute("href", "/cart");
+  await expect(mainDrawer.getByRole("link", { name: "Перейти к заявке" })).toHaveAttribute("href", "/cart/");
   await page.keyboard.press("Escape");
   await expect(mainTrigger).toBeFocused();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(mainScroll);
@@ -60,7 +60,7 @@ test("Bizon and Shop headers, drawers, and cart pages show only their own lines"
   await expect(shopDrawer.getByText("Isolation tire")).toHaveCount(0);
   await expect(shopDrawer.getByText("Isolation wheel")).toBeVisible();
   await expect(shopDrawer.getByText("Isolation cap")).toBeVisible();
-  await expect(shopDrawer.getByRole("link", { name: "Перейти к заявке" })).toHaveAttribute("href", "/shop/cart");
+  await expect(shopDrawer.getByRole("link", { name: "Перейти к заявке" })).toHaveAttribute("href", "/shop/cart/");
   await page.keyboard.press("Escape");
   await expect(shopTrigger).toBeFocused();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(shopScroll);

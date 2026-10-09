@@ -72,6 +72,12 @@
   overflow-wrap: anywhere;
 }
 
+.copy h1[data-title-long="true"] {
+  max-width: 100%;
+  font-size: clamp(2.75rem, 4.5vw, 4.5rem);
+  overflow-wrap: normal;
+}
+
 .description {
   max-width: 40rem;
   margin: 0;

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { CmsWheelModel, CmsWheelVariant } from "@/lib/content/types";
 
 import styles from "./CatalogSpecsTable.module.css";
@@ -27,10 +26,7 @@ export function WheelVariantsTable({ variants }: WheelVariantsTableProps) {
       <section className={styles.section}>
         <h2 className={styles.title}>Технические параметры</h2>
         <p className={styles.empty}>
-          Размеры для этой модели скоро появятся.{" "}
-          <Link href="/contact" className="underline">
-            Запросить наличие и предложение
-          </Link>
+          Размеры для этой модели скоро появятся. Оставьте заявку выше — специалист поможет с подбором.
         </p>
       </section>
     );

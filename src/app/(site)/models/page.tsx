@@ -1,8 +1,6 @@
 import Link from "next/link";
 
 import { CatalogImage } from "@/components/catalog/CatalogImage";
-import { PageHeader } from "@/components/catalog/PageHeader";
-import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import styles from "@/components/catalog/TireCatalog.module.css";
 import { getPublishedTireCatalog } from "@/lib/content";
@@ -30,15 +28,16 @@ export default async function ModelsPage() {
   return (
     <div className={styles.catalogPage} data-main-chrome-tone="light">
       <div className={styles.pageInner}>
-        <PageHeader
-          title="Модели и размеры под вашу эксплуатацию"
-          description="Выберите тип техники и сценарий работы, чтобы перейти к подходящим моделям, осям и типоразмерам."
-          breadcrumbs={[{ href: "/", label: "Главная" }, { href: "/models", label: "Каталог" }]}
-        />
+        <h1 className={styles.visuallyHidden}>Каталог моделей шин</h1>
         {catalog.directions.length ? (
           <div className={styles.directionGrid}>
             {catalog.directions.map((direction) => (
-              <Link className={styles.directionCard} href={`/models/${direction.slug}`} key={direction.slug}>
+              <Link
+                className={styles.directionCard}
+                href={`/models/${direction.slug}`}
+                key={direction.slug}
+                aria-label={`${direction.name}. ${direction.shortDescription || direction.description}`}
+              >
                 <CatalogImage
                   src={direction.imageUrl}
                   fallbackKey={direction.slug}
@@ -48,13 +47,16 @@ export default async function ModelsPage() {
                 />
                 <span className={styles.directionScrim} aria-hidden="true" />
                 <span className={styles.directionBody}>
-                  <span className={styles.eyebrow}>
-                    {direction.models.length} {direction.models.length === 1 ? "модель" : direction.models.length > 1 && direction.models.length < 5 ? "модели" : "моделей"}
-                    {direction.models.length ? " · доступно к заказу" : null}
+                  <h2 className={styles.directionTitle}>
+                    {direction.slug.toUpperCase()}
+                  </h2>
+                  <span className={styles.directionDetails}>
+                    <span className={`${styles.eyebrow} ${styles.directionCount}`}>
+                      {direction.models.length} {direction.models.length === 1 ? "модель" : direction.models.length > 1 && direction.models.length < 5 ? "модели" : "моделей"}
+                      {direction.models.length ? " · доступно к заказу" : null}
+                    </span>
+                    <span className={styles.directionDescription}>{direction.shortDescription || direction.description}</span>
                   </span>
-                  <h2 className={styles.directionTitle}>{direction.name}</h2>
-                  <span className={styles.directionDescription}>{direction.shortDescription || direction.description}</span>
-                  <span className={styles.directionLink}>Посмотреть модели и размеры <SiteArrow direction="ne" /></span>
                 </span>
               </Link>
             ))}

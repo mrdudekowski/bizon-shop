@@ -29,7 +29,7 @@ describe("publishedClient", () => {
     expect(publishedApiEnabled()).toBe(true);
   });
 
-  it("joins CONTENT_API_URL and path with a single slash and uses cache no-store", async () => {
+  it("joins CONTENT_API_URL and path with a single slash and uses the static-build cache", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -42,7 +42,7 @@ describe("publishedClient", () => {
 
     expect(result).toEqual({ slug: "tbr" });
     expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:4000/v1/tires/types/tbr", {
-      cache: "no-store",
+      cache: "force-cache",
     });
   });
 

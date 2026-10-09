@@ -1,12 +1,9 @@
-import Link from "next/link";
-
-import { CatalogBuyPanel } from "@/components/catalog/CatalogBuyPanel";
+import { WheelOrderPanel } from "@/components/catalog/WheelOrderPanel";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { LexicalContent } from "@/components/content/LexicalContent";
 import { CatalogProductGallery } from "@/components/catalog/CatalogProductGallery";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { WheelVariantsTable } from "@/components/catalog/WheelVariantsTable";
-import { ForgedConfigurator } from "@/components/shop/ForgedConfigurator";
 import { getWheelConstructionMethodLabel } from "@/lib/content/wheelConstructionMethod";
 import type { CmsWheelModel, CmsWheelType, CmsWheelVariant } from "@/lib/content/types";
 
@@ -32,7 +29,6 @@ export function WheelModelStage({
   ].filter(
     (url, index, values): url is string => Boolean(url) && values.indexOf(url) === index,
   );
-  const contactHref = `/contact?subject=wheel-selection&model=${encodeURIComponent(model.slug)}`;
   const evidenceDocuments = (model.documents ?? []).filter(
     (document) => Boolean(document.url?.trim() && document.title?.trim()),
   );
@@ -62,8 +58,8 @@ export function WheelModelStage({
             <p className={styles.eyebrow}>{model.series || wheelType.name}</p>
             <LexicalContent data={model.descriptionLong || model.descriptionShort} />
             <p>
-              Выберите размер и конфигурацию, затем подтвердите совместимость с автомобилем
-              до заказа.
+              Укажите параметры диска. Специалист проверит совместимость и сообщит стоимость
+              до оформления заявки.
             </p>
             <dl className={styles.productFacts}>
               <div>
@@ -82,7 +78,7 @@ export function WheelModelStage({
               </div>
             </dl>
 
-            <CatalogBuyPanel
+            <WheelOrderPanel
               baseItem={{
                 itemType: "wheel",
                 itemId: model.id,
@@ -90,7 +86,6 @@ export function WheelModelStage({
                 slug: model.slug,
                 parentSlug: model.wheelTypeSlug,
                 url: modelPath,
-                quantity: 1,
                 priceOnRequest: true,
               }}
               variants={variants.map((variant) => ({
@@ -99,32 +94,24 @@ export function WheelModelStage({
                 price: variant.price,
                 priceOnRequest: variant.priceOnRequest,
               }))}
-              sizeLabel="Размер / параметры"
-              emptyVariantsMessage="Размеры скоро появятся — можно добавить модель в корзину или запросить подбор."
+              finish={model.series?.trim() || ""}
             />
 
             <p className={styles.disclaimer}>
               {model.fitmentNotes ||
-                "Параметры и документы помогают проверить конфигурацию. Совместимость с автомобилем и финальное предложение подтверждает специалист BIZON."}
+                "Технические параметры и документы помогают проверить конфигурацию. Финальную совместимость подтверждает специалист BIZON."}
             </p>
           </div>
         </section>
 
-        {wheelType.slug === "forged" ? (
-          <ForgedConfigurator
-            model={{
-              id: model.id,
-              slug: model.slug,
-              name: model.name,
-              finish: model.series?.trim() || "",
-            }}
-          />
-        ) : null}
-
         <WheelVariantsTable model={model} variants={variants} modelPath={modelPath} />
 
         {evidenceDocuments.length > 0 && (
-          <section className={styles.documents} aria-labelledby="wheel-documents-title" data-evidence-source="technical-documents">
+          <section
+            className={styles.documents}
+            aria-labelledby="wheel-documents-title"
+            data-evidence-source="technical-documents"
+          >
             <h2 id="wheel-documents-title">Технические подтверждения</h2>
             <div>
               {evidenceDocuments.map((document) => (
@@ -136,21 +123,6 @@ export function WheelModelStage({
             </div>
           </section>
         )}
-
-        <section className={styles.finalCta}>
-          <div>
-            <p className={styles.eyebrow}>Нужна консультация?</p>
-            <h2>Проверим совместимость с вашим автомобилем</h2>
-          </div>
-          <div className={styles.finalCtaActions}>
-            <Link className="btn-secondary" href={contactHref}>
-              Запросить наличие и предложение
-            </Link>
-            <Link className="btn-glass" href={typeBasePath}>
-              <SiteArrow direction="left" /> Все модели {wheelType.name}
-            </Link>
-          </div>
-        </section>
       </div>
     </div>
   );
