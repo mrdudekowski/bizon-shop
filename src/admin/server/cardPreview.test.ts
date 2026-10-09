@@ -1,24 +1,33 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
+import { unlinkStoredMediaReferences } from "../../storage/mediaReferences";
 
 const source = fs.readFileSync(new URL("./postgresAdmin.ts", import.meta.url), "utf8");
 
 describe("deleteAsset", () => {
-  it("checks published image foreign keys before delete", () => {
-    const start = source.indexOf("async deleteAsset");
-    const block = source.slice(start, source.indexOf("async listWheelTypes", start));
-    expect(block).toContain("tire_types.cover_image_id");
-    expect(block).toContain("shop_categories");
-    expect(block).toContain("products");
-    expect(block).toContain("pages");
-    expect(block).toContain("tire_iq_articles");
-    expect(block).not.toContain("people_stories");
-    expect(block).toContain("tire_models_rels");
-    expect(block).toContain("object_key");
-    expect(block).toContain("getObjectStore().delete");
-    expect(block).toContain("cms_drafts");
-    expect(block).toContain("cms_change_sets");
-    expect(block).toContain("FOR UPDATE");
+  it("clears every supported published media reference and gallery relation", async () => {
+    const statements: string[] = [];
+    await unlinkStoredMediaReferences(async (sql) => {
+      statements.push(sql);
+      return [];
+    }, "42");
+
+    for (const statement of [
+      "UPDATE tire_types SET cover_image_id = NULL WHERE cover_image_id = $1",
+      "UPDATE tire_models SET main_image_id = NULL WHERE main_image_id = $1",
+      "UPDATE wheel_types SET cover_image_id = NULL WHERE cover_image_id = $1",
+      "UPDATE wheel_models SET main_image_id = NULL WHERE main_image_id = $1",
+      "UPDATE shop_categories SET cover_image_id = NULL WHERE cover_image_id = $1",
+      "UPDATE shop_category_carousel SET image_id = NULL WHERE image_id = $1",
+      "UPDATE products SET main_image_id = NULL WHERE main_image_id = $1",
+      "UPDATE tire_iq_articles SET featured_image_id = NULL WHERE featured_image_id = $1",
+      "UPDATE pages_shop_catalog_tiles SET icon_media_id = NULL WHERE icon_media_id = $1",
+      "UPDATE pages_shop_catalog_tiles SET image_media_id = NULL WHERE image_media_id = $1",
+      "UPDATE pages_shop_catalog_tiles SET carousel_image_media_id = NULL WHERE carousel_image_media_id = $1",
+      "DELETE FROM tire_models_rels WHERE media_id = $1",
+      "DELETE FROM wheel_models_rels WHERE media_id = $1",
+      "DELETE FROM products_rels WHERE media_id = $1",
+    ]) expect(statements).toContain(statement);
   });
 });
 

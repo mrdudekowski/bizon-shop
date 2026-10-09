@@ -59,7 +59,7 @@ import { publishPackAtomically } from "./publishPackAtomically";
 import { getObjectStore } from "../../storage/objectStore";
 import type { ObjectStore } from "../../storage/objectStore";
 import { assertMediaUploadReady, MediaCleanupRequired, MediaRejected, uploadAndPersistMedia } from "../../storage/putMedia";
-import { hasMediaReference } from "../../storage/mediaReferences";
+import { hasMediaReference, unlinkStoredMediaReferences, removePendingMediaReplacement } from "../../storage/mediaReferences";
 import { collectPendingMediaReplacements } from "../domain/mediaReplacement";
 import { shopHomeChildRows, shopHomeParentValues } from "../shopHomeWrite";
 
@@ -1366,6 +1366,8 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
              UNION ALL SELECT 'Обложка страницы-заглушки: ' || "key" FROM pages WHERE stub_hero_image_id = $1
              UNION ALL SELECT 'Изображение карусели Shop на странице' FROM pages_shop_category_carousel WHERE desktop_image_id = $1 OR mobile_image_id = $1
              UNION ALL SELECT 'Изображение слайда транспорта на странице' FROM pages_shop_vehicles_slides WHERE image_id = $1
+             UNION ALL SELECT 'Элемент каталога Shop' FROM pages_shop_catalog_tiles WHERE icon_media_id = $1 OR image_media_id = $1 OR carousel_image_media_id = $1
+             UNION ALL SELECT 'Материал Tire IQ: ' || title FROM tire_iq_articles WHERE featured_image_id = $1
              UNION ALL SELECT 'Галерея шины: ' || tire_models.name FROM tire_models_rels JOIN tire_models ON tire_models.id = tire_models_rels.parent_id WHERE media_id = $1
              UNION ALL SELECT 'Галерея дисков: ' || wheel_models.name FROM wheel_models_rels JOIN wheel_models ON wheel_models.id = wheel_models_rels.parent_id WHERE media_id = $1
              UNION ALL SELECT 'Галерея товара Shop: ' || products.name FROM products_rels JOIN products ON products.id = products_rels.parent_id WHERE media_id = $1
@@ -1392,40 +1394,18 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
     },
     async deleteAsset(id) {
       requirePermission("delete");
+      await query("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE");
       const mediaRows = await query("SELECT object_key, filename, title, mime_type FROM media WHERE id = $1 FOR UPDATE", [Number(id)]);
       if (mediaRows.length === 0) return;
       const objectKey = str(mediaRows[0].object_key);
       if (!objectKey) throw new AdminClientError("media_storage_key_missing");
-      const pendingReplacement = await query("SELECT 1 FROM cms_media_replacements WHERE target_media_id = $1 LIMIT 1", [Number(id)]);
-      if (pendingReplacement.length > 0) throw new AdminClientError("media_in_use");
-      const used = await query(
-        // Project a uniform literal: related record IDs are mixed integer/varchar types.
-        `SELECT 1 FROM tire_types WHERE tire_types.cover_image_id = $1
-         UNION ALL SELECT 1 FROM tire_models WHERE main_image_id = $1
-         UNION ALL SELECT 1 FROM wheel_types WHERE cover_image_id = $1
-         UNION ALL SELECT 1 FROM wheel_models WHERE main_image_id = $1
-         UNION ALL SELECT 1 FROM shop_categories WHERE cover_image_id = $1
-         UNION ALL SELECT 1 FROM shop_category_carousel WHERE image_id = $1
-         UNION ALL SELECT 1 FROM products WHERE main_image_id = $1
-         UNION ALL SELECT 1 FROM pages WHERE home_hero_image_id = $1 OR home_selection_entry_image_id = $1 OR home_shop_campaign_image_id = $1 OR shop_hero_image_id = $1 OR stub_hero_image_id = $1
-         UNION ALL SELECT 1 FROM pages_shop_category_carousel WHERE desktop_image_id = $1 OR mobile_image_id = $1
-         UNION ALL SELECT 1 FROM pages_shop_vehicles_slides WHERE image_id = $1
-         UNION ALL SELECT 1 FROM tire_iq_articles WHERE featured_image_id = $1
-         UNION ALL SELECT 1 FROM tire_models_rels WHERE media_id = $1
-         UNION ALL SELECT 1 FROM wheel_models_rels WHERE media_id = $1
-         UNION ALL SELECT 1 FROM products_rels WHERE media_id = $1
-         LIMIT 1`,
-        [Number(id)],
+      await removePendingMediaReplacement(
+        query,
+        id,
+        afterTransactionCommit,
+        async (key) => getObjectStore().delete({ key }),
       );
-      if (used.length > 0) throw new AdminClientError("media_in_use");
-      const drafts = await query("SELECT draft FROM cms_drafts FOR SHARE");
-      const changeSets = await query("SELECT pack FROM cms_change_sets FOR SHARE");
-      if (
-        drafts.some((row) => hasMediaReference(row.draft, id)) ||
-        changeSets.some((row) => hasMediaReference(row.pack, id))
-      ) {
-        throw new AdminClientError("media_in_use");
-      }
+      await unlinkStoredMediaReferences(query, id);
       await query(
         `INSERT INTO cms_media_cleanup (object_key, reason)
          VALUES ($1, 'media_delete_requested')

@@ -1,50 +1,45 @@
-# backend-app
+# BIZON backend API
 
-HTTP read API for published BIZON catalog content. Listens on `http://127.0.0.1:4000`.
+The backend is the single application boundary for PostgreSQL. It serves the CMS admin API, public published-content read API, media operations, request intake and cart persistence. Development listens on `127.0.0.1:4000` and `::1:4000`; production listens on `0.0.0.0` at `PORT` or `4000`.
 
-## Run
+## Run locally
 
-```bash
+```powershell
 npm install
-cp .env.example .env   # then fill in DATABASE_URI
+Copy-Item .env.example .env
+# Set DATABASE_URI and any required CMS/S3 settings in .env.
+npm run db:migrate
 npm run dev
 ```
 
-`DATABASE_URI` is required for data routes (`/v1/...`). There is no default connection string.
-The dev script reads it from `.env`, so the server does not depend on what the shell happens to export.
+Migrations are explicit. The server checks the migration ledger and does not apply schema DDL at startup. Run migrations only against the intended database.
 
-`GET /health` answers `{ "ok": true }` without contacting the database.
+The migrations in this repository are additive: they assume the existing BIZON core tables, including `users`, `media`, and `products`. Docker Compose starts an empty PostgreSQL database and does not create or import that baseline schema. A canonical baseline-schema provisioning or restore procedure is not included here, so a fresh empty database is not ready for `npm run db:migrate` by itself.
 
 ## Routes
 
-- `GET /health`
-- `GET /v1/tires/types`
-- `GET /v1/tires/types/:slug`
-- `GET /v1/tires/types/:slug/models`
-- `GET /v1/tires/models/:typeSlug/:modelSlug`
-- `GET /v1/tires/models/:id/variants`
-- `GET /v1/pages/home`
-- `GET /v1/articles`
-- `GET /v1/articles/:slug`
-- `GET /v1/pages/:key` for about, contact, warranty, branding, become-a-supplier, privacy-policy, shop-delivery-returns
-- `GET /v1/wheels/types`
-- `GET /v1/wheels/types/:slug`
-- `GET /v1/wheels/types/:slug/models`
-- `GET /v1/wheels/types/:slug/variants`
-- `GET /v1/wheels/models/:typeSlug/:modelSlug`
-- `GET /v1/wheels/models/:id/variants`
-- `GET /v1/shop/categories`
-- `GET /v1/shop/categories/:slug`
-- `GET /v1/shop/products` (`?category=` filters by category slug)
-- `GET /v1/shop/products/:slug`
-- `POST /v1/admin` JSON `{ method, args }` — the only catalog writer. Same `AdminClient` methods and error codes as the CMS. Browser calls from `localhost` / `127.0.0.1` are allowed.
-- `POST /v1/requests` stores one normalized lead.
-- `GET` / `PUT` / `DELETE /v1/cart` with header `x-cart-token`. The site keeps the opaque `bizon-cart-session-v1` cookie and stores only its hash.
+- `GET /health` — process liveness; does not contact PostgreSQL.
+- `GET /ready` — database connectivity and schema readiness.
+- `POST /v1/admin/auth/login`, `GET /v1/admin/auth/session`, `POST /v1/admin/auth/logout` — CMS session lifecycle.
+- `POST /v1/admin` — authenticated CMS operation dispatch using `{ method, args }`.
+- `POST /v1/admin/assets`, `PUT /v1/admin/assets/:id`, `DELETE /v1/admin/assets/:id/replacement` — media upload/replacement operations.
+- `POST /v1/admin/site-deploy/retry` — retry the public static-site deploy request.
+- `GET /v1/content/revision` — read a stable digest of all published data used by static pages.
+- `GET /v1/tires/*`, `GET /v1/wheels/*`, `GET /v1/shop/*`, `GET /v1/pages/*`, `GET /v1/articles*` — published read API.
+- `POST /v1/requests` — validated lead submission. The Bizon site and BIZON Shop send separate requests (`sourceForm: tire_cart` and `sourceForm: shop_cart`) while using the same contact fields.
+- `GET`, `PUT`, `DELETE /v1/cart?kind=bizon|shop` — isolated cart sessions. Bizon and Shop use separate `HttpOnly` cookies (`bizon-site-cart-session-v1` and `bizon-shop-cart-session-v1`); the database stores only token hashes.
+- `POST /v1/cart/migrate` — splits a legacy mixed cart into the two typed sessions while preserving unmapped items for recovery.
 
-Unknown slug → `404` `{ "ok": false }`. Database error → `500` `{ "ok": false }` (no SQL text, no connection string).
+Browser origins for public routes are configured by `CORS_ALLOWED_ORIGINS`. CMS admin routes use the separate `CMS_ALLOWED_ORIGINS` list. Production must set both lists to the exact intended origins; the development defaults allow the public site on port `3000` and the CMS on port `3001` for their separate route groups.
 
-## Test
+For static-site freshness checks, set backend `PUBLIC_SITE_URL` to the HTTPS origin serving the public export. After Timeweb reports deployment success, the backend compares the exported `content-revision.json` against the digest captured after the CMS publication.
 
-```bash
-npx vitest run
+Unknown routes and slugs return 404. Database failures return generic errors without SQL text or connection details. The API emits request IDs and structured request logs.
+
+## Checks
+
+```powershell
+npm run typecheck
+npm test
 ```
+
