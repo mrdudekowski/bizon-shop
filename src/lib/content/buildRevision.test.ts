@@ -44,7 +44,7 @@ describe("static build revision guard", () => {
     const runBuild = vi.fn().mockResolvedValue(undefined);
     const writeMarker = vi.fn().mockResolvedValue(undefined);
 
-    await runStableRevisionBuild({ fetchRevision, runBuild, writeMarker });
+    await runStableRevisionBuild({ fetchRevision, runBuild, runSnapshot: undefined, writeMarker });
 
     expect(fetchRevision).toHaveBeenCalledTimes(2);
     expect(runBuild).toHaveBeenCalledOnce();
@@ -58,6 +58,7 @@ describe("static build revision guard", () => {
     await expect(runStableRevisionBuild({
       fetchRevision,
       runBuild: vi.fn().mockResolvedValue(undefined),
+      runSnapshot: undefined,
       writeMarker,
     })).rejects.toThrow("Published content changed during the static build");
 
@@ -70,6 +71,7 @@ describe("static build revision guard", () => {
     await expect(runStableRevisionBuild({
       fetchRevision: vi.fn().mockResolvedValue(before),
       runBuild: vi.fn().mockRejectedValue(new Error("build failed")),
+      runSnapshot: undefined,
       writeMarker,
     })).rejects.toThrow("build failed");
 
