@@ -21,6 +21,10 @@ export type PublishedContentRevision = {
   revision: `sha256:${string}`;
 };
 
+export type PublishedContentSnapshot = PublishedContentRevision & {
+  content: unknown;
+};
+
 export function publishedContentFailureDetails(error: unknown): { errorClass: string; databaseCode?: string } {
   if (error == null || typeof error !== "object") return { errorClass: "unknown" };
   const candidate = error as { name?: unknown; code?: unknown };
@@ -60,7 +64,7 @@ async function readPublishedSnapshot(db: ReadDatabase): Promise<unknown> {
   return {
     home,
     shopHome,
-    stubs,
+    stubs: Object.fromEntries(stubs),
     articles,
     tires: { types: tireTypes, models: tireModels },
     wheels: { types: wheelTypes, byType: wheelModels },
@@ -77,9 +81,14 @@ function canonicalJson(value: unknown): string {
   return JSON.stringify(value) ?? "null";
 }
 
-export async function readPublishedContentRevision(db: ReadDatabase): Promise<PublishedContentRevision> {
+export async function readPublishedContentSnapshot(db: ReadDatabase): Promise<PublishedContentSnapshot> {
   if (!db.withReadSnapshot) throw new Error("A repeatable-read database snapshot is required");
-  const snapshot = await db.withReadSnapshot(readPublishedSnapshot);
-  const digest = createHash("sha256").update(canonicalJson(snapshot)).digest("hex");
-  return { schema: 1, revision: `sha256:${digest}` };
+  const content = await db.withReadSnapshot(readPublishedSnapshot);
+  const digest = createHash("sha256").update(canonicalJson(content)).digest("hex");
+  return { schema: 1, revision: `sha256:${digest}`, content };
+}
+
+export async function readPublishedContentRevision(db: ReadDatabase): Promise<PublishedContentRevision> {
+  const { schema, revision } = await readPublishedContentSnapshot(db);
+  return { schema, revision };
 }

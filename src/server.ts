@@ -28,7 +28,7 @@ import { normalizeRequest } from "./requests/normalizeRequest";
 import { parseRequestBody, validateRequest } from "./requests/validateRequest";
 import { checkRateLimit, trustedClientAddress } from "./security/rateLimit";
 import { getStaticSiteDeployStatus, isSiteAffectingPublicationMethod, triggerStaticSiteDeploy } from "./deploy/timewebApps";
-import { publishedContentFailureDetails, readPublishedContentRevision } from "./contentRevision";
+import { publishedContentFailureDetails, readPublishedContentRevision, readPublishedContentSnapshot } from "./contentRevision";
 import {
   readArticleBySlug,
   readArticles,
@@ -601,6 +601,29 @@ async function handleRequest(
       } catch (error) {
         console.error(JSON.stringify({
           event: "published_content.revision_failed",
+          ...publishedContentFailureDetails(error),
+        }));
+        sendJson(res, 503, { ok: false, code: "published_content_unavailable" }, { "cache-control": "no-store" });
+      }
+      return;
+    }
+
+    if (path === "/v1/content/snapshot") {
+      const address = trustedClientAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"]?.toString());
+      const limit = checkRateLimit(`content-snapshot:${address}`);
+      if (!limit.allowed) {
+        sendJson(res, 429, { ok: false }, {
+          "cache-control": "no-store",
+          "retry-after": String(limit.retryAfterSeconds),
+        });
+        return;
+      }
+      try {
+        const snapshot = await readPublishedContentSnapshot(database);
+        sendJson(res, 200, snapshot, { "cache-control": "no-store" });
+      } catch (error) {
+        console.error(JSON.stringify({
+          event: "published_content.snapshot_failed",
           ...publishedContentFailureDetails(error),
         }));
         sendJson(res, 503, { ok: false, code: "published_content_unavailable" }, { "cache-control": "no-store" });

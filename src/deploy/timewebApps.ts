@@ -140,15 +140,39 @@ async function verifyPublicContentRevision(expectedRevision: string): Promise<"m
       headers: { "cache-control": "no-cache", pragma: "no-cache" },
       signal: AbortSignal.timeout(10_000),
     });
-    if (!response.ok) return "unavailable";
+    if (!response.ok || !isJsonResponse(response)) return "unavailable";
     const marker: unknown = await response.json();
     if (!isRecord(marker) || marker.schema !== 1 || typeof marker.revision !== "string" || !/^sha256:[a-f0-9]{64}$/.test(marker.revision)) {
       return "unavailable";
     }
-    return marker.revision === expectedRevision ? "matches" : "mismatch";
+    if (marker.revision !== expectedRevision) return "mismatch";
+
+    const manifestUrl = new URL("/media-manifest.json", siteUrl);
+    manifestUrl.searchParams.set("expected", expectedRevision.slice("sha256:".length));
+    const manifestResponse = await fetch(manifestUrl, {
+      cache: "no-store",
+      redirect: "error",
+      headers: { "cache-control": "no-cache", pragma: "no-cache" },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!manifestResponse.ok || !isJsonResponse(manifestResponse)) return "unavailable";
+
+    const manifest: unknown = await manifestResponse.json();
+    if (!isRecord(manifest)
+      || manifest.schema !== 1
+      || typeof manifest.revision !== "string"
+      || !/^sha256:[a-f0-9]{64}$/.test(manifest.revision)
+      || !Array.isArray(manifest.files)) {
+      return "unavailable";
+    }
+    return manifest.revision === expectedRevision ? "matches" : "mismatch";
   } catch {
     return "unavailable";
   }
+}
+
+function isJsonResponse(response: Response): boolean {
+  return response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase() === "application/json";
 }
 
 export async function getStaticSiteDeployStatus(
