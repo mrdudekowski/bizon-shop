@@ -1,13 +1,11 @@
-"use client";
-
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { PageHero, type PageHeroBreadcrumb } from "@/components/content/PageHero";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { getTireIqTaxonomyLabel } from "@/lib/content/tireIqTaxonomy";
+import { EditorialListingFilterController } from "@/components/content/EditorialListingFilterController";
 
 import styles from "./EditorialListing.module.css";
 
@@ -44,16 +42,11 @@ export function EditorialListing({
   beforeContent,
   activeTopic,
 }: EditorialListingProps) {
-  const searchParams = useSearchParams();
   const taxonomy = Array.from(new Set(items.flatMap((item) => item.taxonomy ?? [])));
-  const queryTopic = searchParams.get("topic");
-  const selectedTopic = taxonomy.includes(queryTopic ?? "") ? queryTopic : activeTopic;
-  const visibleItems = selectedTopic
-    ? items.filter((item) => item.taxonomy?.includes(selectedTopic))
-    : items;
 
   return (
-    <div data-main-chrome-tone="light">
+    <div data-main-chrome-tone="light" data-editorial-listing>
+      <Suspense fallback={null}><EditorialListingFilterController activeTopic={activeTopic} /></Suspense>
       <PageHero
         kicker={kicker}
         title={title}
@@ -66,18 +59,20 @@ export function EditorialListing({
           <nav className={styles.taxonomy} aria-label="Темы Tire IQ">
             <span className={styles.taxonomyLabel}>Темы</span>
             <Link
-              className={!selectedTopic ? styles.taxonomyLinkActive : styles.taxonomyLink}
+              data-topic-filter=""
+              className={!activeTopic ? styles.taxonomyLinkActive : styles.taxonomyLink}
               href="/tire-iq#knowledge"
-              aria-current={!selectedTopic ? "page" : undefined}
+              aria-current={!activeTopic ? "page" : undefined}
             >
               Все темы
             </Link>
             {taxonomy.map((topic) => (
               <Link
                 key={topic}
-                className={topic === selectedTopic ? styles.taxonomyLinkActive : styles.taxonomyLink}
+                data-topic-filter={topic}
+                className={topic === activeTopic ? styles.taxonomyLinkActive : styles.taxonomyLink}
                 href={`/tire-iq?topic=${encodeURIComponent(topic)}#knowledge`}
-                aria-current={topic === selectedTopic ? "page" : undefined}
+                aria-current={topic === activeTopic ? "page" : undefined}
               >
                 {getTireIqTaxonomyLabel(topic)}
               </Link>
@@ -88,13 +83,14 @@ export function EditorialListing({
           <h2 id="knowledge-heading" className={styles.sectionTitle}>
             База знаний
           </h2>
-        {visibleItems.length > 0 ? (
+        {items.length > 0 ? (
           <div className={styles.grid}>
-            {visibleItems.map((item, index) => (
+            {items.map((item, index) => (
               <article
                 key={item.key}
                 className={index === 0 ? styles.featured : styles.card}
                 data-editorial-card
+                data-taxonomy={JSON.stringify(item.taxonomy ?? [])}
               >
                 <Link href={item.href} className={styles.media}>
                   <CatalogImage
@@ -125,13 +121,14 @@ export function EditorialListing({
         ) : (
           <div className={styles.empty}>
             <p className={styles.meta}>База знаний готовится</p>
-            <h2>{selectedTopic ? "По выбранной теме материалов пока нет." : emptyMessage}</h2>
+            <h2>{emptyMessage}</h2>
             <p>Пока опубликованных материалов нет. Передайте задачу специалисту, чтобы получить следующий практический шаг.</p>
             <Link className="btn-accent" href="/contact">
               Передать задачу специалисту
             </Link>
           </div>
         )}
+        {items.length > 0 ? <p hidden data-editorial-no-results>По выбранной теме материалов пока нет.</p> : null}
         </section>
       </div>
     </div>

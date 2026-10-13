@@ -139,10 +139,26 @@ const CONTENT_REVISION = {
   revision: `sha256:${"0".repeat(64)}`,
 };
 
+const CONTENT_SNAPSHOT = {
+  ...CONTENT_REVISION,
+  content: {
+    home: { hero: {} },
+    shopHome: { hero: {} },
+    stubs: Object.fromEntries([...PAGE_KEYS]
+      .filter((key) => key !== "home" && key !== "shop-home")
+      .map((key) => [key, { hero: {} }])),
+    articles: [ARTICLE],
+    tires: { types: [TIRE_TYPE], models: [{ model: TIRE_MODEL, variants: [TIRE_VARIANT] }] },
+    wheels: { types: [WHEEL_TYPE], byType: [{ models: [WHEEL_MODEL], variants: [WHEEL_VARIANT] }] },
+    shop: { categories: [SHOP_CATEGORY], products: [SHOP_PRODUCT] },
+  },
+};
+
 const json = (body, status = 200) => ({ status, body });
 
 export function responseForBuildApiPath(pathname) {
   if (pathname === "/v1/content/revision") return json(CONTENT_REVISION);
+  if (pathname === "/v1/content/snapshot") return json(CONTENT_SNAPSHOT);
   if (pathname === "/v1/tires/types") return json([TIRE_TYPE]);
   if (pathname === `/v1/tires/types/${TIRE_TYPE.slug}`) return json(TIRE_TYPE);
   if (pathname === `/v1/tires/types/${TIRE_TYPE.slug}/models`) return json([TIRE_MODEL]);
@@ -207,6 +223,7 @@ async function runBuildWithFixture() {
       ...process.env,
       CONTENT_API_URL: url,
       NEXT_PUBLIC_API_URL: url,
+      NEXT_PUBLIC_SITE_URL: "https://bizon-ci-fixture.invalid",
     },
   });
 

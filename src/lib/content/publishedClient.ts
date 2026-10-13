@@ -1,5 +1,8 @@
 /** HTTP client for backend-app published content. No database access. */
 
+import { readFile } from "node:fs/promises";
+import { isPublishedContentSnapshot, resolvePublishedSnapshotResponse, type PublishedContentSnapshot } from "./publishedSnapshot";
+
 export type PublishedFetchResult<T> =
   | { kind: "ok"; data: T; status: number; requestId: string | null; durationMs: number }
   | { kind: "not_found" }
@@ -80,8 +83,48 @@ function responseRequestId(response: Response): string | null {
   return response.headers?.get?.("x-request-id") ?? null;
 }
 
+let cachedSnapshotPath: string | null = null;
+let cachedSnapshot: Promise<PublishedContentSnapshot> | null = null;
+
+async function readBuildSnapshot(path: string): Promise<PublishedContentSnapshot> {
+  if (cachedSnapshotPath !== path || !cachedSnapshot) {
+    cachedSnapshotPath = path;
+    cachedSnapshot = readFile(path, "utf8").then((source) => {
+      const payload: unknown = JSON.parse(source);
+      if (!isPublishedContentSnapshot(payload)) throw new Error("Invalid published content snapshot file");
+      return payload;
+    });
+  }
+  return cachedSnapshot;
+}
+
+async function fetchFromBuildSnapshot(path: string): Promise<PublishedFetchResult<unknown>> {
+  const snapshotPath = process.env.CONTENT_SNAPSHOT_FILE?.trim();
+  if (!snapshotPath) return { kind: "disabled" };
+  const startedAt = Date.now();
+  try {
+    const snapshot = await readBuildSnapshot(snapshotPath);
+    const response = resolvePublishedSnapshotResponse(snapshot, path);
+    if (response.status === 404) return { kind: "not_found" };
+    return {
+      kind: "ok",
+      data: response.body,
+      status: 200,
+      requestId: null,
+      durationMs: Date.now() - startedAt,
+    };
+  } catch {
+    logPublishedFailure(path, "invalid_snapshot", null, null, Date.now() - startedAt);
+    return { kind: "invalid_payload" };
+  }
+}
+
 export async function fetchPublishedResult<T>(path: string): Promise<PublishedFetchResult<T>> {
   if (!publishedApiEnabled()) return { kind: "disabled" };
+
+  if (process.env.CONTENT_SNAPSHOT_FILE?.trim()) {
+    return await fetchFromBuildSnapshot(path) as PublishedFetchResult<T>;
+  }
 
   let response: Response;
   const startedAt = Date.now();

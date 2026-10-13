@@ -70,6 +70,82 @@ describe("static media snapshot", () => {
 
     await expect(readFile(path.join(outDir, "media-manifest.json"))).rejects.toMatchObject({ code: "ENOENT" });
   });
+
+  it("reuses only the checksum-verified prior copy of the same source URL when S3 is unavailable", async () => {
+    const root = await temporaryDirectory();
+    const outDir = path.join(root, "new-output");
+    const previousOutputDir = path.join(root, "previous-output");
+    const sourceUrl = "https://media.example/bucket/bizon/media/wheel.png";
+    const body = Buffer.concat([
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+      Buffer.from("last verified wheel image"),
+    ]);
+    const checksum = createHash("sha256").update(body).digest("hex");
+    const localPath = `/snapshot-media/${checksum}.png`;
+    await mkdir(path.join(outDir), { recursive: true });
+    await mkdir(path.join(previousOutputDir, "snapshot-media"), { recursive: true });
+    await writeFile(path.join(outDir, "index.html"), `<img src="${sourceUrl}" alt="Wheel">`);
+    await writeFile(path.join(previousOutputDir, localPath.slice(1)), body);
+    await writeFile(path.join(previousOutputDir, "media-manifest.json"), JSON.stringify({
+      schema: 1,
+      revision: `sha256:${"b".repeat(64)}`,
+      files: [{
+        sourceKey: "bizon/media/wheel.png",
+        sourceUrl,
+        path: localPath,
+        mimeType: "image/png",
+        byteSize: body.length,
+        sha256: checksum,
+      }],
+    }));
+    const fetchImpl = vi.fn().mockRejectedValue(new TypeError("S3 unavailable"));
+
+    await createMediaSnapshot({
+      outDir,
+      previousOutputDir,
+      revision,
+      publicMediaUrl: "https://media.example/bucket",
+      fetchImpl,
+    });
+
+    const manifest = JSON.parse(await readFile(path.join(outDir, "media-manifest.json"), "utf8"));
+    expect(manifest.files).toMatchObject([{
+      sourceUrl,
+      path: localPath,
+      sha256: checksum,
+      reusedFromPreviousRelease: true,
+    }]);
+    expect(await readFile(path.join(outDir, localPath.slice(1)))).toEqual(body);
+    expect(await readFile(path.join(outDir, "index.html"), "utf8")).toContain(localPath);
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it("does not reuse a previous file for a different source URL", async () => {
+    const root = await temporaryDirectory();
+    const outDir = path.join(root, "new-output");
+    const previousOutputDir = path.join(root, "previous-output");
+    const oldUrl = "https://media.example/bucket/bizon/media/old.png";
+    const newUrl = "https://media.example/bucket/bizon/media/new.png";
+    const body = Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), Buffer.from("old image")]);
+    const checksum = createHash("sha256").update(body).digest("hex");
+    const localPath = `/snapshot-media/${checksum}.png`;
+    await mkdir(outDir, { recursive: true });
+    await mkdir(path.join(previousOutputDir, "snapshot-media"), { recursive: true });
+    await writeFile(path.join(outDir, "index.html"), `<img src="${newUrl}">`);
+    await writeFile(path.join(previousOutputDir, localPath.slice(1)), body);
+    await writeFile(path.join(previousOutputDir, "media-manifest.json"), JSON.stringify({
+      schema: 1,
+      files: [{ sourceUrl: oldUrl, path: localPath, mimeType: "image/png", byteSize: body.length, sha256: checksum }],
+    }));
+
+    await expect(createMediaSnapshot({
+      outDir,
+      previousOutputDir,
+      revision,
+      publicMediaUrl: "https://media.example/bucket",
+      fetchImpl: vi.fn().mockRejectedValue(new TypeError("S3 unavailable")),
+    })).rejects.toThrow("S3 unavailable");
+  });
 });
 
 describe("atomic static build output", () => {

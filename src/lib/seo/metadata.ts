@@ -7,7 +7,13 @@ const DEFAULT_DESCRIPTION =
   "Премиальная большегрузная резина BIZON — магистральные, карьерные и внедорожные решения для тяжёлой техники.";
 
 function getSiteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://bizontires.example";
+  return process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "") ?? "https://bizontires.example";
+}
+
+function canonicalUrl(siteUrl: string, path: string): string {
+  const route = new URL(path.startsWith("/") ? path : `/${path}`, `${siteUrl}/`);
+  route.pathname = route.pathname.endsWith("/") ? route.pathname : `${route.pathname}/`;
+  return route.href;
 }
 
 export type PageMetadataInput = {
@@ -26,7 +32,7 @@ export function createPageMetadata({
   noIndex = false,
 }: PageMetadataInput = {}): Metadata {
   const siteUrl = getSiteUrl();
-  const url = `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
+  const url = canonicalUrl(siteUrl, path);
   const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} — Премиальная большегрузная резина`;
   const ogImage = image ?? `${siteUrl}${PUBLIC_OG_IMAGE}`;
 

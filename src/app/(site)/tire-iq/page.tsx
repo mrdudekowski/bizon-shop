@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { EditorialListing } from "@/components/content/EditorialListing";
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { TireIqApplicationGuide } from "@/components/content/TireIqApplicationGuide";
@@ -32,7 +31,7 @@ export default async function TireIQPage() {
   const hasKnowledge = articles.length > 0;
 
   return (
-    <Suspense fallback={null}><EditorialListing
+    <EditorialListing
       kicker="Инженерные решения для подбора и эксплуатации"
       title="Tire IQ"
       description="Методики подбора, диагностики и эксплуатации шин для fleet-операторов и технических специалистов."
@@ -61,6 +60,6 @@ export default async function TireIQPage() {
         fallbackKey: article.slug,
       }))}
       emptyMessage="Опубликованных статей Tire IQ пока нет."
-    /></Suspense>
+    />
   );
 }

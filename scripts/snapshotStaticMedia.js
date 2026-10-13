@@ -113,12 +113,63 @@ async function downloadMedia(sourceUrl, { fetchImpl, maxBytes }) {
   return { body, mimeType, sha256: sha256(body) };
 }
 
+async function readPreviousMediaManifest(previousOutputDir, previousManifest) {
+  if (previousManifest?.schema === 1 && Array.isArray(previousManifest.files)) {
+    return new Map(previousManifest.files
+      .filter((file) => typeof file?.sourceUrl === "string")
+      .map((file) => [file.sourceUrl, file]));
+  }
+  if (!previousOutputDir) return new Map();
+  try {
+    const parsed = JSON.parse(await readFile(path.join(previousOutputDir, "media-manifest.json"), "utf8"));
+    if (parsed?.schema !== 1 || !Array.isArray(parsed.files)) return new Map();
+    return new Map(parsed.files
+      .filter((file) => typeof file?.sourceUrl === "string")
+      .map((file) => [file.sourceUrl, file]));
+  } catch {
+    return new Map();
+  }
+}
+
+async function reusePreviousMedia(sourceUrl, previousOutputDir, previousFiles, maxBytes, fetchPreviousFile) {
+  const previous = previousFiles.get(sourceUrl);
+  if (!previous || (!previousOutputDir && typeof fetchPreviousFile !== "function")) return null;
+  if (typeof previous.path !== "string"
+    || !/^\/snapshot-media\/[a-f0-9]{64}\.(jpg|png|webp|mp4|pdf)$/.test(previous.path)
+    || !SNAPSHOT_MEDIA_TYPES.has(previous.mimeType)
+    || !/^[a-f0-9]{64}$/.test(previous.sha256)
+    || !Number.isSafeInteger(previous.byteSize)
+    || previous.byteSize <= 0
+    || previous.byteSize > maxBytes) return null;
+
+  let body;
+  try {
+    if (previousOutputDir) {
+      const previousPath = path.resolve(previousOutputDir, `.${previous.path}`);
+      const mediaRoot = path.resolve(previousOutputDir, "snapshot-media");
+      if (!previousPath.startsWith(`${mediaRoot}${path.sep}`)) return null;
+      body = await readFile(previousPath);
+    } else {
+      body = Buffer.from(await fetchPreviousFile(previous.path, previous));
+    }
+    if (body.length !== previous.byteSize
+      || sha256(body) !== previous.sha256
+      || !hasExpectedSignature(body, previous.mimeType)) return null;
+    return { body, mimeType: previous.mimeType, sha256: previous.sha256, reusedFromPreviousRelease: true };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Copy every referenced object under S3_PUBLIC_URL into the static export and rewrite
  * the exported HTML/RSC payloads to same-origin paths before the build is promoted.
  */
 export async function createMediaSnapshot({
   outDir,
+  previousOutputDir = undefined,
+  previousManifest = undefined,
+  fetchPreviousFile = undefined,
   revision,
   publicMediaUrl,
   fetchImpl = fetch,
@@ -130,6 +181,7 @@ export async function createMediaSnapshot({
   }
   const base = normalizePublicBase(publicMediaUrl);
   const textFiles = await listTextFiles(outDir);
+  const previousFiles = await readPreviousMediaManifest(previousOutputDir, previousManifest);
   const contents = new Map();
   const referencedUrls = new Set();
 
@@ -145,7 +197,13 @@ export async function createMediaSnapshot({
   const files = [];
   const replacements = new Map();
   for (const sourceUrl of [...referencedUrls].sort()) {
-    const downloaded = await downloadMedia(sourceUrl, { fetchImpl, maxBytes });
+    let downloaded;
+    try {
+      downloaded = await downloadMedia(sourceUrl, { fetchImpl, maxBytes });
+    } catch (error) {
+      downloaded = await reusePreviousMedia(sourceUrl, previousOutputDir, previousFiles, maxBytes, fetchPreviousFile);
+      if (!downloaded) throw error;
+    }
     const extension = EXTENSION_BY_MIME.get(downloaded.mimeType);
     const relativePath = `snapshot-media/${downloaded.sha256}${extension}`;
     const targetPath = path.join(outDir, relativePath);
@@ -160,6 +218,7 @@ export async function createMediaSnapshot({
       mimeType: downloaded.mimeType,
       byteSize: downloaded.body.length,
       sha256: downloaded.sha256,
+      ...(downloaded.reusedFromPreviousRelease ? { reusedFromPreviousRelease: true } : {}),
     });
   }
 

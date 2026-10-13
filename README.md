@@ -30,7 +30,7 @@ npm run dev
 npm run dev
 ```
 
-The CMS build requires `NEXT_PUBLIC_ADMIN_API_URL`. The public production build requires `CONTENT_API_URL` and `NEXT_PUBLIC_API_URL`; `npm run build` also compares published-content revisions before and after static generation and writes `out/content-revision.json` only when they match. The backend uses `PUBLIC_SITE_URL` to verify that marker after a Timeweb deployment. `npm run build:ci` uses an empty, local API fixture to validate static generation in CI; it does not validate database content or emit a production content revision.
+The CMS build requires `NEXT_PUBLIC_ADMIN_API_URL`. The public production build requires `CONTENT_API_URL`, `NEXT_PUBLIC_API_URL`, and `NEXT_PUBLIC_SITE_URL` (an HTTPS origin with no path). It reads `/v1/content/snapshot` once, checks that snapshot against the publication revision before and after Next.js export, and serves all build-time content reads from that same local snapshot. The export copies referenced S3 media under `out/snapshot-media/`, rewrites page and CSS references to local paths, and writes `content-revision.json`, `media-manifest.json`, and `content-snapshot.json` only after the checks pass. If `PUBLIC_SITE_URL` is available, the build can reuse a checksum-verified media file from the currently served release when the source object is temporarily unavailable; it only reuses an exact matching source URL. The backend uses `PUBLIC_SITE_URL` to verify that the deployed revision marker and media manifest both contain the expected revision. `npm run build:ci` uses a local API fixture to validate snapshot-based static generation; it does not validate live database content or production media.
 
 ## Validation
 

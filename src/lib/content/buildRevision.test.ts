@@ -1,8 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchRevision, runStableRevisionBuild } from "../../../scripts/buildWithContentRevision.js";
+import {
+  fetchPreviousMediaFile,
+  fetchPreviousMediaManifest,
+  fetchPreviousContentSnapshot,
+  fetchPublishedSnapshot,
+  fetchRevision,
+  runStableRevisionBuild,
+} from "../../../scripts/buildWithContentRevision.js";
 
 const before = { schema: 1, revision: `sha256:${"a".repeat(64)}` };
 const after = { schema: 1, revision: `sha256:${"b".repeat(64)}` };
+const snapshotContent = {
+  home: null,
+  shopHome: null,
+  stubs: {},
+  articles: [],
+  tires: { types: [], models: [] },
+  wheels: { types: [], byType: [] },
+  shop: { categories: [], products: [] },
+};
 
 describe("static build revision guard", () => {
   it("retries a transient 503 and returns the valid revision", async () => {
@@ -49,6 +65,74 @@ describe("static build revision guard", () => {
     expect(fetchRevision).toHaveBeenCalledTimes(2);
     expect(runBuild).toHaveBeenCalledOnce();
     expect(writeMarker).toHaveBeenCalledWith(before);
+  });
+
+  it("builds from one snapshot whose revision matches the initial revision", async () => {
+    const publishedSnapshot = { ...before, content: { ...snapshotContent, articles: [{ slug: "one" }] } };
+    const fetchRevision = vi.fn().mockResolvedValueOnce(before).mockResolvedValueOnce(before);
+    const fetchSnapshot = vi.fn().mockResolvedValue(publishedSnapshot);
+    const runBuild = vi.fn().mockResolvedValue(undefined);
+    const writeMarker = vi.fn().mockResolvedValue(undefined);
+
+    await runStableRevisionBuild({ fetchRevision, fetchSnapshot, runBuild, writeMarker });
+
+    expect(fetchSnapshot).toHaveBeenCalledOnce();
+    expect(runBuild).toHaveBeenCalledWith(publishedSnapshot);
+    expect(writeMarker).toHaveBeenCalledWith(before, undefined, publishedSnapshot);
+  });
+
+  it("refuses a snapshot that does not match the initial revision", async () => {
+    const fetchRevision = vi.fn().mockResolvedValue(before);
+    const runBuild = vi.fn();
+    await expect(runStableRevisionBuild({
+      fetchRevision,
+      fetchSnapshot: vi.fn().mockResolvedValue({ ...after, content: snapshotContent }),
+      runBuild,
+      writeMarker: vi.fn(),
+    })).rejects.toThrow("changed before the static build snapshot was captured");
+    expect(runBuild).not.toHaveBeenCalled();
+  });
+
+  it("downloads a complete revisioned snapshot from the one-shot endpoint", async () => {
+    const publishedSnapshot = { ...before, content: snapshotContent };
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => publishedSnapshot });
+    await expect(fetchPublishedSnapshot({ baseUrl: "https://backend.example/", fetchImpl })).resolves.toEqual(publishedSnapshot);
+    expect(fetchImpl).toHaveBeenCalledWith(new URL("https://backend.example/v1/content/snapshot"), expect.objectContaining({
+      cache: "no-store",
+      redirect: "error",
+    }));
+  });
+
+  it("reads a valid previous public release manifest and ignores an unsafe public-site URL", async () => {
+    const manifest = { schema: 1, revision: before.revision, files: [] };
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => manifest });
+    await expect(fetchPreviousMediaManifest({ publicSiteUrl: "https://site.example/", fetchImpl }))
+      .resolves.toEqual({ siteUrl: new URL("https://site.example/"), manifest });
+    expect(fetchImpl).toHaveBeenCalledWith(new URL("https://site.example/media-manifest.json"), expect.any(Object));
+
+    await expect(fetchPreviousMediaManifest({ publicSiteUrl: "http://site.example/", fetchImpl })).resolves.toBeNull();
+    await expect(fetchPreviousMediaManifest({ publicSiteUrl: "https://site.example/prefix", fetchImpl })).resolves.toBeNull();
+  });
+
+  it("reads only a complete archived content snapshot from the previous public release", async () => {
+    const archivedSnapshot = { ...before, content: snapshotContent };
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => archivedSnapshot });
+    await expect(fetchPreviousContentSnapshot({ publicSiteUrl: "https://site.example/", fetchImpl }))
+      .resolves.toEqual(archivedSnapshot);
+    expect(fetchImpl).toHaveBeenCalledWith(new URL("https://site.example/content-snapshot.json"), expect.any(Object));
+
+    await expect(fetchPreviousContentSnapshot({
+      publicSiteUrl: "https://site.example/",
+      fetchImpl: vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ...archivedSnapshot, content: {} }) }),
+    })).resolves.toBeNull();
+  });
+
+  it("downloads only safe same-origin media paths from the prior public release", async () => {
+    const bytes = Buffer.from("previous media bytes");
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) });
+    const siteUrl = new URL("https://site.example/");
+    await expect(fetchPreviousMediaFile(`/snapshot-media/${"c".repeat(64)}.png`, siteUrl, fetchImpl)).resolves.toEqual(bytes);
+    await expect(fetchPreviousMediaFile("/private/file", siteUrl, fetchImpl)).rejects.toThrow("Previous media path is invalid");
   });
 
   it("refuses to mark the export when published content changes during the build", async () => {

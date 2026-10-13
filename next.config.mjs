@@ -8,10 +8,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const imageRemotePatterns = buildImageRemotePatterns();
 
 if (process.env.NODE_ENV === "production") {
-  for (const key of ["CONTENT_API_URL", "NEXT_PUBLIC_API_URL"]) {
+  for (const key of ["CONTENT_API_URL", "NEXT_PUBLIC_API_URL", "NEXT_PUBLIC_SITE_URL"]) {
     if (!process.env[key]?.trim()) {
       throw new Error(`${key} is required to build the static public site.`);
     }
+  }
+  const siteUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL.trim());
+  if (siteUrl.protocol !== "https:" || siteUrl.username || siteUrl.password || siteUrl.pathname !== "/" || siteUrl.search || siteUrl.hash) {
+    throw new Error("NEXT_PUBLIC_SITE_URL must be an HTTPS origin without credentials, path, query, or fragment.");
   }
 }
 

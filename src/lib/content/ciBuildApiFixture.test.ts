@@ -22,6 +22,24 @@ describe("static build API fixture", () => {
     });
   });
 
+  it("provides one coherent fixture snapshot with every publication collection", () => {
+    expect(responseForBuildApiPath("/v1/content/snapshot")).toMatchObject({
+      status: 200,
+      body: {
+        schema: 1,
+        revision: expect.stringMatching(/^sha256:[a-f0-9]{64}$/),
+        content: {
+          home: { hero: {} },
+          shopHome: { hero: {} },
+          articles: [{ slug: "ci-fixture-article" }],
+          tires: { types: [{ slug: "tbr" }], models: [{ model: { slug: "ci-fixture-tire" } }] },
+          wheels: { types: [{ slug: "forged" }], byType: [{ models: [{ slug: "ci-fixture-wheel" }] }] },
+          shop: { categories: [{ slug: "accessories" }], products: [{ slug: "ci-fixture-product" }] },
+        },
+      },
+    });
+  });
+
   it("rejects unknown API paths instead of masking route drift", () => {
     expect(responseForBuildApiPath("/v1/unknown")).toEqual({
       status: 404,

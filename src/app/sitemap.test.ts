@@ -22,5 +22,6 @@ describe("sitemap during published API outage", () => {
     const entries = await sitemap();
     expect(entries.map((entry) => entry.url)).toContain("https://example.test/");
     expect(entries.some((entry) => entry.url.includes("/shop/product/"))).toBe(false);
+    expect(entries.every((entry) => entry.lastModified === undefined)).toBe(true);
   });
 });

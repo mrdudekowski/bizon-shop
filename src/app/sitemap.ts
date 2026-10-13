@@ -8,17 +8,22 @@ import {
   getAllWheelModelRouteParams,
   getAllWheelTypeSlugs,
 } from "@/lib/content";
-import { TIRE_CATEGORIES, getModelApplicationCategories, getModelApplicationValues, getTireCategoryByValue } from "@/lib/catalog/tireCategories";
+import { getModelApplicationCategories, getTireCategoryByValue } from "@/lib/catalog/tireCategories";
 import { SITEMAP_CONTENT_LIST_ROUTES, SITEMAP_STATIC_ROUTES } from "@/constants/navigation";
 import { loadPublished } from "@/lib/content/loadPublished";
 import { getSiteUrl } from "@/lib/seo/metadata";
 
 export const dynamic = "force-static";
 
-function listRouteEntry(path: string): MetadataRoute.Sitemap[number] {
+function publicRouteUrl(siteUrl: string, routePath: string): string {
+  const route = new URL(routePath.startsWith("/") ? routePath : `/${routePath}`, siteUrl);
+  route.pathname = route.pathname.endsWith("/") ? route.pathname : `${route.pathname}/`;
+  return route.href;
+}
+
+function listRouteEntry(siteUrl: string, path: string): MetadataRoute.Sitemap[number] {
   return {
-    url: `${getSiteUrl()}${path}`,
-    lastModified: new Date(),
+    url: publicRouteUrl(siteUrl, path),
     changeFrequency: "monthly",
     priority: 0.6,
   };
@@ -67,32 +72,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       };
 
   const entries: MetadataRoute.Sitemap = SITEMAP_STATIC_ROUTES.map((path) => ({
-    url: `${siteUrl}${path}`,
-    lastModified: new Date(),
+    url: publicRouteUrl(siteUrl, path),
     changeFrequency: path === "" || path === "/" ? "weekly" : "monthly",
     priority: path === "" || path === "/" ? 1 : 0.7,
   }));
 
   for (const slug of tireTypeSlugs) {
     entries.push({
-      url: `${siteUrl}/models/${slug}`,
-      lastModified: new Date(),
+      url: publicRouteUrl(siteUrl, `/models/${slug}`),
       changeFrequency: "weekly",
       priority: 0.8,
     });
   }
 
   for (const { tireTypeSlug, models } of tireModelsByType) {
-    const categoryValues = tireTypeSlug === "tbr"
-      ? TIRE_CATEGORIES.map((category) => category.value)
-      : Array.from(new Set(models.flatMap((model) => getModelApplicationValues(model))));
+    const categoryValues = Array.from(new Set(models
+      .map((model) => getModelApplicationCategories(model)[0]?.value)
+      .filter((value): value is string => Boolean(value))));
 
     for (const categoryValue of categoryValues) {
       const category = getTireCategoryByValue(categoryValue);
       if (!category) continue;
       entries.push({
-        url: `${siteUrl}/models/${tireTypeSlug}/${category.slug}`,
-        lastModified: new Date(),
+        url: publicRouteUrl(siteUrl, `/models/${tireTypeSlug}/${category.slug}`),
         changeFrequency: "weekly",
         priority: 0.8,
       });
@@ -102,8 +104,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const category = getModelApplicationCategories(model)[0];
       const categoryPath = category ? `/${category.slug}` : "";
       entries.push({
-        url: `${siteUrl}/models/${tireTypeSlug}${categoryPath}/${model.slug}`,
-        lastModified: new Date(),
+        url: publicRouteUrl(siteUrl, `/models/${tireTypeSlug}${categoryPath}/${model.slug}`),
         changeFrequency: "monthly",
         priority: 0.8,
       });
@@ -114,8 +115,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   for (const slug of allShopCategorySlugs) {
     entries.push({
-      url: `${siteUrl}/shop/${slug}`,
-      lastModified: new Date(),
+      url: publicRouteUrl(siteUrl, `/shop/${slug}`),
       changeFrequency: "weekly",
       priority: 0.8,
     });
@@ -123,8 +123,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   for (const slug of wheelTypeSlugs) {
     entries.push({
-      url: `${siteUrl}/shop/wheels/${slug}`,
-      lastModified: new Date(),
+      url: publicRouteUrl(siteUrl, `/shop/wheels/${slug}`),
       changeFrequency: "weekly",
       priority: 0.8,
     });
@@ -132,8 +131,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   for (const route of wheelModelRoutes) {
     entries.push({
-      url: `${siteUrl}/shop/wheels/${route.wheelTypeSlug}/${route.modelSlug}`,
-      lastModified: new Date(),
+      url: publicRouteUrl(siteUrl, `/shop/wheels/${route.wheelTypeSlug}/${route.modelSlug}`),
       changeFrequency: "monthly",
       priority: 0.8,
     });
@@ -141,19 +139,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   for (const slug of productSlugs) {
     entries.push({
-      url: `${siteUrl}/shop/product/${slug}`,
-      lastModified: new Date(),
+      url: publicRouteUrl(siteUrl, `/shop/product/${slug}`),
       changeFrequency: "weekly",
       priority: 0.9,
     });
   }
 
   if (articleSlugs.length > 0) {
-    entries.push(listRouteEntry(SITEMAP_CONTENT_LIST_ROUTES.tireIq));
+    entries.push(listRouteEntry(siteUrl, SITEMAP_CONTENT_LIST_ROUTES.tireIq));
     for (const slug of articleSlugs) {
       entries.push({
-        url: `${siteUrl}/tire-iq/${slug}`,
-        lastModified: new Date(),
+        url: publicRouteUrl(siteUrl, `/tire-iq/${slug}`),
         changeFrequency: "monthly",
         priority: 0.6,
       });

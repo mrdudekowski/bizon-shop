@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 import { getAllShopProductSlugs, getShopProductBySlug } from "@/lib/content";
 import { createProductMetadata } from "@/lib/seo/metadata";
 import { createProductStructuredData } from "@/lib/seo/structuredData";
@@ -50,9 +49,7 @@ export default async function ProductPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      <Suspense fallback={<div className="section-inner min-h-[70vh]" />}>
-        <ShopProductConfigurator product={product} />
-      </Suspense>
+      <ShopProductConfigurator product={product} />
     </>
   );
 }

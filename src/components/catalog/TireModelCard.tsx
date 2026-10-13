@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
-import { getModelApplicationLabels } from "@/lib/catalog/tireCategories";
+import { getModelApplicationLabels, getModelApplicationValues } from "@/lib/catalog/tireCategories";
 import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
 import { AXLE_OPTIONS } from "@/lib/selection/options";
 
@@ -18,7 +18,13 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
   const additionalSizes = Math.max(model.sizes.length - 2, 0);
 
   return (
-    <article className={styles.modelCard} data-tire-model-card>
+    <article
+      className={styles.modelCard}
+      data-tire-model-card
+      data-applications={getModelApplicationValues(model).join("|")}
+      data-axles={model.selectionAxles.join("|")}
+      data-sizes={model.sizes.map((size) => size.trim().toLocaleLowerCase("ru-RU")).join("|")}
+    >
       <Link className={styles.modelMedia} href={model.href} aria-label={`Открыть модель ${model.name}`}>
         <CatalogImage
           src={model.imageUrl}

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { marketplaceShown } from "@/components/catalog/marketplaceGallery";
@@ -39,12 +39,19 @@ function variantLabel(variant: CmsProductVariant): string {
 export function ShopProductConfigurator({ product }: { product: CmsProduct }) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const [searchParams, setSearchParams] = useState(() => new URLSearchParams());
   const cart = useCart("shop");
   const [pinned, setPinned] = useState(0);
   const [hovered, setHovered] = useState<number | null>(null);
   const [missingGroup, setMissingGroup] = useState<OptionKey | null>(null);
   const groupRefs = useRef<Partial<Record<OptionKey, HTMLFieldSetElement | null>>>({});
+
+  useEffect(() => {
+    const syncSearchParams = () => setSearchParams(new URLSearchParams(window.location.search));
+    syncSearchParams();
+    window.addEventListener("popstate", syncSearchParams);
+    return () => window.removeEventListener("popstate", syncSearchParams);
+  }, []);
 
   const optionGroups = useMemo(
     () => GROUPS.map((group) => ({
@@ -90,6 +97,7 @@ export function ShopProductConfigurator({ product }: { product: CmsProduct }) {
       else next.delete(group.key);
     }
     router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+    setSearchParams(next);
   }, [optionGroups, pathname, product.variants, router, searchParams, selectedVariant]);
 
   const baseImages = useMemo(
@@ -172,6 +180,7 @@ export function ShopProductConfigurator({ product }: { product: CmsProduct }) {
       }
     }
     router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+    setSearchParams(next);
     setMissingGroup(null);
   }
 

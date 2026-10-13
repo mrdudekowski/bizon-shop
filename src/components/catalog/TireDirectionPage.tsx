@@ -1,13 +1,12 @@
-"use client";
-
+import { Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 
 import { TireCatalogFilters } from "@/components/catalog/TireCatalogFilters";
+import { TireCatalogFilterController } from "@/components/catalog/TireCatalogFilterController";
 import { TireModelCard } from "@/components/catalog/TireModelCard";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { getTireCategoryBySlug } from "@/lib/catalog/tireCategories";
-import { filterTireModels, parseTireFilters, type TireFilters } from "@/lib/catalog/tireFilters";
+import { filterTireModels, formatTireModelCount, type TireFilters } from "@/lib/catalog/tireFilters";
 import type { TireCatalogDirection } from "@/lib/catalog/tireReadModel";
 
 import styles from "./TireCatalog.module.css";
@@ -18,24 +17,15 @@ type TireDirectionPageProps = {
   categorySlug?: string;
 };
 
-function formatModelCount(count: number): string {
-  if (count % 10 === 1 && count % 100 !== 11) return `${count} модель`;
-  if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) {
-    return `${count} модели`;
-  }
-  return `${count} моделей`;
-}
-
 export function TireDirectionPage({
   direction,
   filters,
   categorySlug,
 }: TireDirectionPageProps) {
-  const queryFilters = parseTireFilters(useSearchParams());
   const category = categorySlug ? getTireCategoryBySlug(categorySlug) : undefined;
   const effectiveFilters = category
-    ? { ...filters, ...queryFilters, application: category.value }
-    : { ...filters, ...queryFilters };
+    ? { ...filters, application: category.value }
+    : filters;
   const models = filterTireModels(direction.models, effectiveFilters);
   const typePath = `/models/${direction.slug}`;
   const pagePath = category ? `${typePath}/${category.slug}` : typePath;
@@ -43,7 +33,7 @@ export function TireDirectionPage({
 
   return (
     <div className={styles.catalogPage} data-main-chrome-tone="light">
-      <div className={styles.pageInner}>
+      <div className={styles.pageInner} data-tire-filter-results>
         <PageHeader
           title={category ? `${category.name} — ${direction.name}` : direction.name}
           description={category?.description ?? direction.description}
@@ -65,9 +55,11 @@ export function TireDirectionPage({
             />
 
             <div className={styles.resultHeader} aria-live="polite">
-              <p>{formatModelCount(models.length)}</p>
+              <p data-tire-result-count>{formatTireModelCount(models.length)}</p>
               <p>Отобраны по задаче, оси и типоразмеру</p>
+              <p hidden data-tire-no-results>По выбранным параметрам моделей не найдено.</p>
             </div>
+            <Suspense fallback={null}><TireCatalogFilterController /></Suspense>
           </>
         ) : null}
 

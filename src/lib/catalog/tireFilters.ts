@@ -7,6 +7,14 @@ export type TireFilters = {
   size?: string;
 };
 
+export function formatTireModelCount(count: number): string {
+  if (count % 10 === 1 && count % 100 !== 11) return `${count} модель`;
+  if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) {
+    return `${count} модели`;
+  }
+  return `${count} моделей`;
+}
+
 type SearchParamsInput =
   | URLSearchParams
   | Record<string, string | string[] | undefined>;

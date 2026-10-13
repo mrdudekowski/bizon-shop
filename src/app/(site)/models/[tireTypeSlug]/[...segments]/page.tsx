@@ -1,10 +1,9 @@
-import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { TireDirectionPage } from "@/components/catalog/TireDirectionPage";
 import { TireModelStage } from "@/components/catalog/TireModelStage";
-import { getTireCategoryBySlug } from "@/lib/catalog/tireCategories";
+import { getModelApplicationCategories, getTireCategoryBySlug } from "@/lib/catalog/tireCategories";
 import { getPublishedTireCatalog } from "@/lib/catalog/getPublishedTireCatalog";
 import {
   getAllTireModelRouteParams,
@@ -30,7 +29,16 @@ export async function generateStaticParams() {
   });
   if (loaded.kind === "unavailable") return [];
   const { routes, catalog } = loaded.value;
-  return routes.map((route) => ({
+  const categoryRoutes = catalog.directions.flatMap((direction) => {
+    const categories = new Set(direction.models
+      .map((model) => getModelApplicationCategories(model)[0]?.slug)
+      .filter((slug): slug is string => Boolean(slug)));
+    return [...categories].map((categorySlug) => ({
+      tireTypeSlug: direction.slug,
+      segments: [categorySlug],
+    }));
+  });
+  const modelRoutes = routes.map((route) => ({
     tireTypeSlug: route.tireTypeSlug,
     segments:
       catalog.directions
@@ -40,6 +48,7 @@ export async function generateStaticParams() {
         .filter(Boolean)
         .slice(2) ?? [route.modelSlug],
   }));
+  return [...categoryRoutes, ...modelRoutes];
 }
 
 export async function generateMetadata({ params }: PageProps) {
@@ -100,13 +109,7 @@ async function TireCategoryRoute({
   const direction = catalog.directions.find((item) => item.slug === tireTypeSlug);
   if (!direction || !getTireCategoryBySlug(categorySlug)) notFound();
 
-  return (
-    <Suspense fallback={null}><TireDirectionPage
-      direction={direction}
-      filters={{}}
-      categorySlug={categorySlug}
-    /></Suspense>
-  );
+  return <TireDirectionPage direction={direction} filters={{}} categorySlug={categorySlug} />;
 }
 
 async function TireModelRoute({

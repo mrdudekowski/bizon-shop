@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import {
@@ -48,5 +47,5 @@ export default async function TireTypeModelsPage({ params }: PageProps) {
 
   if (!direction) notFound();
 
-  return <Suspense fallback={null}><TireDirectionPage direction={direction} filters={{}} /></Suspense>;
+  return <TireDirectionPage direction={direction} filters={{}} />;
 }

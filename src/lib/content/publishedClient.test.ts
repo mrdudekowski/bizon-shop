@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 
 describe("publishedClient", () => {
   const originalFetch = globalThis.fetch;
   const originalUrl = process.env.CONTENT_API_URL;
+  const originalSnapshotFile = process.env.CONTENT_SNAPSHOT_FILE;
 
   beforeEach(() => {
     process.env.CONTENT_API_URL = "http://127.0.0.1:4000";
@@ -17,6 +21,8 @@ describe("publishedClient", () => {
     } else {
       process.env.CONTENT_API_URL = originalUrl;
     }
+    if (originalSnapshotFile === undefined) delete process.env.CONTENT_SNAPSHOT_FILE;
+    else process.env.CONTENT_SNAPSHOT_FILE = originalSnapshotFile;
   });
 
   it("publishedApiEnabled is true only when CONTENT_API_URL is non-empty after trim", async () => {
@@ -44,6 +50,36 @@ describe("publishedClient", () => {
     expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:4000/v1/tires/types/tbr", {
       cache: "force-cache",
     });
+  });
+
+  it("serves static build reads from the verified snapshot without requesting the API again", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "bizon-published-snapshot-test-"));
+    const file = path.join(directory, "snapshot.json");
+    await writeFile(file, JSON.stringify({
+      schema: 1,
+      revision: `sha256:${"a".repeat(64)}`,
+      content: {
+        home: null,
+        shopHome: null,
+        stubs: {},
+        articles: [{ slug: "story", title: "Snapshot story" }],
+        tires: { types: [], models: [] },
+        wheels: { types: [], byType: [] },
+        shop: { categories: [], products: [] },
+      },
+    }));
+    process.env.CONTENT_SNAPSHOT_FILE = file;
+    const fetchMock = vi.fn();
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      const { fetchPublishedJson } = await import("./publishedClient");
+      await expect(fetchPublishedJson<{ title: string }>("/v1/articles/story"))
+        .resolves.toEqual({ slug: "story", title: "Snapshot story" });
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 
   it("returns null on HTTP 404 without throwing", async () => {
