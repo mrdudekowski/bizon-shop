@@ -2,17 +2,17 @@
 
 ## Purpose and boundaries
 
-Create a complete, evidence-based responsive adaptation of the public BIZON website. The outcome must preserve each page's content and primary task on narrow phones, tablets, and desktop, while replacing mobile interactions that depend on hover, cramped desktop controls, or inaccessible horizontal layouts.
+Create a complete, evidence-based mobile adaptation of the public BIZON website. Preserve each page's content and primary task on mobile while replacing interactions that depend on hover, cramped controls, or inaccessible horizontal layouts. The existing desktop composition is approved and out of scope for redesign; desktop is used only as a baseline and regression check.
 
 Scope is the public route group `src/app/(site)`. The `frontend-cms` application is excluded. `/selection` is a redirect to `/models`, so it is a route alias rather than a separate page. This document defines the intended work and does not claim that every listed issue has already been confirmed in a browser.
 
 ## Approaches considered
 
 1. **Route-by-route CSS patches.** Fast for isolated defects, but duplicates solutions across routes and leaves shared components inconsistent.
-2. **Shared responsive patterns, implemented by page family. (Recommended.)** Audit every route and section, fix shared shell/content/catalog patterns first, then handle family-specific interaction and content exceptions. This gives complete route coverage with less regression risk.
-3. **Mobile-first redesign of every page.** Offers the most freedom, but expands the scope beyond responsive adaptation and risks changing approved content and desktop behavior unnecessarily.
+2. **Mobile patterns implemented by page family. (Recommended.)** Audit every route and section, adapt shared shell/content/catalog patterns for mobile first, then handle family-specific interaction and content exceptions. This gives complete route coverage while protecting the approved desktop composition.
+3. **Redesign every page across all breakpoints.** Offers the most freedom, but is explicitly outside this scope and risks changing the approved desktop experience.
 
-The chosen approach is 2. Keep established desktop composition where it works; introduce a new mobile interaction only when the audit demonstrates that simple reflow cannot preserve usability.
+The chosen approach is 2. Limit visual/layout changes to mobile and tablet widths below 1024px. At 1024px and above, preserve desktop CSS and composition; use those widths only for baseline/regression checks. Introduce a new mobile interaction only when the audit demonstrates that simple reflow cannot preserve usability.
 
 ## Route and section coverage
 
@@ -62,18 +62,18 @@ The chosen approach is 2. Keep established desktop composition where it works; i
 
 - Design for the user's next decision on each page, not for preserving the desktop arrangement. Keep the primary action and the minimum information needed to choose visible; move secondary detail to the destination/detail page or an intentional disclosure.
 - Mobile cards must not try to contain all desktop copy. Reduce the number of visible text and decorative elements. Establish an explicit content budget for each card family during visual design: identity/title, one or two decision-critical facts, and a clear action/affordance. Remove or defer secondary description, repeated labels, badges and decorative metadata when they compete with that budget. Do not hide information essential to safe product selection; show that information in the detail view or selection flow.
-- Produce an annotated mobile/desktop visual for each page family before implementation. Show section order, content density, image crop/focal point, card composition, action placement, and interaction states. These are reviewable layout decisions, not a full visual rebrand.
+- Produce an annotated mobile visual for each page family before implementation. Show mobile section order, content density, image crop/focal point, card composition, action placement, and interaction states. Use the approved desktop page as a read-only reference; do not propose desktop redesigns.
 - Preserve approved content meaning and product claims. Prefer omission of nonessential card copy over inventing shorter claims; editorial shortening requires content-owner approval.
 
 ## Breakpoint and state matrix
 
-Walk every page and section at 390 and 1440 CSS px. Add 320/360 checks for narrow cards, dense controls, long text and forms; use 430/768/1024 to validate layout transitions and tablet/desktop composition. These are checkpoints, not a mandate to add a media query at every width. Check short and long content, empty/no-match, loading/error/success, filter-selected, unavailable variant, and long-form CMS cases where applicable. Include actual mobile browser/device validation for viewport behavior after source-level and browser-emulation checks.
+Walk every page and section at 390 CSS px. Add 320/360 checks for narrow cards, dense controls, long text and forms; use 430/768/1023 to validate mobile/tablet transitions. Check 1024 and 1440 only as locked desktop baselines/regression checks; do not change desktop composition. These are checkpoints, not a mandate to add a media query at every width. Check short and long content, empty/no-match, loading/error/success, filter-selected, unavailable variant, and long-form CMS cases where applicable. Include actual mobile browser/device validation for viewport behavior after source-level and browser-emulation checks.
 
 ## Priorities
 
 - **P0:** clipped/unreachable content or primary actions; mobile navigation; product configuration/cart/request flow; unusable filters or specification data.
 - **P1:** shared page-family consistency; rich-text/table overflow; galleries and Tire IQ selectors; empty/error states and accessible controls.
-- **P2:** image crop, decorative motion, spacing polish and secondary transitions.
+- **P2:** mobile image crop, decorative motion, spacing polish and secondary transitions.
 
 ## Acceptance evidence
 
@@ -81,13 +81,13 @@ For every route and relevant state, record viewport, screenshot or reproducible 
 
 ## Implementation decomposition
 
-1. Baseline route inventory and responsive evidence.
-2. User-task priorities and annotated responsive visuals for every unique section, including the mobile card content budget.
-3. Shared shell, hero, container, and rich-text contracts.
-4. Tire catalog and tire model details.
-5. Shop landing, categories, wheels and product details.
-6. Contact, forms, cart and request submission.
-7. Service/legal content, Tire IQ listing and articles.
-8. Full route/state regression and evidence report.
+1. Mobile route inventory and baseline evidence; capture desktop as a locked reference.
+2. User-task priorities and annotated mobile visuals for every unique section, including the mobile card content budget.
+3. Shared shell, hero, container, and rich-text mobile behavior.
+4. Tire catalog and tire model mobile details.
+5. Shop landing, categories, wheels and product mobile behavior.
+6. Contact, forms, cart and request submission on mobile.
+7. Service/legal content, Tire IQ listing and articles on mobile.
+8. Full mobile route/state regression and desktop no-change evidence.
 
 Each workstream is independently reviewable. The baseline and annotated visual proposals are reviewed before product-code changes. Before implementation, the plan must name exact files and verification actions; no product code is changed by this design artifact.

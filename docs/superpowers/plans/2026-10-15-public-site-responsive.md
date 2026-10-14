@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Audit and adapt every public BIZON page family so its content and primary task work on phone, tablet, and desktop viewports.
+**Goal:** Audit and adapt every public BIZON page family for mobile viewports while preserving the approved desktop composition unchanged.
 
-**Architecture:** Establish route/state evidence, then approve UX priorities and annotated visuals for every unique section before changing code. Implement shared shell/content contracts before page-family behavior, keep route-specific exceptions local, and verify all consumers after shared changes. Choose new mobile interactions only where evidence shows reflow is insufficient.
+**Architecture:** Establish mobile route/state evidence and capture desktop as a locked baseline. Approve UX priorities and annotated mobile visuals for every unique section before changing code. Implement mobile-only shared shell/content behavior before page-family behavior, keep route-specific exceptions local, and verify all consumers after shared changes. Choose new mobile interactions only where evidence shows reflow is insufficient.
 
 **Tech Stack:** Next.js App Router, React, CSS Modules, existing browser/device inspection workflow.
 
@@ -14,10 +14,11 @@
 
 - Scope is `src/app/(site)`; `frontend-cms` is excluded.
 - `/selection` is a redirect to `/models`; it is not a separate page.
-- Preserve existing approved desktop composition and page content unless a responsive defect requires a structural change.
+- Existing desktop composition is approved and out of scope for redesign. Desktop captures are reference/regression evidence only.
+- Restrict visual and layout changes to mobile/tablet breakpoints below 1024px. At 1024px and above, make no composition changes; desktop captures are reference/regression evidence only.
 - Treat mobile UX and visual hierarchy as the design target: each section must make its purpose and next action clear at phone width.
 - Mobile cards show only their decision-critical information; remove secondary copy and reduce decorative/metadata elements. Never remove information required to make a safe product choice; place it on the detail page or in an intentional disclosure.
-- Review and approve the annotated mobile/desktop visual proposal before product-code implementation.
+- Review and approve the annotated mobile visual proposal before product-code implementation; use desktop only as a locked reference.
 - Use mobile-first CSS; responsive Grid containers define explicit columns; shrinkable Grid/Flex children use `min-width: 0`; percentage-width elements that must not overflow pair `width: 100%` with `max-width: 100%`.
 - Distinguish intended local horizontal scrolling from accidental document overflow.
 - Hover cannot carry essential content or actions; respect `prefers-reduced-motion`.
@@ -32,7 +33,7 @@
 - Mobile form keyboard and validation: check focused field visibility, inline error context, submit availability, and success confirmation.
 - Touch interaction and reduced motion: check that galleries, carousels, comparison controls, and selector flows remain usable without hover or animation.
 - Card content density: check that the phone card has a clear title, only decision-critical facts, and a visible action; secondary copy and decorative elements do not crowd the card.
-- Section composition: check section order, image crop/focal point, content hierarchy, and action placement against the visual proposal.
+- Mobile section composition: check section order, image crop/focal point, content hierarchy, and action placement against the mobile visual proposal; confirm desktop is unchanged.
 
 ---
 
@@ -52,15 +53,16 @@
 - Inspect: `src/app/(site)/**/page.tsx`
 
 - [ ] Enumerate concrete static and dynamic routes and record the data-dependent variants for each dynamic family.
-- [ ] Walk every route and section at 390 and 1440 CSS px; capture top, major section transitions, and bottom.
-- [ ] Add 320/360 checks for narrow cards, dense controls, long text and forms; use 430/768/1024 to validate responsive transitions and tablet composition.
+- [ ] Walk every route and section at 390 CSS px; capture top, major section transitions, and bottom.
+- [ ] Capture each page at 1440 CSS px as a locked reference only. Do not propose desktop changes.
+- [ ] Add 320/360 checks for narrow cards, dense controls, long text and forms; use 430/768/1023 to validate mobile/tablet transitions and 1024 as the desktop-boundary regression check.
 - [ ] For each observation record route, section, user task, viewport, visible impact, reproduction evidence, source/component owner, severity, and whether the issue is a shared or local cause.
 - [ ] Record which card text/facts/actions are decision-critical, which items are redundant or decorative, and which details belong on the destination page.
 - [ ] Run the supplied viewport and Grid/Flex diagnostics on representative pages; identify intentional carousel/table scrolling separately.
 - [ ] Mark unavailable API/CMS-dependent states as unverified instead of substituting fixture output as live evidence.
 - [ ] Review the inventory against the route table in the spec; resolve any uncovered route before implementation tasks begin.
 
-**Done when:** Every route and section has a baseline entry or named access limitation; findings are prioritized by user impact and tied to a source owner. Card content has an essential/secondary inventory.
+**Done when:** Every route and section has a mobile baseline entry or named access limitation; desktop references are captured; findings are prioritized by user impact and tied to a source owner. Card content has an essential/secondary inventory.
 
 ## Task 2: Define user flows and annotate visuals for each page family
 
@@ -71,14 +73,14 @@
 
 - [ ] For each route, state the primary user task and the most important decision/action at each section; mark secondary content for deferral, disclosure, or removal from the mobile composition.
 - [ ] Provide a visual entry for every unique section in the route inventory; shared section templates may reference one annotated pattern, with route-specific differences called out explicitly.
-- [ ] Create annotated phone and desktop section layouts for five families: Main/Tire catalog, Shop discovery, product detail/configuration, forms/cart, and service/editorial/Tire IQ.
+- [ ] Create annotated mobile section layouts for five families: Main/Tire catalog, Shop discovery, product detail/configuration, forms/cart, and service/editorial/Tire IQ.
 - [ ] For every card family (direction, tire model, wheel model, Shop product, category/lifestyle, editorial), define a mobile content budget: title/identity, no more than two decision-critical facts, and action/affordance. Use the baseline to choose the exact facts per family.
 - [ ] Show what is removed or moved off each mobile card and where any decision-critical detail remains available. Do not rewrite product claims or published CMS copy without content-owner approval.
 - [ ] Annotate image focal point/crop, section order, spacing hierarchy, interaction controls, sticky actions if justified, and empty/error/selected states.
-- [ ] Compare 390px layout with 1440px composition and note only intentional structural differences; preserve desktop content where it remains useful.
+- [ ] Compare proposed 390px layouts with the 1440px locked reference; document mobile-only changes and verify no desktop redesign is proposed.
 - [ ] Present the visual proposal for review and wait for approval before starting Tasks 3–7.
 
-**Done when:** The visual report resolves the major layout and content-density decisions for each page family and includes an approved mobile card budget. No product code has been changed.
+**Done when:** The visual report resolves the mobile layout and content-density decisions for every unique section and includes an approved mobile card budget. Desktop remains a read-only reference. No product code has been changed.
 
 ## Task 3: Stabilize shared shell, hero, containers, and rich text
 
@@ -99,7 +101,7 @@
 - [ ] Define rich-text behavior for long words/URLs, images, embedded content and wide tables without hiding document-level overflow.
 - [ ] Revisit every route using the modified shared contracts and compare with Task 1 baseline.
 
-**Done when:** Shared shell, hero, and rich-text consumers have consistent mobile behavior and no newly introduced desktop regressions at the baseline widths.
+**Done when:** Shared shell, hero, and rich-text consumers have consistent mobile behavior; the approved desktop composition is unchanged.
 
 ## Task 4: Adapt tire direction catalogs, filters, cards, and model detail
 
@@ -144,7 +146,7 @@
 - [ ] Based on baseline evidence, implement wheel filters either as a compact inline layout or a mobile panel; preserve apply/reset, selected filter summary, query state, and no-result feedback.
 - [ ] Adapt wheel model gallery/order/table/documents and verify long technical values.
 - [ ] Adapt Shop product gallery, option groups, availability, validation feedback, add-to-cart action, and long description.
-- [ ] Check desktop and mobile image-source/crop behavior where separate mobile imagery is provided.
+- [ ] Check the mobile-specific image source/crop where provided; confirm the desktop image source and crop remain unchanged.
 
 **Done when:** Every Shop route variant supports product discovery/configuration on narrow screens, with intentional carousel behavior and no hidden filter or purchase action.
 
@@ -198,7 +200,8 @@
 - Update: `docs/superpowers/reports/2026-10-15-public-site-responsive-baseline.md`
 - Review: all files modified in Tasks 3–7
 
-- [ ] Repeat every route/section at 390 and 1440 CSS px; repeat narrow/high-risk cases at 320/360, and layout transitions at 430/768/1024. Include dynamic page variants and relevant form/catalog states.
+- [ ] Repeat every route/section at 390 CSS px; repeat narrow/high-risk cases at 320/360, and mobile/tablet transitions at 430/768/1024. Include dynamic page variants and relevant form/catalog states.
+- [ ] Compare all routes at 1440px against the locked baseline and document that desktop composition has not changed.
 - [ ] Re-run viewport, computed Grid-track, min/max width and child/parent width diagnostics on each page family.
 - [ ] Confirm deliberate local scrolling in tables/carousels is operable and distinguish it from accidental page overflow.
 - [ ] Check touch interactions, keyboard focus, reduced motion, mobile browser viewport/keyboard behavior, and long CMS content.
@@ -209,4 +212,4 @@
 
 ## Execution and review notes
 
-Tasks 3–7 can be reviewed by page family, but must start only after Task 1 establishes current evidence and Task 2's visual proposal is approved. Task 8 is mandatory after all shared component changes. Each implementation task must preserve unrelated worktree content and stage only its own files.
+Tasks 3–7 can be reviewed by page family, but must start only after Task 1 establishes current mobile evidence and Task 2's mobile visual proposal is approved. Task 8 is mandatory after all shared component changes. No composition changes are allowed at 1024px and above. Each implementation task must preserve unrelated worktree content and stage only its own files.
