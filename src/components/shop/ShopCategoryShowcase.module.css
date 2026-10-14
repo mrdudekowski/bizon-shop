@@ -29,25 +29,23 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  opacity: 1;
-  transform: none;
-  transition: opacity var(--showcase-switch) ease, transform var(--showcase-switch) ease;
 }
 
-.stage[data-phase="out"] {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-.stage[data-phase="in"] .cardArrow {
-  animation: rise 420ms ease both;
-}
-
-.toggle {
+.controls {
   position: absolute;
   top: calc(var(--header-height) + 12px);
   right: var(--page-gutter);
   z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: calc(100% - var(--page-gutter) - var(--page-gutter));
+  min-width: 0;
+}
+
+.toggle {
+  flex: 0 0 46px;
   display: grid;
   width: 46px;
   height: 46px;
@@ -88,158 +86,138 @@
 }
 
 .toggleIcon svg {
-  position: absolute;
-  inset: 0;
+  display: block;
   width: 20px;
   height: 20px;
   fill: currentColor;
-  transition: opacity var(--showcase-switch) ease, transform var(--showcase-switch) ease;
 }
 
-.toggleIcon[data-icon="grid"] svg:first-child,
-.toggleIcon[data-icon="frames"] svg:last-child {
+.iconRail {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: 0;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  opacity: 0;
+  transform: translateX(12px);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    max-width var(--showcase-switch) cubic-bezier(0.2, 0.75, 0.25, 1),
+    opacity 180ms ease,
+    transform var(--showcase-switch) ease,
+    visibility 0s linear var(--showcase-switch);
+}
+
+.iconRail::-webkit-scrollbar {
+  display: none;
+}
+
+.iconRail[data-open="true"] {
+  max-width: calc(100vw - var(--page-gutter) - var(--page-gutter) - 54px);
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s, 40ms, 0s, 0s;
+}
+
+.iconLink {
+  position: relative;
+  flex: 0 0 44px;
+  display: grid;
+  width: 44px;
+  max-width: 100%;
+  min-width: 0;
+  height: 44px;
+  box-sizing: border-box;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: var(--radius-circle);
+  background: rgba(20, 22, 22, 0.42);
+  color: var(--bizon-white);
+  backdrop-filter: blur(12px);
+  opacity: 0;
+  transform: scale(0.82);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    opacity 220ms ease,
+    transform 280ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+.iconRail[data-open="true"] .iconLink {
   opacity: 1;
   transform: none;
 }
 
-.toggleIcon[data-icon="grid"] svg:last-child,
-.toggleIcon[data-icon="frames"] svg:first-child {
-  opacity: 0;
-  transform: scale(0.82);
+.iconRail[data-open="true"] .iconLink:nth-child(1) { transition-delay: 50ms; }
+.iconRail[data-open="true"] .iconLink:nth-child(2) { transition-delay: 85ms; }
+.iconRail[data-open="true"] .iconLink:nth-child(3) { transition-delay: 120ms; }
+.iconRail[data-open="true"] .iconLink:nth-child(4) { transition-delay: 155ms; }
+.iconRail[data-open="true"] .iconLink:nth-child(5) { transition-delay: 190ms; }
+
+.iconLink:hover {
+  border-color: var(--bizon-mint-300);
+  background: rgba(20, 22, 22, 0.76);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.iconLink:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 3px;
 }
 
-.card {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-content: end;
-  gap: 16px;
-  width: 100%;
+.iconImage {
+  display: block;
+  width: 28px;
   max-width: 100%;
-  min-width: 0;
-  min-height: 280px;
-  box-sizing: border-box;
-  overflow: hidden;
-  border-radius: var(--radius-panel);
-  background: var(--bizon-white);
-  color: var(--color-foreground);
-  padding: 22px 22px 64px;
-  animation: rise 420ms ease both;
-}
-
-.grid > li {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-
-.grid > li:nth-child(2) .card { animation-delay: 50ms; }
-.grid > li:nth-child(3) .card { animation-delay: 100ms; }
-.grid > li:nth-child(4) .card { animation-delay: 150ms; }
-
-.iconFrame {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  place-items: center;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  min-height: 160px;
-}
-
-.icon {
-  width: auto;
-  max-width: 100%;
-  height: 150px;
+  height: 28px;
   object-fit: contain;
-  animation: iconIn 420ms ease both;
 }
 
-.grid > li:nth-child(2) .icon { animation-delay: 70ms; }
-.grid > li:nth-child(3) .icon { animation-delay: 120ms; }
-.grid > li:nth-child(4) .icon { animation-delay: 170ms; }
-
-.cardTitle {
-  font-size: clamp(1.25rem, 2vw, 1.6rem);
+.iconFallback {
+  font-size: 1rem;
   font-weight: var(--weight-display);
-  letter-spacing: var(--tracking-display);
-  line-height: 1.15;
 }
 
-.cardArrow {
-  position: absolute;
-  right: 18px;
-  bottom: 18px;
-  display: grid;
-  width: 42px;
-  height: 42px;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--color-foreground);
-  color: var(--bizon-white);
-}
+@media (max-width: 639px) {
+  .controls {
+    gap: 6px;
+  }
 
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
+  .iconRail {
+    gap: 6px;
   }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 
-@keyframes iconIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
+  .iconLink {
+    flex-basis: 36px;
+    width: 36px;
+    height: 36px;
   }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 
-@media (min-width: 640px) {
-  .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1024px) {
-  .grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .iconImage {
+    width: 23px;
+    height: 23px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .root {
-    --showcase-switch: 0ms;
-  }
-
   .toggle,
   .toggle:hover,
   .toggle:active,
-  .toggleIcon svg,
-  .stage,
-  .card,
-  .icon,
-  .cardArrow {
-    animation: none;
+  .iconRail,
+  .iconLink {
     transition: none;
     transform: none;
+  }
+
+  .iconRail[data-open="true"] .iconLink {
+    transition-delay: 0s;
   }
 }

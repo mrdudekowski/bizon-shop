@@ -77,7 +77,7 @@ export function shopHomeCategoryCards(
           slug: category.slug,
           title: tile.title || category.name,
           href: `${ROUTES.shop}/${category.slug}`,
-          iconUrl: tile.iconUrl ?? null,
+          iconUrl: tile.iconUrl || null,
         }];
       });
   }
@@ -89,7 +89,7 @@ export function shopHomeCategoryCards(
       slug: category.slug,
       title: category.name,
       href: `${ROUTES.shop}/${category.slug}`,
-      iconUrl: category.imageUrl ?? null,
+      iconUrl: null,
     }));
 }
 
@@ -100,6 +100,28 @@ export type ShopHomeCarouselSlide = {
   imageUrl: string | null;
 };
 
+const SHOP_CATEGORY_CAROUSEL_PHOTOS: Readonly<Record<string, string>> = {
+  accessories: "/images/premium/shop/lifestyle/categories/car-comfort-photo.jpg",
+  "masla-i-zapchasti": "/images/premium/shop/lifestyle/categories/oils-spare-parts-photo.jpg",
+};
+
+function shopCategoryCarouselImage(
+  category: CmsShopCategory,
+  tileImageUrl?: string,
+  tileCarouselImageUrl?: string,
+): string | null {
+  const lifestyleSlug = category.slug === "accessory" ? "accessories" : category.slug;
+  return (
+    tileCarouselImageUrl ||
+    category.carousel?.find((frame) => frame.imageUrl)?.imageUrl ||
+    SHOP_CATEGORY_CAROUSEL_PHOTOS[category.slug] ||
+    tileImageUrl ||
+    category.imageUrl ||
+    getShopLifestyleCategory(lifestyleSlug)?.desktopImage ||
+    null
+  );
+}
+
 export function shopHomeCarouselSlides(
   categories: readonly CmsShopCategory[],
   tiles?: readonly ShopCatalogTile[],
@@ -107,16 +129,17 @@ export function shopHomeCarouselSlides(
   if (tiles && tiles.length > 0) {
     const categoriesBySlug = new Map(categories.map((category) => [category.slug, category]));
     return tiles
-      .filter((tile) => tile.carouselVisible)
+      .filter((tile) => tile.visible)
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .flatMap((tile) => {
         const category = categoriesBySlug.get(tile.categorySlug);
         if (!category) return [];
+        const imageUrl = shopCategoryCarouselImage(category, tile.imageUrl, tile.carouselImageUrl);
         return [{
           id: category.slug,
           title: tile.title || category.name,
           href: `${ROUTES.shop}/${category.slug}`,
-          imageUrl: tile.carouselImageUrl ?? null,
+          imageUrl,
         }];
       });
   }
@@ -124,12 +147,15 @@ export function shopHomeCarouselSlides(
   return categories
     .filter((category) => category.showInMenu)
     .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((category) => ({
-      id: category.slug,
-      title: category.name,
-      href: `${ROUTES.shop}/${category.slug}`,
-      imageUrl: category.carousel?.find((frame) => frame.imageUrl)?.imageUrl ?? null,
-    }));
+    .map((category) => {
+      const imageUrl = shopCategoryCarouselImage(category);
+      return {
+        id: category.slug,
+        title: category.name,
+        href: `${ROUTES.shop}/${category.slug}`,
+        imageUrl,
+      };
+    });
 }
 
 export function shopCategoryIndexCards(
