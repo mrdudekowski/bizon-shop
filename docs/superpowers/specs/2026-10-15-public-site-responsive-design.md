@@ -58,9 +58,16 @@ The chosen approach is 2. Keep established desktop composition where it works; i
 - Keep CMS rich text safe at narrow widths: wrap long strings, constrain media, and define a readable strategy for wide tables.
 - Consider a mobile sticky action only if the audit proves an important action becomes unreachable; account for browser safe areas and the on-screen keyboard.
 
+## Mobile UX and visual direction
+
+- Design for the user's next decision on each page, not for preserving the desktop arrangement. Keep the primary action and the minimum information needed to choose visible; move secondary detail to the destination/detail page or an intentional disclosure.
+- Mobile cards must not try to contain all desktop copy. Reduce the number of visible text and decorative elements. Establish an explicit content budget for each card family during visual design: identity/title, one or two decision-critical facts, and a clear action/affordance. Remove or defer secondary description, repeated labels, badges and decorative metadata when they compete with that budget. Do not hide information essential to safe product selection; show that information in the detail view or selection flow.
+- Produce an annotated mobile/desktop visual for each page family before implementation. Show section order, content density, image crop/focal point, card composition, action placement, and interaction states. These are reviewable layout decisions, not a full visual rebrand.
+- Preserve approved content meaning and product claims. Prefer omission of nonessential card copy over inventing shorter claims; editorial shortening requires content-owner approval.
+
 ## Breakpoint and state matrix
 
-Audit at CSS viewport widths 320, 360, 390, 430, 768, 1024 and 1440 px. These are checkpoints, not a mandate to add a media query at every width. Check short and long content, empty/no-match, loading/error/success, filter-selected, unavailable variant, and long-form CMS cases where applicable. Include actual mobile browser/device validation for viewport behavior after source-level and browser-emulation checks.
+Walk every page and section at 390 and 1440 CSS px. Add 320/360 checks for narrow cards, dense controls, long text and forms; use 430/768/1024 to validate layout transitions and tablet/desktop composition. These are checkpoints, not a mandate to add a media query at every width. Check short and long content, empty/no-match, loading/error/success, filter-selected, unavailable variant, and long-form CMS cases where applicable. Include actual mobile browser/device validation for viewport behavior after source-level and browser-emulation checks.
 
 ## Priorities
 
@@ -75,11 +82,12 @@ For every route and relevant state, record viewport, screenshot or reproducible 
 ## Implementation decomposition
 
 1. Baseline route inventory and responsive evidence.
-2. Shared shell, hero, container, and rich-text contracts.
-3. Tire catalog and tire model details.
-4. Shop landing, categories, wheels and product details.
-5. Contact, forms, cart and request submission.
-6. Service/legal content, Tire IQ listing and articles.
-7. Full route/state regression and evidence report.
+2. User-task priorities and annotated responsive visuals for every unique section, including the mobile card content budget.
+3. Shared shell, hero, container, and rich-text contracts.
+4. Tire catalog and tire model details.
+5. Shop landing, categories, wheels and product details.
+6. Contact, forms, cart and request submission.
+7. Service/legal content, Tire IQ listing and articles.
+8. Full route/state regression and evidence report.
 
-Each workstream is independently reviewable. Before implementation, the plan must name exact files and verification actions; no product code is changed by this design artifact.
+Each workstream is independently reviewable. The baseline and annotated visual proposals are reviewed before product-code changes. Before implementation, the plan must name exact files and verification actions; no product code is changed by this design artifact.

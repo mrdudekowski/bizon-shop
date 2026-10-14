@@ -4,7 +4,7 @@
 
 **Goal:** Audit and adapt every public BIZON page family so its content and primary task work on phone, tablet, and desktop viewports.
 
-**Architecture:** Establish route/state evidence first, then fix shared shell and content contracts before page-family behavior. Keep route-specific exceptions local and verify all consumers after shared changes. Choose new mobile interactions only where the baseline demonstrates that reflow is insufficient.
+**Architecture:** Establish route/state evidence, then approve UX priorities and annotated visuals for every unique section before changing code. Implement shared shell/content contracts before page-family behavior, keep route-specific exceptions local, and verify all consumers after shared changes. Choose new mobile interactions only where evidence shows reflow is insufficient.
 
 **Tech Stack:** Next.js App Router, React, CSS Modules, existing browser/device inspection workflow.
 
@@ -15,6 +15,9 @@
 - Scope is `src/app/(site)`; `frontend-cms` is excluded.
 - `/selection` is a redirect to `/models`; it is not a separate page.
 - Preserve existing approved desktop composition and page content unless a responsive defect requires a structural change.
+- Treat mobile UX and visual hierarchy as the design target: each section must make its purpose and next action clear at phone width.
+- Mobile cards show only their decision-critical information; remove secondary copy and reduce decorative/metadata elements. Never remove information required to make a safe product choice; place it on the detail page or in an intentional disclosure.
+- Review and approve the annotated mobile/desktop visual proposal before product-code implementation.
 - Use mobile-first CSS; responsive Grid containers define explicit columns; shrinkable Grid/Flex children use `min-width: 0`; percentage-width elements that must not overflow pair `width: 100%` with `max-width: 100%`.
 - Distinguish intended local horizontal scrolling from accidental document overflow.
 - Hover cannot carry essential content or actions; respect `prefers-reduced-motion`.
@@ -28,6 +31,8 @@
 - Product variants and catalog filters: check selected state, URL/history behavior where present, reset/apply controls, and empty results.
 - Mobile form keyboard and validation: check focused field visibility, inline error context, submit availability, and success confirmation.
 - Touch interaction and reduced motion: check that galleries, carousels, comparison controls, and selector flows remain usable without hover or animation.
+- Card content density: check that the phone card has a clear title, only decision-critical facts, and a visible action; secondary copy and decorative elements do not crowd the card.
+- Section composition: check section order, image crop/focal point, content hierarchy, and action placement against the visual proposal.
 
 ---
 
@@ -40,22 +45,42 @@
 | Requests and cart | `/contact`, `/cart`, `/shop/cart`, drawer, empty/loading/filled/success states | `src/components/forms/**`, `src/components/cart/**`, route page files |
 | Service and editorial | `/about`, `/branding`, `/warranty`, `/become-a-supplier`, `/privacy-policy`, `/tire-iq`, `/tire-iq/[slug]`, 404 and unavailable content | `src/components/content/**`, relevant route pages |
 
-## Task 1: Capture responsive baseline for every route family
+## Task 1: Capture responsive UX baseline for every route and section
 
 **Files:**
 - Create: `docs/superpowers/reports/2026-10-15-public-site-responsive-baseline.md`
 - Inspect: `src/app/(site)/**/page.tsx`
 
 - [ ] Enumerate concrete static and dynamic routes and record the data-dependent variants for each dynamic family.
-- [ ] Inspect each route at 320, 360, 390, 430, 768, 1024, and 1440 CSS px; capture top, major section transitions, bottom, and each relevant empty/error/success state.
-- [ ] For each observation record route, section, viewport, visible impact, reproduction evidence, source/component owner, severity, and whether the issue is a shared or local cause.
+- [ ] Walk every route and section at 390 and 1440 CSS px; capture top, major section transitions, and bottom.
+- [ ] Add 320/360 checks for narrow cards, dense controls, long text and forms; use 430/768/1024 to validate responsive transitions and tablet composition.
+- [ ] For each observation record route, section, user task, viewport, visible impact, reproduction evidence, source/component owner, severity, and whether the issue is a shared or local cause.
+- [ ] Record which card text/facts/actions are decision-critical, which items are redundant or decorative, and which details belong on the destination page.
 - [ ] Run the supplied viewport and Grid/Flex diagnostics on representative pages; identify intentional carousel/table scrolling separately.
 - [ ] Mark unavailable API/CMS-dependent states as unverified instead of substituting fixture output as live evidence.
 - [ ] Review the inventory against the route table in the spec; resolve any uncovered route before implementation tasks begin.
 
-**Done when:** Every route family and material state has a baseline entry or a named access limitation, with P0/P1/P2 findings tied to source owners.
+**Done when:** Every route and section has a baseline entry or named access limitation; findings are prioritized by user impact and tied to a source owner. Card content has an essential/secondary inventory.
 
-## Task 2: Stabilize shared shell, hero, containers, and rich text
+## Task 2: Define user flows and annotate visuals for each page family
+
+**Files:**
+- Create: `docs/superpowers/reports/2026-10-15-public-site-responsive-visuals.md`
+- Reference: `docs/superpowers/reports/2026-10-15-public-site-responsive-baseline.md`
+- Reference: `docs/superpowers/specs/2026-10-15-public-site-responsive-design.md`
+
+- [ ] For each route, state the primary user task and the most important decision/action at each section; mark secondary content for deferral, disclosure, or removal from the mobile composition.
+- [ ] Provide a visual entry for every unique section in the route inventory; shared section templates may reference one annotated pattern, with route-specific differences called out explicitly.
+- [ ] Create annotated phone and desktop section layouts for five families: Main/Tire catalog, Shop discovery, product detail/configuration, forms/cart, and service/editorial/Tire IQ.
+- [ ] For every card family (direction, tire model, wheel model, Shop product, category/lifestyle, editorial), define a mobile content budget: title/identity, no more than two decision-critical facts, and action/affordance. Use the baseline to choose the exact facts per family.
+- [ ] Show what is removed or moved off each mobile card and where any decision-critical detail remains available. Do not rewrite product claims or published CMS copy without content-owner approval.
+- [ ] Annotate image focal point/crop, section order, spacing hierarchy, interaction controls, sticky actions if justified, and empty/error/selected states.
+- [ ] Compare 390px layout with 1440px composition and note only intentional structural differences; preserve desktop content where it remains useful.
+- [ ] Present the visual proposal for review and wait for approval before starting Tasks 3–7.
+
+**Done when:** The visual report resolves the major layout and content-density decisions for each page family and includes an approved mobile card budget. No product code has been changed.
+
+## Task 3: Stabilize shared shell, hero, containers, and rich text
 
 **Files:**
 - Modify: `src/components/layout/SiteShell.jsx`
@@ -66,7 +91,7 @@
 - Modify: `src/components/content/PageHero.tsx`, `src/components/content/PageHero.module.css`
 - Inspect: `src/components/content/LexicalContent.tsx`
 - Modify: `src/app/globals.css` for `.lexical-content` and header base rules when Task 1 confirms those rules own the defect
-- Modify: `src/app/globals.css` only where Task 1 proves the global overflow or base typography rule is the root cause
+- Modify: `src/app/globals.css` for global overflow/base typography only when Task 1 proves those rules own the defect
 
 - [ ] Fix confirmed mobile navigation, menu overlay, cart action and tone-switching issues at shared component level.
 - [ ] Set mobile-first width constraints at container and nested item levels; ensure intentional overlays fit the visual viewport and have a usable close/return path.
@@ -76,7 +101,7 @@
 
 **Done when:** Shared shell, hero, and rich-text consumers have consistent mobile behavior and no newly introduced desktop regressions at the baseline widths.
 
-## Task 3: Adapt tire direction catalogs, filters, cards, and model detail
+## Task 4: Adapt tire direction catalogs, filters, cards, and model detail
 
 **Files:**
 - Modify: `src/components/catalog/TireCatalog.module.css`
@@ -92,7 +117,7 @@
 
 - [ ] Adapt `/models`, direction, and category list layouts from the baseline findings, including long breadcrumbs and empty/no-match states.
 - [ ] Make tire filters compact and operable on mobile while retaining labels, reset, active values, results count, and query-state behavior.
-- [ ] Reflow tire cards without losing model identity, application, size/availability context, or the primary navigation target.
+- [ ] Rework tire model cards to the approved mobile content budget: retain model identity and only the facts needed to choose a model; move longer description and secondary badges to the model detail view.
 - [ ] Reorder model detail content for phone use and make gallery controls operable by touch and keyboard.
 - [ ] Implement one readable narrow-screen strategy for tire variants and technical specifications; retain a clear scroll cue if comparison still requires overflow.
 - [ ] Verify documents, advantages carousel and final contact CTA at narrow widths and with long labels.
@@ -100,7 +125,7 @@
 
 **Done when:** Direction/category catalog and model detail routes preserve their complete selection-to-contact task at the baseline widths and all empty/no-match states remain actionable.
 
-## Task 4: Adapt Shop home, categories, wheel catalogs, and product details
+## Task 5: Adapt Shop home, categories, wheel catalogs, and product details
 
 **Files:**
 - Modify: `src/app/(site)/shop/ShopHome.module.css`, `src/app/(site)/shop/page.tsx`
@@ -115,6 +140,7 @@
 - [ ] Adapt Shop hero, wheel models, order steps, category showcase and vehicle stories in their source order for phone layouts.
 - [ ] Make category carousels touch/keyboard operable and ensure reduced motion is respected.
 - [ ] Apply consistent mobile patterns to product catalog and lifestyle category variants, including filter, empty collection, and next-category states.
+- [ ] Reduce mobile category, wheel, and Shop product cards to the approved title/facts/action hierarchy; move descriptive copy and secondary badges to the detail view.
 - [ ] Based on baseline evidence, implement wheel filters either as a compact inline layout or a mobile panel; preserve apply/reset, selected filter summary, query state, and no-result feedback.
 - [ ] Adapt wheel model gallery/order/table/documents and verify long technical values.
 - [ ] Adapt Shop product gallery, option groups, availability, validation feedback, add-to-cart action, and long description.
@@ -122,7 +148,7 @@
 
 **Done when:** Every Shop route variant supports product discovery/configuration on narrow screens, with intentional carousel behavior and no hidden filter or purchase action.
 
-## Task 5: Adapt contact forms, cart page, and cart drawer
+## Task 6: Adapt contact forms, cart page, and cart drawer
 
 **Files:**
 - Modify: `src/components/forms/ContactExperience.tsx`
@@ -142,7 +168,7 @@
 
 **Done when:** A user can complete a request from product selection through contact submission using a phone viewport, with empty/error/success states visible and operable.
 
-## Task 6: Adapt service, policy, delivery, and Tire IQ content
+## Task 7: Adapt service, policy, delivery, and Tire IQ content
 
 **Files:**
 - Modify: `src/components/content/ServicePage.tsx`, `ServicePage.module.css`
@@ -160,19 +186,19 @@
 - [ ] Adapt ServicePage once for its hero, notice, numbered features, proof image, child article and CTA; verify every service-page consumer.
 - [ ] Adapt legal/privacy and delivery information for long text, address/email strings, notices, and card/article reading width.
 - [ ] Adapt Tire IQ selectors and topic navigation for touch, keyboard, long values, selected/result feedback and reduced-motion behavior.
-- [ ] Reflow editorial listing featured and regular cards, taxonomy controls, empty states, and article metadata.
+- [ ] Reflow editorial listing featured and regular cards, taxonomy controls, empty states, and article metadata. On mobile, show title, topic/essential metadata, and a concise action; omit the excerpt if it crowds the card.
 - [ ] Adapt article media, aside, body, related model links, next-step actions, and CMS content to a narrow reading column.
 - [ ] Recheck all service pages and article routes after shared component changes.
 
 **Done when:** Service/legal and Tire IQ routes remain readable and task-complete on phones, with all unique selector and CMS content states covered.
 
-## Task 7: Full responsive regression and evidence report
+## Task 8: Full responsive regression and evidence report
 
 **Files:**
 - Update: `docs/superpowers/reports/2026-10-15-public-site-responsive-baseline.md`
-- Review: all files modified in Tasks 2–6
+- Review: all files modified in Tasks 3–7
 
-- [ ] Repeat the route/state matrix at 320, 360, 390, 430, 768, 1024 and 1440 CSS px; include dynamic page variants and relevant form/catalog states.
+- [ ] Repeat every route/section at 390 and 1440 CSS px; repeat narrow/high-risk cases at 320/360, and layout transitions at 430/768/1024. Include dynamic page variants and relevant form/catalog states.
 - [ ] Re-run viewport, computed Grid-track, min/max width and child/parent width diagnostics on each page family.
 - [ ] Confirm deliberate local scrolling in tables/carousels is operable and distinguish it from accidental page overflow.
 - [ ] Check touch interactions, keyboard focus, reduced motion, mobile browser viewport/keyboard behavior, and long CMS content.
@@ -183,4 +209,4 @@
 
 ## Execution and review notes
 
-Tasks 2–6 can be reviewed by page family, but should start only after Task 1 establishes current evidence and shared causes. Task 7 is mandatory after all shared component changes. Each implementation task must preserve unrelated worktree content and stage only its own files.
+Tasks 3–7 can be reviewed by page family, but must start only after Task 1 establishes current evidence and Task 2's visual proposal is approved. Task 8 is mandatory after all shared component changes. Each implementation task must preserve unrelated worktree content and stage only its own files.
