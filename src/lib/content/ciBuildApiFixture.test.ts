@@ -33,7 +33,10 @@ describe("static build API fixture", () => {
           shopHome: { hero: {} },
           articles: [{ slug: "ci-fixture-article" }],
           tires: { types: [{ slug: "tbr" }], models: [{ model: { slug: "ci-fixture-tire" } }] },
-          wheels: { types: [{ slug: "forged" }], byType: [{ models: [{ slug: "ci-fixture-wheel" }] }] },
+          wheels: {
+            types: [{ slug: "forged" }],
+            byType: [{ models: [{ slug: "ci-fixture-wheel" }, { slug: "ci-fixture-wheel-2" }] }],
+          },
           shop: { categories: [{ slug: "accessories" }], products: [{ slug: "ci-fixture-product" }] },
         },
       },

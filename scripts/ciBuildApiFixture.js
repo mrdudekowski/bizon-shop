@@ -32,7 +32,7 @@ const TIRE_MODEL = {
   documents: [],
   selectionVehicleTypes: [],
   selectionConditions: [],
-  selectionAxles: [],
+  selectionAxles: ["drive"],
   showInMenu: true,
   menuOrder: 0,
 };
@@ -59,8 +59,8 @@ const WHEEL_MODEL = {
   name: "CI fixture wheel",
   wheelTypeSlug: WHEEL_TYPE.slug,
   wheelTypeName: WHEEL_TYPE.name,
-  series: "CI",
-  designStyle: "CI",
+  series: "Satin Black",
+  designStyle: "Off-road",
   material: "CI",
   constructionMethod: "CI",
   fitmentNotes: "CI fixture",
@@ -72,12 +72,38 @@ const WHEEL_MODEL = {
   menuOrder: 0,
 };
 
+const WHEEL_MODEL_2 = {
+  ...WHEEL_MODEL,
+  id: "ci-wheel-model-2",
+  slug: "ci-fixture-wheel-2",
+  name: "CI fixture wheel 2",
+  series: "Bronze",
+  designStyle: "Street",
+};
+
 const WHEEL_VARIANT = {
   id: "ci-wheel-variant-1",
   modelId: WHEEL_MODEL.id,
   sizeLabel: "CI fixture",
+  diameter: 18,
+  width: 9,
+  pcd: "6×139.7",
+  offsetET: 0,
+  centerBore: 106.1,
+  color: "Satin Black",
   available: true,
   priceOnRequest: true,
+};
+
+const WHEEL_VARIANT_2 = {
+  ...WHEEL_VARIANT,
+  id: "ci-wheel-variant-2",
+  modelId: WHEEL_MODEL_2.id,
+  diameter: 17,
+  width: 8,
+  pcd: "5×127",
+  centerBore: 71.5,
+  color: "Bronze",
 };
 
 const SHOP_CATEGORY = {
@@ -149,7 +175,10 @@ const CONTENT_SNAPSHOT = {
       .map((key) => [key, { hero: {} }])),
     articles: [ARTICLE],
     tires: { types: [TIRE_TYPE], models: [{ model: TIRE_MODEL, variants: [TIRE_VARIANT] }] },
-    wheels: { types: [WHEEL_TYPE], byType: [{ models: [WHEEL_MODEL], variants: [WHEEL_VARIANT] }] },
+    wheels: {
+      types: [WHEEL_TYPE],
+      byType: [{ models: [WHEEL_MODEL, WHEEL_MODEL_2], variants: [WHEEL_VARIANT, WHEEL_VARIANT_2] }],
+    },
     shop: { categories: [SHOP_CATEGORY], products: [SHOP_PRODUCT] },
   },
 };
@@ -167,10 +196,12 @@ export function responseForBuildApiPath(pathname) {
 
   if (pathname === "/v1/wheels/types") return json([WHEEL_TYPE]);
   if (pathname === `/v1/wheels/types/${WHEEL_TYPE.slug}`) return json(WHEEL_TYPE);
-  if (pathname === `/v1/wheels/types/${WHEEL_TYPE.slug}/models`) return json([WHEEL_MODEL]);
-  if (pathname === `/v1/wheels/types/${WHEEL_TYPE.slug}/variants`) return json([WHEEL_VARIANT]);
+  if (pathname === `/v1/wheels/types/${WHEEL_TYPE.slug}/models`) return json([WHEEL_MODEL, WHEEL_MODEL_2]);
+  if (pathname === `/v1/wheels/types/${WHEEL_TYPE.slug}/variants`) return json([WHEEL_VARIANT, WHEEL_VARIANT_2]);
   if (pathname === `/v1/wheels/models/${WHEEL_TYPE.slug}/${WHEEL_MODEL.slug}`) return json(WHEEL_MODEL);
+  if (pathname === `/v1/wheels/models/${WHEEL_TYPE.slug}/${WHEEL_MODEL_2.slug}`) return json(WHEEL_MODEL_2);
   if (pathname === `/v1/wheels/models/${WHEEL_MODEL.id}/variants`) return json([WHEEL_VARIANT]);
+  if (pathname === `/v1/wheels/models/${WHEEL_MODEL_2.id}/variants`) return json([WHEEL_VARIANT_2]);
 
   if (pathname === "/v1/shop/categories") return json([SHOP_CATEGORY]);
   if (pathname === `/v1/shop/categories/${SHOP_CATEGORY.slug}`) return json(SHOP_CATEGORY);

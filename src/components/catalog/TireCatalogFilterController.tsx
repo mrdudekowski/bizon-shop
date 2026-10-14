@@ -14,7 +14,8 @@ export function TireCatalogFilterController() {
     const filters = new URLSearchParams(query);
     const application = filters.get("application")?.trim();
     const axle = filters.get("axle")?.trim();
-    const size = filters.get("size")?.trim().toLocaleLowerCase("ru-RU");
+    const sizeInput = filters.get("size")?.trim();
+    const size = sizeInput?.toLocaleLowerCase("ru-RU");
     const cards = [...root.querySelectorAll<HTMLElement>("[data-tire-model-card]")];
     let visible = 0;
 
@@ -35,7 +36,7 @@ export function TireCatalogFilterController() {
     if (empty) empty.hidden = visible !== 0;
 
     const form = document.querySelector<HTMLFormElement>('form[aria-label="Фильтры каталога"]');
-    for (const [name, value] of [["application", application], ["axle", axle], ["size", size]] as const) {
+    for (const [name, value] of [["application", application], ["axle", axle], ["size", sizeInput]] as const) {
       const control = form?.elements.namedItem(name);
       if (control instanceof HTMLInputElement || control instanceof HTMLSelectElement) {
         control.value = value ?? "";

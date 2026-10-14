@@ -43,4 +43,14 @@ describe("tire catalog filters", () => {
       }).map((model) => model.slug),
     ).toEqual(["regional-drive"]);
   });
+
+  it("returns no tire models when the selected filters do not match", () => {
+    expect(
+      filterTireModels(models, {
+        application: "regional",
+        axle: "steer",
+        size: "315/80R22.5",
+      }),
+    ).toEqual([]);
+  });
 });
