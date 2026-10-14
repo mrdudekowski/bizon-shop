@@ -93,7 +93,6 @@
 - Modify: `src/components/content/PageHero.tsx`, `src/components/content/PageHero.module.css`
 - Inspect: `src/components/content/LexicalContent.tsx`
 - Modify: `src/app/globals.css` for `.lexical-content` and header base rules when Task 1 confirms those rules own the defect
-- Modify: `src/app/globals.css` for global overflow/base typography only when Task 1 proves those rules own the defect
 
 - [ ] Fix confirmed mobile navigation, menu overlay, cart action and tone-switching issues at shared component level.
 - [ ] Set mobile-first width constraints at container and nested item levels; ensure intentional overlays fit the visual viewport and have a usable close/return path.
@@ -200,7 +199,8 @@
 - Update: `docs/superpowers/reports/2026-10-15-public-site-responsive-baseline.md`
 - Review: all files modified in Tasks 3–7
 
-- [ ] Repeat every route/section at 390 CSS px; repeat narrow/high-risk cases at 320/360, and mobile/tablet transitions at 430/768/1024. Include dynamic page variants and relevant form/catalog states.
+- [ ] Repeat every route/section at 390 CSS px; repeat narrow/high-risk cases at 320/360, and mobile/tablet transitions at 430/768/1023. Include dynamic page variants and relevant form/catalog states.
+- [ ] Check 1024px as the locked desktop boundary and 1440px as the desktop reference; make no layout changes at these widths.
 - [ ] Compare all routes at 1440px against the locked baseline and document that desktop composition has not changed.
 - [ ] Re-run viewport, computed Grid-track, min/max width and child/parent width diagnostics on each page family.
 - [ ] Confirm deliberate local scrolling in tables/carousels is operable and distinguish it from accidental page overflow.
