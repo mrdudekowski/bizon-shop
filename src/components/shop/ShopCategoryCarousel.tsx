@@ -3,11 +3,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import styles from "@/components/catalog/ModelAdvantagesCarousel.module.css";
 import type { ShopHomeCarouselSlide } from "@/lib/content/shopCategoryPresentation";
 
-export function ShopCategoryCarousel({ slides }: { slides: readonly ShopHomeCarouselSlide[] }) {
+export function ShopCategoryCarousel({
+  slides,
+  showSlideTitle = true,
+  children,
+}: {
+  slides: readonly ShopHomeCarouselSlide[];
+  showSlideTitle?: boolean;
+  children?: ReactNode;
+}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [autoplay, setAutoplay] = useState(true);
   const [pageVisible, setPageVisible] = useState(true);
@@ -54,7 +63,16 @@ export function ShopCategoryCarousel({ slides }: { slides: readonly ShopHomeCaro
     };
   }, [autoplay, hasMultipleSlides, count]);
 
-  if (count === 0) return null;
+  if (count === 0) {
+    if (!children) return null;
+    return (
+      <div className={styles.carousel} role="region" aria-label="Категории BIZON Shop">
+        <div className={styles.mediaFallback} aria-hidden="true" />
+        <div className={styles.overlay} aria-hidden="true" />
+        <div className={`${styles.content} ${styles.contentWithChildren}`}>{children}</div>
+      </div>
+    );
+  }
 
   function selectSlide(index: number) {
     setAutoplay(false);
@@ -96,13 +114,17 @@ export function ShopCategoryCarousel({ slides }: { slides: readonly ShopHomeCaro
             <div className={styles.mediaFallback} aria-hidden="true" />
           )}
           <div className={styles.overlay} aria-hidden="true" />
-          <div className={styles.content}>
-            <h3 className={styles.title}>
-              <Link href={slide.href}>{slide.title}</Link>
-            </h3>
-          </div>
+          {showSlideTitle ? (
+            <div className={styles.content}>
+              <h3 className={styles.title}>
+                <Link href={slide.href}>{slide.title}</Link>
+              </h3>
+            </div>
+          ) : null}
         </article>
       ))}
+
+      {children ? <div className={`${styles.content} ${styles.contentWithChildren}`}>{children}</div> : null}
 
       {hasMultipleSlides ? (
         <div className={styles.controls}>

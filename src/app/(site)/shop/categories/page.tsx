@@ -2,6 +2,7 @@ import { ShopCategoriesIndex } from "@/components/shop/ShopCategoriesIndex";
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { getPageContent, getShopCategories } from "@/lib/content";
 import { loadPublished } from "@/lib/content/loadPublished";
+import { shopHomeCarouselSlides } from "@/lib/content/shopCategoryPresentation";
 import { createPageMetadata } from "@/lib/seo/metadata";
 
 export async function generateMetadata() {
@@ -20,5 +21,6 @@ export default async function ShopCategoriesPage() {
   ]));
   if (loaded.kind === "unavailable") return <PublishedContentUnavailable />;
   const [page, categories] = loaded.value;
-  return <ShopCategoriesIndex categories={categories} catalog={page.catalog} />;
+  const slides = shopHomeCarouselSlides(categories, page.catalog.tiles);
+  return <ShopCategoriesIndex categories={categories} catalog={page.catalog} slides={slides} />;
 }

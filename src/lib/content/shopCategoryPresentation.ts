@@ -5,6 +5,20 @@ import type { ShopCatalogTile } from "./pages/types";
 
 export type ShopCategoryPageView = "catalog" | "lifestyle" | "not-found";
 
+const SHOP_CATEGORY_BLACK_ICONS: Readonly<Record<string, string>> = {
+  outdoor: "/images/shop/category-icons/camping-travel-black.png",
+  accessory: "/images/shop/category-icons/accessories-shirt-black.png",
+  accessories: "/images/shop/category-icons/car-comfort-black.png",
+  "car-comfort": "/images/shop/category-icons/car-comfort-black.png",
+  "masla-i-zapchasti": "/images/shop/category-icons/oils-spare-parts-black.png",
+  pritsepy: "/images/shop/category-icons/trailers-black.png",
+  trailers: "/images/shop/category-icons/trailers-black.png",
+};
+
+export function shopCategoryIconUrl(slug: string): string | null {
+  return SHOP_CATEGORY_BLACK_ICONS[slug] ?? null;
+}
+
 export function shopCategoryPageView(
   hasPublishedCmsCategory: boolean,
   hasLifestyleFallback: boolean,

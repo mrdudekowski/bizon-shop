@@ -117,7 +117,11 @@ describe("shopCategoryPresentation", () => {
     ]);
     expect(slides.map((slide) => ({ id: slide.id, title: slide.title, imageUrl: slide.imageUrl }))).toEqual([
       { id: "outdoor", title: "Кемпинг и путешествия", imageUrl: "/camp-1.jpg" },
-      { id: "accessories", title: "Комфорт в автомобиле", imageUrl: null },
+      {
+        id: "accessories",
+        title: "Комфорт в автомобиле",
+        imageUrl: "/images/premium/shop/lifestyle/categories/car-comfort-photo.jpg",
+      },
     ]);
   });
 
@@ -129,9 +133,9 @@ describe("shopCategoryPresentation", () => {
         iconUrl: card.iconUrl,
       })),
     ).toEqual([
-      { slug: "outdoor", href: "/shop/outdoor", iconUrl: "/cms/outdoor.png" },
-      { slug: "accessories", href: "/shop/accessories", iconUrl: "/cms/acc.png" },
-      { slug: "pritsepy", href: "/shop/pritsepy", iconUrl: "/cms/trailer.png" },
+      { slug: "outdoor", href: "/shop/outdoor", iconUrl: null },
+      { slug: "accessories", href: "/shop/accessories", iconUrl: null },
+      { slug: "pritsepy", href: "/shop/pritsepy", iconUrl: null },
     ]);
   });
 
@@ -148,7 +152,7 @@ describe("shopCategoryPresentation", () => {
     ]);
     expect(shopHomeCarouselSlides(categories, tiles)).toEqual([
       { id: "pritsepy", title: "Прицепы BIZON", href: "/shop/pritsepy", imageUrl: "/page/trailer-slide.jpg" },
-      { id: "hidden", title: "Скрыто", href: "/shop/hidden", imageUrl: null },
+      { id: "hidden", title: "Скрыто", href: "/shop/hidden", imageUrl: "/page/hidden.jpg" },
     ]);
   });
 

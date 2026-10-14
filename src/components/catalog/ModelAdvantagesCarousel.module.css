@@ -63,6 +63,10 @@
   margin: 0 auto;
 }
 
+.contentWithChildren {
+  padding-bottom: 0;
+}
+
 .content p,
 .content h2,
 .title {
@@ -236,6 +240,10 @@
   .content {
     align-content: end;
     padding-bottom: 128px;
+  }
+
+  .contentWithChildren {
+    padding-bottom: clamp(68px, 10svh, 84px);
   }
 
   .content h2,
