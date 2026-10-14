@@ -2,6 +2,7 @@ import { Pool, type PoolClient } from "pg";
 import { afterTransactionCommit, getTransactionClient, withTransaction } from "../../databaseTransaction";
 
 import { AdminClientError } from "../client/errors";
+import { mergeLegacyPageOverlay } from "./pageOverlay";
 import type { AdminClient } from "../client/adminClient";
 import { hashPassword, parseCapabilities, resetUserPassword as resetAccountPassword, storedRole, type AuthenticatedAccount } from "./adminAuth";
 import {
@@ -338,10 +339,12 @@ async function present<T>(collection: string, id: string, mapped: T, status: str
   const overlay = await readOverlay<T>(collection, id);
   const draft = overlay == null
     ? mapped
-    : collection === "materials" && typeof overlay === "object" && overlay !== null
-      ? { ...mapped as object, ...overlay as object,
-          taxonomy: (overlay as { taxonomy?: unknown }).taxonomy ?? (mapped as { taxonomy?: unknown }).taxonomy } as T
-      : overlay;
+    : collection === "pages"
+      ? mergeLegacyPageOverlay(mapped, overlay)
+      : collection === "materials" && typeof overlay === "object" && overlay !== null
+        ? { ...mapped as object, ...overlay as object,
+            taxonomy: (overlay as { taxonomy?: unknown }).taxonomy ?? (mapped as { taxonomy?: unknown }).taxonomy } as T
+        : overlay;
   return wrap(id, draft, status, mapped);
 }
 
@@ -641,7 +644,19 @@ async function mapPage(row: Row): Promise<PageDraft> {
         image: placement(row.home_selection_entry_image_id, str(row.home_selection_entry_image_alt)),
       },
       directions: section(row.home_directions_eyebrow, row.home_directions_title, row.home_directions_lead),
-      expertise: section(row.home_expertise_eyebrow, row.home_expertise_title, row.home_expertise_lead),
+      expertise: {
+        ...section(row.home_expertise_eyebrow, row.home_expertise_title, row.home_expertise_lead),
+        image: placement(row.home_expertise_image_id, str(row.home_expertise_image_alt)),
+        cta: { label: str(row.home_expertise_cta_label), href: str(row.home_expertise_cta_href) },
+      },
+      branding: {
+        ...section(row.home_branding_eyebrow, row.home_branding_title, row.home_branding_lead),
+        cta: { label: str(row.home_branding_cta_label), href: str(row.home_branding_cta_href) },
+        beforeCaption: str(row.home_branding_before_caption),
+        afterCaption: str(row.home_branding_after_caption),
+        beforeImage: placement(row.home_branding_before_image_id, str(row.home_branding_before_image_alt)),
+        afterImage: placement(row.home_branding_after_image_id, str(row.home_branding_after_image_alt)),
+      },
       shopCampaign: {
         ...section(row.home_shop_campaign_eyebrow, row.home_shop_campaign_title, row.home_shop_campaign_lead),
         image: placement(row.home_shop_campaign_image_id, str(row.home_shop_campaign_image_alt)),
@@ -723,7 +738,16 @@ async function mapPage(row: Row): Promise<PageDraft> {
       },
     };
   }
+  const editorial = row.editorial_configured && ["about", "warranty", "branding", "become-a-supplier", "shop-delivery-returns"].includes(key) ? {
+    ...(row.editorial_heading_configured ? { featuresHeading: str(row.editorial_features_heading) } : {}),
+    ...(row.editorial_features_configured ? { features: (await query("SELECT id, title, text FROM pages_editorial_features WHERE _parent_id=$1 ORDER BY _order, id", [row.id])).map((item) => ({ id: str(item.id), title: str(item.title), text: str(item.text) })) } : {}),
+    ...(row.editorial_sections_configured ? { sections: (await query("SELECT id, heading, body FROM pages_editorial_sections WHERE _parent_id=$1 ORDER BY _order, id", [row.id])).map((item) => ({ id: str(item.id), heading: str(item.heading), body: str(item.body) })) } : {}),
+    ...(row.editorial_notice_configured ? { notice: row.editorial_notice ? { body: str(row.editorial_notice) } : null } : {}),
+    ...(row.editorial_proof_configured ? { proof: row.editorial_proof_title || row.editorial_proof_text || row.editorial_proof_image_id ? { title: str(row.editorial_proof_title), text: str(row.editorial_proof_text), image: placement(row.editorial_proof_image_id, str(row.editorial_proof_image_alt)) } : null } : {}),
+    ...(row.editorial_cta_configured ? { cta: row.editorial_cta_label && row.editorial_cta_href ? { label: str(row.editorial_cta_label), href: str(row.editorial_cta_href), secondaryLabel: str(row.editorial_secondary_label), secondaryHref: str(row.editorial_secondary_href) } : null } : {}),
+  } : {};
   return {
+    ...editorial,
     id: key as Exclude<PageKey, "home" | "shop-home">,
     seoTitle,
     seoDescription,
@@ -1362,6 +1386,9 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
              UNION ALL SELECT 'Главный экран сайта: ' || "key" FROM pages WHERE home_hero_image_id = $1
              UNION ALL SELECT 'Блок выбора шин на главной: ' || "key" FROM pages WHERE home_selection_entry_image_id = $1
              UNION ALL SELECT 'Рекламный блок Shop на главной: ' || "key" FROM pages WHERE home_shop_campaign_image_id = $1
+             UNION ALL SELECT 'Блок экспертизы на главной: ' || "key" FROM pages WHERE home_expertise_image_id = $1
+             UNION ALL SELECT 'Брендинг до: ' || "key" FROM pages WHERE home_branding_before_image_id = $1
+             UNION ALL SELECT 'Брендинг после: ' || "key" FROM pages WHERE home_branding_after_image_id = $1
              UNION ALL SELECT 'Обложка страницы Shop: ' || "key" FROM pages WHERE shop_hero_image_id = $1
              UNION ALL SELECT 'Обложка страницы-заглушки: ' || "key" FROM pages WHERE stub_hero_image_id = $1
              UNION ALL SELECT 'Изображение карусели Shop на странице' FROM pages_shop_category_carousel WHERE desktop_image_id = $1 OR mobile_image_id = $1
@@ -2351,6 +2378,13 @@ async function writePage(draft: PageDraft) {
         home_shop_campaign_cta_label=$25, home_shop_campaign_cta_href=$26,
         home_directions_eyebrow=$27, home_directions_title=$28, home_directions_lead=$29,
         home_expertise_eyebrow=$30, home_expertise_title=$31, home_expertise_lead=$32,
+        home_expertise_image_id=$33, home_expertise_image_alt=$34,
+        home_expertise_cta_label=$35, home_expertise_cta_href=$36,
+        home_branding_eyebrow=$37, home_branding_title=$38, home_branding_lead=$39,
+        home_branding_cta_label=$40, home_branding_cta_href=$41,
+        home_branding_before_caption=$42, home_branding_after_caption=$43,
+        home_branding_before_image_id=$44, home_branding_before_image_alt=$45,
+        home_branding_after_image_id=$46, home_branding_after_image_alt=$47,
         status='published', updated_at=now()
        WHERE key='home'`,
       [
@@ -2386,6 +2420,21 @@ async function writePage(draft: PageDraft) {
         draft.expertise.eyebrow,
         draft.expertise.title,
         draft.expertise.lead,
+        draft.expertise.image ? Number(draft.expertise.image.assetId) : null,
+        draft.expertise.image?.alt ?? "",
+        draft.expertise.cta.label,
+        draft.expertise.cta.href,
+        draft.branding.eyebrow,
+        draft.branding.title,
+        draft.branding.lead,
+        draft.branding.cta.label,
+        draft.branding.cta.href,
+        draft.branding.beforeCaption,
+        draft.branding.afterCaption,
+        draft.branding.beforeImage ? Number(draft.branding.beforeImage.assetId) : null,
+        draft.branding.beforeImage?.alt ?? "",
+        draft.branding.afterImage ? Number(draft.branding.afterImage.assetId) : null,
+        draft.branding.afterImage?.alt ?? "",
       ],
     );
     return;
@@ -2439,6 +2488,15 @@ async function writePage(draft: PageDraft) {
       );
     }
     return;
+  }
+  if (["about", "warranty", "branding", "become-a-supplier", "shop-delivery-returns"].includes(draft.id) && [draft.featuresHeading, draft.features, draft.sections, draft.notice, draft.proof, draft.cta].some((value) => value !== undefined)) {
+    const [parent] = await query("SELECT id FROM pages WHERE key=$1", [draft.id]);
+    if (!parent) throw new AdminClientError("publish_blocked");
+    await query(`UPDATE pages SET editorial_configured=true, editorial_features_heading=$2, editorial_notice=$3, editorial_proof_title=$4, editorial_proof_text=$5, editorial_proof_image_id=$6, editorial_proof_image_alt=$7, editorial_cta_label=$8, editorial_cta_href=$9, editorial_secondary_label=$10, editorial_secondary_href=$11, editorial_heading_configured=$12, editorial_features_configured=$13, editorial_sections_configured=$14, editorial_notice_configured=$15, editorial_proof_configured=$16, editorial_cta_configured=$17 WHERE key=$1`, [draft.id, draft.featuresHeading ?? "", draft.notice?.body ?? "", draft.proof?.title ?? "", draft.proof?.text ?? "", draft.proof?.image ? Number(draft.proof.image.assetId) : null, draft.proof?.image?.alt ?? "", draft.cta?.label ?? "", draft.cta?.href ?? "", draft.cta?.secondaryLabel ?? "", draft.cta?.secondaryHref ?? "", draft.featuresHeading !== undefined, draft.features !== undefined, draft.sections !== undefined, draft.notice !== undefined, draft.proof !== undefined, draft.cta !== undefined]);
+    await query("DELETE FROM pages_editorial_features WHERE _parent_id=$1", [parent.id]);
+    for (const [index, feature] of (draft.features ?? []).entries()) await query("INSERT INTO pages_editorial_features (id, _parent_id, _order, title, text) VALUES ($1,$2,$3,$4,$5)", [feature.id, parent.id, index, feature.title, feature.text]);
+    await query("DELETE FROM pages_editorial_sections WHERE _parent_id=$1", [parent.id]);
+    for (const [index, item] of (draft.sections ?? []).entries()) await query("INSERT INTO pages_editorial_sections (id, _parent_id, _order, heading, body) VALUES ($1,$2,$3,$4,$5)", [item.id, parent.id, index, item.heading, item.body]);
   }
   await query(
     `UPDATE pages SET seo_seo_title=$2, seo_seo_description=$3, stub_hero_eyebrow=$4, stub_hero_title=$5, stub_hero_lead=$6, stub_hero_image_id=$7, stub_hero_image_alt=$8, status='published', updated_at=now() WHERE key=$1`,

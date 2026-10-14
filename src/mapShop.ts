@@ -1,6 +1,7 @@
 import { lexicalToHtml, normalizeImageUrl, toFiniteNumber } from "./mapTire";
 
 type ShopCategoryRow = {
+  id: string | number;
   name: string;
   slug: string;
   description: string | null;
@@ -45,6 +46,7 @@ export type CmsShopCategoryCarouselFrame = {
 };
 
 export type CmsShopCategory = {
+  id: string;
   slug: string;
   name: string;
   description: string;
@@ -103,6 +105,7 @@ export function mapShopCategory(
   slides: { title?: string | null; image_url?: string | null }[] = [],
 ): CmsShopCategory {
   return {
+    id: String(row.id),
     slug: row.slug,
     name: row.name,
     description: row.description ?? "",

@@ -231,7 +231,7 @@ export async function readHomePatch(db: ReadDatabase): Promise<HomePatch | null>
     SELECT pages.seo_seo_title, pages.seo_seo_description, pages.home_hero_eyebrow, pages.home_hero_title,
       pages.home_hero_lead, pages.home_hero_primary_cta_label, pages.home_hero_primary_cta_href,
       pages.home_hero_secondary_cta_label, pages.home_hero_secondary_cta_href, pages.home_hero_metric_label,
-      pages.home_hero_metric_text, hero_media.url AS home_hero_image_url,
+      pages.home_hero_metric_text, pages.home_hero_image_alt, hero_media.url AS home_hero_image_url,
       pages.home_selection_entry_eyebrow, pages.home_selection_entry_title, pages.home_selection_entry_lead,
       pages.home_selection_entry_image_alt,
       selection_media.url AS home_selection_entry_image_url,
@@ -239,11 +239,21 @@ export async function readHomePatch(db: ReadDatabase): Promise<HomePatch | null>
       pages.home_shop_campaign_image_alt, pages.home_shop_campaign_cta_label, pages.home_shop_campaign_cta_href,
       campaign_media.url AS home_shop_campaign_image_url,
       pages.home_directions_eyebrow, pages.home_directions_title, pages.home_directions_lead,
-      pages.home_expertise_eyebrow, pages.home_expertise_title, pages.home_expertise_lead
+      pages.home_expertise_eyebrow, pages.home_expertise_title, pages.home_expertise_lead,
+      pages.home_expertise_image_alt, pages.home_expertise_cta_label, pages.home_expertise_cta_href,
+      expertise_media.url AS home_expertise_image_url,
+      pages.home_branding_eyebrow, pages.home_branding_title, pages.home_branding_lead,
+      pages.home_branding_cta_label, pages.home_branding_cta_href,
+      pages.home_branding_before_caption, pages.home_branding_after_caption,
+      pages.home_branding_before_image_alt, before_media.url AS home_branding_before_image_url,
+      pages.home_branding_after_image_alt, after_media.url AS home_branding_after_image_url
     FROM pages
     LEFT JOIN media AS hero_media ON hero_media.id = pages.home_hero_image_id
     LEFT JOIN media AS selection_media ON selection_media.id = pages.home_selection_entry_image_id
     LEFT JOIN media AS campaign_media ON campaign_media.id = pages.home_shop_campaign_image_id
+    LEFT JOIN media AS expertise_media ON expertise_media.id = pages.home_expertise_image_id
+    LEFT JOIN media AS before_media ON before_media.id = pages.home_branding_before_image_id
+    LEFT JOIN media AS after_media ON after_media.id = pages.home_branding_after_image_id
     WHERE pages.key = 'home' AND pages.status = 'published'
   `);
 
@@ -282,7 +292,7 @@ export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch
       `SELECT tiles.category_id, categories.slug AS category_slug, tiles.title, tiles.visible,
         tiles._order AS sort_order, icon.url AS icon_url, image.url AS image_url,
         carousel.url AS carousel_image_url, tiles.icon_alt, tiles.image_alt,
-        tiles.carousel_image_alt, (tiles.carousel_image_media_id IS NOT NULL) AS carousel_visible
+        tiles.carousel_image_alt, tiles.carousel_visible
        FROM pages_shop_catalog_tiles tiles
        JOIN shop_categories categories ON categories.id = tiles.category_id AND categories.status = 'published'
        LEFT JOIN media AS icon ON icon.id = tiles.icon_media_id
@@ -359,15 +369,19 @@ export async function readStubPatch(db: ReadDatabase, key: string): Promise<Stub
   if (!STUB_PAGE_KEYS.has(key)) return null;
   const [row] = await db.query(
     `
-      SELECT pages.seo_seo_title, pages.seo_seo_description, pages.stub_hero_eyebrow, pages.stub_hero_title,
+      SELECT pages.id, pages.editorial_heading_configured, pages.editorial_features_configured, pages.editorial_sections_configured, pages.editorial_notice_configured, pages.editorial_proof_configured, pages.editorial_cta_configured, pages.editorial_configured, pages.editorial_features_heading, pages.editorial_notice, pages.editorial_proof_title, pages.editorial_proof_text, pages.editorial_proof_image_alt, pages.editorial_cta_label, pages.editorial_cta_href, pages.editorial_secondary_label, pages.editorial_secondary_href, proof_media.url AS editorial_proof_image_url, pages.seo_seo_title, pages.seo_seo_description, pages.stub_hero_eyebrow, pages.stub_hero_title,
         pages.stub_hero_lead, pages.stub_hero_image_alt, media.url AS stub_hero_image_url
       FROM pages
       LEFT JOIN media ON media.id = pages.stub_hero_image_id
+      LEFT JOIN media AS proof_media ON proof_media.id = pages.editorial_proof_image_id
       WHERE pages.key = $1 AND pages.status = 'published'
     `,
     [key],
   );
-  return row ? mapStubPatch(row as Parameters<typeof mapStubPatch>[0]) : null;
+  if (!row) return null;
+  const features = row.editorial_configured ? await db.query(`SELECT id, title, text FROM pages_editorial_features WHERE _parent_id = $1 ORDER BY _order, id`, [row.id]) : [];
+  const sections = row.editorial_configured ? await db.query(`SELECT id, heading, body FROM pages_editorial_sections WHERE _parent_id = $1 ORDER BY _order, id`, [row.id]) : [];
+  return mapStubPatch({ ...row, features, sections } as Parameters<typeof mapStubPatch>[0]);
 }
 
 async function readWheelGallery(db: ReadDatabase, parentId: unknown) {

@@ -13,6 +13,7 @@ type HomeRow = {
   home_hero_metric_label: string | null;
   home_hero_metric_text: string | null;
   home_hero_image_url?: string | null;
+  home_hero_image_alt?: string | null;
   home_selection_entry_image_url?: string | null;
   home_selection_entry_image_alt?: string | null;
   home_selection_entry_eyebrow?: string | null;
@@ -31,6 +32,21 @@ type HomeRow = {
   home_expertise_eyebrow?: string | null;
   home_expertise_title?: string | null;
   home_expertise_lead?: string | null;
+  home_branding_eyebrow?: string | null;
+  home_branding_title?: string | null;
+  home_branding_lead?: string | null;
+  home_branding_cta_label?: string | null;
+  home_branding_cta_href?: string | null;
+  home_branding_before_caption?: string | null;
+  home_branding_after_caption?: string | null;
+  home_branding_before_image_url?: string | null;
+  home_branding_before_image_alt?: string | null;
+  home_branding_after_image_url?: string | null;
+  home_branding_after_image_alt?: string | null;
+  home_expertise_image_url?: string | null;
+  home_expertise_image_alt?: string | null;
+  home_expertise_cta_label?: string | null;
+  home_expertise_cta_href?: string | null;
 };
 
 type HomeCta = {
@@ -50,6 +66,7 @@ export type HomePatch = {
     metricLabel?: string;
     metricText?: string;
     imageUrl?: string;
+    imageAlt?: string;
   };
   selectionEntry?: { eyebrow?: string; title?: string; lead?: string; imageUrl?: string; imageAlt?: string };
   shopCampaign?: {
@@ -61,7 +78,8 @@ export type HomePatch = {
     cta?: HomeCta;
   };
   directions?: { eyebrow?: string; title?: string; lead?: string };
-  expertise?: { eyebrow?: string; title?: string; lead?: string };
+  expertise?: { eyebrow?: string; title?: string; lead?: string; imageUrl?: string | null; imageAlt?: string; cta?: HomeCta };
+  branding?: { eyebrow?: string; title?: string; lead?: string; cta?: HomeCta; beforeCaption?: string; afterCaption?: string; beforeImageUrl?: string | null; beforeImageAlt?: string; afterImageUrl?: string | null; afterImageAlt?: string };
 };
 
 function publicImageUrl(value: string | null | undefined): string | undefined {
@@ -70,6 +88,26 @@ function publicImageUrl(value: string | null | undefined): string | undefined {
 
 const nonEmptyString = (value: string | null): string | undefined => value || undefined;
 
+function hasOwn(row: HomeRow, key: keyof HomeRow): boolean {
+  return Object.prototype.hasOwnProperty.call(row, key);
+}
+
+function mapOptionalImageUrl(row: HomeRow, key: "home_expertise_image_url" | "home_branding_before_image_url" | "home_branding_after_image_url"): string | null | undefined {
+  if (!hasOwn(row, key)) return undefined;
+  return publicImageUrl(row[key]) ?? null;
+}
+
+function mapEditableHomeCta(
+  row: HomeRow,
+  labelKey: "home_expertise_cta_label" | "home_branding_cta_label",
+  hrefKey: "home_expertise_cta_href" | "home_branding_cta_href",
+): HomeCta | undefined {
+  if (!hasOwn(row, labelKey) && !hasOwn(row, hrefKey)) return undefined;
+  return {
+    label: nonEmptyString(row[labelKey] ?? null) ?? "",
+    href: nonEmptyString(row[hrefKey] ?? null) ?? "",
+  };
+}
 function mapCta(label: string | null, href: string | null): HomeCta | undefined {
   const mappedLabel = nonEmptyString(label);
   const mappedHref = nonEmptyString(href);
@@ -93,11 +131,15 @@ export function mapHomePatch(row: HomeRow): HomePatch {
     row.home_directions_title,
     row.home_directions_lead,
   );
-  const expertise = mapHomeShell(
-    row.home_expertise_eyebrow,
-    row.home_expertise_title,
-    row.home_expertise_lead,
-  );
+  const expertiseShell = mapHomeShell(row.home_expertise_eyebrow, row.home_expertise_title, row.home_expertise_lead);
+  const expertiseImageUrl = mapOptionalImageUrl(row, "home_expertise_image_url");
+  const expertiseCta = mapEditableHomeCta(row, "home_expertise_cta_label", "home_expertise_cta_href");
+  const expertise = expertiseShell || expertiseImageUrl !== undefined || expertiseCta || row.home_expertise_image_alt
+    ? { ...expertiseShell, ...(expertiseImageUrl !== undefined ? { imageUrl: expertiseImageUrl } : {}),
+        ...(nonEmptyString(row.home_expertise_image_alt ?? null) ? { imageAlt: row.home_expertise_image_alt! } : {}),
+        ...(expertiseCta ? { cta: expertiseCta } : {}) }
+    : undefined;
+  const branding = mapHomeBranding(row);
 
   return {
     ...(nonEmptyString(row.seo_seo_title) ? { seoTitle: nonEmptyString(row.seo_seo_title) } : {}),
@@ -117,10 +159,12 @@ export function mapHomePatch(row: HomeRow): HomePatch {
       ...(publicImageUrl(row.home_hero_image_url)
         ? { imageUrl: publicImageUrl(row.home_hero_image_url) }
         : {}),
+      ...(nonEmptyString(row.home_hero_image_alt ?? null) ? { imageAlt: row.home_hero_image_alt! } : {}),
     },
     ...(shopCampaign ? { shopCampaign } : {}),
     ...(directions ? { directions } : {}),
     ...(expertise ? { expertise } : {}),
+    ...(branding ? { branding } : {}),
   };
 }
 
@@ -135,6 +179,25 @@ function mapHomeShell(
     ...(nonEmptyString(lead ?? null) ? { lead: nonEmptyString(lead ?? null) } : {}),
   };
   return Object.keys(shell).length > 0 ? shell : undefined;
+}
+
+function mapHomeBranding(row: HomeRow): NonNullable<HomePatch["branding"]> | undefined {
+  const cta = mapEditableHomeCta(row, "home_branding_cta_label", "home_branding_cta_href");
+  const beforeImageUrl = mapOptionalImageUrl(row, "home_branding_before_image_url");
+  const afterImageUrl = mapOptionalImageUrl(row, "home_branding_after_image_url");
+  const mapped = {
+    ...(nonEmptyString(row.home_branding_eyebrow ?? null) ? { eyebrow: row.home_branding_eyebrow! } : {}),
+    ...(nonEmptyString(row.home_branding_title ?? null) ? { title: row.home_branding_title! } : {}),
+    ...(nonEmptyString(row.home_branding_lead ?? null) ? { lead: row.home_branding_lead! } : {}),
+    ...(cta ? { cta } : {}),
+    ...(nonEmptyString(row.home_branding_before_caption ?? null) ? { beforeCaption: row.home_branding_before_caption! } : {}),
+    ...(nonEmptyString(row.home_branding_after_caption ?? null) ? { afterCaption: row.home_branding_after_caption! } : {}),
+    ...(beforeImageUrl !== undefined ? { beforeImageUrl } : {}),
+    ...(nonEmptyString(row.home_branding_before_image_alt ?? null) ? { beforeImageAlt: row.home_branding_before_image_alt! } : {}),
+    ...(afterImageUrl !== undefined ? { afterImageUrl } : {}),
+    ...(nonEmptyString(row.home_branding_after_image_alt ?? null) ? { afterImageAlt: row.home_branding_after_image_alt! } : {}),
+  };
+  return Object.keys(mapped).length ? mapped : undefined;
 }
 
 function mapHomeShopCampaign(row: HomeRow): HomePatch["shopCampaign"] | undefined {
@@ -154,6 +217,12 @@ function mapHomeShopCampaign(row: HomeRow): HomePatch["shopCampaign"] | undefine
 }
 
 export type StubPatch = {
+  featuresHeading?: string;
+  features?: { id: string; title: string; text: string }[];
+  sections?: { id: string; heading: string; body: string }[];
+  notice?: { body: string } | null;
+  proof?: { imageUrl: string | null; imageAlt: string; title: string; text: string } | null;
+  cta?: { label: string; href: string; secondaryLabel?: string; secondaryHref?: string } | null;
   seoTitle?: string;
   seoDescription?: string;
   hero: {
@@ -166,6 +235,25 @@ export type StubPatch = {
 };
 
 type StubRow = {
+  editorial_configured?: boolean;
+  editorial_heading_configured?: boolean;
+  editorial_features_configured?: boolean;
+  editorial_sections_configured?: boolean;
+  editorial_notice_configured?: boolean;
+  editorial_proof_configured?: boolean;
+  editorial_cta_configured?: boolean;
+  editorial_features_heading?: string | null;
+  editorial_notice?: string | null;
+  editorial_proof_title?: string | null;
+  editorial_proof_text?: string | null;
+  editorial_proof_image_url?: string | null;
+  editorial_proof_image_alt?: string | null;
+  editorial_cta_label?: string | null;
+  editorial_cta_href?: string | null;
+  editorial_secondary_label?: string | null;
+  editorial_secondary_href?: string | null;
+  features?: { id: string; title: string; text: string }[];
+  sections?: { id: string; heading: string; body: string }[];
   seo_seo_title: string | null;
   seo_seo_description: string | null;
   stub_hero_eyebrow: string | null;
@@ -177,6 +265,14 @@ type StubRow = {
 
 export function mapStubPatch(row: StubRow): StubPatch {
   return {
+    ...(row.editorial_configured ? {
+      ...(row.editorial_heading_configured ? { featuresHeading: row.editorial_features_heading ?? "" } : {}),
+      ...(row.editorial_features_configured ? { features: row.features ?? [] } : {}),
+      ...(row.editorial_sections_configured ? { sections: row.sections ?? [] } : {}),
+      ...(row.editorial_notice_configured ? { notice: row.editorial_notice ? { body: row.editorial_notice } : null } : {}),
+      ...(row.editorial_proof_configured ? { proof: row.editorial_proof_title || row.editorial_proof_text || row.editorial_proof_image_url ? { imageUrl: publicImageUrl(row.editorial_proof_image_url) ?? null, imageAlt: row.editorial_proof_image_alt ?? "", title: row.editorial_proof_title ?? "", text: row.editorial_proof_text ?? "" } : null } : {}),
+      ...(row.editorial_cta_configured ? { cta: row.editorial_cta_label && row.editorial_cta_href ? { label: row.editorial_cta_label, href: row.editorial_cta_href, secondaryLabel: row.editorial_secondary_label ?? "", secondaryHref: row.editorial_secondary_href ?? "" } : null } : {}),
+    } : {}),
     ...(nonEmptyString(row.seo_seo_title) ? { seoTitle: nonEmptyString(row.seo_seo_title) } : {}),
     ...(nonEmptyString(row.seo_seo_description) ? { seoDescription: nonEmptyString(row.seo_seo_description) } : {}),
     hero: {
@@ -370,7 +466,7 @@ export function mapShopHomePatch(input: {
         ...(publicImageUrl(tile.icon_url) ? { iconUrl: publicImageUrl(tile.icon_url) } : {}),
         ...(publicImageUrl(tile.image_url) ? { imageUrl: publicImageUrl(tile.image_url) } : {}),
         ...(publicImageUrl(tile.carousel_image_url) ? { carouselImageUrl: publicImageUrl(tile.carousel_image_url) } : {}),
-        carouselVisible: tile.carousel_visible ?? Boolean(tile.carousel_image_url),
+        carouselVisible: tile.carousel_visible === true,
         ...(optionalText(tile.icon_alt) ? { iconAlt: optionalText(tile.icon_alt) } : {}),
         ...(optionalText(tile.image_alt) ? { imageAlt: optionalText(tile.image_alt) } : {}),
         ...(optionalText(tile.carousel_image_alt) ? { carouselImageAlt: optionalText(tile.carousel_image_alt) } : {}),

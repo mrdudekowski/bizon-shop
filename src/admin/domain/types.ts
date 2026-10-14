@@ -312,6 +312,12 @@ export type PageSectionCopy = {
 export const LEGAL_PAGE_KEYS = ["privacy-policy", "warranty", "shop-delivery-returns"] as const;
 
 export type StubPageDraft = {
+  featuresHeading?: string;
+  features?: { id: string; title: string; text: string }[];
+  sections?: { id: string; heading: string; body: string }[];
+  notice?: { body: string } | null;
+  proof?: { image?: ImagePlacement | null; title: string; text: string } | null;
+  cta?: (PageCta & { secondaryLabel?: string; secondaryHref?: string }) | null;
   id: Exclude<PageKey, "home" | "shop-home">;
   seoTitle: string;
   seoDescription: string;
@@ -332,7 +338,14 @@ export type HomePageDraft = {
   };
   selectionEntry: PageSectionCopy & { image?: ImagePlacement };
   directions: PageSectionCopy;
-  expertise: PageSectionCopy;
+  expertise: PageSectionCopy & { image?: ImagePlacement; cta: PageCta };
+  branding: PageSectionCopy & {
+    cta: PageCta;
+    beforeCaption: string;
+    afterCaption: string;
+    beforeImage?: ImagePlacement;
+    afterImage?: ImagePlacement;
+  };
   shopCampaign: PageSectionCopy & { image?: ImagePlacement; cta: PageCta };
   resume: PageSectionCopy & { primaryCta: PageCta; secondaryCta: PageCta };
 };
