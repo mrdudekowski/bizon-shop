@@ -633,7 +633,7 @@
 .brandingLayer :global(img),
 .brandingLayerAfter :global(img) {
   object-fit: cover;
-  object-position: 62% center;
+  object-position: 70% center;
 }
 .brandingLayerAfter {
   clip-path: inset(0 0 0 var(--split));
@@ -760,7 +760,7 @@
 .brandingCaptions {
   position: absolute;
   right: var(--page-gutter);
-  bottom: calc(var(--header-height) + 1.25rem);
+  bottom: 1.5rem;
   left: var(--page-gutter);
   z-index: 2;
   display: grid;
@@ -789,10 +789,11 @@
   background: currentColor;
 }
 .brandingCaption {
+  justify-self: center;
   color: var(--color-on-dark);
 }
 .brandingCaptionAfter {
-  justify-self: end;
+  justify-self: center;
   color: var(--color-primary);
 }
 .brandingCopy h2 {
@@ -930,6 +931,9 @@
 @media (min-width: 1024px) {
   :global(.section.section--dark).branding,
   .branding .inner { min-height: var(--home-feature-card-height); }
+}
+@media (min-width: 640px) {
+  .brandingCopy { transform: translateY(-clamp(1rem, 3vh, 2rem)); }
 }
 @media (max-width: 1023px) {
   .homeShell { --home-feature-card-height: clamp(30rem, 80svh, 36rem); }
