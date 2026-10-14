@@ -23,6 +23,7 @@
 .homeShell {
   --home-hero-pad-bottom: clamp(4rem, 8vw, 7rem);
   --home-mark-band: clamp(7rem, 11vw, 9rem);
+  --home-feature-card-height: clamp(32rem, 42vw, 38rem);
   --home-section-lead: calc(var(--header-height) + var(--home-mark-band));
   --home-section-gap: var(--home-section-lead);
   --home-canvas: color-mix(in srgb, #ffffff calc((1 - var(--home-shop-progress)) * 100%), #0a0a0a calc(var(--home-shop-progress) * 100%));
@@ -519,10 +520,10 @@
   max-width: 100%;
   min-width: 0;
   margin-inline: auto;
-  min-height: clamp(32rem, 58vw, 48rem);
+  min-height: var(--home-feature-card-height);
   overflow: hidden;
   isolation: isolate;
-  border-radius: 0;
+  border-radius: var(--radius-card);
   background: #101313;
   color: #fff;
 }
@@ -600,9 +601,10 @@
   max-width: 100%;
   min-width: 0;
   margin-inline: auto;
-  min-height: min(88svh, 44rem);
+  min-height: var(--home-feature-card-height);
   overflow: hidden;
   isolation: isolate;
+  border-radius: var(--radius-card);
 }
 :global(.section.section--dark).branding {
   padding-block: 0;
@@ -738,7 +740,7 @@
   align-content: center;
   gap: 1.5rem;
   box-sizing: border-box;
-  min-height: min(88svh, 44rem);
+  min-height: var(--home-feature-card-height);
   padding-block: clamp(4.5rem, 12vh, 6.5rem) 4.5rem;
   pointer-events: none;
 }
@@ -927,9 +929,10 @@
 }
 @media (min-width: 1024px) {
   :global(.section.section--dark).branding,
-  .branding .inner {
-    min-height: 100svh;
-  }
+  .branding .inner { min-height: var(--home-feature-card-height); }
+}
+@media (max-width: 1023px) {
+  .homeShell { --home-feature-card-height: clamp(30rem, 80svh, 36rem); }
 }
 @media (max-width: 767px) {
   .brandingCopy h2 {
@@ -953,7 +956,7 @@
 @media (max-width: 639px) {
   .homeShell { --home-section-lead: calc(64px + var(--home-mark-band)); }
   .assortmentIntro h2 { font-size: clamp(2.75rem, 14vw, 4.5rem); }
-  .expertiseBanner { min-height: 38rem; border-radius: 0; }
+  .brandingCaptions { bottom: 1.25rem; }
   .expertiseBanner::before {
     background: linear-gradient(90deg, rgba(5, 7, 7, .82), rgba(5, 7, 7, .34)), linear-gradient(0deg, rgba(5, 7, 7, .76), rgba(5, 7, 7, .08) 78%);
   }
