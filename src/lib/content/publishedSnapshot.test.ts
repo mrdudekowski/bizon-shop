@@ -11,10 +11,10 @@ const snapshot = {
     articles: [{ slug: "story", title: "Story" }],
     tires: {
       types: [{ slug: "tbr", name: "TBR" }],
-      models: [{
+      models: [[{
         model: { id: "t1", slug: "road", tireTypeSlug: "tbr" },
         variants: [{ id: "tv1" }],
-      }],
+      }]],
     },
     wheels: {
       types: [{ slug: "steel" }],
@@ -44,6 +44,7 @@ describe("published snapshot route resolution", () => {
     ["/v1/pages/about", { hero: { title: "About" } }],
     ["/v1/articles/story", { slug: "story", title: "Story" }],
     ["/v1/tires/types/tbr/models", [{ id: "t1", slug: "road", tireTypeSlug: "tbr" }]],
+    ["/v1/tires/models/tbr/road", { id: "t1", slug: "road", tireTypeSlug: "tbr" }],
     ["/v1/tires/models/t1/variants", [{ id: "tv1" }]],
     ["/v1/wheels/types/steel/models", [{ id: "w1", slug: "forged" }]],
     ["/v1/wheels/models/w1/variants", [{ id: "wv1", modelId: "w1" }]],

@@ -65,10 +65,13 @@ export function resolvePublishedSnapshotResponse(
   if (area === "tires") {
     const tires = record(content.tires) ?? {};
     const types = array(tires.types);
-    const modelsByType = array(tires.models).flatMap((entry) => {
-      const pair = record(entry);
-      const model = record(pair?.model);
-      return model ? [{ model, variants: array(pair?.variants) }] : [];
+    const modelsByType = array(tires.models).flatMap((group) => {
+      const entries = Array.isArray(group) ? group : [group];
+      return entries.flatMap((entry) => {
+        const pair = record(entry);
+        const model = record(pair?.model);
+        return model ? [{ model, variants: array(pair?.variants) }] : [];
+      });
     });
     if (kind === "types" && segments.length === 3) return found(types);
     if (kind === "types" && segments.length === 4) {
