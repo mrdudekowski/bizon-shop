@@ -63,13 +63,24 @@ export function TireVariantsTable({ model, variants }: TireVariantsTableProps) {
           <article className={styles.card} key={variant.id}>
             <h3 className={styles.cardSize}>{variant.size}</h3>
             <dl className={styles.cardFacts}>
-              {FACT_COLUMNS.map((column) => (
+              {FACT_COLUMNS.filter((column) => !column.secondary).map((column) => (
                 <div key={column.key}>
                   <dt>{column.label}</dt>
                   <dd>{cell(variant[column.key] as string | number | undefined)}</dd>
                 </div>
               ))}
             </dl>
+            <details className={styles.secondaryDisclosure}>
+              <summary>Все характеристики</summary>
+              <dl className={styles.cardFacts}>
+                {FACT_COLUMNS.filter((column) => column.secondary).map((column) => (
+                  <div key={column.key}>
+                    <dt>{column.label}</dt>
+                    <dd>{cell(variant[column.key] as string | number | undefined)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </details>
           </article>
         ))}
       </div>

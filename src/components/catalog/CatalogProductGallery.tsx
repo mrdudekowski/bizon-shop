@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type PointerEvent } from "react";
 
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { marketplaceShown } from "@/components/catalog/marketplaceGallery";
@@ -22,6 +22,8 @@ export function CatalogProductGallery({
 }: CatalogProductGalleryProps) {
   const [pinned, setPinned] = useState(0);
   const [hovered, setHovered] = useState<number | null>(null);
+  const swipeStart = useRef<number | null>(null);
+  const didSwipe = useRef(false);
   const shown = marketplaceShown(pinned, hovered);
   const current = images[shown] ?? images[0];
   const canSwitch = images.length > 1;
@@ -31,6 +33,21 @@ export function CatalogProductGallery({
     setHovered(null);
   }
 
+  function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
+    if (!canSwitch) return;
+    swipeStart.current = event.clientX;
+    didSwipe.current = false;
+  }
+
+  function onPointerUp(event: PointerEvent<HTMLButtonElement>) {
+    if (swipeStart.current == null || !canSwitch) return;
+    const delta = event.clientX - swipeStart.current;
+    swipeStart.current = null;
+    if (Math.abs(delta) < 40) return;
+    didSwipe.current = true;
+    pin((pinned + (delta < 0 ? 1 : -1) + images.length) % images.length);
+  }
+
   return (
     <div className={styles.productGallery}>
       <div className={styles.productShot}>
@@ -38,7 +55,12 @@ export function CatalogProductGallery({
           type="button"
           className={styles.productMedia}
           disabled={!canSwitch}
-          onClick={() => pin(shown)}
+          onPointerDown={onPointerDown}
+          onPointerUp={onPointerUp}
+          onClick={() => {
+            if (didSwipe.current) { didSwipe.current = false; return; }
+            pin(shown);
+          }}
           aria-label={canSwitch ? "Закрепить это фото" : alt}
         >
           <CatalogImage

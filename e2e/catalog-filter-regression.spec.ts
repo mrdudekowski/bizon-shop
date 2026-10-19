@@ -60,7 +60,8 @@ test("forged wheel filters combine, survive reload, and can be reset", async ({ 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 
-test("tire filters combine, survive reload, and report an empty result", async ({ page }) => {
+test("tire filters combine, survive reload, and report an empty result", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile-390", "mobile filter sheet behavior is covered by mobile-responsive.spec.ts");
   await page.goto("/models/tbr/?application=regional&axle=drive&size=315%2F80R22.5");
 
   await expect(page.locator('select[name="application"]')).toHaveValue("regional");

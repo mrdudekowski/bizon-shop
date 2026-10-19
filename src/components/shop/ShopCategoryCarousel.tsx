@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import styles from "@/components/catalog/ModelAdvantagesCarousel.module.css";
+import mobileStyles from "./ShopCategoryCarousel.module.css";
 import type { ShopHomeCarouselSlide } from "@/lib/content/shopCategoryPresentation";
 
 export function ShopCategoryCarousel({
@@ -37,7 +38,8 @@ export function ShopCategoryCarousel({
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (reducedMotion.matches) {
+    const mobileViewport = window.matchMedia("(max-width: 767px)");
+    if (reducedMotion.matches || mobileViewport.matches) {
       setAutoplay(false);
       return;
     }
@@ -62,6 +64,15 @@ export function ShopCategoryCarousel({
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [autoplay, hasMultipleSlides, count]);
+
+  useEffect(() => {
+    const mobileViewport = window.matchMedia("(max-width: 767px)");
+    const stopOnMobile = () => {
+      if (mobileViewport.matches) setAutoplay(false);
+    };
+    mobileViewport.addEventListener("change", stopOnMobile);
+    return () => mobileViewport.removeEventListener("change", stopOnMobile);
+  }, []);
 
   if (count === 0) {
     if (!children) return null;
@@ -127,7 +138,7 @@ export function ShopCategoryCarousel({
       {children ? <div className={`${styles.content} ${styles.contentWithChildren}`}>{children}</div> : null}
 
       {hasMultipleSlides ? (
-        <div className={styles.controls}>
+        <div className={`${styles.controls} ${mobileStyles.mobileControls}`}>
           <div className={styles.progress}>
             {slides.map((slide, index) => (
               <button

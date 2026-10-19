@@ -51,6 +51,7 @@ export function TireDirectionPage({
               filters={effectiveFilters}
               resetHref={pagePath}
               sizes={sizes}
+              models={direction.models}
               lockApplication={category?.value}
             />
 

@@ -6,7 +6,7 @@ const SHOP_ROUTES = [
   "/shop/accessories",
   "/shop/outdoor",
   "/shop/wheels/forged",
-  "/shop/wheels/forged/atlas",
+  "/shop/wheels/forged/ci-fixture-wheel",
   "/shop/delivery-and-returns",
   "/cart",
 ] as const;
@@ -88,8 +88,8 @@ test("shop burger exposes wheel selection and links to the Shop cart", async ({ 
   await page.locator('[aria-controls="burger-menu"]').click();
 
   const dialog = page.getByRole("dialog", { name: "Меню BIZON Shop", exact: true });
-  await expect(dialog.getByRole("link", { name: "Выбрать диски" })).toHaveAttribute("href", "/shop#wheels");
-  await expect(dialog.getByRole("link", { name: /^Корзина/ })).toHaveAttribute("href", "/shop/cart");
+  await expect(dialog.getByRole("link", { name: "Выбрать диски" })).toHaveAttribute("href", "/shop/#wheels");
+  await expect(dialog.getByRole("link", { name: /^Корзина/ })).toHaveAttribute("href", "/shop/cart/");
 });
 
 test("shop homepage keeps forged wheels, published categories and vehicle stories", async ({ page }) => {
@@ -105,12 +105,15 @@ test("shop homepage keeps forged wheels, published categories and vehicle storie
   expect(vehicleBackground).toBe("rgb(255, 255, 255)");
 });
 
-test("shop footer uses the shared shell with shop content", async ({ page }) => {
+test("shop footer uses the shared shell with shop content", async ({ page }, testInfo) => {
   await page.goto("/shop");
 
   const footer = page.locator('[data-site-footer="shop"]');
   await expect(footer).toHaveCount(1);
-  await expect(footer.getByRole("link", { name: "Выбрать диски" })).toHaveAttribute("href", "/shop#wheels");
+  await expect(footer.getByRole("link", { name: "Выбрать диски" })).toHaveAttribute("href", "/shop/#wheels");
+  if (testInfo.project.name === "mobile-390") {
+    await footer.locator("summary").filter({ hasText: "Помощь" }).click();
+  }
   await expect(footer.getByRole("link", { name: /BIZON Tires/ })).toHaveAttribute("href", "/");
 });
 
@@ -131,22 +134,20 @@ test("cart drawer preserves the current scroll position", async ({ page }) => {
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(before);
 });
 
-test("Forged SEO includes approved static designs", async ({ page, request }) => {
-  await page.goto("/shop/wheels/forged/atlas", { waitUntil: "domcontentloaded" });
+test("forged wheel SEO includes published snapshot models", async ({ page, request }) => {
+  await page.goto("/shop/wheels/forged/ci-fixture-wheel", { waitUntil: "domcontentloaded" });
   const productSchemas = await page.locator('script[type="application/ld+json"]').evaluateAll(
     (scripts) => scripts
       .map((script) => JSON.parse(script.textContent || "{}"))
       .filter((schema) => schema["@type"] === "Product"),
   );
   expect(productSchemas).toHaveLength(1);
-  expect(productSchemas[0].name).toBe("BIZON Atlas");
+  expect(productSchemas[0].name).toBe("CI fixture wheel");
 
   const sitemapResponse = await request.get("/sitemap.xml");
   expect(sitemapResponse.status()).toBe(200);
   const sitemap = await sitemapResponse.text();
-  for (const slug of ["atlas", "vector", "nomad", "ember", "bastion"]) {
-    expect(sitemap).toContain(`/shop/wheels/forged/${slug}`);
-  }
+  expect(sitemap).toContain("/shop/wheels/forged/ci-fixture-wheel");
   expect(sitemap).not.toContain("/shop/glasses");
   expect(sitemap).not.toContain("/shop/merch");
 });

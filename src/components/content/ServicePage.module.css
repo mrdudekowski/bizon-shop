@@ -116,6 +116,7 @@
 }
 
 @media (max-width: 767px) {
+  .body { box-sizing: border-box; width: 100%; }
   .proof {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -127,4 +128,8 @@
   .ctaActions > * {
     width: 100%;
   }
+  .features h2,
+  .proofCopy h2,
+  .cta h2 { max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+  .proofCopy { min-width: 0; }
 }

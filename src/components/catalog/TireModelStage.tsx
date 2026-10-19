@@ -4,6 +4,7 @@ import { AdvantageIcons } from "@/components/catalog/AdvantageIcons";
 import { CatalogBuyPanel } from "@/components/catalog/CatalogBuyPanel";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { LexicalContent } from "@/components/content/LexicalContent";
+import { ResponsiveDisclosure } from "@/components/content/ResponsiveDisclosure";
 import { CatalogProductGallery } from "@/components/catalog/CatalogProductGallery";
 import { ModelAdvantagesCarousel } from "@/components/catalog/ModelAdvantagesCarousel";
 import { PageHeader } from "@/components/catalog/PageHeader";
@@ -62,8 +63,10 @@ export function TireModelStage({
 
           <div className={styles.productPanel}>
             <p className={styles.eyebrow}>{model.brand || "BIZON TBR"}</p>
-            <LexicalContent data={model.descriptionLong || model.descriptionShort} />
-            <p>
+            <ResponsiveDisclosure summary="Подробнее о модели" className={styles.productNarrative}>
+              <LexicalContent data={model.descriptionLong || model.descriptionShort} />
+            </ResponsiveDisclosure>
+            <p className={styles.productDirections}>
               Подтвердите применение, ось и типоразмер перед заказом — эти параметры
               определяют пригодность модели для вашей техники.
             </p>
@@ -106,6 +109,7 @@ export function TireModelStage({
                 priceOnRequest: variant.priceOnRequest,
               }))}
               sizeLabel="Типоразмер"
+                className={styles.productOrderPanel}
             />
 
             <p className={styles.disclaimer}>

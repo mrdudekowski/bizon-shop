@@ -548,6 +548,11 @@
 .menuOpen .sectionList > li:nth-child(n+8) { animation-delay: 300ms; }
 
 @media (max-width: 768px) {
+  .menuOverlay {
+    width: 100vw;
+    max-width: 100vw;
+    overflow: hidden;
+  }
   .menuShell {
     width: 100%;
   }

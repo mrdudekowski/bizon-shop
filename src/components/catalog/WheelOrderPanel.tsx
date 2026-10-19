@@ -19,6 +19,7 @@ type WheelOrderPanelProps = {
   baseItem: RequestItemInput;
   variants: WheelOrderVariant[];
   finish?: string;
+  className?: string;
 };
 
 function value(formData: FormData, name: string): string {
@@ -41,7 +42,7 @@ function formatPrice(variant: WheelOrderVariant | null): string {
   return `${variant.price.toLocaleString("ru-RU")} ₽`;
 }
 
-export function WheelOrderPanel({ baseItem, variants, finish = "" }: WheelOrderPanelProps) {
+export function WheelOrderPanel({ baseItem, variants, finish = "", className }: WheelOrderPanelProps) {
   const cart = useCart("shop");
   const [variantId, setVariantId] = useState(variants.length === 1 ? variants[0].id : "");
   const maxQuantity = baseItem.parentSlug === "forged" ? 8 : 999;
@@ -85,7 +86,7 @@ export function WheelOrderPanel({ baseItem, variants, finish = "" }: WheelOrderP
   }
 
   return (
-    <form className={styles.panel} onSubmit={handleSubmit} aria-labelledby="wheel-order-heading">
+    <form className={`${styles.panel} ${className ?? ""}`} onSubmit={handleSubmit} aria-labelledby="wheel-order-heading">
       <div className={styles.heading}>
         <h2 id="wheel-order-heading">Заявка на подбор</h2>
         <p>Специалист проверит совместимость и уточнит стоимость.</p>

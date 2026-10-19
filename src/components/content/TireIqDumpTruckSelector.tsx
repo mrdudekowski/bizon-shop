@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+import { ResponsiveDisclosure } from "@/components/content/ResponsiveDisclosure";
 
 import styles from "./TireIqDumpTruckSelector.module.css";
 
@@ -22,6 +23,7 @@ export function TireIqDumpTruckSelector({ hasKnowledge = true }: { hasKnowledge?
         <p className={styles.kicker}>Вторая конфигурация</p>
         <h2 id="dump-truck-selector-heading">Самосвал</h2>
         <p>Выберите ось, чтобы рассмотреть требования к шинам в строительной и карьерной эксплуатации.</p>
+        <ResponsiveDisclosure summary="Посмотреть схему">
         <div className={styles.visual}>
           <img
             src={`/images/tire-iq/axles/VIS-02_${imageName}.svg`}
@@ -30,7 +32,9 @@ export function TireIqDumpTruckSelector({ hasKnowledge = true }: { hasKnowledge?
             height={1000}
           />
         </div>
+        </ResponsiveDisclosure>
       </div>
+      <ResponsiveDisclosure summary="Выбрать ось">
       <div className={styles.options}>
         {AXLES.map((axle) => (
           <Link
@@ -51,6 +55,7 @@ export function TireIqDumpTruckSelector({ hasKnowledge = true }: { hasKnowledge?
           </Link>
         ))}
       </div>
+      </ResponsiveDisclosure>
     </section>
   );
 }

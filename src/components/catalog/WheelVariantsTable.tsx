@@ -59,15 +59,20 @@ export function WheelVariantsTable({ variants }: WheelVariantsTableProps) {
                 <dt>Нагрузка</dt>
                 <dd>{cell(variant.loadRating)}</dd>
               </div>
-              <div>
-                <dt>Цвет</dt>
-                <dd>{cell(variant.color)}</dd>
-              </div>
-              <div>
-                <dt>Покрытие</dt>
-                <dd>{cell(variant.finish)}</dd>
-              </div>
             </dl>
+            <details className={styles.secondaryDisclosure}>
+              <summary>Все характеристики</summary>
+              <dl className={styles.cardFacts}>
+                <div>
+                  <dt>Цвет</dt>
+                  <dd>{cell(variant.color)}</dd>
+                </div>
+                <div>
+                  <dt>Покрытие</dt>
+                  <dd>{cell(variant.finish)}</dd>
+                </div>
+              </dl>
+            </details>
           </article>
         ))}
       </div>

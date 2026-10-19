@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+import { ResponsiveDisclosure } from "@/components/content/ResponsiveDisclosure";
 
 import styles from "./TireIqAxleSelector.module.css";
 
@@ -41,6 +42,7 @@ export function TireIqAxleSelector({ hasKnowledge = true }: { hasKnowledge?: boo
           Роль оси задаёт контекст для разговора о шине. Выберите её, чтобы
           перейти к соответствующим материалам Tire IQ.
         </p>
+        <ResponsiveDisclosure summary="Посмотреть схему">
         <div className={styles.visual}>
           <img
             src={`/images/tire-iq/axles/VIS-01_${imageName}.svg`}
@@ -49,7 +51,9 @@ export function TireIqAxleSelector({ hasKnowledge = true }: { hasKnowledge?: boo
             height={682}
           />
         </div>
+        </ResponsiveDisclosure>
       </div>
+      <ResponsiveDisclosure summary="Выбрать ось">
       <div className={styles.options}>
         {AXLES.map((axle) => (
           <Link
@@ -73,6 +77,7 @@ export function TireIqAxleSelector({ hasKnowledge = true }: { hasKnowledge?: boo
           </Link>
         ))}
       </div>
+      </ResponsiveDisclosure>
       <p className={styles.note}>
         Это образовательный контекст, а не подтверждение совместимости конкретной модели.
         Для проверки задачи <Link href="/contact">свяжитесь со специалистом</Link>.

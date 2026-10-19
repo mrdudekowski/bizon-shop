@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("branding CTA opens contextual contact with branding sourceForm", async ({ page }) => {
-  await page.route("**/api/requests", async (route) => {
+  await page.route("**/v1/requests", async (route) => {
     const body = route.request().postDataJSON();
     expect(body.sourceForm).toBe("branding");
     await route.fulfill({
@@ -26,7 +26,7 @@ test("branding CTA opens contextual contact with branding sourceForm", async ({ 
 
 test("request error retains fields and allows retry", async ({ page }) => {
   let attempts = 0;
-  await page.route("**/api/requests", async (route) => {
+  await page.route("**/v1/requests", async (route) => {
     attempts += 1;
     await route.fulfill({
       status: attempts === 1 ? 500 : 200,

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { ShopCategoryShowcase } from "@/components/shop/ShopCategoryShowcase";
+import { ShopOrderSteps } from "./ShopOrderSteps";
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { getPageContent, getShopCategories, getWheelModelsByTypeSlug } from "@/lib/content";
 import { loadPublished } from "@/lib/content/loadPublished";
@@ -102,18 +103,7 @@ export default async function ShopPage() {
             ))}
           </div>
 
-          <div
-            className={styles.orderSteps}
-            aria-label="Как заказать кованые диски BIZON"
-          >
-            {page.orderSteps.map((step, index) => (
-              <article key={`${step.title}-${index}`}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <h2>{step.title}</h2>
-                <p>{step.description}</p>
-              </article>
-            ))}
-          </div>
+          <ShopOrderSteps steps={page.orderSteps} />
         </div>
       </section>
 

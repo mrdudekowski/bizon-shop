@@ -19,6 +19,7 @@ type CatalogBuyPanelProps = {
   variants: CatalogBuyVariant[];
   sizeLabel?: string;
   emptyVariantsMessage?: string;
+  className?: string;
 };
 
 function formatPrice(variant: CatalogBuyVariant | null): string {
@@ -32,6 +33,7 @@ export function CatalogBuyPanel({
   variants,
   sizeLabel = "Размер",
   emptyVariantsMessage = "Размеры уточняются — можно добавить модель без размера или связаться со специалистом.",
+  className,
 }: CatalogBuyPanelProps) {
   const [variantId, setVariantId] = useState(
     variants.length === 1 ? variants[0].id : "",
@@ -59,7 +61,7 @@ export function CatalogBuyPanel({
   };
 
   return (
-    <div className={styles.panel}>
+    <div className={`${styles.panel} ${className ?? ""}`}>
       {variants.length > 0 ? (
         <label className={styles.field}>
           <span className={styles.label}>{sizeLabel}</span>

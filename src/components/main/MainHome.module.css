@@ -198,12 +198,14 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
   align-items: end;
+  min-width: 0;
   max-width: 40rem;
   pointer-events: none;
 }
-.heroCopy h1 { max-width: 10ch; margin: 0; font-size: clamp(2.75rem, 6vw, 5.5rem); font-weight: var(--weight-display); line-height: var(--leading-display); letter-spacing: var(--tracking-display); text-wrap: balance; }
+.heroCopy h1 { min-width: 0; max-width: 10ch; margin: 0; font-size: clamp(2.75rem, 6vw, 5.5rem); font-weight: var(--weight-display); line-height: var(--leading-display); letter-spacing: var(--tracking-display); overflow-wrap: anywhere; text-wrap: balance; }
 .heroAccent { color: var(--color-accent-coral); }
 .heroCopy > p:not(.eyebrow) { margin: 0; color: var(--color-on-dark-subtle); font-size: var(--type-lead); line-height: var(--leading-body); }
+.heroMobileCta { display: none; }
 .heroControls {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -952,6 +954,34 @@
   .homeShell { --home-feature-card-height: clamp(30rem, 80svh, 36rem); }
 }
 @media (max-width: 767px) {
+  .assortmentIntro,
+  .assortmentIntro h2 { width: 100%; max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+  .assortmentTrack {
+    grid-template-columns: minmax(0, calc(100% - 28px));
+    grid-auto-columns: minmax(0, calc(100% - 28px));
+    grid-auto-flow: column;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    touch-action: pan-x;
+  }
+  .assortmentTrack::-webkit-scrollbar { display: none; }
+  .assortmentCard { min-height: 22rem; scroll-snap-align: start; }
+  .heroMobileCta { display: inline-flex; width: 100%; justify-content: center; margin-top: .5rem; pointer-events: auto; }
+  .heroOverlay { background: linear-gradient(0deg, rgba(0,0,0,.78), rgba(0,0,0,.12) 68%), linear-gradient(180deg, rgba(0,0,0,.28), transparent 30%); }
+  .branding { width: calc(100% - (var(--page-gutter) * 2)); min-height: 0; overflow: hidden; border-radius: var(--radius-card); background: var(--color-surface-dark, #111); }
+  .brandingCompare { position: relative; inset: auto; height: min(68vw, 20rem); }
+  .branding .inner { min-height: 0; padding: 1.25rem; }
+  .brandingCopy { max-width: none; gap: .65rem; }
+  .brandingCopy h2 { font-size: clamp(1.6rem, 8vw, 2.25rem); }
+  .brandingCopy > p { font-size: .9rem; }
+  .brandingOverlay { display: none; }
+  .brandingCaptions { right: 1rem; bottom: auto; top: min(68vw, 20rem); transform: translateY(-100%); padding-bottom: .75rem; font-size: .62rem; }
+  .brandingCaption, .brandingCaptionAfter { color: white; }
+  .brandingCaptionAfter { color: var(--bizon-mint-400); }
+  .brandingCta { width: 100%; justify-content: center; }
   .brandingCopy h2 {
     width: 100%;
     max-width: 100%;

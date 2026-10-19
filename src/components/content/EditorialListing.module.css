@@ -167,6 +167,17 @@
   }
 }
 
+@media (max-width: 767px) {
+  .body { box-sizing: border-box; width: 100%; }
+  .grid { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+  .featured, .card { grid-row: auto; grid-template-columns: minmax(5rem, .34fr) minmax(0, 1fr); gap: .85rem; align-items: center; }
+  .media, .card .media { min-height: 0; aspect-ratio: 4 / 3; border-radius: var(--radius-control); }
+  .copy { gap: .4rem; min-width: 0; }
+  .copy h2 { font-size: 1.08rem; line-height: 1.2; overflow-wrap: anywhere; }
+  .copy > p:not(.meta), .readMore { display: none; }
+  .meta { font-size: .68rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .media img {
     transition: none;

@@ -7,6 +7,7 @@ import { MainChrome } from "@/components/main/MainChrome";
 import { ShopChrome } from "@/components/shop/ShopChrome";
 import { ShopFooter } from "@/components/shop/ShopFooter";
 import { Footer } from "@/components/Footer/Footer.jsx";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { useCart } from "@/hooks/useCart";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useMenuToggle } from "@/hooks/useMenuToggle";
@@ -37,7 +38,7 @@ export function SiteShell({ children, mainMenu, shopMenu }) {
   return (
     <>
       <div
-        className={`page ${menuOpen ? "page--blurred" : ""}`}
+        className={`page page--with-mobile-nav ${menuOpen ? "page--blurred" : ""}`}
         inert={menuOpen || cart.open ? true : undefined}
       >
         <a className="skip-link" href="#main">
@@ -66,6 +67,7 @@ export function SiteShell({ children, mainMenu, shopMenu }) {
         {isShop ? <ShopFooter catalogLinks={categoryLinks} /> : <Footer />}
 
         <BackToTop onScrollToTop={() => scrollToTop(lenis)} />
+        <MobileBottomNav context={isShop ? "shop" : "main"} cartCount={cart.count} />
       </div>
 
       <DualPaneMenu

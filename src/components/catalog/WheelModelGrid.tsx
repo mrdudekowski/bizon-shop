@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { CatalogCard } from "@/components/catalog/CatalogCard";
+import { MobileFilterSheet } from "@/components/catalog/MobileFilterSheet";
 import type { CmsWheelModel, CmsWheelVariant } from "@/lib/content/types";
 import {
   filterWheelModels,
@@ -42,6 +43,7 @@ export function WheelModelGrid({
   const visibleModels = filterWheelModels(models, variants, filters);
   const hasFilters = FILTER_FIELDS.some(({ key }) => options[key].length > 0)
     || options.priceOnRequest.length > 0;
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   useEffect(() => {
     setFilters(parseWheelFilters(new URLSearchParams(window.location.search), models, variants));
@@ -51,32 +53,52 @@ export function WheelModelGrid({
     setFilters((current) => ({ ...current, [key]: value || undefined }));
   }
 
+  function renderFields() {
+    return (
+      <>
+        {FILTER_FIELDS.map(({ key, label, empty }) => options[key].length > 0 ? (
+          <label className={styles.field} key={key}>
+            <span>{label}</span>
+            <select name={key} value={filters[key] ?? ""} onChange={(event) => setFilter(key, event.target.value)}>
+              <option value="">{empty}</option>
+              {options[key].map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+        ) : null)}
+        {options.priceOnRequest.length > 0 ? (
+          <label className={styles.field}>
+            <span>Цена</span>
+            <select name="priceOnRequest" value={filters.priceOnRequest ?? ""} onChange={(event) => setFilter("priceOnRequest", event.target.value)}>
+              <option value="">Любая</option>
+              <option value="yes">По запросу</option>
+              <option value="no">Указана</option>
+            </select>
+          </label>
+        ) : null}
+      </>
+    );
+  }
+
   return (
     <div className="w-full max-w-full min-w-0">
       {hasFilters ? (
-        <form className={styles.filters} method="get" aria-label="Фильтры каталога дисков">
-          {FILTER_FIELDS.map(({ key, label, empty }) => options[key].length > 0 ? (
-            <label className={styles.field} key={key}>
-              <span>{label}</span>
-              <select name={key} value={filters[key] ?? ""} onChange={(event) => setFilter(key, event.target.value)}>
-                <option value="">{empty}</option>
-                {options[key].map((option) => <option key={option} value={option}>{option}</option>)}
-              </select>
-            </label>
-          ) : null)}
-          {options.priceOnRequest.length > 0 ? (
-            <label className={styles.field}>
-              <span>Цена</span>
-              <select name="priceOnRequest" value={filters.priceOnRequest ?? ""} onChange={(event) => setFilter("priceOnRequest", event.target.value)}>
-                <option value="">Любая</option>
-                <option value="yes">По запросу</option>
-                <option value="no">Указана</option>
-              </select>
-            </label>
-          ) : null}
-          <button className="btn-accent" type="submit">Показать модели</button>
-          <Link className={styles.reset} href={typeBasePath}>Сбросить фильтры</Link>
-        </form>
+        <>
+          <form className={styles.filters} method="get" aria-label="Фильтры каталога дисков">
+            {renderFields()}
+            <button className="btn-accent" type="submit">Показать модели</button>
+            <Link className={styles.reset} href={typeBasePath}>Сбросить фильтры</Link>
+          </form>
+          <MobileFilterSheet
+            title="Параметры диска"
+            triggerLabel="Фильтры"
+            activeCount={activeFilterCount}
+            applyLabel={`Показать ${formatWheelModelCount(visibleModels.length)}`}
+            resetHref={typeBasePath}
+            formLabel="Параметры диска"
+          >
+            {renderFields()}
+          </MobileFilterSheet>
+        </>
       ) : null}
 
       <div className={styles.resultHeader} aria-live="polite">

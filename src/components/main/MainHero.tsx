@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 import type { HomeHeroContent } from "@/lib/content/pages/types";
 
@@ -44,6 +45,9 @@ export function MainHero({ content }: { content: HomeHeroContent }) {
           {content.eyebrow ? <p className={styles.eyebrow}>{content.eyebrow}</p> : null}
           <h1>{accentHeroTitle(content.title)}</h1>
           <p>{content.lead}</p>
+          <Link className={`btn-accent ${styles.heroMobileCta}`} href="/models">
+            Перейти в каталог
+          </Link>
         </div>
       </div>
     </section>

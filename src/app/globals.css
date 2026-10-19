@@ -332,6 +332,14 @@ a {
   transition: filter var(--transition-premium);
 }
 
+.page--with-mobile-nav { padding-bottom: 0; }
+@media (max-width: 767px) {
+  .page--with-mobile-nav { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 767px) and (max-height: 430px) {
+  .page--with-mobile-nav { padding-bottom: 0; }
+}
+
 .page--blurred {
   filter: blur(8px);
 }
@@ -934,6 +942,11 @@ main {
   min-width: 0;
 }
 
+@media (max-width: 767px) {
+  .breadcrumbs li:not(:nth-last-child(-n + 2)) { display: none; }
+  .breadcrumbs li:nth-last-child(2) > span[aria-hidden="true"] { display: none; }
+}
+
 .breadcrumbs a:hover {
   color: var(--color-foreground);
 }
@@ -1186,6 +1199,48 @@ main {
   padding-left: 1rem;
   border-left: 3px solid var(--color-accent-mint);
   color: var(--color-foreground);
+}
+
+@media (max-width: 767px) {
+  .lexical-content {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .lexical-content :is(img, video, iframe, embed, object) {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .lexical-content table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    border-collapse: separate;
+  }
+
+  .lexical-content:has(table)::before {
+    content: "Таблицу можно прокручивать по горизонтали";
+    display: block;
+    margin-bottom: .5rem;
+    color: var(--color-muted);
+    font-size: .75rem;
+  }
+
+  .lexical-content table :is(th, td) { min-width: 6.5rem; }
+  .lexical-content table :is(th, td):first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--color-surface);
+  }
 }
 
 /* Список в info карточке - маркированный список с вертикальными отступами */
@@ -1857,6 +1912,14 @@ textarea.field-input {
 .back-to-top:focus-visible {
   outline: var(--focus-outline);
   outline-offset: var(--focus-offset);
+}
+
+@media (max-width: 767px) {
+  .back-to-top {
+    right: max(24px, env(safe-area-inset-right, 0px));
+    width: 40px;
+    height: 40px;
+  }
 }
 
 @media (min-width: 768px) {

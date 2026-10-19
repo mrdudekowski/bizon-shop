@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { ContactIntent } from "@/lib/requests/contactIntent";
 import { submitRequest } from "@/lib/requests/submitRequest";
@@ -52,8 +52,13 @@ export function ContextualContactForm({
   const isProcurement = intent.subject === "procurement";
   const [values, setValues] = useState<FormValues>(EMPTY_VALUES);
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "success">("idle");
+  const [optionalExpanded, setOptionalExpanded] = useState(false);
   const [error, setError] = useState("");
   const [requestId, setRequestId] = useState<string | number>();
+
+  useEffect(() => {
+    setOptionalExpanded(window.matchMedia("(min-width: 768px)").matches);
+  }, []);
 
   const setValue = (key: keyof FormValues, value: string) =>
     setValues((current) => ({ ...current, [key]: value }));
@@ -171,18 +176,6 @@ export function ContextualContactForm({
                 <span>Количество *</span>
                 <input name="quantity" required type="number" min="1" inputMode="numeric" value={values.quantity} onChange={(event) => setValue("quantity", event.target.value)} />
               </label>
-              <label>
-                <span>Ось</span>
-                <input name="axle" placeholder="Ведущая / прицепная" value={values.axle} onChange={(event) => setValue("axle", event.target.value)} />
-              </label>
-              <label>
-                <span>Регион</span>
-                <input name="region" autoComplete="address-level1" value={values.region} onChange={(event) => setValue("region", event.target.value)} />
-              </label>
-              <label>
-                <span>Желаемый срок</span>
-                <input name="desiredTerm" placeholder="Например, до 15 сентября" value={values.desiredTerm} onChange={(event) => setValue("desiredTerm", event.target.value)} />
-              </label>
             </>
           ) : null}
           <label>
@@ -195,15 +188,10 @@ export function ContextualContactForm({
               onChange={(event) => setValue("name", event.target.value)}
             />
           </label>
-          <label>
-            <span>Компания</span>
-            <input
-              name="company"
-              autoComplete="organization"
-              value={values.company}
-              onChange={(event) => setValue("company", event.target.value)}
-            />
-          </label>
+          {!isProcurement ? <label>
+              <span>Компания</span>
+              <input name="company" autoComplete="organization" value={values.company} onChange={(event) => setValue("company", event.target.value)} />
+            </label> : null}
           <label>
             <span>Телефон</span>
             <input
@@ -211,6 +199,7 @@ export function ContextualContactForm({
               type="tel"
               autoComplete="tel"
               inputMode="tel"
+              required={!values.email.trim()}
               value={values.phone}
               onChange={(event) => setValue("phone", event.target.value)}
             />
@@ -221,12 +210,27 @@ export function ContextualContactForm({
               name="email"
               type="email"
               autoComplete="email"
+              required={!values.phone.trim()}
               value={values.email}
               onChange={(event) => setValue("email", event.target.value)}
             />
           </label>
         </div>
-        <label className={styles.comment}>
+        {isProcurement ? (
+          <details className={styles.optionalFields} open={optionalExpanded} onToggle={(event) => setOptionalExpanded(event.currentTarget.open)}>
+            <summary>Добавить детали к заявке</summary>
+            <div className={styles.optionalGrid}>
+              <label><span>Ось</span><input name="axle" placeholder="Ведущая / прицепная" value={values.axle} onChange={(event) => setValue("axle", event.target.value)} /></label>
+              <label><span>Регион</span><input name="region" autoComplete="address-level1" value={values.region} onChange={(event) => setValue("region", event.target.value)} /></label>
+              <label><span>Желаемый срок</span><input name="desiredTerm" placeholder="Например, до 15 сентября" value={values.desiredTerm} onChange={(event) => setValue("desiredTerm", event.target.value)} /></label>
+              <label><span>Компания</span><input name="company" autoComplete="organization" value={values.company} onChange={(event) => setValue("company", event.target.value)} /></label>
+              <label className={styles.comment}>
+                <span>Комментарий</span>
+                <textarea name="comment" rows={4} value={values.comment} onChange={(event) => setValue("comment", event.target.value)} />
+              </label>
+            </div>
+          </details>
+        ) : <label className={styles.comment}>
           <span>Комментарий</span>
           <textarea
             name="comment"
@@ -234,7 +238,7 @@ export function ContextualContactForm({
             value={values.comment}
             onChange={(event) => setValue("comment", event.target.value)}
           />
-        </label>
+        </label>}
         {status === "error" && (
           <p className={styles.error} role="alert">
             {error}. Проверьте данные и попробуйте ещё раз.

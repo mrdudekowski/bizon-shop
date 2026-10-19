@@ -1,0 +1,27 @@
+.disclosure { min-width: 0; }
+.disclosure > summary { display: none; }
+.content { min-width: 0; }
+
+@media (min-width: 768px) {
+  .disclosure,
+  .content { display: contents; }
+}
+
+@media (max-width: 767px) {
+  .disclosure > summary {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-link);
+    font-weight: 650;
+    cursor: pointer;
+    list-style: none;
+  }
+  .disclosure > summary::-webkit-details-marker { display: none; }
+  .disclosure > summary::after { content: "+"; font-size: 1.35rem; line-height: 1; }
+  .disclosure[open] > summary::after { content: "−"; }
+  .content { padding-top: .75rem; }
+}

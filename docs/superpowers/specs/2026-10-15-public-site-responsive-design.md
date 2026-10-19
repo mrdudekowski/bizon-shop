@@ -12,7 +12,7 @@ Scope is the public route group `src/app/(site)`. The `frontend-cms` application
 2. **Mobile patterns implemented by page family. (Recommended.)** Audit every route and section, adapt shared shell/content/catalog patterns for mobile first, then handle family-specific interaction and content exceptions. This gives complete route coverage while protecting the approved desktop composition.
 3. **Redesign every page across all breakpoints.** Offers the most freedom, but is explicitly outside this scope and risks changing the approved desktop experience.
 
-The chosen approach is 2. Limit visual/layout changes to mobile and tablet widths below 1024px. At 1024px and above, preserve desktop CSS and composition; use those widths only for baseline/regression checks. Introduce a new mobile interaction only when the audit demonstrates that simple reflow cannot preserve usability.
+The chosen approach is mobile-only: change visual/layout behavior at widths up to 767px. Preserve the current composition at 768–1023px (tablet) and 1024px and above (desktop); use those ranges only as locked references/regression checks. Introduce mobile interactions where needed to preserve usability and reduce cognitive load.
 
 ## Route and section coverage
 
@@ -57,6 +57,7 @@ The chosen approach is 2. Limit visual/layout changes to mobile and tablet width
 - Use touch-capable gallery/carousel controls with keyboard support. Respect `prefers-reduced-motion`; hover may enhance but cannot carry essential information.
 - Keep CMS rich text safe at narrow widths: wrap long strings, constrain media, and define a readable strategy for wide tables.
 - Consider a mobile sticky action only if the audit proves an important action becomes unreachable; account for browser safe areas and the on-screen keyboard.
+- The approved mobile direction includes a persistent four-item bottom navigation on phone widths (<=767px). Main context: Home, tire catalog, Tire IQ, request. Shop context: Shop home, categories, wheel selection, Shop cart. Keep it hidden at tablet/desktop widths, reserve content space beneath it, respect safe areas, and hide it in short landscape viewports where it would consume too much height.
 
 ## Mobile UX and visual direction
 
@@ -67,7 +68,7 @@ The chosen approach is 2. Limit visual/layout changes to mobile and tablet width
 
 ## Breakpoint and state matrix
 
-Walk every page and section at 390 CSS px. Add 320/360 checks for narrow cards, dense controls, long text and forms; use 430/768/1023 to validate mobile/tablet transitions. Check 1024 and 1440 only as locked desktop baselines/regression checks; do not change desktop composition. These are checkpoints, not a mandate to add a media query at every width. Check short and long content, empty/no-match, loading/error/success, filter-selected, unavailable variant, and long-form CMS cases where applicable. Include actual mobile browser/device validation for viewport behavior after source-level and browser-emulation checks.
+Walk every page and section at 390 CSS px; add 320/360 checks for narrow cards, dense controls, long text and forms, plus 430 as the upper mobile width. Inspect 768/1023 only as locked tablet references and 1024/1440 as desktop regression references; do not change composition above 767px. These are checkpoints, not a mandate to add a media query at every width. Check short and long content, empty/no-match, loading/error/success, filter-selected, unavailable variant, and long-form CMS cases where applicable. Include actual mobile browser/device validation for viewport behavior after source-level and browser-emulation checks.
 
 ## Priorities
 

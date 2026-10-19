@@ -237,6 +237,13 @@
   font-size: clamp(2.2rem, 4.5vw, 4.75rem);
 }
 
+@media (max-width: 767px) {
+  .storyDisclosure { width: 100%; margin-top: 2rem; }
+  .storyDisclosure > summary { min-height: 52px; }
+  .story { margin-top: 0; padding-top: 1rem; gap: 1rem; }
+  .story h2 { font-size: clamp(1.75rem, 8vw, 2.5rem); }
+}
+
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;

@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { marketplaceShown } from "@/components/catalog/marketplaceGallery";
 import { LexicalContent } from "@/components/content/LexicalContent";
+import { ResponsiveDisclosure } from "@/components/content/ResponsiveDisclosure";
 import { resolveCatalogImageSrc } from "@/constants/images";
 import { useCart } from "@/hooks/useCart";
 import { cartItemKey, requestOpenCart } from "@/lib/cart/cartStorage";
@@ -314,12 +315,14 @@ export function ShopProductConfigurator({ product }: { product: CmsProduct }) {
         </section>
       </div>
 
-      <section className={styles.story} aria-labelledby="product-story-title">
-        <p className={styles.kicker}>О товаре</p>
-        <h2 id="product-story-title">{product.name}</h2>
-        <LexicalContent data={product.descriptionLong} />
-        {product.material ? <p>Материал: {product.material}</p> : null}
-      </section>
+      <ResponsiveDisclosure summary="Подробнее о товаре" className={styles.storyDisclosure}>
+        <section className={styles.story} aria-labelledby="product-story-title">
+          <p className={styles.kicker}>О товаре</p>
+          <h2 id="product-story-title">{product.name}</h2>
+          <LexicalContent data={product.descriptionLong} />
+          {product.material ? <p>Материал: {product.material}</p> : null}
+        </section>
+      </ResponsiveDisclosure>
     </div>
   );
 }

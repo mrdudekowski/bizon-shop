@@ -15,7 +15,7 @@
 - Scope is `src/app/(site)`; `frontend-cms` is excluded.
 - `/selection` is a redirect to `/models`; it is not a separate page.
 - Existing desktop composition is approved and out of scope for redesign. Desktop captures are reference/regression evidence only.
-- Restrict visual and layout changes to mobile/tablet breakpoints below 1024px. At 1024px and above, make no composition changes; desktop captures are reference/regression evidence only.
+- Restrict visual and layout changes to mobile widths at or below 767px. At 768–1023px (tablet) and 1024px+ (desktop), make no composition changes; capture these ranges only as locked references/regression evidence.
 - Treat mobile UX and visual hierarchy as the design target: each section must make its purpose and next action clear at phone width.
 - Mobile cards show only their decision-critical information; remove secondary copy and reduce decorative/metadata elements. Never remove information required to make a safe product choice; place it on the detail page or in an intentional disclosure.
 - Review and approve the annotated mobile visual proposal before product-code implementation; use desktop only as a locked reference.
@@ -55,7 +55,7 @@
 - [ ] Enumerate concrete static and dynamic routes and record the data-dependent variants for each dynamic family.
 - [ ] Walk every route and section at 390 CSS px; capture top, major section transitions, and bottom.
 - [ ] Capture each page at 1440 CSS px as a locked reference only. Do not propose desktop changes.
-- [ ] Add 320/360 checks for narrow cards, dense controls, long text and forms; use 430/768/1023 to validate mobile/tablet transitions and 1024 as the desktop-boundary regression check.
+- [ ] Check mobile widths 320/360/390/430 for narrow cards, dense controls, long text and forms. Inspect 768/1023 only as locked reference points and 1024/1440 for desktop regression; do not change tablet/desktop composition.
 - [ ] For each observation record route, section, user task, viewport, visible impact, reproduction evidence, source/component owner, severity, and whether the issue is a shared or local cause.
 - [ ] Record which card text/facts/actions are decision-critical, which items are redundant or decorative, and which details belong on the destination page.
 - [ ] Run the supplied viewport and Grid/Flex diagnostics on representative pages; identify intentional carousel/table scrolling separately.
@@ -117,10 +117,11 @@
 - Verify route owners: `src/app/(site)/models/page.tsx`, `models/[tireTypeSlug]/page.tsx`, `models/[tireTypeSlug]/[...segments]/page.tsx`
 
 - [ ] Adapt `/models`, direction, and category list layouts from the baseline findings, including long breadcrumbs and empty/no-match states.
-- [ ] Make tire filters compact and operable on mobile while retaining labels, reset, active values, results count, and query-state behavior.
+- [ ] Implement tire filters as a bottom sheet: field groups and draft selections inside; active count in the trigger; sticky Reset and “Показать N моделей” actions at the bottom. Apply commits query state and closes the sheet; reset clears draft/applied state; no-match results remain clear and actionable.
 - [ ] Rework tire model cards to the approved mobile content budget: retain model identity and only the facts needed to choose a model; move longer description and secondary badges to the model detail view.
-- [ ] Reorder model detail content for phone use and make gallery controls operable by touch and keyboard.
-- [ ] Implement one readable narrow-screen strategy for tire variants and technical specifications; retain a clear scroll cue if comparison still requires overflow.
+- [ ] Reorder mobile detail content as gallery/title → essential fitment facts → variant selection/primary action → benefits/specifications/documents/contact; keep the primary action inline, and put long description below a “Подробнее” disclosure where appropriate.
+- [ ] Make the main product image swipeable and keep thumbnails as a secondary navigation path; auto-scroll the active thumbnail into view.
+- [ ] Show core tire specification facts first and put remaining rows behind “Все характеристики”; preserve every value and avoid a phone-wide 14-column table.
 - [ ] Verify documents, advantages carousel and final contact CTA at narrow widths and with long labels.
 - [ ] Recheck every route variant sharing `TireCatalog.module.css` to catch cross-layout regressions.
 
@@ -138,13 +139,15 @@
 - Modify: `src/components/shop/ShopProductConfigurator.tsx`, `ShopProductConfigurator.module.css`
 - Verify route owners under `src/app/(site)/shop/**/page.tsx`
 
-- [ ] Adapt Shop hero, wheel models, order steps, category showcase and vehicle stories in their source order for phone layouts.
-- [ ] Make category carousels touch/keyboard operable and ensure reduced motion is respected.
+- [ ] Adapt Shop hero to a mobile height near 75vh, art-directed image crop, and one clear CTA; keep the homepage tire-model section as a swipe-only carousel with a partial next-card peek, no arrows, dots, or autoplay.
+- [ ] On Shop home, use compact numbered order-step rows; make vehicle stories a swipe-only carousel with one large story, a partial next-card peek, and captions, without arrows/dots/autoplay.
+- [ ] Make the full-bleed Shop category showcase manually swipeable with named progress dots; remove mobile arrows and autoplay. Respect reduced motion and keyboard operation where controls exist.
 - [ ] Apply consistent mobile patterns to product catalog and lifestyle category variants, including filter, empty collection, and next-category states.
 - [ ] Reduce mobile category, wheel, and Shop product cards to the approved title/facts/action hierarchy; move descriptive copy and secondary badges to the detail view.
-- [ ] Based on baseline evidence, implement wheel filters either as a compact inline layout or a mobile panel; preserve apply/reset, selected filter summary, query state, and no-result feedback.
-- [ ] Adapt wheel model gallery/order/table/documents and verify long technical values.
-- [ ] Adapt Shop product gallery, option groups, availability, validation feedback, add-to-cart action, and long description.
+- [ ] Implement wheel filters in the same bottom-sheet pattern and draft/apply/reset/query contract as tire filters.
+- [ ] Adapt wheel model detail order to image/title → essential fitment facts → order options/action → secondary content; swipe the gallery, keep thumbnails secondary, and disclose non-core specifications while preserving all data.
+- [ ] Use compact horizontal Shop product rows on mobile (image left; name, price and existing action on the right); omit long excerpts. Keep variant products’ detail/variant action and simple products’ add-to-cart behavior.
+- [ ] Keep product CTA inline after variant/availability, not fixed; collapse only long product stories under “Подробнее о товаре”.
 - [ ] Check the mobile-specific image source/crop where provided; confirm the desktop image source and crop remain unchanged.
 
 **Done when:** Every Shop route variant supports product discovery/configuration on narrow screens, with intentional carousel behavior and no hidden filter or purchase action.
@@ -161,6 +164,7 @@
 - Verify route owners: `src/app/(site)/contact/page.tsx`, `cart/page.tsx`, `shop/cart/page.tsx`
 
 - [ ] Adapt regular and procurement form field groups to a readable mobile order and ensure labels, focus, errors and submit status remain visible.
+- [ ] For procurement requests, keep required name/contact/request fields visible and move optional axis/region/term/company/comment fields under “Добавить детали к заявке”; explain that one contact method is sufficient.
 - [ ] Verify viewport behavior with the mobile keyboard open and after validation focuses a missing field.
 - [ ] Adapt success confirmation and request summary for narrow widths and long contact values.
 - [ ] Adapt cart groups and line items for mobile, including quantity changes, removal, mixed item types, empty state and submission state.
@@ -184,11 +188,13 @@
 - Modify: `src/components/content/TireIqContextualVisuals.tsx`, `TireIqContextualVisuals.module.css`
 - Verify route owners: `about`, `branding`, `warranty`, `become-a-supplier`, `privacy-policy`, `shop/delivery-and-returns`, `tire-iq`, `tire-iq/[slug]`
 
-- [ ] Adapt ServicePage once for its hero, notice, numbered features, proof image, child article and CTA; verify every service-page consumer.
-- [ ] Adapt legal/privacy and delivery information for long text, address/email strings, notices, and card/article reading width.
-- [ ] Adapt Tire IQ selectors and topic navigation for touch, keyboard, long values, selected/result feedback and reduced-motion behavior.
-- [ ] Reflow editorial listing featured and regular cards, taxonomy controls, empty states, and article metadata. On mobile, show title, topic/essential metadata, and a concise action; omit the excerpt if it crowds the card.
-- [ ] Adapt article media, aside, body, related model links, next-step actions, and CMS content to a narrow reading column.
+- [ ] Adapt ServicePage once for its hero, notice, numbered compact feature rows, proof image/copy, child article and CTA; show short descriptions and disclose only long details.
+- [ ] Keep legal/privacy and delivery/return/warranty content fully visible. Reduce card chrome/padding and improve reading width; do not collapse legal conditions.
+- [ ] Put Tire IQ task navigation first; make bulky application/axle/vehicle selectors mobile disclosures, showing diagrams when opened and preserving selection/result context.
+- [ ] Use uniform editorial listing cards (no oversized featured card) with image/date-topic/title and a small open affordance; omit excerpt and redundant “Читать” button on mobile.
+- [ ] Adapt article body, media, related links and CTA. Give “Передать задачу специалисту” the primary full-width treatment and “Посмотреть каталог” a quieter text-link treatment.
+- [ ] On article tables, stack simple parameter/value pairs; keep wide comparison tables in a bounded horizontal scroller with sticky first label column and a visible scroll cue.
+- [ ] Collapse mobile breadcrumbs to nearest parent + current page; retain full breadcrumb on desktop. On mobile footer, collapse navigation groups only; keep brand, main link, contact and legal links visible.
 - [ ] Recheck all service pages and article routes after shared component changes.
 
 **Done when:** Service/legal and Tire IQ routes remain readable and task-complete on phones, with all unique selector and CMS content states covered.
@@ -199,8 +205,8 @@
 - Update: `docs/superpowers/reports/2026-10-15-public-site-responsive-baseline.md`
 - Review: all files modified in Tasks 3–7
 
-- [ ] Repeat every route/section at 390 CSS px; repeat narrow/high-risk cases at 320/360, and mobile/tablet transitions at 430/768/1023. Include dynamic page variants and relevant form/catalog states.
-- [ ] Check 1024px as the locked desktop boundary and 1440px as the desktop reference; make no layout changes at these widths.
+- [ ] Repeat every route/section at 390 CSS px; repeat narrow/high-risk cases at 320/360 and the upper mobile width at 430. Inspect 768/1023 as locked tablet references only. Include dynamic variants and relevant form/catalog states.
+- [ ] Check 1024px and 1440px as locked desktop references; make no layout changes at these widths or in the 768–1023px tablet range.
 - [ ] Compare all routes at 1440px against the locked baseline and document that desktop composition has not changed.
 - [ ] Re-run viewport, computed Grid-track, min/max width and child/parent width diagnostics on each page family.
 - [ ] Confirm deliberate local scrolling in tables/carousels is operable and distinguish it from accidental page overflow.
@@ -212,4 +218,8 @@
 
 ## Execution and review notes
 
-Tasks 3–7 can be reviewed by page family, but must start only after Task 1 establishes current mobile evidence and Task 2's mobile visual proposal is approved. Task 8 is mandatory after all shared component changes. No composition changes are allowed at 1024px and above. Each implementation task must preserve unrelated worktree content and stage only its own files.
+Tasks 3–7 can be reviewed by page family, but must start only after Task 1 establishes current mobile evidence and Task 2's mobile visual proposal is approved. The user has approved the combined direction: image-led visual treatment from A, catalog clarity from B, and a persistent four-item mobile bottom navigation. Product-code work is authorized for this mobile scope. Task 8 is mandatory after shared component changes. No composition changes are allowed above 767px. Each implementation task must preserve unrelated worktree content and stage only its own files.
+
+## Current implementation status
+
+The mobile-only implementation has started in the shared checkout after the approved mobile UX decisions. Completed and verified slices are recorded in `docs/superpowers/reports/2026-10-15-public-site-responsive-baseline.md` under “Implementation and route recheck”. The 22-route width sweep passed at 320/390/430px; the current focused mobile suite passed 22 tests with its desktop-only regression check skipped, and the separate desktop check passed 1/1. The main tire-model rail verifies as swipe/scroll-snap with a partial next-card preview and no control buttons. Contact validation and mocked API retry/success, Shop cart empty/filled/mixed lines and drawer behavior are covered. Tire IQ axle, truck and bus diagram/choice disclosures are interaction-tested. The short tire-list whitespace defect is fixed at <=767px. The approved four-item Main/Shop mobile bottom navigation is now in the shared shell; live emulation returned 200 on both contexts at 350px, and confirmed the nav is hidden at 1440px. Remaining scope includes tire-cart filled-state review, Tire IQ application-guide and real-data selection-state review, long-content visual review, local table/gallery/Shop-category carousel touch and reduced-motion checks, review of the standard contact form’s optional-field ordering, actual-device keyboard proof, service-boundary validation, and desktop/tablet locked comparison. Desktop compositions above 767px remain out of scope.

@@ -5,10 +5,11 @@ test("main site uses the premium floating chrome", async ({ page }, testInfo) =>
 
   const nav = page.getByRole("navigation", {
     name: "Навигация BIZON Tires",
+    exact: true,
   });
   await expect(nav).toBeVisible();
-  const catalogLink = nav.locator('a[href="/models"]');
-  const tireIqLink = nav.locator('a[href="/tire-iq"]');
+  const catalogLink = nav.locator('a[href="/models/"]');
+  const tireIqLink = nav.locator('a[href="/tire-iq/"]');
   await expect(catalogLink).toHaveCount(1);
   await expect(tireIqLink).toHaveCount(1);
   if (["mobile-390", "tablet-768", "laptop-1024"].includes(testInfo.project.name)) {
@@ -41,15 +42,18 @@ test("main burger links to the Bizon tire cart without a catalog CTA", async ({ 
 
   const dialog = page.getByRole("dialog", { name: "Меню BIZON Tires", exact: true });
   await expect(dialog.getByRole("link", { name: "Открыть каталог" })).toHaveCount(0);
-  await expect(dialog.getByRole("link", { name: /^Корзина/ })).toHaveAttribute("href", "/cart");
+  await expect(dialog.getByRole("link", { name: /^Корзина/ })).toHaveAttribute("href", "/cart/");
 });
 
-test("main footer uses the shared shell with main content", async ({ page }) => {
+test("main footer uses the shared shell with main content", async ({ page }, testInfo) => {
   await page.goto("/");
 
   const footer = page.locator('[data-site-footer="main"]');
   await expect(footer).toHaveCount(1);
-  await expect(footer.getByRole("link", { name: "Каталог шин" }).first()).toHaveAttribute("href", "/models");
-  await expect(footer.getByRole("link", { name: "BIZON Shop" })).toHaveAttribute("href", "/shop");
+  await expect(footer.getByRole("link", { name: "Каталог шин" }).first()).toHaveAttribute("href", "/models/");
+  if (testInfo.project.name === "mobile-390") {
+    await footer.locator("summary").filter({ hasText: "Сервисы" }).click();
+  }
+  await expect(footer.getByRole("link", { name: "BIZON Shop" })).toHaveAttribute("href", "/shop/");
   await expect(footer.getByRole("link", { name: "Подбор" })).toHaveCount(0);
 });

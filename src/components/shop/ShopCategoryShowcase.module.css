@@ -186,6 +186,10 @@
   font-weight: var(--weight-display);
 }
 
+.iconLabel {
+  display: none;
+}
+
 @media (max-width: 639px) {
   .controls {
     gap: 6px;
@@ -205,6 +209,33 @@
     width: 23px;
     height: 23px;
   }
+}
+
+@media (max-width: 767px) {
+  .toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    width: auto;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-pill);
+    padding: 0 0.8rem;
+  }
+
+  .toggleLabel { display: inline; white-space: nowrap; font-size: 0.8rem; font-weight: 650; }
+
+  .iconLink {
+    flex: 0 0 auto;
+    width: auto;
+    min-height: 44px;
+    gap: 0.5rem;
+    border-radius: var(--radius-pill);
+    padding: 0 0.8rem;
+  }
+
+  .iconLabel { display: inline; max-width: 12rem; overflow: hidden; color: inherit; font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 @media (prefers-reduced-motion: reduce) {

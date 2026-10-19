@@ -71,6 +71,7 @@ export function ShopCategoryShowcase({
                   {card.title.trim().charAt(0)}
                 </span>
               )}
+              <span className={styles.iconLabel}>{card.title}</span>
             </Link>
           ))}
         </nav>
@@ -79,12 +80,13 @@ export function ShopCategoryShowcase({
           className={styles.toggle}
           aria-expanded={iconsOpen}
           aria-controls="shop-category-shortcuts"
-          aria-label={iconsOpen ? "Скрыть категории" : "Показать категории"}
+          aria-label={iconsOpen ? "Скрыть категории" : "Все категории"}
           onClick={() => setIconsOpen((open) => !open)}
         >
           <span className={styles.toggleIcon}>
             <GridIcon />
           </span>
+          <span className={styles.toggleLabel}>Все категории</span>
         </button>
       </div>
       <div className={styles.stage}>

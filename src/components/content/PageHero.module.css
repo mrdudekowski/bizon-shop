@@ -109,8 +109,19 @@
 }
 
 @media (max-width: 767px) {
+  .breadcrumbs li:not(:nth-last-child(-n + 2)) { display: none; }
+  .breadcrumbs li:nth-last-child(2) > span[aria-hidden="true"] { display: none; }
   .inner {
     grid-template-columns: minmax(0, 1fr);
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .copy h1[data-title-long="true"] {
+    max-width: 100%;
+    min-width: 0;
+    font-size: clamp(2rem, 9vw, 3rem);
+    overflow-wrap: anywhere;
   }
 
   .media {

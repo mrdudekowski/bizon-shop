@@ -94,6 +94,15 @@
   font-size: 1.3rem;
 }
 
+@media (max-width: 767px) {
+  .nav { padding-bottom: clamp(2.5rem, 10vw, 4rem); }
+  .label { margin-bottom: .6rem; }
+  .link { grid-template-columns: 2rem minmax(0, 1fr) auto; gap: .65rem; padding: .9rem 0; align-items: center; }
+  .title { font-size: 1.05rem; line-height: 1.2; }
+  .outcome { display: none; }
+  .arrow { font-size: 1.1rem; }
+}
+
 @media (min-width: 900px) {
   .list {
     grid-template-columns: repeat(3, minmax(0, 1fr));

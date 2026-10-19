@@ -350,6 +350,36 @@
   }
 }
 
+@media (max-width: 767px) {
+  .breadcrumbs > a:first-child,
+  .breadcrumbs > span { display: none; }
+  .heroContent,
+  .inner,
+  .nextContent {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .heroContent,
+  .nextContent,
+  .sectionHead,
+  .collectionHead,
+  .collectionHead > div {
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .collectionHead > div > * { max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+  .sectionHead > *,
+  .collectionHead > * { max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+  .hero h1 { width: 100%; max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+  .nextContent h2 { max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+  .principles,
+  .productGrid { grid-template-columns: minmax(0, 1fr); width: 100%; max-width: 100%; min-width: 0; }
+  .principles article { min-width: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .heroAction,
   .contactLink,

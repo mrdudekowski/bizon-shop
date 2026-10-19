@@ -101,6 +101,12 @@
   }
 }
 
+@media (max-width: 767px) {
+  .body { box-sizing: border-box; width: 100%; }
+  .primaryAction { width: 100%; justify-content: center; }
+  .secondaryAction { min-height: 44px; display: inline-flex; align-items: center; color: var(--color-link); text-decoration: underline; text-underline-offset: .2em; }
+}
+
 .back {
   margin: 0;
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+import { ResponsiveDisclosure } from "@/components/content/ResponsiveDisclosure";
 
 import styles from "./TireIqBusSelector.module.css";
 
@@ -22,10 +23,13 @@ export function TireIqBusSelector({ hasKnowledge = true }: { hasKnowledge?: bool
         <p className={styles.kicker}>Третья конфигурация</p>
         <h2 id="bus-selector-heading">Автобус</h2>
         <p>Оцените роль оси при эксплуатации междугороднего автобуса и подборе шин.</p>
+        <ResponsiveDisclosure summary="Посмотреть схему">
         <div className={styles.visual}>
           <img src={`/images/tire-iq/axles/VIS-03_${imageName}.svg`} alt="Междугородний автобус с выделенной осью" width={2400} height={1000} />
         </div>
+        </ResponsiveDisclosure>
       </div>
+      <ResponsiveDisclosure summary="Выбрать ось">
       <div className={styles.options}>
         {AXLES.map((axle) => (
           <Link className={styles.option} href={hasKnowledge ? "/tire-iq#knowledge" : "/contact"} key={axle.key}
@@ -37,6 +41,7 @@ export function TireIqBusSelector({ hasKnowledge = true }: { hasKnowledge?: bool
           </Link>
         ))}
       </div>
+      </ResponsiveDisclosure>
     </section>
   );
 }

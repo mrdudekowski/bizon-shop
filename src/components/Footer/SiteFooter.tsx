@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SITE_CONTACT, contactEmailHref, contactPhoneHref } from "@/constants/contact";
 import { ROUTES } from "@/constants/navigation";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+import { ResponsiveDisclosure } from "@/components/content/ResponsiveDisclosure";
 
 import styles from "./Footer.module.css";
 
@@ -116,15 +117,21 @@ export function SiteFooter({
         </div>
 
         {sections.map((section) => (
-          <nav className={styles.nav} aria-label={section.label} key={section.label}>
-            <p>{section.label}</p>
-            {section.links.map((link) => (
-              <Link href={link.href} key={link.href}>
-                {link.label}
-                {link.href === "/" && surface === "shop" ? <SiteArrow direction="ne" /> : null}
-              </Link>
-            ))}
-          </nav>
+          <ResponsiveDisclosure
+            className={styles.footerDisclosure}
+            summary={section.label}
+            key={section.label}
+          >
+            <nav className={styles.nav} aria-label={section.label}>
+              <p>{section.label}</p>
+              {section.links.map((link) => (
+                <Link href={link.href} key={link.href}>
+                  {link.label}
+                  {link.href === "/" && surface === "shop" ? <SiteArrow direction="ne" /> : null}
+                </Link>
+              ))}
+            </nav>
+          </ResponsiveDisclosure>
         ))}
 
         <div className={styles.contact}>
