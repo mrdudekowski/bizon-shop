@@ -112,7 +112,7 @@ export function ShopShowcaseEditor() {
           <label className={styles.field}>Название плитки<input value={tile.title} onChange={(e) => patchTile(tile.categoryId, (row) => ({ ...row, title: e.target.value }))} /></label>
           <label className={styles.field}>Порядок<input type="number" value={tile.sortOrder} onChange={(e) => patchTile(tile.categoryId, (row) => ({ ...row, sortOrder: Number(e.target.value) || 0 }))} /></label>
           <label className={styles.check}><input type="checkbox" checked={tile.visible} onChange={(e) => patchTile(tile.categoryId, (row) => ({ ...row, visible: e.target.checked }))} /> Показывать на сайте</label>
-          <PlacementFields label="Иконка" value={tile.icon} onChange={(image) => patchPlacement(tile.categoryId, "icon", image)} />
+          <PlacementFields label="Иконка" value={tile.icon} onChange={(image) => patchPlacement(tile.categoryId, "icon", image)} previewSurface="dark" uploadMode="new-asset" />
           <PlacementFields label="Изображение плитки" value={tile.image} onChange={(image) => patchPlacement(tile.categoryId, "image", image)} />
         </article>)}
       </section> : null}

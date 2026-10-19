@@ -640,6 +640,19 @@ function collectAssetUsage(state: StoreState): Map<string, string[]> {
   return used;
 }
 
+const MEDIA_REFERENCE_FIELDS = new Set(["assetId", "replacementAssetId", "imageAssetId", "mediaId", "media_id", "featuredImageId"]);
+
+function unlinkMediaReferences(value: unknown, id: string): unknown {
+  if (Array.isArray(value)) return value.map((item) => unlinkMediaReferences(item, id));
+  if (value == null || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).map(([key, child]) => [
+    key,
+    MEDIA_REFERENCE_FIELDS.has(key) && child != null && String(child) === id
+      ? null
+      : unlinkMediaReferences(child, id),
+  ]));
+}
+
 function isDirectionRecord(value: unknown): value is EntityRecord<TireDirectionDraft> {
   return value != null && typeof value === "object" && "draft" in value;
 }
@@ -1460,9 +1473,9 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async deleteAsset(id: string) {
       const state = load();
-      if ((collectAssetUsage(state).get(id) ?? []).length > 0) throw new AdminClientError("media_in_use");
-      state.assets = state.assets.filter((asset) => asset.id !== id);
-      save(state);
+      const unlinked = unlinkMediaReferences(state, id) as StoreState;
+      unlinked.assets = unlinked.assets.filter((asset) => asset.id !== id);
+      save(unlinked);
     },
 
     async listMediaDeletionHistory() {
@@ -1639,7 +1652,11 @@ export function browserAdminClient(): AdminClient {
 /** The CMS browser talks directly to backend-app; the session cookie remains HttpOnly. */
 function adminApiBase(): string {
   const configured = (process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "").trim();
-  const base = configured || (process.env.NODE_ENV === "development" ? "http://127.0.0.1:4000" : "");
+  const localHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+  const browserHost = typeof window !== "undefined" && localHosts.has(window.location.hostname)
+    ? window.location.hostname
+    : "localhost";
+  const base = configured || (process.env.NODE_ENV === "development" ? `http://${browserHost}:4000` : "");
   return base.replace(/\/+$/, "");
 }
 
@@ -1781,4 +1798,3 @@ function remoteAdminClient(): AdminClient {
     },
   });
 }
-

@@ -1,9 +1,24 @@
-# BIZON frontend-cms
+# BIZON CMS frontend
 
-Админка контента и каталога BIZON. Это её единственное рабочее место: правки
-делаются здесь, а не на отдельной ветке `frontend-cms` — та ветка оставлена
-только как история и больше не развивается.
+The CMS is a static Next.js application served locally on port `3001`. It owns the editorial interface and sends authenticated admin requests directly from the browser to `backend-app` at port `4000`. The backend owns PostgreSQL access and media persistence.
 
-Запуск: `npm run dev` на порту 3001. Запись и чтение идут по HTTP в
-`../backend-app` (порт 4000), который остаётся единственным, кто обращается к
-базе. Публичный сайт живёт в корне этого дерева и админку не импортирует.
+## Local development
+
+```powershell
+npm install
+Copy-Item .env.example .env.local
+npm run dev
+```
+
+Set `NEXT_PUBLIC_ADMIN_API_URL` to the backend origin. The backend must allow the CMS origin through `CMS_ALLOWED_ORIGINS`; public website origins belong in `CORS_ALLOWED_ORIGINS` and do not receive browser access to admin routes.
+
+The CMS production build is a static export and requires `NEXT_PUBLIC_ADMIN_API_URL` at build time. The GitHub workflow sets a local placeholder for build validation; the deployed artifact must be built with the intended backend origin.
+
+## Checks
+
+```powershell
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```

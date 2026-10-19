@@ -1,6 +1,7 @@
 export type AdminErrorCode =
   | "slug_taken"
   | "invalid_slug"
+  | "not_found"
   | "publish_blocked"
   | "category_not_published"
   | "category_has_published_products"

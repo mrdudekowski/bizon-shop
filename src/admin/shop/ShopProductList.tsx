@@ -27,6 +27,7 @@ export function ShopProductList() {
   const [categorySlug, setCategorySlug] = useState("");
   const [categorySlugTouched, setCategorySlugTouched] = useState(false);
   const [assets, setAssets] = useState<{ id: string; dataUrl: string }[]>([]);
+  const [shopTileImageIds, setShopTileImageIds] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { view, setView } = useCatalogView("shop-categories", categories.length);
@@ -35,10 +36,11 @@ export function ShopProductList() {
     setError("");
     try {
       const client = browserAdminClient();
-      const [nextCategories, nextProducts, nextAssets] = await Promise.all([
+      const [nextCategories, nextProducts, nextAssets, shopHome] = await Promise.all([
         client.listShopCategories(),
         client.listShopProducts(),
         client.listAssets(),
+        client.getPage("shop-home").catch(() => null),
       ]);
       const counts = nextProducts.reduce<Record<string, number>>((total, product) => {
         total[product.categoryId] = (total[product.categoryId] ?? 0) + 1;
@@ -47,6 +49,8 @@ export function ShopProductList() {
       setCategories(nextCategories);
       setProductCounts(counts);
       setAssets(nextAssets);
+      const tiles = shopHome?.draft.id === "shop-home" ? shopHome.draft.catalog.tiles : [];
+      setShopTileImageIds(Object.fromEntries(tiles.flatMap((tile) => tile.image?.assetId ? [[tile.categoryId, tile.image.assetId]] : [])));
     } catch {
       setError("Не удалось загрузить категории. Проверьте соединение и попробуйте ещё раз.");
     } finally {
@@ -88,7 +92,8 @@ export function ShopProductList() {
   }
 
   function tileImageUrl(category: EntityRecord<ShopCategoryDraft>) {
-    const assetId = category.draft.carousel.find((slide) => slide.image?.assetId)?.image?.assetId
+    const assetId = shopTileImageIds[category.id]
+      ?? category.draft.carousel.find((slide) => slide.image?.assetId)?.image?.assetId
       ?? category.draft.mainImage?.assetId;
     return assets.find((asset) => asset.id === assetId)?.dataUrl ?? null;
   }

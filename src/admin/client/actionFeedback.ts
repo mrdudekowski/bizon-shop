@@ -3,7 +3,7 @@ import { ERROR_TEXT } from "./errorText";
 
 export const DOCUMENT_STATUS = {
   saved: "Черновик сохранён",
-  published: "Опубликовано. На сайте новая версия.",
+  published: "Опубликовано в CMS.",
   hidden: "Скрыто с сайта",
 } as const;
 

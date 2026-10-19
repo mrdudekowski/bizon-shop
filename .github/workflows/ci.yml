@@ -8,6 +8,8 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_ADMIN_API_URL: http://127.0.0.1:4000
     steps:
       - name: Check out CMS
         uses: actions/checkout@v4

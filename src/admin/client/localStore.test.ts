@@ -121,14 +121,18 @@ describe("createLocalAdminClient", () => {
     });
   });
 
-  it("refuses to delete a used file", async () => {
+  it("unlinks a used file from local drafts before deleting it", async () => {
     const client = createLocalAdminClient(memory());
     const asset = await client.createAsset({ name: "tire.png", mimeType: "image/png", dataUrl: "data:image/png,x" });
     const created = await client.createTireModel({ name: "LH01", directionId: "dir-long-haul" });
     const ready = publishable(created.draft);
     ready.mainImage = { ...ready.mainImage!, assetId: asset.id };
     await client.saveTireModel(created.id, ready);
-    await expect(client.deleteAsset(asset.id)).rejects.toMatchObject({ code: "media_in_use" });
+    await client.deleteAsset(asset.id);
+    const updated = await client.getTireModel(created.id);
+    expect(updated.draft.mainImage?.assetId).toBeNull();
+    expect(updated.savedDraft?.mainImage?.assetId).toBeNull();
+    expect((await client.listAssets()).some((item) => item.id === asset.id)).toBe(false);
     const spare = await client.createAsset({ name: "spare.png", mimeType: "image/png", dataUrl: "data:image/png,y" });
     await client.deleteAsset(spare.id);
     expect((await client.listAssets()).some((item) => item.id === spare.id)).toBe(false);

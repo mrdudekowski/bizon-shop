@@ -3,6 +3,7 @@ import type { AdminClientError } from "./errors";
 export const ERROR_TEXT: Record<AdminClientError["code"], string> = {
   slug_taken: "Этот адрес страницы уже занят",
   invalid_slug: "Нельзя изменить адрес страницы",
+  not_found: "Запись не найдена. Обновите страницу и попробуйте снова.",
   publish_blocked: "Публикация закрыта",
   category_not_published: "Сначала опубликуйте категорию товара",
   category_has_published_products: "Сначала снимите с публикации товары этой категории",

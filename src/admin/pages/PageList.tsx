@@ -14,6 +14,7 @@ import { AdminLoading } from "@/admin/ui/AdminLoading";
 import { useAdminRole, useAdminSession } from "@/admin/ui/DocumentUI";
 import { canEditorPerform } from "@/admin/domain/editorPermissions";
 import { SectionAccessNotice } from "@/admin/ui/SectionAccessNotice";
+import { previewAssetId } from "./pagePreview";
 
 function statusOf(record: EntityRecord<PageDraft>): DocumentStatus {
   if (record.hidden) return "hidden";
@@ -27,17 +28,6 @@ function hasDraft(record: EntityRecord<PageDraft>): boolean {
     record.savedDraft != null &&
     JSON.stringify(record.savedDraft) !== JSON.stringify(record.publishedSnapshot)
   );
-}
-
-function previewAssetId(draft: PageDraft): string | undefined {
-  if (draft.id === "home") return draft.hero.image?.assetId ?? draft.shopCampaign.image?.assetId;
-  if (draft.id === "shop-home") {
-    return draft.hero.image?.assetId
-      ?? draft.categoryCarousel.find((slide) => slide.desktopImage || slide.mobileImage)?.desktopImage?.assetId
-      ?? draft.categoryCarousel.find((slide) => slide.mobileImage)?.mobileImage?.assetId
-      ?? draft.vehicles.slides.find((slide) => slide.image)?.image?.assetId;
-  }
-  return draft.hero.image?.assetId;
 }
 
 export function PageList() {

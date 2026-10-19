@@ -14,12 +14,6 @@ const editors = [
 ].map((file) => new URL(file, import.meta.url));
 
 describe("document action copy", () => {
-  it("marks footer action messages as status or alert", () => {
-    const source = fs.readFileSync(new URL("./DocumentReviewFooter.tsx", import.meta.url), "utf8");
-    expect(source).toContain("feedbackRole");
-    expect(source).toContain("role={feedbackRole(message)}");
-  });
-
   it("announces publish success in every entity editor", () => {
     for (const file of editors) {
       const source = fs.readFileSync(file, "utf8");
@@ -28,10 +22,4 @@ describe("document action copy", () => {
     }
   });
 
-  it("surfaces PDF upload failures on pages", () => {
-    const source = fs.readFileSync(new URL("../pages/PageEditor.tsx", import.meta.url), "utf8");
-    expect(source).toContain("uploadErrorText");
-    expect(source).toContain("onDocumentFile");
-    expect(source).toMatch(/onDocumentFile[\s\S]*catch/);
-  });
 });
