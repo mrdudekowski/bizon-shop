@@ -61,6 +61,7 @@ import { getObjectStore } from "../../storage/objectStore";
 import type { ObjectStore } from "../../storage/objectStore";
 import { assertMediaUploadReady, MediaCleanupRequired, MediaRejected, uploadAndPersistMedia } from "../../storage/putMedia";
 import { hasMediaReference, unlinkStoredMediaReferences, removePendingMediaReplacement } from "../../storage/mediaReferences";
+import { retryQueuedMediaCleanup } from "../../storage/mediaCleanup";
 import { collectPendingMediaReplacements } from "../domain/mediaReplacement";
 import { shopHomeChildRows, shopHomeParentValues } from "../shopHomeWrite";
 
@@ -139,28 +140,8 @@ async function query(text: string, params: unknown[] = [], client?: PoolClient):
   return result.rows as Row[];
 }
 
-async function retryQueuedMediaCleanup(store: ObjectStore): Promise<void> {
-  const pending = await query(
-    "SELECT object_key FROM cms_media_cleanup ORDER BY created_at LIMIT 20",
-  );
-  for (const row of pending) {
-    const key = str(row.object_key);
-    try {
-      if (!key.startsWith("bizon/media/")) throw new Error("cleanup key outside CMS media prefix");
-      await store.delete({ key });
-      await query("DELETE FROM cms_media_cleanup WHERE object_key = $1", [key]);
-    } catch {
-      try {
-        await query(
-          "UPDATE cms_media_cleanup SET attempts = attempts + 1, last_attempt_at = now() WHERE object_key = $1",
-          [key],
-        );
-      } catch {
-        console.error("media.cleanup_attempt_record_failed", { key });
-      }
-      console.error("media.orphan_cleanup_retry_failed", { key });
-    }
-  }
+export async function retryPendingMediaCleanup(): Promise<void> {
+  await retryQueuedMediaCleanup(query, getObjectStore());
 }
 
 async function applyPendingMediaReplacements(draft: unknown): Promise<void> {
@@ -192,7 +173,7 @@ async function applyPendingMediaReplacements(draft: unknown): Promise<void> {
     await query(
       `UPDATE media SET title=$2, filename=$3, mime_type=$4, url=$5, object_key=$6,
         declared_mime_type=$7, sha256=$8, filesize=$9 WHERE id=$1`,
-      [row.target_id, row.title, row.title, row.mime_type, row.url, row.object_key, row.declared_mime_type, row.sha256, row.filesize],
+      [row.target_id, row.title, row.filename, row.mime_type, row.url, row.object_key, row.declared_mime_type, row.sha256, row.filesize],
     );
     if (oldKey.startsWith("bizon/media/")) {
       afterTransactionCommit(async () => {
@@ -1202,14 +1183,14 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       try {
         const objectStore = getObjectStore();
         await assertMediaUploadReady(objectStore, () => query("SELECT 1"));
-        await retryQueuedMediaCleanup(objectStore);
+        await retryQueuedMediaCleanup(query, objectStore);
         return await uploadAndPersistMedia(
           objectStore,
           { name: file.name, mimeType: file.mimeType, body },
           async (stored) => {
             const rows = await query(
-              "INSERT INTO media (title, alt, filename, mime_type, url, object_key, declared_mime_type, sha256, filesize) VALUES ($1, '', $1, $2, $3, $4, $5, $6, $7) RETURNING id",
-              [stored.name, stored.mimeType, stored.url, stored.key, stored.declaredMimeType, stored.sha256, stored.byteSize],
+              "INSERT INTO media (title, alt, filename, mime_type, url, object_key, declared_mime_type, sha256, filesize) VALUES ($1, '', $2, $3, $4, $5, $6, $7, $8) RETURNING id",
+              [stored.name, stored.key.split("/").pop(), stored.mimeType, stored.url, stored.key, stored.declaredMimeType, stored.sha256, stored.byteSize],
             );
             return { id: str(rows[0].id) };
           },
@@ -1245,7 +1226,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       try {
         const objectStore = getObjectStore();
         await assertMediaUploadReady(objectStore, () => query("SELECT 1"));
-        await retryQueuedMediaCleanup(objectStore);
+        await retryQueuedMediaCleanup(query, objectStore);
         return await uploadAndPersistMedia(
           objectStore,
           { name: file.name, mimeType: file.mimeType, body },
@@ -1369,39 +1350,47 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       );
       const drafts = await query("SELECT collection, doc_id, draft FROM cms_drafts");
       const changeSets = await query("SELECT id, pack FROM cms_change_sets");
+      const mediaIds = rows.map((row) => Number(row.id)).filter(Number.isFinite);
+      const refs = mediaIds.length === 0 ? [] : await query(
+        `WITH usages(media_id, label) AS (
+           SELECT cover_image_id, 'Тип шин: ' || name FROM tire_types WHERE cover_image_id = ANY($1::int[])
+           UNION ALL SELECT main_image_id, 'Шина: ' || name FROM tire_models WHERE main_image_id = ANY($1::int[])
+           UNION ALL SELECT cover_image_id, 'Тип дисков: ' || name FROM wheel_types WHERE cover_image_id = ANY($1::int[])
+           UNION ALL SELECT main_image_id, 'Модель дисков: ' || name FROM wheel_models WHERE main_image_id = ANY($1::int[])
+           UNION ALL SELECT cover_image_id, 'Категория Shop: ' || name FROM shop_categories WHERE cover_image_id = ANY($1::int[])
+           UNION ALL SELECT main_image_id, 'Товар Shop: ' || name FROM products WHERE main_image_id = ANY($1::int[])
+           UNION ALL SELECT featured_image_id, 'Материал Tire IQ: ' || title FROM tire_iq_articles WHERE featured_image_id = ANY($1::int[])
+           UNION ALL SELECT s.image_id, 'Карусель категории Shop: ' || c.name FROM shop_category_carousel AS s JOIN shop_categories AS c ON c.id = s.shop_category_id WHERE s.image_id = ANY($1::int[])
+           UNION ALL SELECT home_hero_image_id, 'Главный экран сайта: ' || "key" FROM pages WHERE home_hero_image_id = ANY($1::int[])
+           UNION ALL SELECT home_selection_entry_image_id, 'Блок выбора шин на главной: ' || "key" FROM pages WHERE home_selection_entry_image_id = ANY($1::int[])
+           UNION ALL SELECT home_shop_campaign_image_id, 'Рекламный блок Shop на главной: ' || "key" FROM pages WHERE home_shop_campaign_image_id = ANY($1::int[])
+           UNION ALL SELECT home_expertise_image_id, 'Блок экспертизы на главной: ' || "key" FROM pages WHERE home_expertise_image_id = ANY($1::int[])
+           UNION ALL SELECT home_branding_before_image_id, 'Брендинг до: ' || "key" FROM pages WHERE home_branding_before_image_id = ANY($1::int[])
+           UNION ALL SELECT home_branding_after_image_id, 'Брендинг после: ' || "key" FROM pages WHERE home_branding_after_image_id = ANY($1::int[])
+           UNION ALL SELECT shop_hero_image_id, 'Обложка страницы Shop: ' || "key" FROM pages WHERE shop_hero_image_id = ANY($1::int[])
+           UNION ALL SELECT stub_hero_image_id, 'Обложка страницы-заглушки: ' || "key" FROM pages WHERE stub_hero_image_id = ANY($1::int[])
+           UNION ALL SELECT editorial_proof_image_id, 'Изображение подтверждения на странице: ' || "key" FROM pages WHERE editorial_proof_image_id = ANY($1::int[])
+           UNION ALL SELECT desktop_image_id, 'Изображение карусели Shop на странице' FROM pages_shop_category_carousel WHERE desktop_image_id = ANY($1::int[])
+           UNION ALL SELECT mobile_image_id, 'Изображение карусели Shop на странице' FROM pages_shop_category_carousel WHERE mobile_image_id = ANY($1::int[])
+           UNION ALL SELECT image_id, 'Изображение слайда транспорта на странице' FROM pages_shop_vehicles_slides WHERE image_id = ANY($1::int[])
+           UNION ALL SELECT icon_media_id, 'Элемент каталога Shop' FROM pages_shop_catalog_tiles WHERE icon_media_id = ANY($1::int[])
+           UNION ALL SELECT image_media_id, 'Элемент каталога Shop' FROM pages_shop_catalog_tiles WHERE image_media_id = ANY($1::int[])
+           UNION ALL SELECT carousel_image_media_id, 'Элемент каталога Shop' FROM pages_shop_catalog_tiles WHERE carousel_image_media_id = ANY($1::int[])
+           UNION ALL SELECT media_id, 'Галерея шины: ' || tire_models.name FROM tire_models_rels JOIN tire_models ON tire_models.id = tire_models_rels.parent_id WHERE media_id = ANY($1::int[])
+           UNION ALL SELECT media_id, 'Галерея дисков: ' || wheel_models.name FROM wheel_models_rels JOIN wheel_models ON wheel_models.id = wheel_models_rels.parent_id WHERE media_id = ANY($1::int[])
+           UNION ALL SELECT media_id, 'Галерея товара Shop: ' || products.name FROM products_rels JOIN products ON products.id = products_rels.parent_id WHERE media_id = ANY($1::int[])
+         ) SELECT media_id, label FROM usages`,
+        [mediaIds],
+      );
+      const usagesByMedia = new Map<string, string[]>();
+      for (const ref of refs) {
+        const id = str(ref.media_id);
+        usagesByMedia.set(id, [...(usagesByMedia.get(id) ?? []), str(ref.label)]);
+      }
       const result = [];
       for (const row of rows) {
         const id = str(row.id);
-        const usedBy: string[] = [];
-        const refs = await query(
-          `SELECT label FROM (
-             SELECT 'Тип шин: ' || name AS label FROM tire_types WHERE cover_image_id = $1
-             UNION ALL SELECT 'Шина: ' || name FROM tire_models WHERE main_image_id = $1
-             UNION ALL SELECT 'Тип дисков: ' || name FROM wheel_types WHERE cover_image_id = $1
-             UNION ALL SELECT 'Модель дисков: ' || name FROM wheel_models WHERE main_image_id = $1
-             UNION ALL SELECT 'Категория Shop: ' || name FROM shop_categories WHERE cover_image_id = $1
-             UNION ALL SELECT 'Товар Shop: ' || name FROM products WHERE main_image_id = $1
-             UNION ALL SELECT 'Материал Tire IQ: ' || title FROM tire_iq_articles WHERE featured_image_id = $1
-             UNION ALL SELECT 'Карусель категории Shop: ' || c.name FROM shop_category_carousel AS s JOIN shop_categories AS c ON c.id = s.shop_category_id WHERE s.image_id = $1
-             UNION ALL SELECT 'Главный экран сайта: ' || "key" FROM pages WHERE home_hero_image_id = $1
-             UNION ALL SELECT 'Блок выбора шин на главной: ' || "key" FROM pages WHERE home_selection_entry_image_id = $1
-             UNION ALL SELECT 'Рекламный блок Shop на главной: ' || "key" FROM pages WHERE home_shop_campaign_image_id = $1
-             UNION ALL SELECT 'Блок экспертизы на главной: ' || "key" FROM pages WHERE home_expertise_image_id = $1
-             UNION ALL SELECT 'Брендинг до: ' || "key" FROM pages WHERE home_branding_before_image_id = $1
-             UNION ALL SELECT 'Брендинг после: ' || "key" FROM pages WHERE home_branding_after_image_id = $1
-             UNION ALL SELECT 'Обложка страницы Shop: ' || "key" FROM pages WHERE shop_hero_image_id = $1
-             UNION ALL SELECT 'Обложка страницы-заглушки: ' || "key" FROM pages WHERE stub_hero_image_id = $1
-             UNION ALL SELECT 'Изображение карусели Shop на странице' FROM pages_shop_category_carousel WHERE desktop_image_id = $1 OR mobile_image_id = $1
-             UNION ALL SELECT 'Изображение слайда транспорта на странице' FROM pages_shop_vehicles_slides WHERE image_id = $1
-             UNION ALL SELECT 'Элемент каталога Shop' FROM pages_shop_catalog_tiles WHERE icon_media_id = $1 OR image_media_id = $1 OR carousel_image_media_id = $1
-             UNION ALL SELECT 'Материал Tire IQ: ' || title FROM tire_iq_articles WHERE featured_image_id = $1
-             UNION ALL SELECT 'Галерея шины: ' || tire_models.name FROM tire_models_rels JOIN tire_models ON tire_models.id = tire_models_rels.parent_id WHERE media_id = $1
-             UNION ALL SELECT 'Галерея дисков: ' || wheel_models.name FROM wheel_models_rels JOIN wheel_models ON wheel_models.id = wheel_models_rels.parent_id WHERE media_id = $1
-             UNION ALL SELECT 'Галерея товара Shop: ' || products.name FROM products_rels JOIN products ON products.id = products_rels.parent_id WHERE media_id = $1
-           ) AS usages`,
-          [Number(id)],
-        );
-        for (const ref of refs) usedBy.push(str(ref.label));
+        const usedBy: string[] = [...(usagesByMedia.get(id) ?? [])];
         for (const draft of drafts) {
           if (hasMediaReference(draft.draft, id)) usedBy.push(`Черновик: ${str(draft.collection)} / ${str(draft.doc_id)}`);
         }
@@ -1410,7 +1399,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         }
         result.push({
           id,
-          name: str(row.filename || row.title),
+          name: str(row.title || row.filename),
           mimeType: str(row.mime_type),
           dataUrl: str(row.url),
           usedBy: [...new Set(usedBy)],
@@ -1444,7 +1433,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         `INSERT INTO cms_media_deletion_history
           (media_id, filename, mime_type, object_key, deleted_by_user_id, deleted_by_login)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [String(id), str(mediaRows[0].filename || mediaRows[0].title), str(mediaRows[0].mime_type), objectKey, actor.id, actor.login],
+        [String(id), str(mediaRows[0].title || mediaRows[0].filename), str(mediaRows[0].mime_type), objectKey, actor.id, actor.login],
       );
       afterTransactionCommit(async () => {
         try {

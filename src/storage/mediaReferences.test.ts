@@ -43,6 +43,7 @@ describe("CMS media references", () => {
 
     expect(calls).toContainEqual(["UPDATE pages SET home_hero_image_id = NULL WHERE home_hero_image_id = $1", [42]]);
     expect(calls).toContainEqual(["DELETE FROM products_rels WHERE media_id = $1", [42]]);
+    expect(calls).toContainEqual(["UPDATE pages SET editorial_proof_image_id = NULL WHERE editorial_proof_image_id = $1", [42]]);
     expect(calls).toContainEqual([
       "UPDATE cms_drafts SET draft = $3::jsonb WHERE collection = $1 AND doc_id = $2",
       ["pages", "home", JSON.stringify({ hero: { assetId: null } })],

@@ -45,6 +45,7 @@ export async function unlinkStoredMediaReferences(query: MediaReferenceQuery, id
     ["pages", "home_branding_after_image_id"],
     ["pages", "shop_hero_image_id"],
     ["pages", "stub_hero_image_id"],
+    ["pages", "editorial_proof_image_id"],
     ["pages_shop_category_carousel", "desktop_image_id"],
     ["pages_shop_category_carousel", "mobile_image_id"],
     ["pages_shop_vehicles_slides", "image_id"],

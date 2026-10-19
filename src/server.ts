@@ -21,7 +21,7 @@ import { CART_SESSION_COOKIES, LEGACY_CART_SESSION_COOKIE, deleteCartSession, mi
 import { insertRequest, type StoredRequestInput } from "./insertRequest";
 import { AdminClientError } from "./admin/client/errors";
 import { LoginThrottle, type LoginAttemptTicket } from "./admin/server/loginThrottle";
-import { createPostgresAdminClient } from "./admin/server/postgresAdmin";
+import { createPostgresAdminClient, retryPendingMediaCleanup } from "./admin/server/postgresAdmin";
 import { readJsonRequestBody, readRequestBody, RequestBodyTooLarge } from "./readRequestBody";
 import { MediaRejected, MAX_MEDIA_BYTES } from "./storage/putMedia";
 import { normalizeRequest } from "./requests/normalizeRequest";
@@ -55,6 +55,24 @@ const URL_BASE = "http://localhost";
 const PORT = Number.parseInt(process.env.PORT ?? "4000", 10);
 const CART_SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 const loginThrottle = new LoginThrottle();
+
+function startMediaCleanupWorker(): void {
+  let running = false;
+  const retry = async () => {
+    if (running) return;
+    running = true;
+    try {
+      await retryPendingMediaCleanup();
+    } catch (error) {
+      console.error("media.cleanup_worker_failed", { error: error instanceof Error ? error.message : "unknown" });
+    } finally {
+      running = false;
+    }
+  };
+  const timer = setInterval(() => void retry(), 60_000);
+  timer.unref();
+  void retry();
+}
 
 type JsonBody = unknown;
 
@@ -878,6 +896,7 @@ async function prepareAuth(): Promise<void> {
 prepareAuth().then(
   () => {
     console.log("CMS accounts ready");
+    startMediaCleanupWorker();
     servers.forEach((server, index) => {
       const host = LISTEN_HOSTS[index];
       server.on("error", (error: NodeJS.ErrnoException) => {

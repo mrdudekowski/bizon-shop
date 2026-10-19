@@ -61,6 +61,23 @@ describe("putMedia", () => {
     expect(store.objects.get(result.key)?.length).toBe(png.length);
   });
 
+  it("assigns different object keys when the same source filename is uploaded twice", async () => {
+    setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
+    setEnv("S3_BUCKET", "bucket");
+    setEnv("S3_ACCESS_KEY_ID", "id");
+    setEnv("S3_SECRET_ACCESS_KEY", "secret");
+    const store = memoryStore();
+    const file = { name: "same-name.png", mimeType: "image/png", body: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]) };
+
+    const first = await putMedia(store, file);
+    const second = await putMedia(store, file);
+
+    expect(first.name).toBe("same-name.png");
+    expect(second.name).toBe("same-name.png");
+    expect(first.key).not.toBe(second.key);
+    expect(store.objects.size).toBe(2);
+  });
+
   it("rejects oversize and unknown mime", async () => {
     setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
     setEnv("S3_BUCKET", "bucket");
