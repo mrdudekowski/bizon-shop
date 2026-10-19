@@ -38,8 +38,12 @@ export function MediaLibrary() {
   if (session.role !== "admin") return <SectionAccessNotice title="Файлы" icon="image" />;
 
   async function remove(asset: MediaListItem) {
-    if (asset.usedBy.length > 0) return;
-    if (!window.confirm(`Удалить файл «${asset.name}» из хранилища? Это действие нельзя отменить.`)) return;
+    const usageCount = asset.usedBy.length;
+    const usageWarning = asset.usedBy.length > 0
+      ? `Файл используется в ${usageCount} ${usageCount === 1 ? "месте" : "местах"}:\n${asset.usedBy.map((place) => `• ${place}`).join("\n")}\nПри удалении он будет отвязан от всех этих мест.`
+      : "";
+    const replacementWarning = asset.replacementPending ? "\nБудет также отменена и удалена ожидающая замена файла." : "";
+    if (!window.confirm(`Удалить файл «${asset.name}» из хранилища?${usageWarning ? `\n\n${usageWarning}` : ""}${replacementWarning}\nЭто действие нельзя отменить.`)) return;
     setError("");
     setBusyId(asset.id);
     try {
@@ -60,10 +64,11 @@ export function MediaLibrary() {
       {assets.map((asset) => <li className={styles.asset} key={asset.id}>
         <img className={styles.preview} src={asset.dataUrl} alt="" />
         <div className={styles.details}><strong>{asset.name}</strong><span>{asset.mimeType || "Тип не указан"}</span>
+          {asset.usedBy.length > 0 ? <span className={styles.usageStatus}><i aria-label="Файл используется" title="Файл используется" />Файл используется</span> : null}
           {asset.replacementPending ? <span className={styles.unused}>Новая версия покажется на сайте после публикации.</span> : null}
           {asset.usedBy.length > 0 ? <div className={styles.usage}><b>Используется:</b><ul>{asset.usedBy.map((place, index) => <li key={`${place}-${index}`}>{place}</li>)}</ul></div> : <span className={styles.unused}>Нигде не используется</span>}
         </div>
-        <button className="ghost" type="button" disabled={asset.usedBy.length > 0 || busyId === asset.id} onClick={() => void remove(asset)}>
+        <button className="ghost" type="button" disabled={busyId === asset.id} onClick={() => void remove(asset)}>
           {busyId === asset.id ? "Удаляем…" : "Удалить"}
         </button>
       </li>)}

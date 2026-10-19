@@ -1,5 +1,6 @@
 .fields, .productPhotos { display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; width: 100%; max-width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; }
 .fields > label, .productPhotos > label, .controls > label { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.mediaActions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
 .filePick {
   position: relative;
   display: inline-flex;
@@ -128,6 +129,14 @@
   background: #e9ecf1;
   scroll-margin-top: calc(var(--cms-sticky-top) + var(--cms-sticky-tabs) + 8px);
   scroll-margin-bottom: calc(var(--cms-chrome-bottom) + 8px);
+}
+.previewShotDark {
+  background-color: #272a2b;
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.035) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.035) 75%),
+    linear-gradient(45deg, rgba(255, 255, 255, 0.035) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.035) 75%);
+  background-position: 0 0, 8px 8px;
+  background-size: 16px 16px;
 }
 .preview {
   display: block;

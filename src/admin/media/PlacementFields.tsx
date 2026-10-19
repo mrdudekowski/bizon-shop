@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as Reac
 import type { ImagePlacement, MediaListItem } from "@/admin/domain/types";
 import { resolveMediaPreviewUrl } from "@/admin/domain/catalogPreviewUrl";
 import { browserAdminClient } from "@/admin/client/localStore";
+import { MediaPicker } from "./MediaPicker";
 import { uploadErrorText } from "./uploadError";
 import { mediaMimeFromFile } from "./mediaMime";
 import styles from "./PlacementFields.module.css";
@@ -36,9 +37,11 @@ type Props = {
   label?: string;
   thumbs?: ReactNode;
   previewSrc?: string | null;
+  previewSurface?: "default" | "dark";
+  uploadMode?: "replace" | "new-asset";
   showFocus?: boolean;
 };
-export function PlacementFields({ value, onChange, label = "Фото", thumbs, previewSrc, showFocus = true }: Props) {
+export function PlacementFields({ value, onChange, label = "Фото", thumbs, previewSrc, previewSurface = "default", uploadMode = "replace", showFocus = true }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -86,9 +89,10 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
     setUploadError("");
     setUploading(true);
     try {
-      const placement = await uploadImageFile(file, value);
+      const replaceExisting = uploadMode === "replace";
+      const placement = await uploadImageFile(file, replaceExisting ? value : undefined);
       setPreviewUrl(URL.createObjectURL(file));
-      if (value) setReplacementPending(true);
+      if (value && replaceExisting) setReplacementPending(true);
       onChange(placement);
     } catch (error) {
       setUploadError(uploadErrorText(error));
@@ -113,6 +117,14 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
     } finally {
       setUploading(false);
     }
+  }
+  async function chooseAsset(asset: MediaListItem) {
+    if (replacementPending && assetId) await browserAdminClient().cancelAssetReplacement(assetId);
+    const next = value ? { ...value, assetId: asset.id } : emptyPlacement(asset.id);
+    delete next.replacementAssetId;
+    setReplacementPending(false);
+    setPreviewUrl(resolveMediaPreviewUrl(asset.dataUrl));
+    onChange(next);
   }
   function patch(next: Partial<ImagePlacement>) { if (value) onChange({ ...value, ...next }); }
   function pointAt(event: ReactPointerEvent) {
@@ -144,7 +156,7 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
       <input
         aria-label={`${label}: файл`}
         type="file"
-        accept="image/*"
+        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
         disabled={uploading}
         onChange={(event) => {
           void onFile(event.target.files?.[0]);
@@ -153,8 +165,12 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
       />
     </label>
   );
+  const mediaActions = <div className={styles.mediaActions}>
+    {replaceLabel}
+    <MediaPicker disabled={uploading} excludeIds={assetId ? [assetId] : []} onSelect={chooseAsset} />
+  </div>;
   return <fieldset className={styles.fields} data-cms-image-fields><legend>{label}</legend>
-    {displayUrl ? null : replaceLabel}
+    {displayUrl ? null : mediaActions}
     {uploadError ? <p role="alert">{uploadError}</p> : null}
     {displayUrl ? (
       <>
@@ -162,7 +178,7 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
         <div className={styles.stage}>
           <div className={styles.previewColumn}>
             <div className={styles.previewFrame}>
-              <div ref={frame} className={styles.previewShot} style={showFocus ? placementStyle : undefined} aria-label="Предпросмотр фото и точки фокуса">
+              <div ref={frame} className={`${styles.previewShot} ${previewSurface === "dark" ? styles.previewShotDark : ""}`} style={showFocus ? placementStyle : undefined} aria-label="Предпросмотр фото и точки фокуса">
                 <img className={styles.preview} src={displayUrl} alt={value?.alt || label} />
                 {showFocus && value ? <button className={styles.focusPoint} style={placementStyle} type="button" aria-label="Точка фокуса: перетащите кружок; стрелки на клавиатуре" onPointerDown={dragFocus} onPointerMove={moveDrag} onKeyDown={moveFocus} /> : null}
               </div>
@@ -170,7 +186,7 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
           </div>
           {value ? (
             <div className={styles.controls}>
-              {replaceLabel}
+              {mediaActions}
               {replacementPending ? <>
                 <p className={styles.caption}>Новое фото появится на сайте после публикации.</p>
                 <button type="button" className="ghost" disabled={uploading} onClick={() => void cancelReplacement()}>
@@ -261,7 +277,7 @@ export function ProductPhotoFields({
       <input
         aria-label="Фотографии товара: файлы"
         type="file"
-        accept="image/*"
+        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
         multiple
         onChange={(event) => {
           void onFiles(event.target.files);
@@ -294,6 +310,12 @@ export function ProductPhotoFields({
               </button>
             ))}
             {addPhoto}
+            <MediaPicker
+              compact
+              disabled={uploading}
+              excludeIds={slots.flatMap((slot) => slot ? [slot.assetId] : [])}
+              onSelect={(asset) => onGalleryChange([...photos, emptyPlacement(asset.id)])}
+            />
           </div>
         }
       />
