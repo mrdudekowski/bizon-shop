@@ -32,7 +32,7 @@ function fitCmsPreviewToViewport() {
   document.documentElement.style.setProperty("--cms-preview-max", `${Math.max(72, Math.min(room, widthCap, Math.round(window.innerHeight - 220)))}px`);
 }
 type Props = {
-  value: ImagePlacement | undefined;
+  value: ImagePlacement | null | undefined;
   onChange: (value: ImagePlacement | undefined) => void;
   label?: string;
   thumbs?: ReactNode;
@@ -90,7 +90,7 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
     setUploading(true);
     try {
       const replaceExisting = uploadMode === "replace";
-      const placement = await uploadImageFile(file, replaceExisting ? value : undefined);
+      const placement = await uploadImageFile(file, replaceExisting ? value ?? undefined : undefined);
       setPreviewUrl(URL.createObjectURL(file));
       if (value && replaceExisting) setReplacementPending(true);
       onChange(placement);

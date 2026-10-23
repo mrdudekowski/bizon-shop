@@ -7,7 +7,7 @@ import Image from "next/image";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { sortModelsByPublicationStatus } from "@/admin/domain/catalogSort";
-import { resolveSiteCatalogPreview } from "@/admin/domain/catalogPreviewUrl";
+import { resolveMediaPreviewUrl, resolveSiteCatalogPreview } from "@/admin/domain/catalogPreviewUrl";
 import { slugifyTitle } from "@/admin/domain/slug";
 import type { DocumentStatus, TireDirection, TireModelListItem, MediaListItem } from "@/admin/domain/types";
 import { Icon } from "@/admin/ui/Icon";
@@ -111,7 +111,7 @@ export function TireModelList() {
                 <li key={direction.id}>
                   <article className={styles.directionChoice}>
                     <Link className={styles.card} href={`/?direction=${encodeURIComponent(direction.id)}`}>
-                      <span className={styles.thumb}>{asset || resolveSiteCatalogPreview(direction.slug) ? <Image unoptimized width={52} height={56} src={asset?.dataUrl ?? resolveSiteCatalogPreview(direction.slug)!} alt="" /> : <Icon name="directions" size={34} />}</span>
+                      <span className={styles.thumb}>{asset || resolveSiteCatalogPreview(direction.slug) ? <Image unoptimized width={52} height={56} src={resolveMediaPreviewUrl(asset?.dataUrl) ?? resolveSiteCatalogPreview(direction.slug)!} alt="" /> : <Icon name="directions" size={34} />}</span>
                       <span className={styles.cardBody}><strong>{direction.name}</strong><span className={styles.meta}>{count} моделей</span></span>
                       <Icon name="arrow" size={16} />
                     </Link>

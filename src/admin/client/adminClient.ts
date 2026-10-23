@@ -107,6 +107,7 @@ export type AdminClient = {
   hideMaterial(id: string): Promise<EntityRecord<ArticleDraft>>;
   deleteMaterial(id: string): Promise<void>;
   listAssets(): Promise<MediaListItem[]>;
+  detachAssetUsage(assetId: string, usageId: string): Promise<void>;
   deleteAsset(id: string): Promise<void>;
   listMediaDeletionHistory(): Promise<MediaDeletionHistoryItem[]>;
   listUsers(): Promise<AdminUser[]>;

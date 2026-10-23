@@ -13,7 +13,6 @@ import { DOCUMENT_STATUS, actionErrorText } from "@/admin/client/actionFeedback"
 import { browserAdminClient } from "@/admin/client/localStore";
 import {
   LEGAL_PAGE_KEYS,
-  type DocumentLink,
   type EntityRecord,
   type HomePageDraft,
   type PageCta,
@@ -24,9 +23,7 @@ import {
   type StubPageDraft,
 } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
-import { mediaMimeFromFile } from "@/admin/media/mediaMime";
-import { uploadErrorText } from "@/admin/media/uploadError";
-import placementStyles from "@/admin/media/PlacementFields.module.css";
+import { DocumentFields } from "@/admin/media/DocumentFields";
 
 import { PAGE_LABELS } from "./pageLabels";
 import styles from "./PageEditor.module.css";
@@ -89,15 +86,6 @@ function CtaFields({
   );
 }
 
-function moveDocument(documents: DocumentLink[], index: number, delta: number): DocumentLink[] {
-  const target = index + delta;
-  if (target < 0 || target >= documents.length) return documents;
-  const next = documents.slice();
-  const [item] = next.splice(index, 1);
-  next.splice(target, 0, item);
-  return next;
-}
-
 function isLegalPage(id: string): boolean {
   return (LEGAL_PAGE_KEYS as readonly string[]).includes(id);
 }
@@ -109,22 +97,6 @@ function StubFields({
   draft: StubPageDraft;
   onChange: (next: StubPageDraft) => void;
 }) {
-  const [documentError, setDocumentError] = useState("");
-  async function onDocumentFile(file: File | undefined) {
-    if (file == null) return;
-    setDocumentError("");
-    try {
-      const asset = await browserAdminClient().createAsset({
-        name: file.name,
-        mimeType: mediaMimeFromFile(file),
-        body: file,
-      });
-      onChange({ ...draft, documents: [...draft.documents, { assetId: asset.id, title: file.name }] });
-    } catch (error) {
-      setDocumentError(uploadErrorText(error));
-    }
-  }
-
   return (
     <>
       <SectionFields
@@ -135,51 +107,58 @@ function StubFields({
       <PlacementFields
         label="Картинка шапки"
         value={draft.hero.image}
-        onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image } })}
+        onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image: image ?? null } })}
       />
+      {draft.id !== "contact" ? <section className={styles.section}>
+        <h2>Дополнительный контент</h2>
+        <label>
+          Заголовок списка
+          <input value={draft.featuresHeading ?? ""} onChange={(event) => onChange({ ...draft, featuresHeading: event.target.value })} />
+        </label>
+        {(draft.features ?? []).map((feature, index) => (
+          <fieldset className={styles.row} key={feature.id}>
+            <legend>Пункт {index + 1}</legend>
+            <label>Заголовок пункта<input value={feature.title} onChange={(event) => onChange({ ...draft, features: draft.features!.map((item, itemIndex) => itemIndex === index ? { ...item, title: event.target.value } : item) })} /></label>
+            <label>Текст<textarea value={feature.text} onChange={(event) => onChange({ ...draft, features: draft.features!.map((item, itemIndex) => itemIndex === index ? { ...item, text: event.target.value } : item) })} /></label>
+            <button type="button" onClick={() => onChange({ ...draft, features: draft.features!.filter((_, itemIndex) => itemIndex !== index) })}>Удалить пункт</button>
+          </fieldset>
+        ))}
+        <button type="button" onClick={() => onChange({ ...draft, features: [...(draft.features ?? []), { id: `feature-${crypto.randomUUID()}`, title: "", text: "" }] })}>Добавить пункт</button>
+        {(draft.sections ?? []).map((section, index) => (
+          <fieldset className={styles.row} key={section.id}>
+            <legend>Раздел {index + 1}</legend>
+            <label>Заголовок раздела<input value={section.heading} onChange={(event) => onChange({ ...draft, sections: draft.sections!.map((item, itemIndex) => itemIndex === index ? { ...item, heading: event.target.value } : item) })} /></label>
+            <label>Текст раздела<textarea value={section.body} onChange={(event) => onChange({ ...draft, sections: draft.sections!.map((item, itemIndex) => itemIndex === index ? { ...item, body: event.target.value } : item) })} /></label>
+            <button type="button" onClick={() => onChange({ ...draft, sections: draft.sections!.filter((_, itemIndex) => itemIndex !== index) })}>Удалить раздел</button>
+          </fieldset>
+        ))}
+        <button type="button" onClick={() => onChange({ ...draft, sections: [...(draft.sections ?? []), { id: `section-${crypto.randomUUID()}`, heading: "", body: "" }] })}>Добавить раздел</button>
+        <label>
+          Уведомление
+          <textarea value={draft.notice?.body ?? ""} onChange={(event) => onChange({ ...draft, notice: { body: event.target.value } })} />
+        </label>
+        {draft.notice !== undefined ? <button type="button" onClick={() => onChange({ ...draft, notice: null })}>Убрать уведомление</button> : null}
+        {draft.proof ? (
+          <fieldset className={styles.row}>
+            <legend>Блок подтверждения</legend>
+            <label>Заголовок<input value={draft.proof.title} onChange={(event) => onChange({ ...draft, proof: { ...draft.proof!, title: event.target.value } })} /></label>
+            <label>Текст<textarea value={draft.proof.text} onChange={(event) => onChange({ ...draft, proof: { ...draft.proof!, text: event.target.value } })} /></label>
+            <PlacementFields label="Изображение подтверждения" value={draft.proof.image} onChange={(image) => onChange({ ...draft, proof: { ...draft.proof!, image: image ?? null } })} />
+            <button type="button" onClick={() => onChange({ ...draft, proof: null })}>Убрать блок подтверждения</button>
+          </fieldset>
+        ) : <button type="button" onClick={() => onChange({ ...draft, proof: { title: "", text: "", image: null } })}>Добавить блок подтверждения</button>}
+        {draft.cta ? (
+          <fieldset className={styles.row}>
+            <legend>Кнопка страницы</legend>
+            <CtaFields label="Основная кнопка" value={draft.cta} onChange={(cta) => onChange({ ...draft, cta: { ...draft.cta!, ...cta } })} />
+            <label>Текст второй кнопки<input value={draft.cta.secondaryLabel ?? ""} onChange={(event) => onChange({ ...draft, cta: { ...draft.cta!, secondaryLabel: event.target.value } })} /></label>
+            <label>Ссылка второй кнопки<input value={draft.cta.secondaryHref ?? ""} onChange={(event) => onChange({ ...draft, cta: { ...draft.cta!, secondaryHref: event.target.value } })} /></label>
+            <button type="button" onClick={() => onChange({ ...draft, cta: null })}>Убрать кнопки страницы</button>
+          </fieldset>
+        ) : <button type="button" onClick={() => onChange({ ...draft, cta: { label: "", href: "" } })}>Добавить кнопки страницы</button>}
+      </section> : null}
       {isLegalPage(draft.id) ? (
-        <section className={styles.section}>
-          <h2>Документы</h2>
-          {draft.documents.map((doc, index) => (
-            <div key={`${doc.assetId}-${index}`} className={styles.row}>
-              <label>
-                Название
-                <input
-                  value={doc.title}
-                  onChange={(event) => {
-                    const documents = draft.documents.slice();
-                    documents[index] = { ...doc, title: event.target.value };
-                    onChange({ ...draft, documents });
-                  }}
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => onChange({ ...draft, documents: draft.documents.filter((_, itemIndex) => itemIndex !== index) })}
-              >
-                Убрать
-              </button>
-              <button type="button" onClick={() => onChange({ ...draft, documents: moveDocument(draft.documents, index, -1) })}>
-                выше
-              </button>
-              <button type="button" onClick={() => onChange({ ...draft, documents: moveDocument(draft.documents, index, 1) })}>
-                ниже
-              </button>
-            </div>
-          ))}
-          <label className={placementStyles.filePick}>
-            PDF
-            <input
-              type="file"
-              accept="application/pdf"
-              onChange={(event) => {
-                void onDocumentFile(event.target.files?.[0]);
-                event.target.value = "";
-              }}
-            />
-          </label>
-          {documentError ? <p role="alert">{documentError}</p> : null}
-        </section>
+        <DocumentFields value={draft.documents} onChange={(documents) => onChange({ ...draft, documents })} />
       ) : null}
     </>
   );
@@ -202,7 +181,7 @@ function HomeFields({
       <PlacementFields
         label="Фон hero"
         value={draft.hero.image}
-        onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image } })}
+        onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image: image ?? null } })}
       />
       <CtaFields
         label="Основная кнопка"
@@ -236,7 +215,45 @@ function HomeFields({
       <SectionFields
         title="Экспертиза"
         value={draft.expertise}
-        onChange={(expertise) => onChange({ ...draft, expertise })}
+        onChange={(expertise) => onChange({ ...draft, expertise: { ...draft.expertise, ...expertise } })}
+      />
+      <PlacementFields
+        label="Изображение экспертизы"
+        value={draft.expertise.image}
+        onChange={(image) => onChange({ ...draft, expertise: { ...draft.expertise, image: image ?? null } })}
+      />
+      <CtaFields
+        label="Кнопка экспертизы"
+        value={draft.expertise.cta}
+        onChange={(cta) => onChange({ ...draft, expertise: { ...draft.expertise, cta } })}
+      />
+      <SectionFields
+        title="Брендинг"
+        value={draft.branding}
+        onChange={(branding) => onChange({ ...draft, branding: { ...draft.branding, ...branding } })}
+      />
+      <CtaFields
+        label="Кнопка брендирования"
+        value={draft.branding.cta}
+        onChange={(cta) => onChange({ ...draft, branding: { ...draft.branding, cta } })}
+      />
+      <label>
+        Подпись сравнения до
+        <input value={draft.branding.beforeCaption} onChange={(event) => onChange({ ...draft, branding: { ...draft.branding, beforeCaption: event.target.value } })} />
+      </label>
+      <label>
+        Подпись сравнения после
+        <input value={draft.branding.afterCaption} onChange={(event) => onChange({ ...draft, branding: { ...draft.branding, afterCaption: event.target.value } })} />
+      </label>
+      <PlacementFields
+        label="Фото до брендирования"
+        value={draft.branding.beforeImage}
+        onChange={(beforeImage) => onChange({ ...draft, branding: { ...draft.branding, beforeImage: beforeImage ?? null } })}
+      />
+      <PlacementFields
+        label="Фото после брендирования"
+        value={draft.branding.afterImage}
+        onChange={(afterImage) => onChange({ ...draft, branding: { ...draft.branding, afterImage: afterImage ?? null } })}
       />
       <SectionFields
         title="Кампания магазина"
@@ -246,7 +263,7 @@ function HomeFields({
       <PlacementFields
         label="Картинка кампании"
         value={draft.shopCampaign.image}
-        onChange={(image) => onChange({ ...draft, shopCampaign: { ...draft.shopCampaign, image } })}
+        onChange={(image) => onChange({ ...draft, shopCampaign: { ...draft.shopCampaign, image: image ?? null } })}
       />
       <CtaFields
         label="Кнопка кампании"
@@ -275,7 +292,7 @@ function ShopHomeFields({
       <PlacementFields
         label="Картинка hero"
         value={draft.hero.image}
-        onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image } })}
+        onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image: image ?? null } })}
       />
       <CtaFields
         label="Кнопка hero"
@@ -387,7 +404,7 @@ function ShopHomeFields({
               value={slide.image}
               onChange={(image) => {
                 const slides = draft.vehicles.slides.slice();
-                slides[index] = { ...slide, image };
+                slides[index] = { ...slide, image: image ?? null };
                 onChange({ ...draft, vehicles: { ...draft.vehicles, slides } });
               }}
             />

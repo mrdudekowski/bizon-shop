@@ -1,7 +1,7 @@
 // Публичная форма карточки совпадает с main-app src/lib/content/types.ts.
 // Код сайта сюда не импортируется.
 
-import type { CatalogAxle, OperatingCondition, VehicleType } from "./options";
+import type { CatalogAxle } from "./options";
 
 export type ImagePlacement = {
   assetId: string;
@@ -51,12 +51,10 @@ export type TireDirectionDraft = {
   name: string;
   slug: string;
   description: string;
-  shortDescription: string;
+  shortDescription?: string;
   sortOrder: number;
   showInMenu: boolean;
   mainImage?: ImagePlacement;
-  selectionVehicleTypes: VehicleType[];
-  selectionConditions: OperatingCondition[];
 };
 
 export type TireModelDraft = {
@@ -76,8 +74,6 @@ export type TireModelDraft = {
   modelCode?: string;
   features?: { id: string; key: string; title: string; description: string }[];
   applicationTypes?: string[];
-  selectionVehicleTypes: VehicleType[];
-  selectionConditions: OperatingCondition[];
   selectionAxles: CatalogAxle[];
   showInMenu: boolean;
   menuOrder: number;
@@ -90,7 +86,8 @@ export type PublishBlocker =
   | "mainImage"
   | "size"
   | "price"
-  | "duplicateSize";
+  | "duplicateSize"
+  | "editorialPlaceholder";
 
 export type DocumentStatus = "draft" | "on_site" | "hidden";
 export type StatusEntity = "tire-direction" | "tire-model" | "wheel-type" | "wheel-model" | "shop-category" | "shop-product" | "page" | "material";
@@ -118,6 +115,7 @@ export type MediaAsset = {
   id: string;
   name: string;
   mimeType: string;
+  /** Legacy API field: a public URL or site-relative path, not necessarily a data URI. Resolve before rendering. */
   dataUrl: string;
 };
 
@@ -199,10 +197,22 @@ export type TireModelRecord = {
 export type WheelVariantDraft = {
   id: string;
   sizeLabel: string;
+  sku?: string;
+  diameter?: number;
+  width?: number;
+  boltHoles?: number;
   pcd: string;
+  pcdMm?: number;
   offsetET?: number;
   centerBore?: number;
+  loadRating?: string;
+  weight?: number;
   color: string;
+  finish?: string;
+  fastenerType?: string;
+  fastenerMaterial?: string;
+  sourceSpecification?: string;
+  compatibleTireSizes?: string;
   price?: number;
   priceOnRequest: boolean;
   available: boolean;
@@ -213,6 +223,7 @@ export type WheelTypeDraft = {
   name: string;
   slug: string;
   description: string;
+  shortDescription?: string;
   mainImage?: ImagePlacement;
   sortOrder: number;
   showInMenu: boolean;
@@ -241,7 +252,7 @@ export type WheelModelDraft = {
 export type ShopCategoryCarouselSlide = {
   id: string;
   title?: string;
-  image?: ImagePlacement;
+  image?: ImagePlacement | null;
 };
 
 export type ShopCategoryDraft = {
@@ -268,8 +279,10 @@ export type ShopVariantDraft = {
   id: string;
   color: string;
   size: string;
+  configuration?: string;
   sku: string;
   price?: number;
+  oldPrice?: number;
   priceOnRequest: boolean;
   available: boolean;
   image?: ImagePlacement;
@@ -284,6 +297,7 @@ export type ShopProductDraft = {
   descriptionShort: string;
   descriptionLong: string;
   price?: number;
+  oldPrice?: number;
   priceOnRequest: boolean;
   mainImage?: ImagePlacement;
   gallery: ImagePlacement[];
@@ -321,8 +335,14 @@ export type StubPageDraft = {
   id: Exclude<PageKey, "home" | "shop-home">;
   seoTitle: string;
   seoDescription: string;
-  hero: PageSectionCopy & { image?: ImagePlacement };
+  hero: PageSectionCopy & { image?: ImagePlacement | null };
   documents: DocumentLink[];
+  featuresHeading?: string;
+  features?: { id: string; title: string; text: string }[];
+  sections?: { id: string; heading: string; body: string }[];
+  notice?: { body: string } | null;
+  proof?: { image?: ImagePlacement | null; title: string; text: string } | null;
+  cta?: (PageCta & { secondaryLabel?: string; secondaryHref?: string }) | null;
 };
 
 export type HomePageDraft = {
@@ -330,17 +350,22 @@ export type HomePageDraft = {
   seoTitle: string;
   seoDescription: string;
   hero: PageSectionCopy & {
-    image?: ImagePlacement;
+    image?: ImagePlacement | null;
     primaryCta: PageCta;
     secondaryCta: PageCta;
     metricLabel: string;
     metricText: string;
   };
-  selectionEntry: PageSectionCopy & { image?: ImagePlacement };
   directions: PageSectionCopy;
-  expertise: PageSectionCopy;
-  shopCampaign: PageSectionCopy & { image?: ImagePlacement; cta: PageCta };
-  resume: PageSectionCopy & { primaryCta: PageCta; secondaryCta: PageCta };
+  expertise: PageSectionCopy & { image?: ImagePlacement | null; cta: PageCta };
+  branding: PageSectionCopy & {
+    cta: PageCta;
+    beforeCaption: string;
+    afterCaption: string;
+    beforeImage?: ImagePlacement | null;
+    afterImage?: ImagePlacement | null;
+  };
+  shopCampaign: PageSectionCopy & { image?: ImagePlacement | null; cta: PageCta };
 };
 
 export type ShopHomeCategorySlide = {
@@ -349,15 +374,15 @@ export type ShopHomeCategorySlide = {
   title: string;
   action: string;
   href: string;
-  desktopImage?: ImagePlacement;
-  mobileImage?: ImagePlacement;
+  desktopImage?: ImagePlacement | null;
+  mobileImage?: ImagePlacement | null;
   alt: string;
 };
 
 export type ShopHomeVehicleSlide = {
   id: string;
   title: string;
-  image?: ImagePlacement;
+  image?: ImagePlacement | null;
   alt: string;
 };
 
@@ -367,9 +392,9 @@ export type ShopCatalogTileDraft = {
   visible: boolean;
   sortOrder: number;
   carouselVisible: boolean;
-  icon?: ImagePlacement;
-  image?: ImagePlacement;
-  carouselImage?: ImagePlacement;
+  icon?: ImagePlacement | null;
+  image?: ImagePlacement | null;
+  carouselImage?: ImagePlacement | null;
 };
 
 export type ShopCatalogCopyDraft = {
@@ -383,7 +408,7 @@ export type ShopHomePageDraft = {
   id: "shop-home";
   seoTitle: string;
   seoDescription: string;
-  hero: PageSectionCopy & { image?: ImagePlacement; cta: PageCta };
+  hero: PageSectionCopy & { image?: ImagePlacement | null; cta: PageCta };
   wheelsIntro: PageSectionCopy & { kicker: string };
   orderSteps: { id: string; title: string; description: string }[];
   categoryCarousel: ShopHomeCategorySlide[];
@@ -403,18 +428,40 @@ export type ArticleDraft = {
   slug: string;
   excerpt: string;
   body: string;
-  image?: ImagePlacement;
+  image?: ImagePlacement | null;
+  imageConfigured: boolean;
   gallery: ImagePlacement[];
   showInMenu: boolean;
   menuOrder: number;
   taxonomy: string[];
 };
 
+export type MediaUsageState = "published-visible" | "draft-unpublished" | "hidden-not-rendered";
+
+export type MediaUsageRecord = {
+  id: string;
+  mediaId: string;
+  topLevelKey: string;
+  topLevelLabel: string;
+  pageKey: string;
+  pageLabel: string;
+  placementKey: string;
+  placementLabel: string;
+  state: MediaUsageState;
+  reviewRecommended: boolean;
+  diagnosticReason?: string;
+  detachable: boolean;
+  sourceKey?: string;
+};
+
 export type MediaListItem = {
   id: string;
   name: string;
   mimeType: string;
+  /** Legacy API field: a public URL or site-relative path, not necessarily a data URI. Resolve before rendering. */
   dataUrl: string;
+  /** Missing only for responses from a pre-structured legacy API; an empty array means unused. */
+  usages?: MediaUsageRecord[];
   usedBy: string[];
   replacementPending?: boolean;
 };

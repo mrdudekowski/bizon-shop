@@ -162,8 +162,13 @@ export function MaterialEditor({ id }: { id: string }) {
         <PlacementFields
           label="Главное фото"
           value={draft.image}
-          onChange={(image) => patch({ image })}
+          onChange={(image) => patch({ image: image ?? null, imageConfigured: true })}
         />
+        {draft.imageConfigured ? (
+          <button type="button" onClick={() => patch({ image: null, imageConfigured: false })}>
+            Использовать системную обложку
+          </button>
+        ) : null}
       </section>
       <DocumentReviewFooter
         entityType="material"

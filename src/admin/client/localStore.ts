@@ -32,8 +32,8 @@ import type {
   PageKey,
   PageSectionCopy,
   MediaListItem,
+  MediaUsageRecord,
   EntityRecord,
-  DocumentLink,
   EditorCapability,
   StatusEntity,
 } from "@/admin/domain/types";
@@ -136,11 +136,10 @@ function emptyPageDraft(key: PageKey): PageDraft {
         metricLabel: "",
         metricText: "",
       },
-      selectionEntry: emptySection(),
       directions: emptySection(),
-      expertise: emptySection(),
+      expertise: { ...emptySection(), image: null, cta: emptyCta() },
+      branding: { ...emptySection(), cta: emptyCta(), beforeCaption: "", afterCaption: "", beforeImage: null, afterImage: null },
       shopCampaign: { ...emptySection(), cta: emptyCta() },
-      resume: { ...emptySection(), primaryCta: emptyCta(), secondaryCta: emptyCta() },
     };
   }
   if (key === "shop-home") {
@@ -187,8 +186,6 @@ function emptyDraft(id: string, name: string, slug: string, directionId: string)
     descriptionShort: "",
     descriptionLong: "",
     treadType: "",
-    selectionVehicleTypes: [],
-    selectionConditions: [],
     selectionAxles: [],
     showInMenu: false,
     menuOrder: 0,
@@ -204,8 +201,6 @@ function emptyDirectionDraft(id: string, name: string, slug: string): TireDirect
     shortDescription: "",
     sortOrder: 0,
     showInMenu: false,
-    selectionVehicleTypes: [],
-    selectionConditions: [],
   };
 }
 
@@ -548,96 +543,88 @@ function restoreChangeEntry(state: StoreState, entry: ChangeEntry): void {
   record.savedDraft = clampDeep(restored) as typeof record.savedDraft;
 }
 
-function noteAsset(used: Map<string, string[]>, placement: ImagePlacement | undefined, label: string): void {
-  if (placement == null) return;
-  const labels = used.get(placement.assetId) ?? [];
-  if (!labels.includes(label)) labels.push(label);
-  used.set(placement.assetId, labels);
-}
+type LocalMediaSource = { collection: string; entityId: string; snapshot: string; path: (string | number)[] };
 
-function noteGallery(used: Map<string, string[]>, gallery: ImagePlacement[] | undefined, label: string): void {
-  for (const placement of gallery ?? []) noteAsset(used, placement, label);
-}
-
-function noteDocuments(used: Map<string, string[]>, documents: DocumentLink[] | undefined, label: string): void {
-  for (const doc of documents ?? []) {
-    const labels = used.get(doc.assetId) ?? [];
-    if (!labels.includes(label)) labels.push(label);
-    used.set(doc.assetId, labels);
-  }
-}
-
-function notePageDraft(used: Map<string, string[]>, page: PageDraft | null | undefined, label: string): void {
-  if (page == null) return;
-  if (page.id === "home") {
-    noteAsset(used, page.hero.image, label);
-    noteAsset(used, page.selectionEntry.image, label);
-    noteAsset(used, page.shopCampaign.image, label);
-    return;
-  }
-  if (page.id === "shop-home") {
-    noteAsset(used, page.hero.image, label);
-    for (const slide of page.categoryCarousel) {
-      noteAsset(used, slide.desktopImage, label);
-      noteAsset(used, slide.mobileImage, label);
-    }
-    for (const slide of page.vehicles.slides) {
-      noteAsset(used, slide.image, label);
-    }
-    return;
-  }
-  noteAsset(used, page.hero.image, label);
-  noteDocuments(used, page.documents, label);
-}
-
-function noteEntityMedia(used: Map<string, string[]>, draft: object, label: string): void {
-  const media = draft as {
-    mainImage?: ImagePlacement;
-    image?: ImagePlacement;
-    gallery?: ImagePlacement[];
-    documents?: DocumentLink[];
-    variants?: { image?: ImagePlacement }[];
+function collectAssetUsage(state: StoreState): Map<string, MediaUsageRecord[]> {
+  const byAsset = new Map<string, MediaUsageRecord[]>();
+  const collectPaths = (value: unknown, path: (string | number)[] = []): { assetId: string; path: (string | number)[] }[] => {
+    if (Array.isArray(value)) return value.flatMap((item, index) => collectPaths(item, [...path, index]));
+    if (value == null || typeof value !== "object") return [];
+    return Object.entries(value).flatMap(([key, child]) => {
+      const nextPath = [...path, key];
+      if (key === "assetId" && (typeof child === "string" || typeof child === "number") && String(child)) {
+        return [{ assetId: String(child), path: nextPath }];
+      }
+      return collectPaths(child, nextPath);
+    });
   };
-  noteAsset(used, media.mainImage, label);
-  noteAsset(used, media.image, label);
-  noteGallery(used, media.gallery, label);
-  noteDocuments(used, media.documents, label);
-  for (const variant of media.variants ?? []) noteAsset(used, variant.image, label);
-}
-
-function collectAssetUsage(state: StoreState): Map<string, string[]> {
-  const used = new Map<string, string[]>();
-  for (const direction of state.directions) {
-    noteEntityMedia(used, direction.draft, direction.draft.name);
-    if (direction.savedDraft) noteEntityMedia(used, direction.savedDraft, direction.draft.name);
-    if (direction.publishedSnapshot) noteEntityMedia(used, direction.publishedSnapshot, direction.draft.name);
+  const collectionLabels: Record<string, { key: string; label: string }> = {
+    directions: { key: "tires", label: "Шины" }, models: { key: "tires", label: "Шины" },
+    wheelTypes: { key: "wheels", label: "Диски" }, wheelModels: { key: "wheels", label: "Диски" },
+    shopCategories: { key: "shop", label: "Bizon Shop" }, shopProducts: { key: "shop", label: "Bizon Shop" },
+    pages: { key: "site", label: "Сайт" }, materials: { key: "tire-iq", label: "Tire IQ" },
+  };
+  const pageLabels: Record<string, string> = { home: "Главная", "shop-home": "Главная Bizon Shop" };
+  const add = (collection: string, entity: { id: string; hidden?: boolean; draft?: unknown }, snapshot: string, value: unknown, isPublished = false) => {
+    const group = collectionLabels[collection] ?? { key: collection, label: collection };
+    const recordValue = value as { name?: string; title?: string } | null;
+    const pageKey = entity.id;
+    const pageLabel = collection === "pages" ? pageLabels[pageKey] ?? pageKey : recordValue?.name ?? recordValue?.title ?? pageKey;
+    for (const reference of collectPaths(value)) {
+      const pathParts = reference.path.filter((part) => typeof part === "string") as string[];
+      const normalized = pathParts.filter((part) => part !== "assetId");
+      const placementKey = normalized.join(".") || "image";
+      const placementLabel = normalized.length === 0
+        ? "Изображение"
+        : normalized.map((part) => ({ hero: "Hero", mainImage: "Основное фото", image: "Изображение", gallery: "Галерея", documents: "Документы", categoryCarousel: "Карусель", vehicles: "Транспорт", slides: "Слайды", shopCampaign: "Кампания Shop", beforeImage: "Фото до", afterImage: "Фото после" } as Record<string, string>)[part] ?? part).join(" → ");
+      const source: LocalMediaSource = { collection, entityId: entity.id, snapshot, path: reference.path };
+      const usage: MediaUsageRecord = {
+        id: `local:${encodeURIComponent(JSON.stringify(source))}`,
+        mediaId: reference.assetId,
+        topLevelKey: group.key,
+        topLevelLabel: group.label,
+        pageKey,
+        pageLabel,
+        placementKey,
+        placementLabel,
+        state: isPublished ? (entity.hidden ? "hidden-not-rendered" : "published-visible") : "draft-unpublished",
+        reviewRecommended: false,
+        detachable: true,
+        sourceKey: encodeURIComponent(JSON.stringify(source)),
+      };
+      byAsset.set(reference.assetId, [...(byAsset.get(reference.assetId) ?? []), usage]);
+    }
+  };
+  const collections = ["directions", "models", "wheelTypes", "wheelModels", "shopCategories", "shopProducts", "pages", "materials"] as const;
+  for (const collection of collections) {
+    const records = state[collection] as unknown as { id: string; hidden?: boolean; draft: unknown; savedDraft?: unknown; publishedSnapshot?: unknown }[];
+    for (const record of records) {
+      add(collection, record, "draft", record.draft);
+      if (record.savedDraft != null) add(collection, record, "savedDraft", record.savedDraft);
+      if (record.publishedSnapshot != null) add(collection, record, "publishedSnapshot", record.publishedSnapshot, true);
+    }
   }
-  for (const model of state.models) {
-    noteEntityMedia(used, model.draft, model.draft.name);
-    if (model.savedDraft) noteEntityMedia(used, model.savedDraft, model.draft.name);
-    if (model.publishedSnapshot) noteEntityMedia(used, model.publishedSnapshot, model.draft.name);
+  for (const pack of state.changeSets) {
+    for (const reference of collectPaths(pack)) {
+      const source: LocalMediaSource = { collection: "changeSets", entityId: pack.id, snapshot: "pack", path: reference.path };
+      const usage: MediaUsageRecord = {
+        id: `local:${encodeURIComponent(JSON.stringify(source))}`,
+        mediaId: reference.assetId,
+        topLevelKey: "change-sets",
+        topLevelLabel: "Пакеты изменений",
+        pageKey: pack.id,
+        pageLabel: `Пакет изменений ${pack.id}`,
+        placementKey: reference.path.map(String).filter((part) => part !== "assetId").join("."),
+        placementLabel: "Несохранённое изменение",
+        state: "draft-unpublished",
+        reviewRecommended: false,
+        detachable: true,
+        sourceKey: encodeURIComponent(JSON.stringify(source)),
+      };
+      byAsset.set(reference.assetId, [...(byAsset.get(reference.assetId) ?? []), usage]);
+    }
   }
-  for (const record of [...state.wheelTypes, ...state.wheelModels, ...state.shopCategories]) {
-    noteEntityMedia(used, record.draft, record.draft.name);
-    if (record.savedDraft) noteEntityMedia(used, record.savedDraft, record.draft.name);
-    if (record.publishedSnapshot) noteEntityMedia(used, record.publishedSnapshot, record.draft.name);
-  }
-  for (const product of state.shopProducts) {
-    noteEntityMedia(used, product.draft, product.draft.name);
-    if (product.savedDraft) noteEntityMedia(used, product.savedDraft, product.draft.name);
-    if (product.publishedSnapshot) noteEntityMedia(used, product.publishedSnapshot, product.draft.name);
-  }
-  for (const page of state.pages) {
-    notePageDraft(used, page.draft, page.id);
-    notePageDraft(used, page.savedDraft, page.id);
-    notePageDraft(used, page.publishedSnapshot, page.id);
-  }
-  for (const material of state.materials) {
-    noteEntityMedia(used, material.draft, material.draft.title);
-    if (material.savedDraft) noteEntityMedia(used, material.savedDraft, material.draft.title);
-    if (material.publishedSnapshot) noteEntityMedia(used, material.publishedSnapshot, material.draft.title);
-  }
-  return used;
+  return byAsset;
 }
 
 const MEDIA_REFERENCE_FIELDS = new Set(["assetId", "replacementAssetId", "imageAssetId", "mediaId", "media_id", "featuredImageId"]);
@@ -659,7 +646,14 @@ function isDirectionRecord(value: unknown): value is EntityRecord<TireDirectionD
 
 function withStubDocuments(page: EntityRecord<PageDraft>): EntityRecord<PageDraft> {
   const fill = (draft: PageDraft | null): PageDraft | null => {
-    if (draft == null || draft.id === "home" || draft.id === "shop-home") return draft;
+    if (draft == null) return draft;
+    if (draft.id === "home") {
+      const sanitized = { ...draft } as PageDraft & { selectionEntry?: unknown; resume?: unknown };
+      delete sanitized.selectionEntry;
+      delete sanitized.resume;
+      return sanitized;
+    }
+    if (draft.id === "shop-home") return draft;
     return { ...draft, documents: Array.isArray(draft.documents) ? draft.documents : [] };
   };
   return {
@@ -1083,6 +1077,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         name: input.name.trim(),
         slug,
         description: "",
+        shortDescription: "",
         sortOrder: 0,
         showInMenu: false,
       }), "wheel-type", "create_catalog_structure");
@@ -1431,6 +1426,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         slug,
         excerpt: "",
         body: "",
+        imageConfigured: false,
         gallery: [],
         showInMenu: false,
         menuOrder: 0,
@@ -1464,11 +1460,43 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async listAssets() {
       const state = load();
-      const used = collectAssetUsage(state);
-      return state.assets.map((asset): MediaListItem => ({
-        ...asset,
-        usedBy: used.get(asset.id) ?? [],
-      }));
+      const usages = collectAssetUsage(state);
+      return state.assets.map((asset): MediaListItem => {
+        const assetUsages = usages.get(asset.id) ?? [];
+        return {
+          ...asset,
+          usages: assetUsages,
+          usedBy: assetUsages.map((usage) => `${usage.pageLabel} → ${usage.placementLabel}`),
+        };
+      });
+    },
+
+    async detachAssetUsage(assetId, usageId) {
+      const state = load();
+      requirePermission(state, "delete");
+      if (!usageId.startsWith("local:")) throw new AdminClientError("conflict");
+      let source: LocalMediaSource;
+      try {
+        source = JSON.parse(decodeURIComponent(usageId.slice("local:".length))) as LocalMediaSource;
+      } catch {
+        throw new AdminClientError("conflict");
+      }
+      const collection = state[source.collection as keyof StoreState];
+      const record = Array.isArray(collection) ? collection.find((item) => item != null && typeof item === "object" && "id" in item && String(item.id) === source.entityId) : undefined;
+      const root = source.snapshot === "pack"
+        ? record
+        : record != null && typeof record === "object" ? (record as Record<string, unknown>)[source.snapshot] : undefined;
+      if (root == null || source.path.length === 0 || source.path[source.path.length - 1] !== "assetId") throw new AdminClientError("conflict");
+      let parent: unknown = root;
+      for (const part of source.path.slice(0, -1)) {
+        if (parent == null || typeof parent !== "object") throw new AdminClientError("conflict");
+        parent = (parent as Record<string | number, unknown>)[part];
+      }
+      if (parent == null || typeof parent !== "object" || String((parent as Record<string, unknown>).assetId) !== assetId) {
+        throw new AdminClientError("conflict");
+      }
+      (parent as Record<string, unknown>).assetId = null;
+      save(state);
     },
 
     async deleteAsset(id: string) {
@@ -1687,7 +1715,7 @@ function remoteAdminClient(): AdminClient {
     return body.result;
   };
   const call = (method: string) => async (...args: unknown[]) => {
-    const entityName = method.replace(/^(get|save|create)/, "");
+    const entityName = method.replace(/^(get|save|create|publish|hide)/, "");
     const entityId = method.startsWith("create") ? undefined : args[0];
     const entityKey = entityId == null ? undefined : `${entityName}:${String(entityId)}`;
     const outgoingArgs = [...args];
@@ -1702,7 +1730,7 @@ function remoteAdminClient(): AdminClient {
     if (result != null && typeof result === "object" && "savedDraft" in result) {
       const record = result as { id: string; savedDraft: unknown };
       const key = `${entityName}:${method.startsWith("create") ? record.id : String(args[0])}`;
-      if (method.startsWith("get") || method.startsWith("create") || method.startsWith("save")) {
+      if (method.startsWith("get") || method.startsWith("create") || method.startsWith("save") || method.startsWith("publish")) {
         savedDraftByEntity.set(key, cloneDraft(record.savedDraft));
       }
     }

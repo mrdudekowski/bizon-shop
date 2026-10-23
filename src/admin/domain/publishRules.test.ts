@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { tireModelPublishBlockers } from "./publishRules";
-import type { TireModelDraft } from "./types";
+import { shopProductPublishBlockers, tireModelPublishBlockers } from "./publishRules";
+import type { ShopProductDraft, TireModelDraft } from "./types";
 
 function model(patch: Partial<TireModelDraft> = {}): TireModelDraft {
   return {
@@ -20,8 +20,6 @@ function model(patch: Partial<TireModelDraft> = {}): TireModelDraft {
     descriptionShort: "",
     descriptionLong: "",
     treadType: "",
-    selectionVehicleTypes: [],
-    selectionConditions: [],
     selectionAxles: [],
     gallery: [],
     advantages: [],
@@ -29,6 +27,20 @@ function model(patch: Partial<TireModelDraft> = {}): TireModelDraft {
     showInMenu: false,
     menuOrder: 0,
     ...patch,
+  };
+}
+
+function shopProduct(variants: ShopProductDraft["variants"]): ShopProductDraft {
+  return {
+    id: "product-1",
+    name: "Чехол",
+    slug: "case",
+    categoryId: "category-1",
+    descriptionShort: "",
+    descriptionLong: "",
+    priceOnRequest: true,
+    gallery: [],
+    variants,
   };
 }
 
@@ -66,5 +78,39 @@ describe("tireModelPublishBlockers", () => {
         }),
       ),
     ).toContain("duplicateSize");
+  });
+
+  it("blocks publication of an explicitly marked editorial placeholder", () => {
+    expect(tireModelPublishBlockers(model({
+      features: [{
+        id: "feature-1",
+        key: "grip",
+        title: "Сцепление",
+        description: "Редакционный перевод: RSS, silica improve rubber strength.",
+      }],
+    }))).toContain("editorialPlaceholder");
+  });
+
+  it("allows foreign technical terms when no editorial placeholder marker is present", () => {
+    expect(tireModelPublishBlockers(model({
+      features: [{ id: "feature-1", key: "grip", title: "Сцепление", description: "RSS silica compound." }],
+    }))).not.toContain("editorialPlaceholder");
+  });
+});
+
+describe("shopProductPublishBlockers variant identity", () => {
+  it("allows the same size in different colors or configurations", () => {
+    expect(shopProductPublishBlockers(shopProduct([
+      { id: "red-m", color: "Красный", size: "M", sku: "RED-M", priceOnRequest: true, available: true },
+      { id: "blue-m", color: "Синий", size: "M", sku: "BLUE-M", priceOnRequest: true, available: true },
+      { id: "red-m-long", color: "Красный", size: "M", sku: "RED-M-LONG", configuration: "Long range", priceOnRequest: true, available: true },
+    ]))).not.toContain("duplicateSize");
+  });
+
+  it("blocks a repeated full color, size, and configuration combination", () => {
+    expect(shopProductPublishBlockers(shopProduct([
+      { id: "red-m-1", color: "Красный", size: "M", sku: "RED-M-1", configuration: "Standard", priceOnRequest: true, available: true },
+      { id: "red-m-2", color: "красный", size: " m ", sku: "RED-M-2", configuration: "standard", priceOnRequest: true, available: true },
+    ]))).toContain("duplicateSize");
   });
 });

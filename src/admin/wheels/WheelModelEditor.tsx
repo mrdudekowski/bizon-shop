@@ -18,6 +18,7 @@ import type {
   WheelVariantDraft,
 } from "@/admin/domain/types";
 import { ProductPhotoFields } from "@/admin/media/PlacementFields";
+import { DocumentFields } from "@/admin/media/DocumentFields";
 import type { PublishBlockerHint } from "@/admin/ui/documentTabs";
 
 import styles from "./WheelDocument.module.css";
@@ -300,8 +301,28 @@ export function WheelModelEditor({ id }: { id: string }) {
               {expandedVariantId === variant.id ? (
                 <div id={`variant-details-${variant.id}`} className="collectionExtraGrid">
                   <label>
+                    SKU
+                    <input value={variant.sku ?? ""} onChange={(event) => patchVariant(index, { sku: event.target.value })} />
+                  </label>
+                  <label>
+                    Диаметр
+                    <input type="number" min="0" step="any" value={variant.diameter ?? ""} onChange={(event) => patchVariant(index, { diameter: optionalNumber(event.target.value) })} />
+                  </label>
+                  <label>
+                    Ширина
+                    <input type="number" min="0" step="any" value={variant.width ?? ""} onChange={(event) => patchVariant(index, { width: optionalNumber(event.target.value) })} />
+                  </label>
+                  <label>
+                    Количество отверстий
+                    <input type="number" min="0" step="1" value={variant.boltHoles ?? ""} onChange={(event) => patchVariant(index, { boltHoles: optionalNumber(event.target.value) })} />
+                  </label>
+                  <label>
                     PCD
                     <input value={variant.pcd} onChange={(event) => patchVariant(index, { pcd: event.target.value })} />
+                  </label>
+                  <label>
+                    PCD, мм
+                    <input type="number" min="0" step="any" value={variant.pcdMm ?? ""} onChange={(event) => patchVariant(index, { pcdMm: optionalNumber(event.target.value) })} />
                   </label>
                   <label>
                     Вылет ET
@@ -318,6 +339,34 @@ export function WheelModelEditor({ id }: { id: string }) {
                       value={variant.centerBore ?? ""}
                       onChange={(event) => patchVariant(index, { centerBore: optionalNumber(event.target.value) })}
                     />
+                  </label>
+                  <label>
+                    Допустимая нагрузка
+                    <input value={variant.loadRating ?? ""} onChange={(event) => patchVariant(index, { loadRating: event.target.value })} />
+                  </label>
+                  <label>
+                    Вес, кг
+                    <input type="number" min="0" step="any" value={variant.weight ?? ""} onChange={(event) => patchVariant(index, { weight: optionalNumber(event.target.value) })} />
+                  </label>
+                  <label>
+                    Покрытие
+                    <input value={variant.finish ?? ""} onChange={(event) => patchVariant(index, { finish: event.target.value })} />
+                  </label>
+                  <label>
+                    Тип крепежа
+                    <input value={variant.fastenerType ?? ""} onChange={(event) => patchVariant(index, { fastenerType: event.target.value })} />
+                  </label>
+                  <label>
+                    Материал крепежа
+                    <input value={variant.fastenerMaterial ?? ""} onChange={(event) => patchVariant(index, { fastenerMaterial: event.target.value })} />
+                  </label>
+                  <label>
+                    Совместимые размеры шин
+                    <input value={variant.compatibleTireSizes ?? ""} onChange={(event) => patchVariant(index, { compatibleTireSizes: event.target.value })} />
+                  </label>
+                  <label>
+                    Источник спецификации
+                    <textarea value={variant.sourceSpecification ?? ""} onChange={(event) => patchVariant(index, { sourceSpecification: event.target.value })} />
                   </label>
                 </div>
               ) : null}
@@ -337,6 +386,7 @@ export function WheelModelEditor({ id }: { id: string }) {
           onGalleryChange={(gallery) => patch({ gallery })}
         />
         </section>
+      <DocumentFields value={draft.documents} onChange={(documents) => patch({ documents })} />
       <DocumentReviewFooter
         entityType="wheel-model"
         entityId={id}

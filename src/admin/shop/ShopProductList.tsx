@@ -13,6 +13,7 @@ import { useCatalogView } from "@/admin/ui/catalogView";
 import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 import { useAdminRole, useCanPerform } from "@/admin/ui/DocumentUI";
+import { shopProductCountLabel } from "./shopProductCountLabel";
 
 import styles from "@/admin/ui/catalog.module.css";
 
@@ -131,7 +132,7 @@ export function ShopProductList() {
                 view={view}
                 href={`/shop/category-editor?id=${encodeURIComponent(category.id)}`}
                 title={category.draft.name || "Без названия"}
-                meta={`/${category.draft.slug} · ${productCounts[category.id] ?? 0} товаров`}
+                meta={`/${category.draft.slug} · ${shopProductCountLabel(productCounts[category.id] ?? 0)}`}
                 icon="shop"
                 imageUrl={imageUrl(category)}
                 tileImageUrl={tileImageUrl(category)}

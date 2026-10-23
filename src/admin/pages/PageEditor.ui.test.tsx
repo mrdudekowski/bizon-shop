@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -38,11 +38,25 @@ const shopHomeDraft = {
   catalog: { copy: { eyebrow: "", title: "", lead: "", sectionTitle: "" }, tiles: [] },
   vehicles: { eyebrow: "", title: "", lead: "", cta: { label: "", href: "" }, slides: [] },
 };
+const homeDraft = {
+  id: "home",
+  seoTitle: "Главная",
+  seoDescription: "",
+  hero: { eyebrow: "", title: "Шины", lead: "", image: null, primaryCta: { label: "", href: "" }, secondaryCta: { label: "", href: "" }, metricLabel: "", metricText: "" },
+  directions: { eyebrow: "", title: "", lead: "" },
+  expertise: { eyebrow: "Практика", title: "Экспертиза", lead: "Поддержка", image: null, cta: { label: "Изучить материалы", href: "/tire-iq" } },
+  branding: { eyebrow: "", title: "Брендирование", lead: "", cta: { label: "Обсудить", href: "/contact" }, beforeCaption: "До", afterCaption: "После", beforeImage: null, afterImage: null },
+  shopCampaign: { eyebrow: "", title: "", lead: "", image: null, cta: { label: "", href: "" } },
+};
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("PageEditor conflict recovery", () => {
   beforeEach(() => {
+    vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} unobserve() {} });
     mockState.client = {
       getSession: vi.fn().mockResolvedValue({ login: "editor", role: "editor", capabilities: ["edit_site_pages"] }),
       getPage: vi.fn().mockResolvedValue(pageRecord),
@@ -62,6 +76,90 @@ describe("PageEditor conflict recovery", () => {
 
     expect(await screen.findByText(/уже изменили в другой вкладке/i)).toBeTruthy();
     expect(title).toHaveProperty("value", "Изменённый текст во второй вкладке");
+  });
+
+  it("edits and saves structured editorial sections for a stub page", async () => {
+    const savePage = vi.fn().mockImplementation(async (_key: string, next: typeof draft) => ({ ...pageRecord, draft: next, savedDraft: next }));
+    mockState.client.savePage = savePage;
+    const user = userEvent.setup();
+    render(createElement(PageEditor, { pageKey: "about" }));
+
+    await user.click(await screen.findByRole("button", { name: "Добавить раздел" }));
+    await user.type(screen.getByLabelText("Заголовок раздела"), "Содержание из CMS");
+    await user.type(screen.getByLabelText("Текст раздела"), "Текст после публикации");
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    expect(await screen.findByRole("status")).toBeTruthy();
+    expect(savePage).toHaveBeenCalledWith("about", expect.objectContaining({
+      sections: [expect.objectContaining({ heading: "Содержание из CMS", body: "Текст после публикации" })],
+    }));
+  });
+
+  it("exposes and saves the existing Expertise media and CTA placements", async () => {
+    const record = { ...pageRecord, id: "home", draft: homeDraft, savedDraft: homeDraft, publishedSnapshot: homeDraft };
+    const savePage = vi.fn().mockResolvedValue(record);
+    mockState.client.listAssets = vi.fn().mockResolvedValue([
+      { id: "expertise-asset", name: "expertise.jpg", mimeType: "image/jpeg", dataUrl: "/media/expertise.jpg", usedBy: [] },
+    ]);
+    mockState.client.getPage = vi.fn().mockResolvedValue(record);
+    mockState.client.savePage = savePage;
+    const user = userEvent.setup();
+    render(createElement(PageEditor, { pageKey: "home" }));
+    await user.click(await screen.findByRole("tab", { name: "Экспертиза" }));
+
+    expect(await screen.findByLabelText("Изображение экспертизы: файл")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Выбрать из галереи" }));
+    await user.click(await screen.findByRole("button", { name: "Выбрать expertise.jpg" }));
+    const expertiseCta = screen.getByRole("group", { name: "Кнопка экспертизы" });
+    const ctaLabel = within(expertiseCta).getByLabelText("Текст");
+    await user.clear(ctaLabel);
+    await user.type(ctaLabel, "Читать материалы");
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    expect((await screen.findByRole("status")).textContent).toBe("Черновик сохранён");
+    expect(savePage).toHaveBeenCalledWith("home", expect.objectContaining({
+      expertise: expect.objectContaining({
+        image: expect.objectContaining({ assetId: "expertise-asset" }),
+        cta: { label: "Читать материалы", href: "/tire-iq" },
+      }),
+    }));
+  });
+
+  it("exposes and saves homepage branding copy, both gallery images, captions, and CTA", async () => {
+    const record = { ...pageRecord, id: "home", draft: homeDraft, savedDraft: homeDraft, publishedSnapshot: homeDraft };
+    const savePage = vi.fn().mockResolvedValue(record);
+    mockState.client.listAssets = vi.fn().mockResolvedValue([
+      { id: "branding-before", name: "before.jpg", mimeType: "image/jpeg", dataUrl: "/media/before.jpg", usedBy: [] },
+      { id: "branding-after", name: "after.jpg", mimeType: "image/jpeg", dataUrl: "/media/after.jpg", usedBy: [] },
+    ]);
+    mockState.client.getPage = vi.fn().mockResolvedValue(record);
+    mockState.client.savePage = savePage;
+    const user = userEvent.setup();
+    render(createElement(PageEditor, { pageKey: "home" }));
+    await user.click(await screen.findByRole("tab", { name: "Брендинг" }));
+
+    await user.click(screen.getAllByRole("button", { name: "Выбрать из галереи" })[0]);
+    await user.click(await screen.findByRole("button", { name: "Выбрать before.jpg" }));
+    const afterPlacement = screen.getByLabelText("Фото после брендирования: файл");
+    expect(afterPlacement).toBeTruthy();
+    await user.click(screen.getAllByRole("button", { name: "Выбрать из галереи" })[1]);
+    await user.click(await screen.findByRole("button", { name: "Выбрать after.jpg" }));
+    const cta = screen.getByRole("group", { name: "Кнопка брендирования" });
+    await user.clear(within(cta).getByLabelText("Текст"));
+    await user.type(within(cta).getByLabelText("Текст"), "Запросить расчёт");
+    await user.clear(screen.getByLabelText("Подпись сравнения до"));
+    await user.type(screen.getByLabelText("Подпись сравнения до"), "Без нанесения");
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    expect((await screen.findByRole("status")).textContent).toBe("Черновик сохранён");
+    expect(savePage).toHaveBeenCalledWith("home", expect.objectContaining({
+      branding: expect.objectContaining({
+        beforeImage: expect.objectContaining({ assetId: "branding-before" }),
+        afterImage: expect.objectContaining({ assetId: "branding-after" }),
+        cta: { label: "Запросить расчёт", href: "/contact" },
+        beforeCaption: "Без нанесения",
+      }),
+    }));
   });
 
   it("lets an editor save and submit a change set without direct publish controls", async () => {
@@ -112,7 +210,7 @@ describe("PageEditor conflict recovery", () => {
     const user = userEvent.setup();
     render(createElement(PageEditor, { pageKey: "privacy-policy" }));
 
-    await user.upload(await screen.findByLabelText("PDF"), new File(["pdf"], "policy.pdf", { type: "application/pdf" }));
+    await user.upload(await screen.findByLabelText("Загрузить PDF"), new File(["pdf"], "policy.pdf", { type: "application/pdf" }));
 
     expect((await screen.findByRole("alert")).textContent).toContain("Не удалось загрузить файл");
   });

@@ -49,10 +49,11 @@ export function ShopShowcaseEditor() {
     void Promise.all([browserAdminClient().getPage("shop-home"), browserAdminClient().listShopCategories()])
       .then(([page, categories]) => {
         const normalized = mergeCategories(page.draft as ShopHomePageDraft, categories);
+        const savedBaseline = mergeCategories((page.savedDraft ?? page.draft) as ShopHomePageDraft, categories);
         setRecord({
           ...page,
           draft: normalized,
-          savedDraft: page.savedDraft as ShopHomePageDraft | null,
+          savedDraft: savedBaseline,
           publishedSnapshot: page.publishedSnapshot as ShopHomePageDraft | null,
         });
         setDraft(normalized);
@@ -71,8 +72,8 @@ export function ShopShowcaseEditor() {
       catalog: { ...current.catalog, tiles: current.catalog.tiles.map((tile) => tile.categoryId === categoryId ? update(tile) : tile) },
     }));
   }
-  function patchPlacement(categoryId: string, field: "icon" | "image" | "carouselImage", image: ImagePlacement | undefined) {
-    patchTile(categoryId, (tile) => ({ ...tile, [field]: image }));
+  function patchPlacement(categoryId: string, field: "icon" | "image" | "carouselImage", image: ImagePlacement | null | undefined) {
+    patchTile(categoryId, (tile) => ({ ...tile, [field]: image ?? null }));
   }
   async function save() {
     setSaving(true); setMessage("");

@@ -71,6 +71,14 @@ describe("Shop showcase editor", () => {
     expect(await screen.findByRole("button", { name: "Отправить на одобрение" })).toBeTruthy();
   });
 
+  it("does not treat category-derived tiles as unsaved edits on initial load", async () => {
+    const { container } = render(createElement(ShopShowcaseEditor));
+
+    expect(await screen.findByRole("heading", { name: "Карусель категорий на главной" })).toBeTruthy();
+    expect(container.querySelector("[data-unsaved='true']")).toBeNull();
+    expect(mockState.client.savePage).not.toHaveBeenCalled();
+  });
+
   it("shows category tile and catalog copy controls in their own tabs", async () => {
     const user = userEvent.setup();
     render(createElement(ShopShowcaseEditor));

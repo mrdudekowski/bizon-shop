@@ -13,6 +13,7 @@ import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
 import { CatalogFilters } from "@/admin/ui/CatalogFilters";
 import { CatalogRow } from "@/admin/ui/CatalogRow";
 import styles from "@/admin/ui/catalog.module.css";
+import { shopProductCountLabel } from "./shopProductCountLabel";
 
 type ShopProductListItem = {
   id: string;
@@ -121,7 +122,7 @@ export function ShopCategoryProducts({ categoryId, categoryName }: { categoryId:
       <div className={styles.pageHead}>
         <div>
           <h2 id="shop-category-products-title">Товары</h2>
-          <p className="subheading">{products.length} {products.length === 1 ? "товар" : "товаров"} в категории «{categoryName}»</p>
+          <p className="subheading">{shopProductCountLabel(products.length)} в категории «{categoryName}»</p>
         </div>
         {canCreate ? <button className="primary" type="button" onClick={openCreateDialog}>Добавить товар</button> : null}
       </div>
@@ -172,7 +173,7 @@ export function ShopCategoryProducts({ categoryId, categoryName }: { categoryId:
               </li>
             ))}
           </ul>
-          <p className={styles.listFoot}>Показано {visibleProducts.length} из {products.length} товаров</p>
+          <p className={styles.listFoot}>Показано {shopProductCountLabel(visibleProducts.length)} из {shopProductCountLabel(products.length)}</p>
         </>
       ) : null}
 

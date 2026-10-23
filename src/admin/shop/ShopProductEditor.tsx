@@ -19,7 +19,7 @@ import type {
   ShopSubcategoryDraft,
   ShopVariantDraft,
 } from "@/admin/domain/types";
-import { ProductPhotoFields } from "@/admin/media/PlacementFields";
+import { PlacementFields, ProductPhotoFields } from "@/admin/media/PlacementFields";
 import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
 import type { PublishBlockerHint } from "@/admin/ui/documentTabs";
 import { slugifyTitle } from "@/admin/domain/slug";
@@ -33,12 +33,8 @@ const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
   mainImage: { text: "Добавьте главное фото", tab: "Фото", anchor: "main" },
   size: { text: "Укажите размер варианта", tab: "Варианты", field: "Размер" },
   price: { text: "Укажите цену или «по запросу»", tab: "Карточка", field: "Цена" },
-  duplicateSize: { text: "Размер повторяется", tab: "Варианты" },
+  duplicateSize: { text: "Сочетание характеристик варианта повторяется", tab: "Варианты" },
 };
-
-const VARIANT_COLUMNS = {
-  "--collection-columns": "minmax(110px,1.2fr) minmax(100px,1fr) minmax(110px,1fr) 104px 92px 84px 84px",
-} as React.CSSProperties;
 
 function optionalNumber(raw: string): number | undefined {
   if (raw === "") return undefined;
@@ -51,6 +47,7 @@ function emptyVariant(): ShopVariantDraft {
     id: crypto.randomUUID(),
     color: "",
     size: "",
+    configuration: "",
     sku: "",
     priceOnRequest: true,
     available: true,
@@ -316,6 +313,15 @@ export function ShopProductEditor({ id }: { id: string }) {
             onChange={(event) => patch({ price: optionalNumber(event.target.value) })}
           />
         </label>
+        <label className={styles.field}>
+          Цена до скидки
+          <input
+            type="number"
+            min="0"
+            value={draft.oldPrice ?? ""}
+            onChange={(event) => patch({ oldPrice: optionalNumber(event.target.value) })}
+          />
+        </label>
         <label className={styles.check}>
           <input
             type="checkbox"
@@ -327,65 +333,79 @@ export function ShopProductEditor({ id }: { id: string }) {
       </section>
       <section className={styles.section}>
         <h2>Варианты</h2>
-        <div className="collection" style={VARIANT_COLUMNS}>
-          {draft.variants.length > 0 ? (
-            <div className="collectionHead" aria-hidden="true">
-              <span>Размер</span>
-              <span>Цвет</span>
-              <span>SKU</span>
-              <span>Цена</span>
-              <span>По запросу</span>
-              <span>В наличии</span>
-              <span />
-            </div>
-          ) : null}
+        <div className={styles.variantCollection}>
           {draft.variants.map((variant, index) => (
-            <fieldset key={variant.id} className="collectionRow">
+            <fieldset key={variant.id} className={styles.variantRow}>
               <legend className="visuallyHidden">Вариант {index + 1}</legend>
-              <label>
-                <span className="collectionFieldName">Размер</span>
+              <label className={styles.field}>
+                <span className={styles.variantFieldName}>Размер</span>
                 <input
                   value={variant.size}
                   onChange={(event) => patchVariant(index, { size: event.target.value })}
                 />
               </label>
-              <label>
-                <span className="collectionFieldName">Цвет</span>
+              <label className={styles.field}>
+                <span className={styles.variantFieldName}>Комплектация</span>
+                <input
+                  aria-label="Комплектация"
+                  value={variant.configuration ?? ""}
+                  onChange={(event) => patchVariant(index, { configuration: event.target.value })}
+                />
+              </label>
+              <label className={styles.field}>
+                <span className={styles.variantFieldName}>Цвет</span>
                 <input
                   value={variant.color}
                   onChange={(event) => patchVariant(index, { color: event.target.value })}
                 />
               </label>
-              <label>
-                <span className="collectionFieldName">SKU</span>
+              <label className={styles.field}>
+                <span className={styles.variantFieldName}>SKU</span>
                 <input value={variant.sku} onChange={(event) => patchVariant(index, { sku: event.target.value })} />
                 {!variant.sku.trim() ? <span className="fieldHint">Заполните для публикации</span> : null}
               </label>
-              <label>
-                <span className="collectionFieldName">Цена</span>
+              <label className={styles.field}>
+                <span className={styles.variantFieldName}>Цена</span>
                 <input
                   type="number"
                   value={variant.price ?? ""}
                   onChange={(event) => patchVariant(index, { price: optionalNumber(event.target.value) })}
                 />
               </label>
-              <label className="collectionCheck">
+              <label className={styles.field}>
+                <span className={styles.variantFieldName}>Цена до скидки варианта {index + 1}</span>
+                <input
+                  aria-label={`Цена до скидки варианта ${index + 1}`}
+                  type="number"
+                  min="0"
+                  value={variant.oldPrice ?? ""}
+                  onChange={(event) => patchVariant(index, { oldPrice: optionalNumber(event.target.value) })}
+                />
+              </label>
+              <label className={styles.check}>
                 <input
                   type="checkbox"
                   checked={variant.priceOnRequest}
                   onChange={(event) => patchVariant(index, { priceOnRequest: event.target.checked })}
                 />
-                <span className="collectionFieldName">Цена по запросу</span>
+                <span className={styles.variantFieldName}>Цена по запросу</span>
               </label>
-              <label className="collectionCheck">
+              <label className={styles.check}>
                 <input
                   type="checkbox"
                   checked={variant.available}
                   onChange={(event) => patchVariant(index, { available: event.target.checked })}
                 />
-                <span className="collectionFieldName">В наличии</span>
+                <span className={styles.variantFieldName}>В наличии</span>
               </label>
-              <div className="collectionRowActions">
+              <div className={styles.variantImage}>
+                <PlacementFields
+                  value={variant.image}
+                  onChange={(image) => patchVariant(index, { image })}
+                  label={`Фото варианта ${index + 1}`}
+                />
+              </div>
+              <div className={styles.variantActions}>
                 <button
                   type="button"
                   className="collectionRemove"

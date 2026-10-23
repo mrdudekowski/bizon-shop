@@ -24,6 +24,7 @@ import type {
   TireSizeDraft,
 } from "@/admin/domain/types";
 import { ProductPhotoFields } from "@/admin/media/PlacementFields";
+import { DocumentFields } from "@/admin/media/DocumentFields";
 import type { PublishBlockerHint } from "@/admin/ui/documentTabs";
 
 const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
@@ -34,6 +35,7 @@ const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
   size: { text: "Укажите читаемый размер", tab: "Размеры", field: "Типоразмер" },
   price: { text: "Укажите цену или «по запросу»", tab: "Размеры", field: "Цена" },
   duplicateSize: { text: "Размер повторяется", tab: "Размеры" },
+  editorialPlaceholder: { text: "Замените редакционный placeholder в тексте преимущества" },
 };
 
 const SIZE_NUMBER_FIELDS: { key: keyof TireSizeDraft; label: string }[] = [
@@ -439,6 +441,7 @@ export function TireModelEditor({ id }: { id: string }) {
           onGalleryChange={(gallery) => patch({ gallery })}
         />
         </section>
+      <DocumentFields value={draft.documents} onChange={(documents) => patch({ documents })} />
       <section>
         <h2>Преимущества</h2>
         <p>Отмеченные пункты попадают в карусель на странице модели. Заголовок и текст можно поправить.</p>

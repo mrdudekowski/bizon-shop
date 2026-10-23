@@ -143,3 +143,52 @@
   .subcategoryControl { grid-template-columns: minmax(0, 1fr); }
   .subcategoryControl > button { justify-self: start; }
 }
+.variantCollection,
+.variantRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.variantRow {
+  align-items: start;
+  margin: 0;
+  padding: 14px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.variantRow:focus-within { border-color: var(--accent); }
+
+.variantFieldName {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.variantImage,
+.variantActions {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.variantActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (min-width: 640px) {
+  .variantRow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1000px) {
+  .variantRow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

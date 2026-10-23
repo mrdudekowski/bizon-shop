@@ -26,8 +26,6 @@ function tireModel(overrides: Partial<TireModelDraft> = {}): TireModelDraft {
     descriptionShort: "",
     descriptionLong: "",
     treadType: "",
-    selectionVehicleTypes: [],
-    selectionConditions: [],
     selectionAxles: [],
     showInMenu: false,
     menuOrder: 0,
@@ -54,6 +52,14 @@ describe("locateField", () => {
       field: "Цена",
       itemLabel: "315/80R22.5",
     });
+  });
+
+  it("catalogues the existing homepage Expertise media and CTA fields", () => {
+    expect(isCataloguedField("page", "expertise.image.assetId")).toBe(true);
+    expect(isCataloguedField("page", "expertise.cta.href")).toBe(true);
+    expect(isCataloguedField("page", "branding.beforeImage.assetId")).toBe(true);
+    expect(isCataloguedField("page", "branding.afterImage.alt")).toBe(true);
+    expect(isCataloguedField("page", "branding.cta.href")).toBe(true);
   });
 });
 
@@ -88,6 +94,18 @@ describe("diffDraft", () => {
     expect(image?.after).toMatchObject({ kind: "image", assetId: "asset-2", previewUrl: "data:new" });
     expect(diffDraft(before, tireModel({ mainImage: { ...placement } }), "tire-model")).toEqual([]);
   });
+
+  it("resolves a site-relative media preview in the publication diff", () => {
+    const changes = diffDraft(null, tireModel(), "tire-model", [
+      { id: "asset-1", dataUrl: "/images/premium/highway-fleet-portrait.png" },
+    ]);
+    const image = changes.find((change) => change.path === "mainImage");
+
+    expect(image?.after).toMatchObject({
+      kind: "image",
+      previewUrl: "http://localhost:3000/images/premium/highway-fleet-portrait.png",
+    });
+  });
 });
 
 describe("field catalog coverage", () => {
@@ -103,8 +121,6 @@ describe("field catalog coverage", () => {
         shortDescription: "",
         sortOrder: 1,
         showInMenu: true,
-        selectionVehicleTypes: ["truck"],
-        selectionConditions: [],
       },
     ],
     [
@@ -176,6 +192,7 @@ describe("field catalog coverage", () => {
         slug: "article",
         excerpt: "",
         body: "текст",
+        imageConfigured: false,
         gallery: [],
         showInMenu: false,
         menuOrder: 0,

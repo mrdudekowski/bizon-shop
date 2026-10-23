@@ -10,8 +10,6 @@ const draft = {
   shortDescription: "Коротко",
   sortOrder: 1,
   showInMenu: true,
-  selectionVehicleTypes: [],
-  selectionConditions: [],
 };
 
 const record = (savedDraft: typeof draft) => ({

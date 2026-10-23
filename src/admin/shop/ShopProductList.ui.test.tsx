@@ -8,8 +8,8 @@ vi.mock("@/admin/client/localStore", () => ({ browserAdminClient: () => mocks.cl
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/admin/ui/catalogView", () => ({ useCatalogView: () => ({ view: "tiles", setView: vi.fn() }) }));
 vi.mock("@/admin/ui/CatalogRow", () => ({
-  CatalogRow: ({ title, tileImageUrl }: { title: string; tileImageUrl?: string | null }) =>
-    createElement("div", { "data-testid": `category-${title}`, "data-tile-image": tileImageUrl ?? "" }),
+  CatalogRow: ({ title, meta, tileImageUrl }: { title: string; meta?: string; tileImageUrl?: string | null }) =>
+    createElement("div", { "data-testid": `category-${title}`, "data-tile-image": tileImageUrl ?? "" }, meta),
 }));
 vi.mock("@/admin/ui/CatalogViewToggle", () => ({ CatalogViewToggle: () => null }));
 vi.mock("@/admin/ui/CatalogCreateDialog", () => ({ CatalogCreateDialog: () => null }));
@@ -40,4 +40,24 @@ it("uses the configured Shop catalog tile image for the matching category", asyn
 
   await waitFor(() => expect(screen.getByTestId("category-Масла").getAttribute("data-tile-image")).toBe("https://cdn.example/oils.jpg"));
   expect(mocks.client.getPage).toHaveBeenCalledWith("shop-home");
+});
+
+it("uses the correct singular for a category with one product", async () => {
+  const category = {
+    id: "category-trailers",
+    draft: { id: "category-trailers", name: "Прицепы", slug: "pritsepy", description: "", sortOrder: 1, showInMenu: true, carousel: [] },
+    savedDraft: null,
+    publishedSnapshot: null,
+    hidden: false,
+  };
+  mocks.client = {
+    listShopCategories: vi.fn().mockResolvedValue([category]),
+    listShopProducts: vi.fn().mockResolvedValue([{ id: "product-1", categoryId: "category-trailers" }]),
+    listAssets: vi.fn().mockResolvedValue([]),
+    getPage: vi.fn().mockResolvedValue({ draft: { id: "shop-home", catalog: { tiles: [] } } }),
+  };
+
+  render(createElement(ShopProductList));
+
+  expect(await screen.findByText("/pritsepy · 1 товар")).toBeTruthy();
 });

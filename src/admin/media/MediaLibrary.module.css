@@ -1,5 +1,9 @@
 .page { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; width: 100%; max-width: 100%; min-width: 0; }
 .header { display: flex; align-items: end; justify-content: space-between; gap: 16px; min-width: 0; }
+.filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; min-width: 0; padding: 16px; border: 1px solid #d9dfdc; border-radius: 12px; background: #fff; }
+.filters label { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; color: #48514d; font-size: 13px; }
+.filters select { width: 100%; max-width: 100%; min-width: 0; min-height: 42px; padding: 8px 10px; border: 1px solid #cfd6d2; border-radius: 8px; background: #fff; color: inherit; }
+.filters select:disabled { color: #8b928f; background: #f2f4f3; }
 .header h1, .history h2 { margin: 0; }
 .header p, .history p { margin: 6px 0 0; color: #68706d; }
 .list, .history ul { list-style: none; margin: 0; padding: 0; }
@@ -10,6 +14,10 @@
 .details > span { color: #68706d; font-size: 13px; }
 .usage { margin-top: 8px; }
 .usage ul { margin: 4px 0 0; padding-left: 20px; color: #68706d; }
+.usage li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 4px 12px; margin-top: 8px; min-width: 0; }
+.usage li > span { min-width: 0; overflow-wrap: anywhere; }
+.usage .diagnostic { grid-column: 1 / -1; color: #8b5b17; }
+.legacy { color: #805d22 !important; }
 .usageStatus { display: flex; align-items: center; gap: 8px; min-width: 0; color: #26734a !important; }
 .usageStatus i { display: inline-block; width: 9px; height: 9px; flex: 0 0 9px; border-radius: 50%; background: #32b76a; box-shadow: 0 0 0 2px rgb(50 183 106 / 15%), 0 0 9px 3px rgb(50 183 106 / 52%); }
 .unused { color: #26734a !important; }
@@ -20,6 +28,8 @@
 .history li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(100px, auto) minmax(130px, auto); gap: 12px; padding: 10px 0; border-bottom: 1px solid #e8ece9; }
 .history li span, .history li time { color: #68706d; font-size: 13px; }
 @media (max-width: 640px) {
+  .filters { grid-template-columns: minmax(0, 1fr); }
+  .header { align-items: start; flex-direction: column; }
   .asset { grid-template-columns: 64px minmax(0, 1fr); }
   .preview { width: 64px; height: 64px; }
   .asset > button { grid-column: 2; justify-self: start; }

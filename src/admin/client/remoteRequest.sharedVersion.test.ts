@@ -9,6 +9,7 @@ const savedDraft = {
   slug: "qa-material",
   excerpt: "",
   body: "",
+  imageConfigured: false,
   gallery: [],
   showInMenu: true,
   menuOrder: 0,

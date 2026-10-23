@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { MediaListItem } from "@/admin/domain/types";
+import { resolveMediaPreviewUrl } from "@/admin/domain/catalogPreviewUrl";
 import { browserAdminClient } from "@/admin/client/localStore";
 import styles from "./MediaPicker.module.css";
 
@@ -9,10 +10,15 @@ type Props = {
   excludeIds?: string[];
   disabled?: boolean;
   compact?: boolean;
+  filterMimeTypes?: string[];
+  pickerTitle?: string;
+  itemLabel?: string;
+  emptyMessage?: string;
+  buttonLabel?: string;
   onSelect: (asset: MediaListItem) => Promise<void> | void;
 };
 
-export function MediaPicker({ excludeIds = [], disabled = false, compact = false, onSelect }: Props) {
+export function MediaPicker({ excludeIds = [], disabled = false, compact = false, filterMimeTypes, pickerTitle = "Выбрать изображение", itemLabel = "изображение", emptyMessage, buttonLabel, onSelect }: Props) {
   const [open, setOpen] = useState(false);
   const [assets, setAssets] = useState<MediaListItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -54,7 +60,7 @@ export function MediaPicker({ excludeIds = [], disabled = false, compact = false
       await onSelect(asset);
       setOpen(false);
     } catch {
-      setError("Не удалось выбрать изображение. Обновите список и попробуйте ещё раз.");
+      setError(`Не удалось выбрать ${itemLabel}. Обновите список и попробуйте ещё раз.`);
     } finally {
       setSelectingId(null);
     }
@@ -62,13 +68,13 @@ export function MediaPicker({ excludeIds = [], disabled = false, compact = false
 
   const excluded = new Set(excludeIds);
   const visibleAssets = assets.filter((asset) => {
-    if (excluded.has(asset.id) || (!showUsed && asset.usedBy.length > 0)) return false;
+    if (excluded.has(asset.id) || (filterMimeTypes && !filterMimeTypes.includes(asset.mimeType)) || (!showUsed && asset.usedBy.length > 0)) return false;
     return asset.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
   });
 
   return <>
-    <button className={`${styles.openButton} ${compact ? styles.compactButton : ""}`} type="button" aria-label={compact ? "Выбрать фото из галереи" : undefined} disabled={disabled} onClick={() => void showGallery()}>
-      {compact ? "Выбрать" : "Выбрать из галереи"}
+    <button className={`${styles.openButton} ${compact ? styles.compactButton : ""}`} type="button" aria-label={compact ? (itemLabel === "изображение" ? "Выбрать фото из галереи" : `Выбрать ${itemLabel} из галереи`) : undefined} disabled={disabled} onClick={() => void showGallery()}>
+      {buttonLabel ?? (compact ? "Выбрать" : "Выбрать из галереи")}
     </button>
     {open ? <dialog
       ref={dialogRef}
@@ -81,7 +87,7 @@ export function MediaPicker({ excludeIds = [], disabled = false, compact = false
       }}
     >
         <header className={styles.header}>
-          <div><h2 id="media-picker-title">Выбрать изображение</h2><p>Сначала показаны файлы, которые нигде не используются.</p></div>
+          <div><h2 id="media-picker-title">{pickerTitle}</h2><p>Сначала показаны файлы, которые нигде не используются.</p></div>
           <button type="button" className={styles.close} aria-label="Закрыть галерею" onClick={() => setOpen(false)}>×</button>
         </header>
         <div className={styles.filters}>
@@ -89,10 +95,10 @@ export function MediaPicker({ excludeIds = [], disabled = false, compact = false
           <label className={styles.usedToggle}><input type="checkbox" checked={showUsed} onChange={(event) => setShowUsed(event.target.checked)} />Показывать используемые</label>
         </div>
         {error ? <p role="alert" className={styles.error}>{error}</p> : null}
-        {loading ? <p className={styles.status}>Загружаем галерею…</p> : visibleAssets.length === 0 ? <p className={styles.empty}>Подходящих изображений нет.</p> :
-          <ul className={styles.grid} aria-label={`Изображения: ${visibleAssets.length}`}>{visibleAssets.map((asset) => <li key={asset.id}>
+        {loading ? <p className={styles.status}>Загружаем галерею…</p> : visibleAssets.length === 0 ? <p className={styles.empty}>{emptyMessage ?? "Подходящих изображений нет."}</p> :
+          <ul className={styles.grid} aria-label={`${pickerTitle}: ${visibleAssets.length}`}>{visibleAssets.map((asset) => <li key={asset.id}>
             <button className={styles.asset} type="button" disabled={selectingId !== null} aria-label={`Выбрать ${asset.name}`} onClick={() => void select(asset)}>
-              <img src={asset.dataUrl} alt="" /><strong>{asset.name}</strong><span>{asset.mimeType || "Тип не указан"}</span>
+              {resolveMediaPreviewUrl(asset.dataUrl) ? <img src={resolveMediaPreviewUrl(asset.dataUrl)!} alt="" /> : null}<strong>{asset.name}</strong><span>{asset.mimeType || "Тип не указан"}</span>
               {asset.usedBy.length > 0 ? <small>Используется: {asset.usedBy.join(", ")}</small> : <small>Нигде не используется</small>}
             </button>
           </li>)}</ul>}

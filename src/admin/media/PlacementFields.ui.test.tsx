@@ -56,6 +56,7 @@ describe("PlacementFields upload flow", () => {
 
     expect(await screen.findByRole("dialog", { name: "Выбрать изображение" })).toBeTruthy();
     expect(await screen.findByText("unused.jpg")).toBeTruthy();
+    expect((screen.getByRole("dialog").querySelector("img") as HTMLImageElement).src).toBe("http://localhost:3000/media/unused.jpg");
     expect(screen.queryByText("used.jpg")).toBeNull();
     await user.click(screen.getByRole("button", { name: /unused.jpg/ }));
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ assetId: "asset-free", alt: "Сохранить подпись", focalX: 0.2 }));

@@ -1,4 +1,5 @@
 import { locateField } from "./changeFieldCatalog";
+import { resolveMediaPreviewUrl } from "./catalogPreviewUrl";
 import type { FieldChange, FieldValue, ImagePlacement, MediaAsset, StatusEntity } from "./types";
 
 type AssetPreview = Pick<MediaAsset, "id" | "dataUrl">;
@@ -61,7 +62,7 @@ function toFieldValue(value: unknown, assets: AssetPreview[] | undefined): Field
     return {
       kind: "image",
       assetId: value.assetId,
-      previewUrl: assets?.find((asset) => asset.id === value.assetId)?.dataUrl ?? null,
+      previewUrl: resolveMediaPreviewUrl(assets?.find((asset) => asset.id === value.assetId)?.dataUrl),
       alt: value.alt,
     };
   }

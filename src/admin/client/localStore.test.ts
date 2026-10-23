@@ -4,8 +4,8 @@ import { AdminClientError } from "./errors";
 import { createLocalAdminClient, type AdminStorage } from "./localStore";
 import type { AdminUser, TireModelDraft } from "@/admin/domain/types";
 
-function memory(): AdminStorage {
-  let value: string | null = null;
+function memory(initialValue: string | null = null): AdminStorage {
+  let value = initialValue;
   return {
     read: () => value,
     write: (next) => {
@@ -104,6 +104,42 @@ describe("createLocalAdminClient", () => {
     expect(reset.publishedSnapshot).toBeNull();
   });
 
+  it("does not include retired selection entry fields in the Home page draft", async () => {
+    const client = createLocalAdminClient(memory());
+    const page = await client.getPage("home");
+
+    expect("selectionEntry" in page.draft).toBe(false);
+    expect("resume" in page.draft).toBe(false);
+  });
+
+  it("removes retired selection entry from already saved local page snapshots", async () => {
+    const storage = memory();
+    const client = createLocalAdminClient(storage);
+    await client.getPage("home");
+    const state = JSON.parse(storage.read() ?? "{}") as {
+      pages: { id: string; draft: Record<string, unknown>; savedDraft: Record<string, unknown> | null; publishedSnapshot: Record<string, unknown> | null }[];
+    };
+    const home = state.pages.find((page) => page.id === "home");
+    const legacySection = { title: "Старый подбор" };
+    if (home) {
+      home.draft.selectionEntry = legacySection;
+      home.draft.resume = legacySection;
+      if (home.savedDraft) home.savedDraft.selectionEntry = legacySection;
+      if (home.savedDraft) home.savedDraft.resume = legacySection;
+      if (home.publishedSnapshot) home.publishedSnapshot.selectionEntry = legacySection;
+      if (home.publishedSnapshot) home.publishedSnapshot.resume = legacySection;
+    }
+    storage.write(JSON.stringify(state));
+
+    const migrated = await createLocalAdminClient(storage).getPage("home");
+    expect("selectionEntry" in migrated.draft).toBe(false);
+    expect("resume" in migrated.draft).toBe(false);
+    expect("selectionEntry" in (migrated.savedDraft ?? {})).toBe(false);
+    expect("resume" in (migrated.savedDraft ?? {})).toBe(false);
+    expect("selectionEntry" in (migrated.publishedSnapshot ?? {})).toBe(false);
+    expect("resume" in (migrated.publishedSnapshot ?? {})).toBe(false);
+  });
+
   it("seeds the Shop page with editable catalog copy and empty tile presentation", async () => {
     const client = createLocalAdminClient(memory());
     const page = await client.getPage("shop-home");
@@ -136,6 +172,25 @@ describe("createLocalAdminClient", () => {
     const spare = await client.createAsset({ name: "spare.png", mimeType: "image/png", dataUrl: "data:image/png,y" });
     await client.deleteAsset(spare.id);
     expect((await client.listAssets()).some((item) => item.id === spare.id)).toBe(false);
+  });
+
+  it("reports local draft and published media links separately and detaches only one link", async () => {
+    const client = createLocalAdminClient(memory());
+    const asset = await client.createAsset({ name: "linked.png", mimeType: "image/png", dataUrl: "data:image/png,x" });
+    const created = await client.createTireModel({ name: "LH02", directionId: "dir-long-haul" });
+    const ready = { ...publishable(created.draft), mainImage: { ...publishable(created.draft).mainImage!, assetId: asset.id } };
+    await client.saveTireModel(created.id, ready);
+    await client.publishTireModel(created.id);
+
+    const listed = (await client.listAssets()).find((item) => item.id === asset.id)!;
+    expect(listed.usages?.map((usage) => usage.state)).toEqual(expect.arrayContaining(["draft-unpublished", "published-visible"]));
+    const draftUsage = listed.usages!.find((usage) => usage.state === "draft-unpublished")!;
+    await client.detachAssetUsage(asset.id, draftUsage.id);
+
+    const afterDetach = (await client.listAssets()).find((item) => item.id === asset.id)!;
+    expect(afterDetach.usages).toHaveLength(listed.usages!.length - 1);
+    expect(afterDetach.usages?.some((usage) => usage.state === "published-visible")).toBe(true);
+    expect(afterDetach.dataUrl).toBe("data:image/png,x");
   });
 
   it("does not disable the current user or the last admin", async () => {
@@ -356,7 +411,7 @@ describe("createLocalAdminClient", () => {
     expect((await client.listMaterials()).find((item) => item.id === material.id)).toMatchObject({ imageAssetId: asset.id });
   });
 
-  it("treats two colors of the same shop size as a size conflict", async () => {
+  it("allows the same shop size in different colors but blocks duplicate combinations", async () => {
     const client = createLocalAdminClient(memory());
     const category = await client.createShopCategory({ name: "Аксессуары" });
     const asset = await client.createAsset({ name: "p.png", mimeType: "image/png", dataUrl: "data:image/png,x" });
@@ -377,6 +432,16 @@ describe("createLocalAdminClient", () => {
       variants: [
         { id: "v1", color: "чёрный", size: "22.5", sku: "", priceOnRequest: true, available: true },
         { id: "v2", color: "серебро", size: "22.5", sku: "", priceOnRequest: true, available: true },
+      ],
+    });
+    await expect(client.publishShopProduct(product.id)).resolves.toMatchObject({ id: product.id });
+
+    const published = await client.getShopProduct(product.id);
+    await client.saveShopProduct(product.id, {
+      ...published.draft,
+      variants: [
+        { id: "v1", color: "чёрный", size: "22.5", sku: "", priceOnRequest: true, available: true },
+        { id: "v2", color: "чёрный", size: "22.5", sku: "", priceOnRequest: true, available: true },
       ],
     });
     await expect(client.publishShopProduct(product.id)).rejects.toMatchObject({ code: "publish_blocked" });

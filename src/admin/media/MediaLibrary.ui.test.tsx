@@ -15,6 +15,52 @@ afterEach(() => {
 });
 
 describe("media library usage and deletion controls", () => {
+  it("filters by actual usage with a cascading page and placement selector and detaches only the chosen link", async () => {
+    const user = userEvent.setup();
+    const usage = (id: string, pageKey: string, pageLabel: string, placementKey: string, placementLabel: string) => ({
+      id, mediaId: "asset-shared", topLevelKey: "shop", topLevelLabel: "Bizon Shop", pageKey, pageLabel,
+      placementKey, placementLabel, state: "published-visible" as const, reviewRecommended: false, detachable: true,
+    });
+    let currentUsages = [
+      usage("shop-home", "shop-home", "Главная Bizon Shop", "carousel", "Карусель"),
+      usage("shop-tires", "tires", "Шины", "product", "Карточка товара"),
+    ];
+    const listAssets = vi.fn().mockImplementation(async () => [
+      { id: "asset-shared", name: "shared.jpg", mimeType: "image/jpeg", dataUrl: "/media/shared.jpg", usedBy: [], usages: currentUsages },
+      { id: "asset-other", name: "other.jpg", mimeType: "image/jpeg", dataUrl: "/media/other.jpg", usedBy: [], usages: [
+        usage("home-hero", "home", "Главная", "hero", "Hero"),
+      ] },
+      { id: "asset-free", name: "free.jpg", mimeType: "image/jpeg", dataUrl: "/media/free.jpg", usedBy: [], usages: [] },
+    ]);
+    const detachAssetUsage = vi.fn().mockImplementation(async (_assetId: string, usageId: string) => {
+      currentUsages = currentUsages.filter((item) => item.id !== usageId);
+    });
+    mockState.client = {
+      getSession: vi.fn().mockResolvedValue({ login: "admin", role: "admin", capabilities: [] }),
+      listAssets,
+      listMediaDeletionHistory: vi.fn().mockResolvedValue([]),
+      detachAssetUsage,
+      deleteAsset: vi.fn(),
+    };
+    render(createElement(MediaLibrary));
+
+    await screen.findByText("shared.jpg");
+    const topLevel = screen.getByLabelText("Страница / раздел");
+    await user.selectOptions(topLevel, "shop");
+    await user.selectOptions(screen.getByLabelText("Вложенная страница"), "shop-home");
+    await user.selectOptions(screen.getByLabelText("Раздел / место"), "carousel");
+    expect(screen.getByText("shared.jpg")).toBeTruthy();
+    expect(screen.queryByText("other.jpg")).toBeNull();
+    expect(screen.queryByText("free.jpg")).toBeNull();
+
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    await user.click(screen.getAllByRole("button", { name: "Отвязать" })[0]!);
+    expect(detachAssetUsage).toHaveBeenCalledWith("asset-shared", "shop-home");
+    await user.selectOptions(topLevel, "");
+    expect(await screen.findByText(/Шины → Карточка товара/)).toBeTruthy();
+    expect(screen.getByText("shared.jpg")).toBeTruthy();
+  });
+
   it("shows where a used asset is referenced and disables deletion", async () => {
     mockState.client = {
       getSession: vi.fn().mockResolvedValue({ login: "admin", role: "admin", capabilities: [] }),
@@ -22,14 +68,15 @@ describe("media library usage and deletion controls", () => {
       listMediaDeletionHistory: vi.fn().mockResolvedValue([]),
       deleteAsset: vi.fn(),
     };
-    render(createElement(MediaLibrary));
+    const { container } = render(createElement(MediaLibrary));
 
     expect(await screen.findByText("Главная → Первый экран")).toBeTruthy();
+    expect((container.querySelector("img") as HTMLImageElement).src).toBe("http://localhost:3000/media/hero.jpg");
     expect(screen.getByLabelText("Файл используется")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Удалить" }).hasAttribute("disabled")).toBe(false);
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     await userEvent.setup().click(screen.getByRole("button", { name: "Удалить" }));
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Файл используется в 1 месте"));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Файл связан с 1 размещением:"));
     expect(mockState.client.deleteAsset).not.toHaveBeenCalled();
     confirm.mockRestore();
   });
@@ -50,7 +97,7 @@ describe("media library usage and deletion controls", () => {
 
     await user.click(await screen.findByRole("button", { name: "Удалить" }));
 
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("При удалении он будет отвязан от всех этих мест."));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Все перечисленные связи и сам файл будут удалены."));
     expect(mockState.client.deleteAsset).toHaveBeenCalledWith("asset-used");
     expect(await screen.findByText("Загруженных файлов пока нет.")).toBeTruthy();
   });

@@ -1,13 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
 import type { MediaDeletionHistoryItem, MediaListItem } from "@/admin/domain/types";
+import { resolveMediaPreviewUrl } from "@/admin/domain/catalogPreviewUrl";
+import type { MediaUsageState } from "@/admin/domain/types";
 import { useAdminSession } from "@/admin/ui/DocumentUI";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 import { SectionAccessNotice } from "@/admin/ui/SectionAccessNotice";
 import styles from "./MediaLibrary.module.css";
+import { filterAssetsByUsage, getMediaUsageOptions, type MediaUsageFilter } from "./mediaUsageFilters";
 
 function mediaActionError(error: unknown): string {
   if (error instanceof AdminClientError && error.code === "storage_unavailable") return "Хранилище файлов недоступно. Попробуйте позже.";
@@ -22,6 +25,7 @@ export function MediaLibrary() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [usageFilter, setUsageFilter] = useState<MediaUsageFilter>({});
 
   const reload = useCallback(async () => {
     const client = browserAdminClient();
@@ -29,6 +33,9 @@ export function MediaLibrary() {
     setAssets(nextAssets);
     setHistory(nextHistory);
   }, []);
+
+  const usageOptions = useMemo(() => getMediaUsageOptions(assets, usageFilter), [assets, usageFilter]);
+  const visibleAssets = useMemo(() => filterAssetsByUsage(assets, usageFilter), [assets, usageFilter]);
 
   useEffect(() => {
     void reload().catch((cause) => setError(mediaActionError(cause))).finally(() => setLoading(false));
@@ -38,9 +45,12 @@ export function MediaLibrary() {
   if (session.role !== "admin") return <SectionAccessNotice title="Файлы" icon="image" />;
 
   async function remove(asset: MediaListItem) {
-    const usageCount = asset.usedBy.length;
-    const usageWarning = asset.usedBy.length > 0
-      ? `Файл используется в ${usageCount} ${usageCount === 1 ? "месте" : "местах"}:\n${asset.usedBy.map((place) => `• ${place}`).join("\n")}\nПри удалении он будет отвязан от всех этих мест.`
+    const usageLines = asset.usages?.length
+      ? asset.usages.map((usage) => `${usage.topLevelLabel} → ${usage.pageLabel} → ${usage.placementLabel} (${usage.state === "published-visible" ? "Показывается" : usage.state === "draft-unpublished" ? "Черновик" : "Скрыто"})`)
+      : asset.usedBy;
+    const usageCount = usageLines.length;
+    const usageWarning = usageCount > 0
+      ? `Файл связан с ${usageCount} ${usageCount === 1 ? "размещением" : "размещениями"}:\n${usageLines.map((place) => `• ${place}`).join("\n")}\nВсе перечисленные связи и сам файл будут удалены.`
       : "";
     const replacementWarning = asset.replacementPending ? "\nБудет также отменена и удалена ожидающая замена файла." : "";
     if (!window.confirm(`Удалить файл «${asset.name}» из хранилища?${usageWarning ? `\n\n${usageWarning}` : ""}${replacementWarning}\nЭто действие нельзя отменить.`)) return;
@@ -57,16 +67,53 @@ export function MediaLibrary() {
     }
   }
 
+  async function detach(asset: MediaListItem, usageId: string, placementLabel: string) {
+    if (!window.confirm(`Отвязать файл «${asset.name}» от места «${placementLabel}»? Сам файл и остальные связи останутся.`)) return;
+    setError("");
+    setBusyId(asset.id);
+    try {
+      await browserAdminClient().detachAssetUsage(asset.id, usageId);
+      await reload();
+    } catch (cause) {
+      setError(mediaActionError(cause));
+      await reload().catch(() => undefined);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function updateFilter(next: Partial<MediaUsageFilter>) {
+    setUsageFilter((current) => ({ ...current, ...next }));
+  }
+
   return <main className={styles.page}>
     <header className={styles.header}><div><h1>Файлы</h1><p>Загруженные изображения и места, где они используются.</p></div><span>{assets.length} файлов</span></header>
     {error ? <p className={styles.error} role="alert">{error}</p> : null}
-    {loading ? <AdminLoading label="Загружаем файлы…" /> : assets.length === 0 ? <p className={styles.empty}>Загруженных файлов пока нет.</p> : <ul className={styles.list}>
-      {assets.map((asset) => <li className={styles.asset} key={asset.id}>
-        <img className={styles.preview} src={asset.dataUrl} alt="" />
+    <div className={styles.filters} aria-label="Фильтры файлов">
+      <label>Страница / раздел<select value={usageFilter.topLevelKey ?? ""} onChange={(event) => updateFilter({ topLevelKey: event.target.value || undefined, pageKey: undefined, placementKey: undefined })}>
+        <option value="">Все страницы</option>{usageOptions.topLevels.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+      </select></label>
+      <label>Вложенная страница<select value={usageFilter.pageKey ?? ""} disabled={!usageFilter.topLevelKey || usageFilter.state === "unused"} onChange={(event) => updateFilter({ pageKey: event.target.value || undefined, placementKey: undefined })}>
+        <option value="">Все вложенные страницы</option>{usageOptions.pages.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+      </select></label>
+      <label>Раздел / место<select value={usageFilter.placementKey ?? ""} disabled={!usageFilter.pageKey || usageFilter.state === "unused"} onChange={(event) => updateFilter({ placementKey: event.target.value || undefined })}>
+        <option value="">Все места</option>{usageOptions.placements.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+      </select></label>
+      <label>Статус<select value={usageFilter.state ?? ""} onChange={(event) => updateFilter({ state: (event.target.value || undefined) as MediaUsageState | "unused" | undefined, topLevelKey: undefined, pageKey: undefined, placementKey: undefined })}>
+        <option value="">Любой статус</option><option value="published-visible">Показывается</option><option value="draft-unpublished">Черновик</option><option value="hidden-not-rendered">Скрыто</option><option value="unused">Не используется</option>
+      </select></label>
+    </div>
+    {loading ? <AdminLoading label="Загружаем файлы…" /> : assets.length === 0 ? <p className={styles.empty}>Загруженных файлов пока нет.</p> : visibleAssets.length === 0 ? <p className={styles.empty}>Файлы по выбранным фильтрам не найдены.</p> : <ul className={styles.list}>
+      {visibleAssets.map((asset) => <li className={styles.asset} key={asset.id}>
+        <img className={styles.preview} src={resolveMediaPreviewUrl(asset.dataUrl) ?? undefined} alt="" />
         <div className={styles.details}><strong>{asset.name}</strong><span>{asset.mimeType || "Тип не указан"}</span>
-          {asset.usedBy.length > 0 ? <span className={styles.usageStatus}><i aria-label="Файл используется" title="Файл используется" />Файл используется</span> : null}
+          {asset.usages?.length || asset.usedBy.length ? <span className={styles.usageStatus}><i aria-label="Файл используется" title="Файл используется" />Файл используется{asset.usages?.length ? ` · ${asset.usages.length} ${asset.usages.length === 1 ? "размещение" : "размещений"}` : ""}</span> : null}
           {asset.replacementPending ? <span className={styles.unused}>Новая версия покажется на сайте после публикации.</span> : null}
-          {asset.usedBy.length > 0 ? <div className={styles.usage}><b>Используется:</b><ul>{asset.usedBy.map((place, index) => <li key={`${place}-${index}`}>{place}</li>)}</ul></div> : <span className={styles.unused}>Нигде не используется</span>}
+          {asset.usages?.length ? <div className={styles.usage}><b>Размещения:</b><ul>{asset.usages.map((usage) => <li key={usage.id}>
+            <span>{usage.topLevelLabel} → {usage.pageLabel} → {usage.placementLabel} · {usage.state === "published-visible" ? "Показывается" : usage.state === "draft-unpublished" ? "Черновик" : "Скрыто"}</span>
+            {usage.reviewRecommended && usage.diagnosticReason ? <span className={styles.diagnostic}>Проверьте связь: {usage.diagnosticReason}</span> : null}
+            {usage.detachable ? <button type="button" className="ghost" disabled={busyId === asset.id} onClick={() => void detach(asset, usage.id, usage.placementLabel)}>{busyId === asset.id ? "Сохраняем…" : "Отвязать"}</button> : null}
+          </li>)}</ul></div> : asset.usedBy.length > 0 ? <div className={styles.usage}><b>Места использования:</b><ul>{asset.usedBy.map((place, index) => <li key={`${place}-${index}`}>{place}</li>)}</ul></div> : asset.usages ? <span className={styles.unused}>Нигде не используется</span> : <span className={styles.legacy}>Данные о размещениях ещё не загружены.</span>}
         </div>
         <button className="ghost" type="button" disabled={busyId === asset.id} onClick={() => void remove(asset)}>
           {busyId === asset.id ? "Удаляем…" : "Удалить"}

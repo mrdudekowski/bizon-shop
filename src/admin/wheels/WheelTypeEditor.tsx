@@ -131,6 +131,10 @@ export function WheelTypeEditor({ id }: { id: string }) {
           <textarea value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
         </label>
         <label className={styles.field}>
+          Короткое описание
+          <textarea value={draft.shortDescription ?? ""} onChange={(event) => patch({ shortDescription: event.target.value })} />
+        </label>
+        <label className={styles.field}>
           Порядок
           <input
             type="number"
