@@ -22,8 +22,6 @@ function model(partial: Partial<CmsTireModel> & Pick<CmsTireModel, "id" | "slug"
     imageUrl: "https://cdn.example.com/catalog-cover.jpg",
     advantages: [],
     documents: [],
-    selectionVehicleTypes: [],
-    selectionConditions: [],
     selectionAxles: [],
     showInMenu: true,
     menuOrder: 0,

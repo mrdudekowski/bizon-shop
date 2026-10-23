@@ -55,3 +55,12 @@ export function getTireIqArticleCover(slug: string): string | null {
   const visual = visualById.get(TIRE_IQ_ARTICLE_COVERS[slug]);
   return visual?.web ?? null;
 }
+
+export function resolveTireIqArticleCover(article: {
+  slug: string;
+  imageUrl?: string | null;
+  imageConfigured?: boolean;
+}): string | null {
+  if (article.imageUrl) return article.imageUrl;
+  return article.imageConfigured === true ? null : getTireIqArticleCover(article.slug);
+}

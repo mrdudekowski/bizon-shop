@@ -180,6 +180,7 @@
 .colNarrow { width: 10%; }
 .colMid { width: 12%; }
 .colWide { width: 14%; }
+.colExtra { width: 20%; }
 
 .secondary {
   display: none;

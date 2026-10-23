@@ -21,7 +21,7 @@ export default async function HomePage() {
       <HomeShopZoneCanvas />
       <MainHero content={page.hero} />
       <TireDirectionShowcase catalog={catalog} content={page.directions} />
-      <BrandingCampaign />
+      <BrandingCampaign content={page.branding} />
       <ShopCampaign content={page.shopCampaign} />
       <ExpertiseSupport content={page.expertise} />
     </div>

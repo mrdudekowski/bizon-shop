@@ -5,21 +5,14 @@ import type { HomeHeroContent } from "@/lib/content/pages/types";
 
 import styles from "./MainHome.module.css";
 
-function accentHeroTitle(title: string) {
-  const text = title.replaceAll("ваших", "больших");
-  const accent = "больших";
-  const at = text.indexOf(accent);
-  if (at < 0) return text;
-  return (
-    <>
-      {text.slice(0, at)}
-      <span className={styles.heroAccent}>{accent}</span>
-      {text.slice(at + accent.length)}
-    </>
-  );
-}
-
 export function MainHero({ content }: { content: HomeHeroContent }) {
+  const primaryCta = content.primaryCta.label.trim() && content.primaryCta.href.trim()
+    ? content.primaryCta
+    : null;
+  const secondaryCta = content.secondaryCta.label.trim() && content.secondaryCta.href.trim()
+    ? content.secondaryCta
+    : null;
+
   return (
     <section className={styles.hero} data-main-chrome-tone="dark">
       <div className={styles.heroMedia}>
@@ -43,11 +36,28 @@ export function MainHero({ content }: { content: HomeHeroContent }) {
       <div className={styles.inner}>
         <div className={styles.heroCopy}>
           {content.eyebrow ? <p className={styles.eyebrow}>{content.eyebrow}</p> : null}
-          <h1>{accentHeroTitle(content.title)}</h1>
+          <h1>{content.title}</h1>
           <p>{content.lead}</p>
-          <Link className={`btn-accent ${styles.heroMobileCta}`} href="/models">
-            Перейти в каталог
-          </Link>
+          {primaryCta || secondaryCta ? (
+            <div className={styles.heroActions}>
+              {primaryCta ? (
+                <Link className="btn-accent" href={primaryCta.href}>
+                  {primaryCta.label}
+                </Link>
+              ) : null}
+              {secondaryCta ? (
+                <Link className="btn-secondary" href={secondaryCta.href}>
+                  {secondaryCta.label}
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
+          {content.metricLabel || content.metricText ? (
+            <div className={styles.heroMetric}>
+              {content.metricLabel ? <strong>{content.metricLabel}</strong> : null}
+              {content.metricText ? <span>{content.metricText}</span> : null}
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

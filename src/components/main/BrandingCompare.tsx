@@ -3,12 +3,20 @@
 import Image from "next/image";
 import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
 
-import { PREMIUM_MEDIA } from "@/constants/images";
-
 import { splitPercent } from "./brandingSplit";
 import styles from "./MainHome.module.css";
 
-export function BrandingCompare() {
+export function BrandingCompare({
+  beforeImageUrl,
+  beforeImageAlt,
+  afterImageUrl,
+  afterImageAlt,
+}: {
+  beforeImageUrl: string | null;
+  beforeImageAlt: string;
+  afterImageUrl: string | null;
+  afterImageAlt: string;
+}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const rangeRef = useRef<HTMLInputElement>(null);
   const [split, setSplit] = useState(50);
@@ -30,6 +38,8 @@ export function BrandingCompare() {
     seek(event.clientX);
   }
 
+  if (!beforeImageUrl || !afterImageUrl) return null;
+
   return (
     <div
       ref={rootRef}
@@ -39,20 +49,10 @@ export function BrandingCompare() {
       onPointerMove={onPointerMove}
     >
       <div className={styles.brandingLayer} aria-hidden="true">
-        <Image
-          src={PREMIUM_MEDIA.brandingTirePlain}
-          alt=""
-          fill
-          sizes="100vw"
-        />
+        <Image src={beforeImageUrl} alt={beforeImageAlt} fill sizes="100vw" />
       </div>
       <div className={styles.brandingLayerAfter} aria-hidden="true">
-        <Image
-          src={PREMIUM_MEDIA.brandingTireBranded}
-          alt=""
-          fill
-          sizes="100vw"
-        />
+        <Image src={afterImageUrl} alt={afterImageAlt} fill sizes="100vw" />
       </div>
       <div className={styles.brandingHandle} aria-hidden="true">
         <span className={styles.brandingHandleKnob}>

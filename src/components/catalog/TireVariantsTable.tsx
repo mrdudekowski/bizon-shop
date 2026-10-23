@@ -9,8 +9,9 @@ type TireVariantsTableProps = {
   modelPath: string;
 };
 
-function cell(value: string | number | null | undefined): string {
+function cell(value: string | number | boolean | null | undefined): string {
   if (value == null || value === "") return "—";
+  if (typeof value === "boolean") return value ? "В наличии" : "Нет в наличии";
   return String(value);
 }
 
@@ -25,6 +26,7 @@ const FACT_COLUMNS: Array<{
   { key: "speedIndex", label: "SI" },
   { key: "plyRating", label: "PR" },
   { key: "overallDiameter", label: "OD, мм" },
+  { key: "available", label: "Наличие" },
   { key: "sectionWidth", label: "Ширина, мм", secondary: true },
   { key: "treadDepth", label: "Протектор, мм", secondary: true },
   { key: "pressureSingleKpa", label: "Давл. од., кПа", secondary: true },
@@ -66,7 +68,7 @@ export function TireVariantsTable({ model, variants }: TireVariantsTableProps) {
               {FACT_COLUMNS.filter((column) => !column.secondary).map((column) => (
                 <div key={column.key}>
                   <dt>{column.label}</dt>
-                  <dd>{cell(variant[column.key] as string | number | undefined)}</dd>
+                <dd>{cell(variant[column.key] as string | number | boolean | undefined)}</dd>
                 </div>
               ))}
             </dl>
@@ -114,7 +116,7 @@ export function TireVariantsTable({ model, variants }: TireVariantsTableProps) {
                     key={column.key}
                     className={`${styles.colNarrow} ${column.secondary ? styles.secondary : ""}`}
                   >
-                    {cell(variant[column.key] as string | number | undefined)}
+                    {cell(variant[column.key] as string | number | boolean | undefined)}
                   </td>
                 ))}
               </tr>

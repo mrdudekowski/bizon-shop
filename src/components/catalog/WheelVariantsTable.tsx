@@ -20,6 +20,37 @@ function cell(value: string | number | null | undefined): string {
   return String(value);
 }
 
+function extendedSpecs(variant: CmsWheelVariant): Array<[string, string]> {
+  return [
+    ["Артикул", cell(variant.sku)],
+    ["Количество отверстий", cell(variant.boltHoles)],
+    ["PCD, мм", cell(variant.pcdMm)],
+    ["Вес, кг", cell(variant.weight)],
+    ["Тип крепежа", cell(variant.fastenerType)],
+    ["Материал крепежа", cell(variant.fastenerMaterial)],
+    ["Совместимые размеры шин", cell(variant.compatibleTireSizes)],
+    ["Источник спецификации", cell(variant.sourceSpecification)],
+    ["Цена", variant.priceOnRequest ? "По запросу" : cell(variant.price)],
+    ["Наличие", variant.available ? "В наличии" : "Нет в наличии"],
+  ];
+}
+
+function ExtendedSpecs({ variant }: { variant: CmsWheelVariant }) {
+  return (
+    <details className={styles.secondaryDisclosure}>
+      <summary>Все характеристики</summary>
+      <dl className={styles.cardFacts}>
+        {extendedSpecs(variant).map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </details>
+  );
+}
+
 export function WheelVariantsTable({ variants }: WheelVariantsTableProps) {
   if (variants.length === 0) {
     return (
@@ -60,24 +91,22 @@ export function WheelVariantsTable({ variants }: WheelVariantsTableProps) {
                 <dd>{cell(variant.loadRating)}</dd>
               </div>
             </dl>
-            <details className={styles.secondaryDisclosure}>
-              <summary>Все характеристики</summary>
-              <dl className={styles.cardFacts}>
-                <div>
-                  <dt>Цвет</dt>
-                  <dd>{cell(variant.color)}</dd>
-                </div>
-                <div>
-                  <dt>Покрытие</dt>
-                  <dd>{cell(variant.finish)}</dd>
-                </div>
-              </dl>
-            </details>
+            <dl className={styles.cardFacts}>
+              <div>
+                <dt>Цвет</dt>
+                <dd>{cell(variant.color)}</dd>
+              </div>
+              <div>
+                <dt>Покрытие</dt>
+                <dd>{cell(variant.finish)}</dd>
+              </div>
+            </dl>
+            <ExtendedSpecs variant={variant} />
           </article>
         ))}
       </div>
 
-      <div className={styles.scroll}>
+      <div className={`${styles.scroll} ${styles.scrollWide}`}>
         <table className={styles.table}>
           <thead>
             <tr>
@@ -102,6 +131,9 @@ export function WheelVariantsTable({ variants }: WheelVariantsTableProps) {
               <th className={`${styles.colWide} ${styles.secondary}`} scope="col">
                 Покрытие
               </th>
+              <th className={styles.colExtra} scope="col">
+                Спецификация
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -119,6 +151,9 @@ export function WheelVariantsTable({ variants }: WheelVariantsTableProps) {
                 </td>
                 <td className={`${styles.colWide} ${styles.secondary}`}>
                   {cell(variant.finish)}
+                </td>
+                <td className={styles.colExtra}>
+                  <ExtendedSpecs variant={variant} />
                 </td>
               </tr>
             ))}

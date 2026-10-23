@@ -7,8 +7,8 @@ import { createPageMetadata } from "@/lib/seo/metadata";
 export async function generateMetadata() {
   const page = await getPublishedStubOverlay("contact");
   return createPageMetadata({
-    title: page?.seoTitle || "Контакты",
-    description: page?.seoDescription || "Свяжитесь с BIZON для расчёта, консультации по шинам или вопросам парка.",
+    title: page?.seoTitle ?? "Контакты",
+    description: page?.seoDescription ?? "Свяжитесь с BIZON для расчёта, консультации по шинам или вопросам парка.",
     path: "/contact",
   });
 }

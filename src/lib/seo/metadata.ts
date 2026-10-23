@@ -33,7 +33,11 @@ export function createPageMetadata({
 }: PageMetadataInput = {}): Metadata {
   const siteUrl = getSiteUrl();
   const url = canonicalUrl(siteUrl, path);
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} — Премиальная большегрузная резина`;
+  const fullTitle = title === undefined
+    ? `${SITE_NAME} — Премиальная большегрузная резина`
+    : title.trim()
+      ? `${title} | ${SITE_NAME}`
+      : SITE_NAME;
   const ogImage = image ?? `${siteUrl}${PUBLIC_OG_IMAGE}`;
 
   return {

@@ -17,8 +17,6 @@ import type {
 import { fetchPublishedJson, fetchPublishedList, publishedApiEnabled } from "./publishedClient";
 import type {
   CatalogAxle,
-  OperatingCondition,
-  VehicleType,
 } from "@/lib/selection/options";
 
 type PayloadRecord = Record<string, unknown>;
@@ -112,8 +110,6 @@ type BackendTireType = {
   sortOrder?: number;
   showInMenu?: boolean;
   imageUrl?: string | null;
-  vehicleTypes?: string[];
-  conditions?: string[];
 };
 
 type BackendTireModel = {
@@ -133,8 +129,6 @@ type BackendTireModel = {
   gallery?: unknown[];
   advantages?: unknown[];
   documents?: unknown[];
-  selectionVehicleTypes?: string[];
-  selectionConditions?: string[];
   selectionAxles?: string[];
   showInMenu?: boolean;
   menuOrder?: number;
@@ -224,8 +218,6 @@ function normalizeTireType(raw: BackendTireType): CmsTireType {
     sortOrder: typeof raw.sortOrder === "number" ? raw.sortOrder : Number(raw.sortOrder) || 0,
     showInMenu: raw.showInMenu ?? true,
     imageUrl: raw.imageUrl,
-    selectionVehicleTypes: (raw.vehicleTypes ?? []) as VehicleType[],
-    selectionConditions: (raw.conditions ?? []) as OperatingCondition[],
   };
 }
 
@@ -248,8 +240,6 @@ function normalizeTireModel(raw: BackendTireModel): CmsTireModel {
     gallery: asStringArray(raw.gallery),
     advantages: normalizeAdvantages(raw.advantages),
     documents: normalizeDocuments(raw.documents),
-    selectionVehicleTypes: (raw.selectionVehicleTypes ?? []) as VehicleType[],
-    selectionConditions: (raw.selectionConditions ?? []) as OperatingCondition[],
     selectionAxles: (raw.selectionAxles ?? []) as CatalogAxle[],
     showInMenu: raw.showInMenu ?? true,
     menuOrder: typeof raw.menuOrder === "number" ? raw.menuOrder : 0,

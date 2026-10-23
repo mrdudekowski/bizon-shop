@@ -123,11 +123,10 @@ export function WheelModelGrid({
         </div>
       ) : (
         <div className={styles.emptyState}>
-          <p className={styles.eyebrow}>Нужна проверка специалиста</p>
-          <h2>Совпадений по параметрам нет</h2>
-          <p>Передайте параметры команде BIZON — специалист проверит возможную конфигурацию.</p>
+          <p className={styles.eyebrow}>Результаты фильтрации</p>
+          <h2>По заданным параметрам диски не найдены</h2>
+          <p>Измените параметры фильтров или сбросьте их, чтобы посмотреть другие модели.</p>
           <div className={styles.emptyActions}>
-            <Link className="btn-accent" href="/contact?subject=wheel-selection">Запросить подбор</Link>
             <Link className="btn-secondary" href={typeBasePath}>Очистить фильтры</Link>
           </div>
         </div>

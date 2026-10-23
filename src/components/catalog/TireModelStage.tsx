@@ -18,6 +18,40 @@ import styles from "./TireCatalog.module.css";
 
 type Breadcrumb = { href: string; label: string };
 
+const SELECTOR_SPECIFICATIONS = [
+  ["rimDiameter", "Обод"],
+  ["loadIndex", "LI"],
+  ["loadIndexDual", "LI dual"],
+  ["speedIndex", "SI"],
+  ["plyRating", "PR"],
+  ["overallDiameter", "OD"],
+] as const;
+
+function tireVariantLabels(variants: CmsTireVariant[]): Map<string, string> {
+  const variantsBySize = new Map<string, CmsTireVariant[]>();
+  for (const variant of variants) {
+    const sameSize = variantsBySize.get(variant.size) ?? [];
+    sameSize.push(variant);
+    variantsBySize.set(variant.size, sameSize);
+  }
+
+  return new Map(variants.map((variant) => {
+    const sameSize = variantsBySize.get(variant.size) ?? [];
+    if (sameSize.length < 2) return [variant.id, variant.size];
+
+    const distinguishingSpecifications = SELECTOR_SPECIFICATIONS.flatMap(([key, label]) => {
+      const values = new Set(sameSize.map((item) => String(item[key] ?? "").trim()).filter(Boolean));
+      const value = String(variant[key] ?? "").trim();
+      return values.size > 1 && value ? [`${label} ${value}`] : [];
+    });
+
+    const suffix = distinguishingSpecifications.length > 0
+      ? distinguishingSpecifications
+      : [`конфигурация ${sameSize.indexOf(variant) + 1}`];
+    return [variant.id, [variant.size, ...suffix].join(" · ")];
+  }));
+}
+
 type TireModelStageProps = {
   model: TireCatalogModel;
   variants: CmsTireVariant[];
@@ -43,6 +77,7 @@ export function TireModelStage({
   const evidenceDocuments = model.documents.filter(
     (document) => Boolean(document.url?.trim() && document.title?.trim()),
   );
+  const variantLabels = tireVariantLabels(variants);
 
   return (
     <div className={styles.modelPage} data-main-chrome-tone="light">
@@ -104,7 +139,7 @@ export function TireModelStage({
               }}
               variants={variants.map((variant) => ({
                 id: variant.id,
-                label: variant.size,
+                label: variantLabels.get(variant.id) ?? variant.size,
                 price: variant.price,
                 priceOnRequest: variant.priceOnRequest,
               }))}

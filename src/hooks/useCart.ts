@@ -42,7 +42,7 @@ export function useCart(kind: CartKind) {
     }));
   }, [kind]);
 
-  const refresh = useCallback(() => setItems(readCart(kind)), [kind]);
+  const refresh = useCallback(() => setItems(readCart(kind)), [kind, setItems]);
 
   useEffect(() => {
     let active = true;
@@ -84,18 +84,18 @@ export function useCart(kind: CartKind) {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener(CART_OPEN_EVENT, onOpenRequest);
     };
-  }, [kind, refresh]);
+  }, [kind, refresh, setItems, setOpen]);
 
   const addItem = useCallback((item: RequestItemInput) => {
     setItems(addCartItem(kind, item));
     trackCartAddIfAllowed(kind, item);
-  }, [kind]);
+  }, [kind, setItems]);
   const removeItem = useCallback((key: string) => {
     setItems(removeCartItem(kind, key));
     trackEvent(ANALYTICS_EVENTS.removeFromCart, { cartKind: kind, key });
-  }, [kind]);
-  const setQuantity = useCallback((key: string, quantity: number) => setItems(updateCartItemQuantity(kind, key, quantity)), [kind]);
-  const clear = useCallback(() => setItems(clearCart(kind)), [kind]);
+  }, [kind, setItems]);
+  const setQuantity = useCallback((key: string, quantity: number) => setItems(updateCartItemQuantity(kind, key, quantity)), [kind, setItems]);
+  const clear = useCallback(() => setItems(clearCart(kind)), [kind, setItems]);
   const count = useMemo(() => items.reduce((sum, item) => sum + (item.quantity ?? 1), 0), [items]);
   return { items, count, open, setOpen, addItem, removeItem, setQuantity, clear };
 }

@@ -54,7 +54,7 @@ export function PageHero({
             </nav>
           )}
           {kicker ? <p className={styles.kicker}>{kicker}</p> : null}
-          <h1 data-title-long={title.length > 24 ? "true" : undefined}>{title}</h1>
+          {title.trim() ? <h1 data-title-long={title.length > 24 ? "true" : undefined}>{title}</h1> : null}
           {description ? <p className={styles.description}>{description}</p> : null}
           {actions ? <div className={styles.actions}>{actions}</div> : null}
         </div>

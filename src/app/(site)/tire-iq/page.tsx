@@ -8,7 +8,7 @@ import { TireIqJobNav } from "@/components/content/TireIqJobNav";
 import { getTireIQArticles } from "@/lib/content";
 import { loadPublished } from "@/lib/content/loadPublished";
 import { TIRE_IQ_JOBS } from "@/lib/content/tireIqJobs";
-import { getTireIqArticleCover } from "@/lib/content/tireIqVisuals";
+import { resolveTireIqArticleCover } from "@/lib/content/tireIqVisuals";
 import { createPageMetadata } from "@/lib/seo/metadata";
 
 export const metadata = createPageMetadata({
@@ -55,7 +55,8 @@ export default async function TireIQPage() {
         description: article.excerpt,
         meta: article.publishedAt,
         taxonomy: article.taxonomy,
-        imageUrl: article.imageUrl ?? getTireIqArticleCover(article.slug),
+        imageUrl: resolveTireIqArticleCover(article),
+        showImage: resolveTireIqArticleCover(article) !== null,
         imageAlt: article.title,
         fallbackKey: article.slug,
       }))}

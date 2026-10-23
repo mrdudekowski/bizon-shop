@@ -12,9 +12,9 @@ export function ContactExperience({ page }: { page: PublishedStubOverlay | null 
   return (
     <>
       <PageHero
-        kicker={page?.hero.eyebrow || "BIZON · Заявка"}
-        title={page?.hero.title || intent.title}
-        description={page?.hero.lead || intent.description}
+        kicker={page?.hero.eyebrow ?? ""}
+        title={page?.hero.title ?? ""}
+        description={page?.hero.lead ?? ""}
         breadcrumbs={[{ href: "/", label: "Главная" }, { href: "/contact", label: "Контакты" }]}
       />
       <div className="section-inner" style={{ paddingTop: 0, paddingBottom: "var(--section-space)" }}>

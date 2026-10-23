@@ -4,7 +4,7 @@ test("forged wheel filters combine, survive reload, and can be reset", async ({ 
   await page.goto("/shop/wheels/forged/?designStyle=Off-road&diameter=18&pcd=6%C3%97139.7");
 
   await expect(page.getByRole("main")).toHaveCount(1);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("BIZON Forged");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("CI fixture forged wheels");
   await expect(page.locator('select[name="designStyle"]')).toHaveValue("Off-road");
   await expect(page.locator('select[name="diameter"]')).toHaveValue("18");
   await expect(page.locator('select[name="pcd"]')).toHaveValue("6×139.7");
@@ -18,7 +18,7 @@ test("forged wheel filters combine, survive reload, and can be reset", async ({ 
   await expect(page.locator(".catalog-card")).toHaveCount(1);
 
   await page.goto("/shop/wheels/forged/?designStyle=Off-road&diameter=18&pcd=5%C3%97127");
-  await expect(page.getByRole("heading", { name: "Совпадений по параметрам нет" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "По заданным параметрам диски не найдены" })).toBeVisible();
   await expect(page.getByText("0 моделей", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Очистить фильтры" }).click();
   await expect(page.locator(".catalog-card")).toHaveCount(2);

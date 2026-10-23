@@ -2,31 +2,33 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
-import { PREMIUM_MEDIA } from "@/constants/images";
-import { ROUTES } from "@/constants/navigation";
-import type { PageShell } from "@/lib/content/pages/types";
+import type { HomeExpertiseContent } from "@/lib/content/pages/types";
 
 import styles from "./MainHome.module.css";
 
-export function EditorialHighlights({ content }: { content: PageShell }) {
+export function EditorialHighlights({ content }: { content: HomeExpertiseContent }) {
   return (
     <div className={styles.editorial}>
       <div className={styles.expertiseBanner}>
-        <Image
-          className={styles.expertiseBannerImage}
-          src={PREMIUM_MEDIA.inspection}
-          alt="Специалист измеряет глубину протектора грузовой шины"
-          fill
-          sizes="100vw"
-          priority={false}
-        />
+        {content.imageUrl ? (
+          <Image
+            className={styles.expertiseBannerImage}
+            src={content.imageUrl}
+            alt={content.imageAlt}
+            fill
+            sizes="100vw"
+            priority={false}
+          />
+        ) : null}
         <div className={styles.expertiseBannerContent}>
-          <p className={styles.expertiseBannerEyebrow}>TIRE IQ · {content.eyebrow}</p>
+          {content.eyebrow ? <p className={styles.expertiseBannerEyebrow}>{content.eyebrow}</p> : null}
           <h2 id="expertise-support-title">{content.title}</h2>
-          <p className={styles.expertiseBannerLead}>{content.lead}</p>
-          <Link className={`btn-accent ${styles.expertiseCta}`} href={ROUTES.tireIq}>
-            Перейти к материалам <SiteArrow />
-          </Link>
+          {content.lead ? <p className={styles.expertiseBannerLead}>{content.lead}</p> : null}
+          {content.cta.label.trim() && content.cta.href.trim() ? (
+            <Link className={`btn-accent ${styles.expertiseCta}`} href={content.cta.href}>
+              {content.cta.label} <SiteArrow />
+            </Link>
+          ) : null}
         </div>
         <span className={styles.expertiseBannerMark} aria-hidden="true">BIZON · TIRE IQ</span>
       </div>

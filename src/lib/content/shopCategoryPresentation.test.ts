@@ -61,11 +61,22 @@ describe("shopCategoryPresentation", () => {
   });
 
   it("declines товар for Russian counts", () => {
-    expect(shopProductCountLabel(1)).toBe("1 товар");
-    expect(shopProductCountLabel(2)).toBe("2 товара");
-    expect(shopProductCountLabel(5)).toBe("5 товаров");
-    expect(shopProductCountLabel(21)).toBe("21 товар");
-    expect(shopProductCountLabel(12)).toBe("12 товаров");
+    const cases: [number, string][] = [
+      [0, "0 товаров"],
+      [1, "1 товар"],
+      [2, "2 товара"],
+      [4, "4 товара"],
+      [5, "5 товаров"],
+      [11, "11 товаров"],
+      [12, "12 товаров"],
+      [14, "14 товаров"],
+      [21, "21 товар"],
+      [22, "22 товара"],
+      [25, "25 товаров"],
+      [101, "101 товар"],
+      [111, "111 товаров"],
+    ];
+    for (const [count, expected] of cases) expect(shopProductCountLabel(count)).toBe(expected);
   });
 
   it("builds chrome links from published menu categories and CMS names", () => {
@@ -104,7 +115,7 @@ describe("shopCategoryPresentation", () => {
     expect(shopCategoryIndexCards([])).toEqual([]);
   });
 
-  it("uses one gallery photo per category", () => {
+  it("uses CMS carousel images and then CMS category covers, without code-owned photos", () => {
     const slides = shopHomeCarouselSlides([
       {
         ...categories[0]!,
@@ -114,14 +125,22 @@ describe("shopCategoryPresentation", () => {
         ],
       },
       categories[1]!,
+      {
+        slug: "accessory",
+        name: "Аксессуары",
+        description: "",
+        showInMenu: true,
+        sortOrder: 2,
+      },
     ]);
     expect(slides.map((slide) => ({ id: slide.id, title: slide.title, imageUrl: slide.imageUrl }))).toEqual([
       { id: "outdoor", title: "Кемпинг и путешествия", imageUrl: "/camp-1.jpg" },
       {
         id: "accessories",
         title: "Комфорт в автомобиле",
-        imageUrl: "/images/premium/shop/lifestyle/categories/car-comfort-photo.jpg",
+        imageUrl: "/cms/acc.png",
       },
+      { id: "accessory", title: "Аксессуары", imageUrl: null },
     ]);
   });
 
@@ -139,7 +158,7 @@ describe("shopCategoryPresentation", () => {
     ]);
   });
 
-  it("uses Shop page tile presentation while taking names and URLs from categories", () => {
+  it("keeps Shop tile overrides and derives categories missing from the saved tile list", () => {
     const tiles = [
       { categoryId: "1", categorySlug: "pritsepy", title: "Прицепы BIZON", visible: true, sortOrder: 0, iconUrl: "/page/icon.svg", imageUrl: "/page/trailer.jpg", carouselVisible: true, carouselImageUrl: "/page/trailer-slide.jpg" },
       { categoryId: "2", categorySlug: "hidden", title: "Скрыто", visible: true, sortOrder: 1, imageUrl: "/page/hidden.jpg", carouselVisible: true },
@@ -149,11 +168,32 @@ describe("shopCategoryPresentation", () => {
     expect(shopHomeCategoryCards(categories, tiles)).toEqual([
       { slug: "pritsepy", title: "Прицепы BIZON", href: "/shop/pritsepy", iconUrl: "/page/icon.svg" },
       { slug: "hidden", title: "Скрыто", href: "/shop/hidden", iconUrl: null },
+      { slug: "accessories", title: "Комфорт в автомобиле", href: "/shop/accessories", iconUrl: null },
     ]);
     expect(shopHomeCarouselSlides(categories, tiles)).toEqual([
       { id: "pritsepy", title: "Прицепы BIZON", href: "/shop/pritsepy", imageUrl: "/page/trailer-slide.jpg" },
       { id: "hidden", title: "Скрыто", href: "/shop/hidden", imageUrl: "/page/hidden.jpg" },
     ]);
+  });
+
+  it("adds menu categories with no saved tile to the category cards", () => {
+    const cards = shopHomeCategoryCards(categories, [
+      { categoryId: "1", categorySlug: "pritsepy", title: "Прицепы BIZON", visible: true, sortOrder: 0, carouselVisible: true },
+    ]);
+
+    expect(cards.map((card) => ({ slug: card.slug, title: card.title }))).toEqual([
+      { slug: "pritsepy", title: "Прицепы BIZON" },
+      { slug: "outdoor", title: "Кемпинг и путешествия" },
+      { slug: "accessories", title: "Комфорт в автомобиле" },
+    ]);
+  });
+
+  it("uses carouselVisible independently from catalog tile visibility", () => {
+    const slides = shopHomeCarouselSlides(categories, [
+      { categoryId: "1", categorySlug: "pritsepy", title: "Прицепы", visible: true, sortOrder: 0, carouselVisible: false },
+    ]);
+
+    expect(slides.map((slide) => slide.id)).not.toContain("pritsepy");
   });
 
   it("builds the catalog index from visible Shop tiles in configured order", () => {
@@ -169,7 +209,7 @@ describe("shopCategoryPresentation", () => {
     ]);
   });
 
-  it("falls back to lifestyle images when a published category has no photo", () => {
+  it("does not substitute code-owned photos when CMS category images are empty", () => {
     const cards = shopCategoryIndexCards([
       {
         slug: "accessories",
@@ -181,8 +221,8 @@ describe("shopCategoryPresentation", () => {
     ]);
     expect(cards[0]).toMatchObject({
       title: "Комфорт в автомобиле",
-      desktopImage: expect.stringContaining("accessories-driver-glasses"),
-      mobileImage: expect.stringContaining("accessories-driver-glasses-primorye-mobile"),
+      desktopImage: "",
+      mobileImage: "",
     });
   });
 });

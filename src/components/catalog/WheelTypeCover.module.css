@@ -1,0 +1,23 @@
+.cover {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  aspect-ratio: 16 / 7;
+  margin: 24px 0 32px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #e9ecef;
+}
+
+.cover img {
+  object-fit: cover;
+}
+
+@media (max-width: 640px) {
+  .cover {
+    aspect-ratio: 4 / 3;
+    margin: 16px 0 24px;
+    border-radius: 14px;
+  }
+}

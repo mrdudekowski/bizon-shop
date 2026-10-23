@@ -8,6 +8,7 @@ import {
 } from "@/lib/content";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { PageHeader } from "@/components/catalog/PageHeader";
+import { WheelTypeCover } from "@/components/catalog/WheelTypeCover";
 import { WheelModelGrid } from "@/components/catalog/WheelModelGrid";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { ForgedCatalog } from "@/components/shop/ForgedCatalog";
@@ -65,7 +66,7 @@ export default async function WheelTypePage({ params }: PageProps) {
   if (!loaded.value) notFound();
   const { wheelType, models, variants } = loaded.value;
   if (wheelTypeSlug.toLowerCase() === "forged") {
-    return <ForgedCatalog models={models} variants={variants} />;
+    return <ForgedCatalog wheelType={wheelType} models={models} variants={variants} />;
   }
 
   const typeBasePath = `/shop/wheels/${wheelType.slug}`;
@@ -74,13 +75,17 @@ export default async function WheelTypePage({ params }: PageProps) {
     <div className="section-inner">
       <PageHeader
         title={wheelType.name}
-        description={wheelType.description}
+        description={wheelType.shortDescription || wheelType.description}
         breadcrumbs={[
           { href: "/", label: "Главная" },
           { href: "/shop", label: "Магазин" },
           { href: typeBasePath, label: wheelType.name },
         ]}
       />
+      <WheelTypeCover imageUrl={wheelType.imageUrl} name={wheelType.name} />
+      {wheelType.shortDescription && wheelType.description && (
+        <p className="section-description">{wheelType.description}</p>
+      )}
       {models.length > 0 ? (
         <WheelModelGrid models={models} variants={variants} typeBasePath={typeBasePath} />
       ) : (

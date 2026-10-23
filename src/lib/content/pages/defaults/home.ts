@@ -17,13 +17,6 @@ export const HOME_PAGE_DEFAULTS: HomePageContent = {
     metricLabel: "01",
     metricText: "От задачи автопарка — к проверяемой рекомендации",
   },
-  selectionEntry: {
-    eyebrow: "Начать с задачи",
-    title: "Подобрать модель по технике и маршруту",
-    lead: "Выберите тип техники — первый ответ уже будет сохранён в подборе.",
-    imageUrl: "",
-    imageAlt: "Грузовой автомобиль на дороге в горном ландшафте",
-  },
   directions: {
     eyebrow: "Популярные модели",
     title: "Ключевые модели шин",
@@ -33,6 +26,21 @@ export const HOME_PAGE_DEFAULTS: HomePageContent = {
     eyebrow: "Практика и опыт",
     title: "Инженерные решения для подбора и эксплуатации",
     lead: "Tire IQ, опыт эксплуатации и решения для корпоративных проектов.",
+      imageUrl: PREMIUM_MEDIA.inspection,
+      imageAlt: "Специалист измеряет глубину протектора грузовой шины",
+      cta: { label: "Перейти к материалам", href: "/tire-iq" },
+  },
+  branding: {
+    eyebrow: "",
+    title: "Ваш бренд на шинах",
+    lead: "Ваш бренд на шинах. Больше узнаваемости, сильнее присутствие, единый индустриальный стиль.",
+    cta: { label: "Обсудить проект", href: "/contact?subject=branding" },
+    beforeCaption: "Стандартный",
+    afterCaption: "Брендированный",
+    beforeImageUrl: PREMIUM_MEDIA.brandingTirePlain,
+    beforeImageAlt: "Шина BIZON без брендирования",
+    afterImageUrl: PREMIUM_MEDIA.brandingTireBranded,
+    afterImageAlt: "Шина BIZON с брендированием",
   },
   shopCampaign: {
     eyebrow: "Вторая поверхность BIZON",
@@ -41,12 +49,5 @@ export const HOME_PAGE_DEFAULTS: HomePageContent = {
     imageUrl: PREMIUM_MEDIA.shopHero,
     imageAlt: "Кованый диск BIZON",
     cta: { label: "Выбрать модель и проверить совместимость", href: "/shop" },
-  },
-  resume: {
-    eyebrow: "Готовы начать?",
-    title: "Готовы обсудить задачу",
-    lead: "Опишите технику и условия — специалист BIZON проверит совместимость и наличие.",
-    primaryCta: { label: "Связаться", href: "/contact" },
-    secondaryCta: { label: "Связаться напрямую", href: "/contact" },
   },
 };

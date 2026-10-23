@@ -33,6 +33,7 @@ export function TireDirectionShowcase({
       />
       <div className={styles.assortmentContent}>
         <div className={styles.assortmentIntro}>
+          {content.eyebrow ? <p className={styles.eyebrow}>{content.eyebrow}</p> : null}
           <h2 id="home-assortment-title">{content.title}</h2>
           <p>{content.lead}</p>
           <Link className={`btn-accent ${styles.assortmentCta}`} href="/models">

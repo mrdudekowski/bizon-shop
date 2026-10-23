@@ -46,15 +46,17 @@ export function ArticleLayout({
       />
       <div className={styles.body}>
         <div className={styles.lead}>
-          <div className={styles.leadMedia}>
-            <CatalogImage
-              src={imageUrl}
-              fallbackKey={fallbackKey}
-              alt={imageAlt}
-              fill
-              sizes="(max-width: 767px) 100vw, 70vw"
-            />
-          </div>
+          {imageUrl ? (
+            <div className={styles.leadMedia}>
+              <CatalogImage
+                src={imageUrl}
+                fallbackKey={fallbackKey}
+                alt={imageAlt}
+                fill
+                sizes="(max-width: 767px) 100vw, 70vw"
+              />
+            </div>
+          ) : null}
           <div className={styles.leadMeta}>
             {meta ? <p className={styles.meta}>{meta}</p> : null}
             {aside}

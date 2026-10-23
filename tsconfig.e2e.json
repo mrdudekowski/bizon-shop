@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "e2e/**/*.ts",
+    "scripts/e2e/**/*.ts",
+    "playwright.cms-media.config.ts",
+    "src/lib/cmsMediaE2EEnvironment.test.ts"
+  ],
+  "exclude": ["node_modules", "backend-app/node_modules", "frontend-cms/node_modules"]
+}

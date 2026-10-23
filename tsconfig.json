@@ -33,6 +33,10 @@
     "backend-app",
     "frontend-cms",
     "frontend-dev-sasha",
-    ".git-worktrees"
+    ".git-worktrees",
+    "e2e",
+    "scripts/e2e",
+    "playwright.config.ts",
+    "playwright.cms-media.config.ts"
   ]
 }

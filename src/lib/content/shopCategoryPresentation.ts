@@ -1,5 +1,4 @@
 import { ROUTES } from "@/constants/navigation";
-import { getShopLifestyleCategory } from "@/constants/shopCategories";
 import type { CmsShopCategory } from "./types";
 import type { ShopCatalogTile } from "./pages/types";
 
@@ -52,22 +51,6 @@ export function shopCategoryNavLinks(categories: readonly CmsShopCategory[]): { 
   ];
 }
 
-function toIndexCard(category: Pick<CmsShopCategory, "slug" | "name" | "imageUrl">) {
-  const lifestyle = getShopLifestyleCategory(category.slug);
-  const desktopImage = category.imageUrl || lifestyle?.desktopImage || "";
-  const mobileImage = category.imageUrl || lifestyle?.mobileImage || desktopImage;
-
-  return {
-    slug: category.slug,
-    kicker: "",
-    title: category.name,
-    href: `${ROUTES.shop}/${category.slug}`,
-    desktopImage,
-    mobileImage,
-    imageAlt: category.imageUrl ? category.name : lifestyle?.imageAlt ?? category.name,
-  };
-}
-
 export type ShopHomeCategoryCard = {
   slug: string;
   title: string;
@@ -75,35 +58,36 @@ export type ShopHomeCategoryCard = {
   iconUrl: string | null;
 };
 
+function categoryTileRows(
+  categories: readonly CmsShopCategory[],
+  tiles?: readonly ShopCatalogTile[],
+): { category: CmsShopCategory; tile: ShopCatalogTile | null }[] {
+  const categoriesBySlug = new Map(categories.map((category) => [category.slug, category]));
+  const configured = (tiles ?? []).flatMap((tile) => {
+    const category = categoriesBySlug.get(tile.categorySlug);
+    return category ? [{ category, tile }] : [];
+  });
+  const configuredSlugs = new Set((tiles ?? []).map((tile) => tile.categorySlug));
+  const derived = categories
+    .filter((category) => category.showInMenu && !configuredSlugs.has(category.slug))
+    .map((category) => ({ category, tile: null }));
+
+  return [...configured, ...derived].sort((a, b) =>
+    (a.tile?.sortOrder ?? a.category.sortOrder) - (b.tile?.sortOrder ?? b.category.sortOrder),
+  );
+}
+
 export function shopHomeCategoryCards(
   categories: readonly CmsShopCategory[],
   tiles?: readonly ShopCatalogTile[],
 ): ShopHomeCategoryCard[] {
-  if (tiles && tiles.length > 0) {
-    const categoriesBySlug = new Map(categories.map((category) => [category.slug, category]));
-    return tiles
-      .filter((tile) => tile.visible)
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .flatMap((tile) => {
-        const category = categoriesBySlug.get(tile.categorySlug);
-        if (!category) return [];
-        return [{
-          slug: category.slug,
-          title: tile.title || category.name,
-          href: `${ROUTES.shop}/${category.slug}`,
-          iconUrl: tile.iconUrl || null,
-        }];
-      });
-  }
-
-  return categories
-    .filter((category) => category.showInMenu)
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((category) => ({
+  return categoryTileRows(categories, tiles)
+    .filter(({ category, tile }) => tile?.visible ?? category.showInMenu)
+    .map(({ category, tile }) => ({
       slug: category.slug,
-      title: category.name,
+      title: tile?.title || category.name,
       href: `${ROUTES.shop}/${category.slug}`,
-      iconUrl: null,
+      iconUrl: tile?.iconUrl || null,
     }));
 }
 
@@ -114,24 +98,16 @@ export type ShopHomeCarouselSlide = {
   imageUrl: string | null;
 };
 
-const SHOP_CATEGORY_CAROUSEL_PHOTOS: Readonly<Record<string, string>> = {
-  accessories: "/images/premium/shop/lifestyle/categories/car-comfort-photo.jpg",
-  "masla-i-zapchasti": "/images/premium/shop/lifestyle/categories/oils-spare-parts-photo.jpg",
-};
-
 function shopCategoryCarouselImage(
   category: CmsShopCategory,
   tileImageUrl?: string,
   tileCarouselImageUrl?: string,
 ): string | null {
-  const lifestyleSlug = category.slug === "accessory" ? "accessories" : category.slug;
   return (
     tileCarouselImageUrl ||
     category.carousel?.find((frame) => frame.imageUrl)?.imageUrl ||
-    SHOP_CATEGORY_CAROUSEL_PHOTOS[category.slug] ||
     tileImageUrl ||
     category.imageUrl ||
-    getShopLifestyleCategory(lifestyleSlug)?.desktopImage ||
     null
   );
 }
@@ -140,32 +116,16 @@ export function shopHomeCarouselSlides(
   categories: readonly CmsShopCategory[],
   tiles?: readonly ShopCatalogTile[],
 ): ShopHomeCarouselSlide[] {
-  if (tiles && tiles.length > 0) {
-    const categoriesBySlug = new Map(categories.map((category) => [category.slug, category]));
-    return tiles
-      .filter((tile) => tile.visible)
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .flatMap((tile) => {
-        const category = categoriesBySlug.get(tile.categorySlug);
-        if (!category) return [];
-        const imageUrl = shopCategoryCarouselImage(category, tile.imageUrl, tile.carouselImageUrl);
-        return [{
-          id: category.slug,
-          title: tile.title || category.name,
-          href: `${ROUTES.shop}/${category.slug}`,
-          imageUrl,
-        }];
-      });
-  }
-
-  return categories
-    .filter((category) => category.showInMenu)
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((category) => {
-      const imageUrl = shopCategoryCarouselImage(category);
+  return categoryTileRows(categories, tiles)
+    .filter(({ category, tile }) =>
+      (tile?.visible ?? category.showInMenu) &&
+      (tile?.carouselVisible ?? (tiles && tiles.length > 0 ? (category.carousel?.length ?? 0) > 0 : category.showInMenu)),
+    )
+    .map(({ category, tile }) => {
+      const imageUrl = shopCategoryCarouselImage(category, tile?.imageUrl, tile?.carouselImageUrl);
       return {
         id: category.slug,
-        title: category.name,
+        title: tile?.title || category.name,
         href: `${ROUTES.shop}/${category.slug}`,
         imageUrl,
       };
@@ -176,31 +136,20 @@ export function shopCategoryIndexCards(
   categories: readonly CmsShopCategory[],
   tiles?: readonly ShopCatalogTile[],
 ) {
-  if (tiles && tiles.length > 0) {
-    const categoriesBySlug = new Map(categories.map((category) => [category.slug, category]));
-    return tiles
-      .filter((tile) => tile.visible)
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .flatMap((tile) => {
-        const category = categoriesBySlug.get(tile.categorySlug);
-        if (!category) return [];
-        const lifestyle = getShopLifestyleCategory(category.slug);
-        const imageUrl = tile.imageUrl || category.imageUrl || lifestyle?.desktopImage || "";
-        const mobileImage = tile.imageUrl || category.imageUrl || lifestyle?.mobileImage || imageUrl;
-        return [{
-          slug: category.slug,
-          kicker: "",
-          title: tile.title || category.name,
-          href: `${ROUTES.shop}/${category.slug}`,
-          desktopImage: imageUrl,
-          mobileImage,
-          imageAlt: tile.imageAlt || category.name,
-        }];
-      });
-  }
-
-  const published = categories
-    .filter((category) => category.showInMenu)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
-  return published.map(toIndexCard);
+  return categoryTileRows(categories, tiles)
+    .filter(({ category, tile }) => tile?.visible ?? category.showInMenu)
+    .map(({ category, tile }) => {
+      const imageUrl = tile?.imageUrl || category.imageUrl || "";
+      const mobileImage = imageUrl;
+      const imageAlt = tile?.imageAlt || category.name;
+      return {
+        slug: category.slug,
+        kicker: "",
+        title: tile?.title || category.name,
+        href: `${ROUTES.shop}/${category.slug}`,
+        desktopImage: imageUrl,
+        mobileImage,
+        imageAlt,
+      };
+    });
 }

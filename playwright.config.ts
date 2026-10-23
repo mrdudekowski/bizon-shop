@@ -6,6 +6,7 @@ const reuseExistingServer = process.env.PLAYWRIGHT_REUSE_SERVER === "1";
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: ["**/cms-media/**"],
   fullyParallel: false,
   workers: 1,
   timeout: 90_000,

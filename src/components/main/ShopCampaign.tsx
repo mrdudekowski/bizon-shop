@@ -25,18 +25,27 @@ export function ShopCampaign({ content }: { content: HomeShopCampaignContent }) 
         aria-label={content.title}
       >
         <div className={styles.shopMedia}>
-          <Image
-            src={content.imageUrl}
-            alt={content.imageAlt}
-            fill
-            sizes="100vw"
-          />
+          {content.imageUrl ? (
+            <Image
+              src={content.imageUrl}
+              alt={content.imageAlt}
+              fill
+              sizes="100vw"
+            />
+          ) : null}
         </div>
         <div className={styles.shopOverlay} aria-hidden="true" />
         <div className={styles.inner}>
-          <Link className={`btn-accent ${styles.shopCta}`} href={content.cta.href}>
-            {content.cta.label} <SiteArrow />
-          </Link>
+          <div className={styles.shopCampaignCopy}>
+            {content.eyebrow ? <p className={styles.eyebrow}>{content.eyebrow}</p> : null}
+            <h2>{content.title}</h2>
+            {content.lead ? <p>{content.lead}</p> : null}
+            {content.cta.label.trim() && content.cta.href.trim() ? (
+              <Link className={`btn-accent ${styles.shopCta}`} href={content.cta.href}>
+                {content.cta.label} <SiteArrow />
+              </Link>
+            ) : null}
+          </div>
         </div>
       </section>
     </div>

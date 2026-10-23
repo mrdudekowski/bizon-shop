@@ -2,8 +2,6 @@
 
 import type {
   CatalogAxle,
-  OperatingCondition,
-  VehicleType,
 } from "@/lib/selection/options";
 
 export type CmsProduct = {
@@ -65,8 +63,6 @@ export type CmsTireType = {
   sortOrder: number;
   showInMenu: boolean;
   imageUrl?: string | null;
-  selectionVehicleTypes: VehicleType[];
-  selectionConditions: OperatingCondition[];
 };
 
 export type CmsTireAdvantage = {
@@ -97,8 +93,6 @@ export type CmsTireModel = {
   gallery: string[];
   advantages: CmsTireAdvantage[];
   documents: CmsTireDocument[];
-  selectionVehicleTypes: VehicleType[];
-  selectionConditions: OperatingCondition[];
   selectionAxles: CatalogAxle[];
   showInMenu: boolean;
   menuOrder: number;
@@ -138,6 +132,7 @@ export type CmsArticle = {
   /** HTML string or future rich-text JSON — render with LexicalContent on detail pages. */
   content: unknown;
   imageUrl?: string | null;
+  imageConfigured?: boolean;
   showInMenu: boolean;
   menuOrder: number;
   taxonomy?: string[];

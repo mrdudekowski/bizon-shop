@@ -16,6 +16,7 @@ export type EditorialListingItem = {
   description?: string;
   meta?: string | null;
   imageUrl?: string | null;
+  showImage?: boolean;
   imageAlt?: string;
   fallbackKey?: string;
   taxonomy?: string[];
@@ -92,19 +93,21 @@ export function EditorialListing({
                 data-editorial-card
                 data-taxonomy={JSON.stringify(item.taxonomy ?? [])}
               >
-                <Link href={item.href} className={styles.media}>
-                  <CatalogImage
-                    src={item.imageUrl}
-                    fallbackKey={item.fallbackKey ?? item.key}
-                    alt={item.imageAlt ?? item.title}
-                    fill
-                    sizes={
-                      index === 0
-                        ? "(max-width: 767px) 100vw, 66vw"
-                        : "(max-width: 767px) 100vw, 33vw"
-                    }
-                  />
-                </Link>
+                {item.showImage === false ? null : (
+                  <Link href={item.href} className={styles.media}>
+                    <CatalogImage
+                      src={item.imageUrl}
+                      fallbackKey={item.fallbackKey ?? item.key}
+                      alt={item.imageAlt ?? item.title}
+                      fill
+                      sizes={
+                        index === 0
+                          ? "(max-width: 767px) 100vw, 66vw"
+                          : "(max-width: 767px) 100vw, 33vw"
+                      }
+                    />
+                  </Link>
+                )}
                 <div className={styles.copy}>
                   {item.meta ? <p className={styles.meta}>{item.meta}</p> : null}
                   <h2>

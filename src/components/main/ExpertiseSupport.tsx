@@ -1,10 +1,10 @@
-import type { PageShell } from "@/lib/content/pages/types";
+import type { HomeExpertiseContent } from "@/lib/content/pages/types";
 
 import { EditorialHighlights } from "./EditorialHighlights";
 import { HOME_SHOP_ZONE_EXIT_ID } from "./homeShopZone";
 import styles from "./MainHome.module.css";
 
-export function ExpertiseSupport({ content }: { content: PageShell }) {
+export function ExpertiseSupport({ content }: { content: HomeExpertiseContent }) {
   return (
     <section
       id={HOME_SHOP_ZONE_EXIT_ID}

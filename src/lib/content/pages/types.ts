@@ -12,7 +12,7 @@ export type PageShell = {
 };
 
 export type HomeHeroContent = PageShell & {
-  imageUrl: string;
+  imageUrl: string | null;
   imageAlt: string;
   primaryCta: PageCta;
   secondaryCta: PageCta;
@@ -21,19 +21,25 @@ export type HomeHeroContent = PageShell & {
 };
 
 export type HomeShopCampaignContent = PageShell & {
-  imageUrl: string;
+  imageUrl: string | null;
   imageAlt: string;
   cta: PageCta;
 };
 
-export type HomeSelectionEntryContent = PageShell & {
-  imageUrl: string;
+export type HomeExpertiseContent = PageShell & {
+  imageUrl: string | null;
   imageAlt: string;
+  cta: PageCta;
 };
 
-export type HomeResumeContent = PageShell & {
-  primaryCta: PageCta;
-  secondaryCta: PageCta;
+export type HomeBrandingContent = PageShell & {
+  cta: PageCta;
+  beforeCaption: string;
+  afterCaption: string;
+  beforeImageUrl: string | null;
+  beforeImageAlt: string;
+  afterImageUrl: string | null;
+  afterImageAlt: string;
 };
 
 export type HomePageContent = {
@@ -41,15 +47,14 @@ export type HomePageContent = {
   seoTitle?: string;
   seoDescription?: string;
   hero: HomeHeroContent;
-  selectionEntry: HomeSelectionEntryContent;
   directions: PageShell;
-  expertise: PageShell;
+  expertise: HomeExpertiseContent;
+  branding: HomeBrandingContent;
   shopCampaign: HomeShopCampaignContent;
-  resume: HomeResumeContent;
 };
 
 export type ShopHeroContent = PageShell & {
-  imageUrl: string;
+  imageUrl: string | null;
   imageAlt: string;
   cta: PageCta;
 };

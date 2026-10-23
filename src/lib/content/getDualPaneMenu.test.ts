@@ -18,8 +18,6 @@ const model = {
   gallery: [],
   advantages: [{ key: "economy", title: "Economy" }],
   documents: [],
-  selectionVehicleTypes: [],
-  selectionConditions: [],
   selectionAxles: [],
   showInMenu: true,
   menuOrder: 1,

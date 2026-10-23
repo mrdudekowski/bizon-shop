@@ -5,13 +5,20 @@ import type { HomePageContent, PageContentByKey, ShopHomePageContent } from "./p
 import { fetchPublishedJson, isStaticBuild, PublishedApiError, publishedApiEnabled } from "./publishedClient";
 
 export type PublishedStubOverlay = {
+  documents?: { url: string; title: string }[];
+  featuresHeading?: string;
+  features?: { id: string; title: string; text: string }[];
+  sections?: { id: string; heading: string; body: string }[];
+  notice?: { body: string } | null;
+  proof?: { imageUrl?: string | null; imageAlt?: string; title: string; text: string } | null;
+  cta?: { label: string; href: string; secondaryLabel?: string; secondaryHref?: string } | null;
   seoTitle?: string;
   seoDescription?: string;
   hero: {
     eyebrow?: string;
     title?: string;
     lead?: string;
-    imageUrl?: string;
+    imageUrl?: string | null;
     imageAlt?: string;
   };
 };
@@ -35,17 +42,10 @@ export async function getPublishedStubOverlay(key: string): Promise<PublishedStu
   return fetchPagePatch<PublishedStubOverlay>(`/v1/pages/${encodeURIComponent(key)}`);
 }
 
-async function fetchPagePatch<T>(path: string): Promise<T | null> {
-  try {
-    return await fetchPublishedJson<T>(path);
-  } catch (error) {
-    // These editorial pages have complete code defaults; keep them available if the API is down.
-    if (error instanceof PublishedApiError) {
-      if (isStaticBuild()) throw error;
-      return null;
-    }
-    throw error;
-  }
+async function fetchPagePatch<T>(path: string): Promise<T> {
+  const patch = await fetchPublishedJson<T>(path);
+  if (patch === null) throw new PublishedApiError("unavailable");
+  return patch;
 }
 
 type HomePatch = Parameters<typeof mergeHomeContent>[1];
@@ -64,14 +64,12 @@ export async function getPageContent<K extends PageKey>(
 
   if (key === "home") {
     const patch = await fetchPagePatch<HomePatch>("/v1/pages/home");
-    if (patch) return mergeHomeContent(defaults as HomePageContent, patch) as PageContentByKey[K];
-    return defaults;
+    return mergeHomeContent(defaults as HomePageContent, patch) as PageContentByKey[K];
   }
 
   if (key === "shop-home") {
     const patch = await fetchPagePatch<ShopHomePatch>("/v1/pages/shop-home");
-    if (patch) return mergeShopHomeContent(defaults as ShopHomePageContent, patch) as PageContentByKey[K];
-    return defaults;
+    return mergeShopHomeContent(defaults as ShopHomePageContent, patch) as PageContentByKey[K];
   }
 
   return defaults;

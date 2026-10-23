@@ -7,7 +7,7 @@ import { TireIqContextualVisuals } from "@/components/content/TireIqContextualVi
 import { getAllTireIQSlugs, getTireIQArticleBySlug } from "@/lib/content";
 import { loadPublished } from "@/lib/content/loadPublished";
 import { createPageMetadata } from "@/lib/seo/metadata";
-import { getTireIqArticleCover } from "@/lib/content/tireIqVisuals";
+import { resolveTireIqArticleCover } from "@/lib/content/tireIqVisuals";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -57,7 +57,7 @@ export default async function TireIQArticlePage({ params }: PageProps) {
         { href: `/tire-iq/${article.slug}`, label: article.title },
       ]}
       meta={article.publishedAt}
-      imageUrl={article.imageUrl ?? getTireIqArticleCover(article.slug)}
+      imageUrl={resolveTireIqArticleCover(article)}
       imageAlt={article.title}
       fallbackKey={article.slug}
       backHref="/tire-iq"

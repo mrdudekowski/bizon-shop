@@ -2,9 +2,27 @@ import { describe, expect, it } from "vitest";
 
 import { HOME_PAGE_DEFAULTS } from "./defaults/home";
 import { SHOP_HOME_PAGE_DEFAULTS } from "./defaults/shopHome";
-import { mergeHomeContent, mergeShopHomeContent } from "./merge";
+import { stubPageDefaults } from "./defaults/stub";
+import { mergeHomeContent, mergeShopHomeContent, mergeStubContent } from "./merge";
 
 describe("mergeHomeContent", () => {
+  it("preserves explicitly empty SEO content instead of restoring defaults", () => {
+    const merged = mergeHomeContent(HOME_PAGE_DEFAULTS, {
+      seoTitle: "",
+      seoDescription: "",
+    });
+
+    expect(merged.seoTitle).toBe("");
+    expect(merged.seoDescription).toBe("");
+  });
+
+  it("does not expose the retired selection entry as active homepage content", () => {
+    expect("selectionEntry" in HOME_PAGE_DEFAULTS).toBe(false);
+    expect("selectionEntry" in mergeHomeContent(HOME_PAGE_DEFAULTS, {})).toBe(false);
+    expect("resume" in HOME_PAGE_DEFAULTS).toBe(false);
+    expect("resume" in mergeHomeContent(HOME_PAGE_DEFAULTS, {})).toBe(false);
+  });
+
   it("keeps defaults when patch is empty", () => {
     expect(mergeHomeContent(HOME_PAGE_DEFAULTS, {})).toEqual(HOME_PAGE_DEFAULTS);
   });
@@ -23,12 +41,20 @@ describe("mergeHomeContent", () => {
     expect(merged.hero.secondaryCta).toEqual(HOME_PAGE_DEFAULTS.hero.secondaryCta);
   });
 
-  it("rewrites published selection CTAs to the catalog", () => {
+  it("removes retired selection wording when mapping its route to the catalog", () => {
     const merged = mergeHomeContent(HOME_PAGE_DEFAULTS, {
       hero: {
         primaryCta: { label: "Начать подбор", href: "/#solutions" },
       },
     });
+    expect(merged.hero.primaryCta).toEqual({ label: "Открыть каталог", href: "/models" });
+  });
+
+  it("removes retired selection wording from saved CMS CTAs that use the old route", () => {
+    const merged = mergeHomeContent(HOME_PAGE_DEFAULTS, {
+      hero: { primaryCta: { label: "Подобрать шины", href: "/selection" } },
+    });
+
     expect(merged.hero.primaryCta).toEqual({ label: "Открыть каталог", href: "/models" });
   });
 
@@ -62,9 +88,99 @@ describe("mergeHomeContent", () => {
     expect(merged.directions.lead).toBe(HOME_PAGE_DEFAULTS.directions.lead);
     expect(merged.expertise.title).toBe("Экспертиза и поддержка");
   });
+
+  it("preserves the Expertise image, alt text, and CTA from CMS", () => {
+    const merged = mergeHomeContent(HOME_PAGE_DEFAULTS, {
+      expertise: {
+        imageUrl: "https://cdn.example.test/expertise.jpg",
+        imageAlt: "Измерение протектора",
+        cta: { label: "Читать", href: "/tire-iq" },
+      },
+    });
+
+    expect(merged.expertise.imageUrl).toBe("https://cdn.example.test/expertise.jpg");
+    expect(merged.expertise.imageAlt).toBe("Измерение протектора");
+    expect(merged.expertise.cta).toEqual({ label: "Читать", href: "/tire-iq" });
+  });
+
+  it("renders published branding copy, CTA, captions, and image assignments", () => {
+    const merged = mergeHomeContent(HOME_PAGE_DEFAULTS, {
+      branding: {
+        eyebrow: "Брендирование",
+        title: "Логотип на шинах",
+        lead: "Под ваш автопарк.",
+        cta: { label: "Оставить заявку", href: "/contact?subject=fleet" },
+        beforeCaption: "До",
+        afterCaption: "После",
+        beforeImageUrl: "/images/before.jpg",
+        beforeImageAlt: "До",
+        afterImageUrl: "/images/after.jpg",
+        afterImageAlt: "После",
+      },
+    });
+
+    expect(merged.branding).toEqual({
+      eyebrow: "Брендирование",
+      title: "Логотип на шинах",
+      lead: "Под ваш автопарк.",
+      cta: { label: "Оставить заявку", href: "/contact?subject=fleet" },
+      beforeCaption: "До",
+      afterCaption: "После",
+      beforeImageUrl: "/images/before.jpg",
+      beforeImageAlt: "До",
+      afterImageUrl: "/images/after.jpg",
+      afterImageAlt: "После",
+    });
+  });
+
+  it("keeps explicit empty branding copy and cleared comparison images", () => {
+    const merged = mergeHomeContent(HOME_PAGE_DEFAULTS, {
+      branding: {
+        title: "",
+        lead: "",
+        beforeCaption: "",
+        afterCaption: "",
+        beforeImageUrl: null,
+        afterImageUrl: null,
+        cta: { label: "", href: "" },
+      },
+    });
+
+    expect(merged.branding.title).toBe("");
+    expect(merged.branding.lead).toBe("");
+    expect(merged.branding.beforeImageUrl).toBeNull();
+    expect(merged.branding.afterImageUrl).toBeNull();
+    expect(merged.branding.cta).toEqual({ label: "", href: "" });
+  });
+
+  it("preserves explicit empty text, an empty CTA, and a cleared image", () => {
+    const merged = mergeHomeContent(HOME_PAGE_DEFAULTS, {
+      hero: {
+        title: "",
+        lead: "",
+        imageUrl: null,
+        primaryCta: { label: "", href: "" },
+      },
+    });
+
+    expect(merged.hero.title).toBe("");
+    expect(merged.hero.lead).toBe("");
+    expect(merged.hero.imageUrl).toBeNull();
+    expect(merged.hero.primaryCta).toEqual({ label: "", href: "" });
+  });
 });
 
 describe("mergeShopHomeContent", () => {
+  it("preserves explicitly empty SEO content instead of restoring defaults", () => {
+    const merged = mergeShopHomeContent(SHOP_HOME_PAGE_DEFAULTS, {
+      seoTitle: "",
+      seoDescription: "",
+    });
+
+    expect(merged.seoTitle).toBe("");
+    expect(merged.seoDescription).toBe("");
+  });
+
   it("uses CMS order steps when provided", () => {
     const merged = mergeShopHomeContent(SHOP_HOME_PAGE_DEFAULTS, {
       orderSteps: [{ title: "A", description: "B" }],
@@ -75,13 +191,36 @@ describe("mergeShopHomeContent", () => {
     );
   });
 
-  it("falls back to default slides when CMS carousel empty", () => {
+  it("preserves an explicitly empty category carousel", () => {
     const merged = mergeShopHomeContent(SHOP_HOME_PAGE_DEFAULTS, {
       categoryCarousel: [],
     });
-    expect(merged.categoryCarousel).toEqual(
-      SHOP_HOME_PAGE_DEFAULTS.categoryCarousel,
-    );
+    expect(merged.categoryCarousel).toEqual([]);
+  });
+
+  it("preserves empty CMS lists and only falls back when a field is absent", () => {
+    const merged = mergeShopHomeContent(SHOP_HOME_PAGE_DEFAULTS, {
+      orderSteps: [],
+      categoryCarousel: [],
+      vehicles: { slides: [] },
+    });
+
+    expect(merged.orderSteps).toEqual([]);
+    expect(merged.categoryCarousel).toEqual([]);
+    expect(merged.vehicles.slides).toEqual([]);
+
+    const legacy = mergeShopHomeContent(SHOP_HOME_PAGE_DEFAULTS, {});
+    expect(legacy.orderSteps).toEqual(SHOP_HOME_PAGE_DEFAULTS.orderSteps);
+    expect(legacy.categoryCarousel).toEqual(SHOP_HOME_PAGE_DEFAULTS.categoryCarousel);
+    expect(legacy.vehicles.slides).toEqual(SHOP_HOME_PAGE_DEFAULTS.vehicles.slides);
+  });
+
+  it("does not restore the default Shop hero image after an explicit clear", () => {
+    const merged = mergeShopHomeContent(SHOP_HOME_PAGE_DEFAULTS, {
+      hero: { imageUrl: null },
+    });
+
+    expect(merged.hero.imageUrl).toBeNull();
   });
 
   it("uses CMS wheels intro when provided", () => {
@@ -122,5 +261,15 @@ describe("mergeShopHomeContent", () => {
     const merged = mergeShopHomeContent(SHOP_HOME_PAGE_DEFAULTS, {});
     expect(merged.catalog.copy).toEqual(SHOP_HOME_PAGE_DEFAULTS.catalog.copy);
     expect(merged.catalog.tiles).toEqual([]);
+  });
+});
+
+describe("mergeStubContent", () => {
+  it("preserves explicitly empty SEO content instead of restoring defaults", () => {
+    const defaults = stubPageDefaults("about");
+    const merged = mergeStubContent(defaults, { seoTitle: "", seoDescription: "" });
+
+    expect(merged.seoTitle).toBe("");
+    expect(merged.seoDescription).toBe("");
   });
 });

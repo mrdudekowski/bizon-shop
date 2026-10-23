@@ -1,5 +1,7 @@
 import type {
   HomePageContent,
+  HomeExpertiseContent,
+  HomeBrandingContent,
   PageCta,
   PageShell,
   ShopCategorySlide,
@@ -12,7 +14,7 @@ import type {
 } from "./types";
 
 export function pickText(value: unknown, fallback: string): string {
-  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+  return typeof value === "string" ? value : fallback;
 }
 
 function retireSelectionHref(href: string): string {
@@ -26,13 +28,14 @@ export function pickCta(
   value: { label?: string | null; href?: string | null } | null | undefined,
   fallback: PageCta,
 ): PageCta {
-  const href = retireSelectionHref(pickText(value?.href, fallback.href));
-  const label = pickText(value?.label, fallback.label);
+  const requestedHref = pickText(value?.href, fallback.href);
+  const href = retireSelectionHref(requestedHref);
+  const requestedLabel = pickText(value?.label, fallback.label);
+  const label = href !== requestedHref && /подбор|подобр/i.test(requestedLabel)
+    ? fallback.label
+    : requestedLabel;
   return {
-    label:
-      href === "/models" && (label === "Начать подбор" || label === "Подобрать шины")
-        ? "Открыть каталог"
-        : label,
+    label,
     href,
   };
 }
@@ -51,8 +54,10 @@ export function pickShell(
   };
 }
 
-export function pickImageUrl(value: string | null | undefined, fallback: string): string {
-  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+export function pickImageUrl(value: string | null | undefined, fallback: string): string | null {
+  if (value === undefined) return fallback;
+  if (value === null) return null;
+  return value.trim() || null;
 }
 
 type CtaPatch = Partial<PageCta> | undefined;
@@ -66,22 +71,18 @@ export function mergeHomeContent(
       primaryCta?: CtaPatch;
       secondaryCta?: CtaPatch;
     };
-    selectionEntry?: Partial<HomePageContent["selectionEntry"]>;
     directions?: Partial<PageShell>;
-    expertise?: Partial<PageShell>;
+    expertise?: Partial<Omit<HomeExpertiseContent, "cta">> & { cta?: CtaPatch };
+    branding?: Partial<Omit<HomeBrandingContent, "cta">> & { cta?: CtaPatch };
     shopCampaign?: Partial<Omit<HomePageContent["shopCampaign"], "cta">> & {
       cta?: CtaPatch;
-    };
-    resume?: Partial<Omit<HomePageContent["resume"], "primaryCta" | "secondaryCta">> & {
-      primaryCta?: CtaPatch;
-      secondaryCta?: CtaPatch;
     };
   },
 ): HomePageContent {
   return {
     key: "home",
-    seoTitle: patch.seoTitle || defaults.seoTitle,
-    seoDescription: patch.seoDescription || defaults.seoDescription,
+    seoTitle: patch.seoTitle ?? defaults.seoTitle,
+    seoDescription: patch.seoDescription ?? defaults.seoDescription,
     hero: {
       ...pickShell(patch.hero, defaults.hero),
       imageUrl: pickImageUrl(patch.hero?.imageUrl, defaults.hero.imageUrl),
@@ -91,23 +92,28 @@ export function mergeHomeContent(
       metricLabel: pickText(patch.hero?.metricLabel, defaults.hero.metricLabel),
       metricText: pickText(patch.hero?.metricText, defaults.hero.metricText),
     },
-    selectionEntry: {
-      ...pickShell(patch.selectionEntry, defaults.selectionEntry),
-      imageUrl: pickImageUrl(patch.selectionEntry?.imageUrl, defaults.selectionEntry.imageUrl),
-      imageAlt: pickText(patch.selectionEntry?.imageAlt, defaults.selectionEntry.imageAlt),
-    },
     directions: pickShell(patch.directions, defaults.directions),
-    expertise: pickShell(patch.expertise, defaults.expertise),
+    expertise: {
+      ...pickShell(patch.expertise, defaults.expertise),
+      imageUrl: pickImageUrl(patch.expertise?.imageUrl, defaults.expertise.imageUrl),
+      imageAlt: pickText(patch.expertise?.imageAlt, defaults.expertise.imageAlt),
+      cta: pickCta(patch.expertise?.cta, defaults.expertise.cta),
+    },
+    branding: {
+      ...pickShell(patch.branding, defaults.branding),
+      cta: pickCta(patch.branding?.cta, defaults.branding.cta),
+      beforeCaption: pickText(patch.branding?.beforeCaption, defaults.branding.beforeCaption),
+      afterCaption: pickText(patch.branding?.afterCaption, defaults.branding.afterCaption),
+      beforeImageUrl: pickImageUrl(patch.branding?.beforeImageUrl, defaults.branding.beforeImageUrl),
+      beforeImageAlt: pickText(patch.branding?.beforeImageAlt, defaults.branding.beforeImageAlt),
+      afterImageUrl: pickImageUrl(patch.branding?.afterImageUrl, defaults.branding.afterImageUrl),
+      afterImageAlt: pickText(patch.branding?.afterImageAlt, defaults.branding.afterImageAlt),
+    },
     shopCampaign: {
       ...pickShell(patch.shopCampaign, defaults.shopCampaign),
       imageUrl: pickImageUrl(patch.shopCampaign?.imageUrl, defaults.shopCampaign.imageUrl),
       imageAlt: pickText(patch.shopCampaign?.imageAlt, defaults.shopCampaign.imageAlt),
       cta: pickCta(patch.shopCampaign?.cta, defaults.shopCampaign.cta),
-    },
-    resume: {
-      ...pickShell(patch.resume, defaults.resume),
-      primaryCta: pickCta(patch.resume?.primaryCta, defaults.resume.primaryCta),
-      secondaryCta: pickCta(patch.resume?.secondaryCta, defaults.resume.secondaryCta),
     },
   };
 }
@@ -133,8 +139,8 @@ export function mergeShopHomeContent(
 ): ShopHomePageContent {
   return {
     key: "shop-home",
-    seoTitle: patch.seoTitle || defaults.seoTitle,
-    seoDescription: patch.seoDescription || defaults.seoDescription,
+    seoTitle: patch.seoTitle ?? defaults.seoTitle,
+    seoDescription: patch.seoDescription ?? defaults.seoDescription,
     hero: {
       ...pickShell(patch.hero, defaults.hero),
       imageUrl: pickImageUrl(patch.hero?.imageUrl, defaults.hero.imageUrl),
@@ -145,14 +151,8 @@ export function mergeShopHomeContent(
       ...pickShell(patch.wheelsIntro, defaults.wheelsIntro),
       kicker: pickText(patch.wheelsIntro?.kicker, defaults.wheelsIntro.kicker),
     },
-    orderSteps:
-      patch.orderSteps && patch.orderSteps.length > 0
-        ? patch.orderSteps
-        : defaults.orderSteps,
-    categoryCarousel:
-      patch.categoryCarousel && patch.categoryCarousel.length > 0
-        ? patch.categoryCarousel
-        : defaults.categoryCarousel,
+    orderSteps: patch.orderSteps ?? defaults.orderSteps,
+    categoryCarousel: patch.categoryCarousel ?? defaults.categoryCarousel,
     catalog: {
       copy: {
         eyebrow: pickText(patch.catalog?.copy?.eyebrow, defaults.catalog.copy.eyebrow),
@@ -165,10 +165,7 @@ export function mergeShopHomeContent(
     vehicles: {
       ...pickShell(patch.vehicles, defaults.vehicles),
       cta: pickCta(patch.vehicles?.cta, defaults.vehicles.cta),
-      slides:
-        patch.vehicles?.slides && patch.vehicles.slides.length > 0
-          ? patch.vehicles.slides
-          : defaults.vehicles.slides,
+      slides: patch.vehicles?.slides ?? defaults.vehicles.slides,
     },
     preferredWheelSlugs: defaults.preferredWheelSlugs,
   };
@@ -184,14 +181,11 @@ export function mergeStubContent(
 ): StubMarketingPageContent {
   return {
     key: defaults.key,
-    seoTitle: patch.seoTitle || defaults.seoTitle,
-    seoDescription: patch.seoDescription || defaults.seoDescription,
+    seoTitle: patch.seoTitle ?? defaults.seoTitle,
+    seoDescription: patch.seoDescription ?? defaults.seoDescription,
     hero: {
       ...pickShell(patch.hero, defaults.hero),
-      imageUrl:
-        typeof patch.hero?.imageUrl === "string" && patch.hero.imageUrl.trim()
-          ? patch.hero.imageUrl.trim()
-          : defaults.hero.imageUrl,
+      imageUrl: pickImageUrl(patch.hero?.imageUrl, defaults.hero.imageUrl),
       imageAlt: pickText(patch.hero?.imageAlt, defaults.hero.imageAlt),
     },
   };

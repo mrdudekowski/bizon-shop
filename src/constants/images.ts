@@ -9,7 +9,7 @@ export const PREMIUM_MEDIA = {
   highwayCategory: `${PREMIUM_IMAGE_ROOT}/highway-fleet-portrait.png`,
   quarryCategory: `${PREMIUM_IMAGE_ROOT}/quarry-haul-truck.png`,
   forgedWheel: `${PREMIUM_IMAGE_ROOT}/forged-wheel-workshop.png`,
-  consultation: `${PREMIUM_IMAGE_ROOT}/fleet-consultation.png`,
+  consultation: `${PREMIUM_IMAGE_ROOT}/fleet-consultation.jpg`,
   mounting: `${PREMIUM_IMAGE_ROOT}/tire-mounting.png`,
   inspection: `${PREMIUM_IMAGE_ROOT}/tread-inspection.jpg`,
   mixedService: `${PREMIUM_IMAGE_ROOT}/mixed-service-site.png`,

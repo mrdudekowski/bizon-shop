@@ -399,7 +399,7 @@ test.describe("mobile wheel filter sheet", () => {
     await sheet.getByRole("button", { name: "Показать 0 моделей" }).click();
 
     await expect(page).toHaveURL(/diameter=18/);
-    await expect(page.getByRole("heading", { name: "Совпадений по параметрам нет" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "По заданным параметрам диски не найдены" })).toBeVisible();
   });
 });
 

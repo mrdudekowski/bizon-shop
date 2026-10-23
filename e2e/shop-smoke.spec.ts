@@ -11,6 +11,17 @@ const SHOP_ROUTES = [
   "/cart",
 ] as const;
 
+test("supplier proof heading does not create horizontal page overflow", async ({ page }) => {
+  const response = await page.goto("/become-a-supplier", { waitUntil: "domcontentloaded" });
+  expect(response?.status()).toBe(200);
+  await expect(page.getByRole("heading", { name: "Работаем с профессиональным рынком" })).toBeVisible();
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    document: document.documentElement.scrollWidth,
+  }));
+  expect(widths.document, `supplier page overflows at ${widths.viewport}px`).toBeLessThanOrEqual(widths.viewport + 1);
+});
+
 for (const route of SHOP_ROUTES) {
   test(`${route} renders without horizontal overflow`, async ({ page }) => {
     const response = await page.goto(route, { waitUntil: "domcontentloaded" });

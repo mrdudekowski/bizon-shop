@@ -13,9 +13,9 @@ import styles from "./ShopHome.module.css";
 export async function generateMetadata() {
   const page = await getPageContent("shop-home");
   return createPageMetadata({
-    title: page.seoTitle || "BIZON Shop",
+    title: page.seoTitle ?? "BIZON Shop",
     description:
-      page.seoDescription ||
+      page.seoDescription ??
       "Кованые диски BIZON под заказ, аксессуары и outdoor-товары.",
     path: "/shop",
   });
@@ -42,22 +42,26 @@ export default async function ShopPage() {
     <div className={styles.page}>
       <section className={styles.hero} data-shop-chrome-tone="dark">
         <div className={styles.heroMedia}>
-          <Image
-            src={page.hero.imageUrl}
-            alt={page.hero.imageAlt}
-            fill
-            priority
-            sizes="100vw"
-          />
+          {page.hero.imageUrl ? (
+            <Image
+              src={page.hero.imageUrl}
+              alt={page.hero.imageAlt}
+              fill
+              priority
+              sizes="100vw"
+            />
+          ) : null}
         </div>
         <div className={styles.heroOverlay} />
         <div className={styles.heroContent}>
           <p className={styles.eyebrow}>{page.hero.eyebrow}</p>
           <h1>{page.hero.title}</h1>
           <p className={styles.heroLead}>{page.hero.lead}</p>
-          <Link className={styles.heroAction} href={page.hero.cta.href}>
-            {page.hero.cta.label}
-          </Link>
+          {page.hero.cta.label.trim() && page.hero.cta.href.trim() ? (
+            <Link className={styles.heroAction} href={page.hero.cta.href}>
+              {page.hero.cta.label}
+            </Link>
+          ) : null}
         </div>
       </section>
 
@@ -133,9 +137,11 @@ export default async function ShopPage() {
               <h2 id="vehicles-title">{page.vehicles.title}</h2>
               <p>{page.vehicles.lead}</p>
             </div>
-            <Link className={styles.selectionAction} href={page.vehicles.cta.href}>
-              {page.vehicles.cta.label}
-            </Link>
+            {page.vehicles.cta.label.trim() && page.vehicles.cta.href.trim() ? (
+              <Link className={styles.selectionAction} href={page.vehicles.cta.href}>
+                {page.vehicles.cta.label}
+              </Link>
+            ) : null}
           </div>
 
           <div className={styles.vehicleGrid}>

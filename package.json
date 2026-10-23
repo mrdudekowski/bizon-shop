@@ -9,9 +9,11 @@
     "build:ci": "node scripts/ciBuildApiFixture.js",
     "test": "vitest run",
     "test:e2e": "npm run build:ci && playwright test",
+    "test:e2e:cms-media": "playwright test --config playwright.cms-media.config.ts",
     "test:e2e:install": "playwright install chromium firefox webkit",
     "lint": "eslint src next.config.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "typecheck:e2e": "tsc --noEmit -p tsconfig.e2e.json"
   },
   "repository": {
     "type": "git",

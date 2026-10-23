@@ -11,16 +11,12 @@ const tbr = {
   shortDescription: "Грузовые шины",
   sortOrder: 1,
   showInMenu: true,
-  selectionVehicleTypes: ["regional-truck"],
-  selectionConditions: ["regional"],
 } as CmsTireType;
 
 const otr = {
   ...tbr,
   slug: "otr",
   name: "OTR",
-  selectionVehicleTypes: ["quarry-special"],
-  selectionConditions: ["off-road"],
 } as CmsTireType;
 
 const model = {
@@ -36,8 +32,6 @@ const model = {
   gallery: [],
   advantages: [],
   documents: [],
-  selectionVehicleTypes: ["regional-truck"],
-  selectionConditions: ["regional"],
   selectionAxles: ["drive"],
 } as CmsTireModel;
 
@@ -60,5 +54,9 @@ describe("buildTireCatalogReadModel", () => {
       sizes: ["315/80R22.5"],
       selectionAxles: ["drive"],
     });
+    expect(catalog.directions[0]).not.toHaveProperty("selectionVehicleTypes");
+    expect(catalog.directions[0]).not.toHaveProperty("selectionConditions");
+    expect(catalog.directions[0].models[0]).not.toHaveProperty("selectionVehicleTypes");
+    expect(catalog.directions[0].models[0]).not.toHaveProperty("selectionConditions");
   });
 });
