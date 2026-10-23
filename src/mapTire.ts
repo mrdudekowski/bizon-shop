@@ -21,6 +21,7 @@ type TireModelInput = {
   advantages: unknown[];
   selectionAxles?: string[];
   applicationTypes?: string[];
+  documents?: { url: string; title: string }[];
 };
 
 type TireTypeRow = {
@@ -31,11 +32,6 @@ type TireTypeRow = {
   sort_order: number;
   show_in_menu: boolean;
   image_url: string | null;
-};
-
-type TireTypeSelection = {
-  vehicleTypes: string[];
-  conditions: string[];
 };
 
 type TireVariantRow = {
@@ -68,8 +64,6 @@ export type CmsTireType = {
   sortOrder: number;
   showInMenu: boolean;
   imageUrl: string | null;
-  vehicleTypes: string[];
-  conditions: string[];
 };
 
 export type CmsTireModel = {
@@ -87,6 +81,7 @@ export type CmsTireModel = {
   advantages: unknown[];
   selectionAxles: string[];
   applicationTypes: string[];
+  documents: { url: string; title: string }[];
 };
 
 export type CmsTireVariant = {
@@ -143,7 +138,7 @@ export function lexicalToHtml(value: unknown): string {
   return text ? `<p>${escapeHtml(text)}</p>` : "";
 }
 
-export function mapTireType(row: TireTypeRow, selection: TireTypeSelection): CmsTireType {
+export function mapTireType(row: TireTypeRow): CmsTireType {
   return {
     name: row.name,
     slug: row.slug,
@@ -152,8 +147,6 @@ export function mapTireType(row: TireTypeRow, selection: TireTypeSelection): Cms
     sortOrder: toFiniteNumber(row.sort_order) ?? 0,
     showInMenu: row.show_in_menu,
     imageUrl: normalizeImageUrl(row.image_url),
-    vehicleTypes: selection.vehicleTypes,
-    conditions: selection.conditions,
   };
 }
 
@@ -175,6 +168,7 @@ export function mapTireModel(input: TireModelInput): CmsTireModel {
     advantages: input.advantages,
     selectionAxles: input.selectionAxles ?? [],
     applicationTypes: input.applicationTypes ?? [],
+    documents: input.documents ?? [],
   };
 }
 

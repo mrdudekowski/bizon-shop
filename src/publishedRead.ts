@@ -25,6 +25,7 @@ import {
   type CmsWheelType,
   type CmsWheelVariant,
 } from "./mapWheel";
+import { mapPublishedDocuments } from "./documentLinks";
 
 export type ReadDatabase = {
   query(sql: string, params?: unknown[]): Promise<Record<string, unknown>[]>;
@@ -49,22 +50,40 @@ const GALLERY_TABLES = {
   tire_models_rels: true,
   wheel_models_rels: true,
   products_rels: true,
+  products_variants_rels: true,
 } as const;
+
+async function readPublishedDocuments(
+  db: ReadDatabase,
+  entityType: "page" | "tire-model" | "wheel-model",
+  entityId: unknown,
+): Promise<{ url: string; title: string }[]> {
+  const rows = await db.query(
+    `SELECT media.url, links.title
+     FROM cms_document_links AS links
+     JOIN media ON media.id = links.media_id
+     WHERE links.entity_type = $1 AND links.entity_id = $2
+     ORDER BY links.sort_order, links.id`,
+    [entityType, String(entityId)],
+  );
+  return mapPublishedDocuments(rows);
+}
 
 async function readGalleryUrls(
   db: ReadDatabase,
   table: keyof typeof GALLERY_TABLES,
   parentId: unknown,
+  path = "gallery",
 ): Promise<string[]> {
   const rows = await db.query(
     `
       SELECT media.url AS image_url
       FROM ${table} AS rels
       JOIN media ON media.id = rels.media_id
-      WHERE rels.parent_id = $1 AND rels.path = 'gallery'
+      WHERE rels.parent_id = $1 AND rels.path = $2
       ORDER BY rels."order", rels.id
     `,
-    [parentId],
+    [parentId, path],
   );
   return rows.flatMap((row) => {
     const imageUrl = normalizeImageUrl(typeof row.image_url === "string" ? row.image_url : null);
@@ -81,25 +100,7 @@ export async function readTireTypes(db: ReadDatabase): Promise<CmsTireType[]> {
     ORDER BY tire_types.sort_order, tire_types.id
   `);
 
-  return Promise.all(
-    tireTypeRows.map(async (tireTypeRow) => {
-      const [vehicleTypeRows, conditionRows] = await Promise.all([
-        db.query(
-          "SELECT value FROM tire_types_selection_vehicle_types WHERE parent_id = $1",
-          [tireTypeRow.id],
-        ),
-        db.query(
-          "SELECT value FROM tire_types_selection_conditions WHERE parent_id = $1",
-          [tireTypeRow.id],
-        ),
-      ]);
-
-      return mapTireType(tireTypeRow as Parameters<typeof mapTireType>[0], {
-        vehicleTypes: readStringColumn(vehicleTypeRows, "value"),
-        conditions: readStringColumn(conditionRows, "value"),
-      });
-    }),
-  );
+  return tireTypeRows.map((tireTypeRow) => mapTireType(tireTypeRow as Parameters<typeof mapTireType>[0]));
 }
 
 export async function readTireModelsByType(
@@ -123,7 +124,7 @@ export async function readTireModelsByType(
 
   return Promise.all(
     modelRows.map(async (modelRow) => {
-      const [axleRows, featureRows, gallery, applicationRows] = await Promise.all([
+      const [axleRows, featureRows, gallery, applicationRows, documents] = await Promise.all([
         db.query("SELECT value FROM tire_models_positions WHERE parent_id = $1", [modelRow.id]),
         db.query(
           `
@@ -136,6 +137,7 @@ export async function readTireModelsByType(
         ),
         readGalleryUrls(db, "tire_models_rels", modelRow.id),
         db.query("SELECT value FROM tire_models_application_types WHERE parent_id = $1", [modelRow.id]),
+        readPublishedDocuments(db, "tire-model", modelRow.id),
       ]);
 
       return mapTireModel({
@@ -149,6 +151,7 @@ export async function readTireModelsByType(
         advantages: featureRows.map(({ key, title, description }) => ({ key, title, description })),
         selectionAxles: readStringColumn(axleRows, "value"),
         applicationTypes: readStringColumn(applicationRows, "value"),
+        documents,
       });
     }),
   );
@@ -178,7 +181,7 @@ export async function readTireModel(
     return null;
   }
 
-  const [axleRows, featureRows, gallery, applicationRows] = await Promise.all([
+  const [axleRows, featureRows, gallery, applicationRows, documents] = await Promise.all([
     db.query("SELECT value FROM tire_models_positions WHERE parent_id = $1", [modelRow.id]),
     db.query(
       `
@@ -191,6 +194,7 @@ export async function readTireModel(
     ),
     readGalleryUrls(db, "tire_models_rels", modelRow.id),
     db.query("SELECT value FROM tire_models_application_types WHERE parent_id = $1", [modelRow.id]),
+    readPublishedDocuments(db, "tire-model", modelRow.id),
   ]);
 
   return mapTireModel({
@@ -204,6 +208,7 @@ export async function readTireModel(
     advantages: featureRows.map(({ key, title, description }) => ({ key, title, description })),
     selectionAxles: readStringColumn(axleRows, "value"),
     applicationTypes: readStringColumn(applicationRows, "value"),
+    documents,
   });
 }
 
@@ -232,9 +237,6 @@ export async function readHomePatch(db: ReadDatabase): Promise<HomePatch | null>
       pages.home_hero_lead, pages.home_hero_primary_cta_label, pages.home_hero_primary_cta_href,
       pages.home_hero_secondary_cta_label, pages.home_hero_secondary_cta_href, pages.home_hero_metric_label,
       pages.home_hero_metric_text, pages.home_hero_image_alt, hero_media.url AS home_hero_image_url,
-      pages.home_selection_entry_eyebrow, pages.home_selection_entry_title, pages.home_selection_entry_lead,
-      pages.home_selection_entry_image_alt,
-      selection_media.url AS home_selection_entry_image_url,
       pages.home_shop_campaign_eyebrow, pages.home_shop_campaign_title, pages.home_shop_campaign_lead,
       pages.home_shop_campaign_image_alt, pages.home_shop_campaign_cta_label, pages.home_shop_campaign_cta_href,
       campaign_media.url AS home_shop_campaign_image_url,
@@ -249,7 +251,6 @@ export async function readHomePatch(db: ReadDatabase): Promise<HomePatch | null>
       pages.home_branding_after_image_alt, after_media.url AS home_branding_after_image_url
     FROM pages
     LEFT JOIN media AS hero_media ON hero_media.id = pages.home_hero_image_id
-    LEFT JOIN media AS selection_media ON selection_media.id = pages.home_selection_entry_image_id
     LEFT JOIN media AS campaign_media ON campaign_media.id = pages.home_shop_campaign_image_id
     LEFT JOIN media AS expertise_media ON expertise_media.id = pages.home_expertise_image_id
     LEFT JOIN media AS before_media ON before_media.id = pages.home_branding_before_image_id
@@ -369,7 +370,7 @@ export async function readStubPatch(db: ReadDatabase, key: string): Promise<Stub
   if (!STUB_PAGE_KEYS.has(key)) return null;
   const [row] = await db.query(
     `
-      SELECT pages.id, pages.editorial_heading_configured, pages.editorial_features_configured, pages.editorial_sections_configured, pages.editorial_notice_configured, pages.editorial_proof_configured, pages.editorial_cta_configured, pages.editorial_configured, pages.editorial_features_heading, pages.editorial_notice, pages.editorial_proof_title, pages.editorial_proof_text, pages.editorial_proof_image_alt, pages.editorial_cta_label, pages.editorial_cta_href, pages.editorial_secondary_label, pages.editorial_secondary_href, proof_media.url AS editorial_proof_image_url, pages.seo_seo_title, pages.seo_seo_description, pages.stub_hero_eyebrow, pages.stub_hero_title,
+      SELECT pages.id, pages.stub_hero_configured, pages.editorial_heading_configured, pages.editorial_features_configured, pages.editorial_sections_configured, pages.editorial_notice_configured, pages.editorial_proof_configured, pages.editorial_cta_configured, pages.editorial_configured, pages.editorial_features_heading, pages.editorial_notice, pages.editorial_proof_title, pages.editorial_proof_text, pages.editorial_proof_image_alt, pages.editorial_cta_label, pages.editorial_cta_href, pages.editorial_secondary_label, pages.editorial_secondary_href, proof_media.url AS editorial_proof_image_url, pages.seo_seo_title, pages.seo_seo_description, pages.stub_hero_eyebrow, pages.stub_hero_title,
         pages.stub_hero_lead, pages.stub_hero_image_alt, media.url AS stub_hero_image_url
       FROM pages
       LEFT JOIN media ON media.id = pages.stub_hero_image_id
@@ -381,7 +382,8 @@ export async function readStubPatch(db: ReadDatabase, key: string): Promise<Stub
   if (!row) return null;
   const features = row.editorial_configured ? await db.query(`SELECT id, title, text FROM pages_editorial_features WHERE _parent_id = $1 ORDER BY _order, id`, [row.id]) : [];
   const sections = row.editorial_configured ? await db.query(`SELECT id, heading, body FROM pages_editorial_sections WHERE _parent_id = $1 ORDER BY _order, id`, [row.id]) : [];
-  return mapStubPatch({ ...row, features, sections } as Parameters<typeof mapStubPatch>[0]);
+  const documents = await readPublishedDocuments(db, "page", key);
+  return mapStubPatch({ ...row, features, sections, documents } as unknown as Parameters<typeof mapStubPatch>[0]);
 }
 
 async function readWheelGallery(db: ReadDatabase, parentId: unknown) {
@@ -431,11 +433,15 @@ async function readWheelModelRows(db: ReadDatabase, typeSlug: string, modelSlug?
 }
 
 async function mapPublishedWheelModel(db: ReadDatabase, row: Record<string, unknown>) {
-  const gallery = await readWheelGallery(db, row.id);
+  const [gallery, documents] = await Promise.all([
+    readWheelGallery(db, row.id),
+    readPublishedDocuments(db, "wheel-model", row.id),
+  ]);
   return mapWheelModel(
     row as Parameters<typeof mapWheelModel>[0],
     typeof row.image_url === "string" ? row.image_url : null,
     gallery,
+    documents,
   );
 }
 
@@ -561,7 +567,12 @@ async function mapPublishedShopProduct(db: ReadDatabase, row: Record<string, unk
     row as Parameters<typeof mapShopProduct>[0],
     typeof row.image_url === "string" ? row.image_url : null,
     gallery,
-    variantRows.map((variant) => mapShopVariant(variant as Parameters<typeof mapShopVariant>[0])),
+    await Promise.all(variantRows.map(async (variant) =>
+      mapShopVariant(
+        variant as Parameters<typeof mapShopVariant>[0],
+        await readGalleryUrls(db, "products_variants_rels", variant.id, "image"),
+      ),
+    )),
   );
 }
 

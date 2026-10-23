@@ -15,6 +15,7 @@ describe("mapArticle", () => {
         },
         published_at: new Date("2026-09-25T06:52:00.000Z"),
         image_url: "/media/article.jpg",
+        featured_image_configured: true,
         show_in_menu: true,
         menu_order: 3,
       }),
@@ -25,6 +26,7 @@ describe("mapArticle", () => {
       publishedAt: "2026-09-25T06:52:00.000Z",
       content: "<p>Полный текст</p>",
       imageUrl: "/media/article.jpg",
+      imageConfigured: true,
       showInMenu: true,
       menuOrder: 3,
       taxonomy: [],
@@ -40,6 +42,7 @@ describe("mapArticle", () => {
         content: "Текст",
         published_at: null,
         image_url: "data:image/png;base64,AAAA",
+      featured_image_configured: false,
         show_in_menu: false,
         menu_order: 0,
       }),
@@ -47,6 +50,7 @@ describe("mapArticle", () => {
       publishedAt: "",
       content: "<p>Текст</p>",
       imageUrl: null,
+      imageConfigured: false,
     });
   });
 
@@ -58,6 +62,7 @@ describe("mapArticle", () => {
       content: "Текст",
       published_at: null,
       image_url: null,
+        featured_image_configured: false,
       show_in_menu: true,
       menu_order: "4" as unknown as number,
     });

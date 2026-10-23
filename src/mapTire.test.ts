@@ -11,9 +11,24 @@ describe("mapTireType", () => {
       sort_order: "2" as unknown as number,
       show_in_menu: true,
       image_url: null,
-    }, { vehicleTypes: [], conditions: [] });
+    });
 
     expect(type.sortOrder).toBe(2);
+  });
+
+  it("does not publish the retired direction-level selector metadata", () => {
+    const type = mapTireType({
+      name: "TBR",
+      slug: "tbr",
+      description: null,
+      short_description: null,
+      sort_order: 2,
+      show_in_menu: true,
+      image_url: null,
+    });
+
+    expect(type).not.toHaveProperty("vehicleTypes");
+    expect(type).not.toHaveProperty("conditions");
   });
 });
 

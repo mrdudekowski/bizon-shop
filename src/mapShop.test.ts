@@ -6,6 +6,7 @@ describe("mapShopCategory", () => {
     expect(
       mapShopCategory(
         {
+          id: 7,
           name: "Кемпинг и путешествия",
           slug: "outdoor",
           description: null,
@@ -19,6 +20,7 @@ describe("mapShopCategory", () => {
         ],
       ),
     ).toEqual({
+      id: "7",
       slug: "outdoor",
       name: "Кемпинг и путешествия",
       description: "",

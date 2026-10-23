@@ -7,6 +7,7 @@ type ArticleRow = {
   content: unknown;
   published_at: Date | null;
   image_url: string | null;
+  featured_image_configured: boolean;
   show_in_menu: boolean;
   menu_order: number;
   taxonomy?: string[];
@@ -19,6 +20,7 @@ export type CmsArticle = {
   publishedAt: string;
   content: string;
   imageUrl: string | null;
+  imageConfigured: boolean;
   showInMenu: boolean;
   menuOrder: number;
   taxonomy: string[];
@@ -32,6 +34,7 @@ export function mapArticle(row: ArticleRow): CmsArticle {
     publishedAt: row.published_at?.toISOString() ?? "",
     content: lexicalToHtml(row.content),
     imageUrl: normalizeImageUrl(row.image_url),
+    imageConfigured: row.featured_image_configured === true,
     showInMenu: row.show_in_menu,
     menuOrder: toFiniteNumber(row.menu_order) ?? 0,
     taxonomy: row.taxonomy ?? [],

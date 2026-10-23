@@ -8,6 +8,23 @@ type TransactionContext = {
 
 const transactionContext = new AsyncLocalStorage<TransactionContext>();
 
+export function serializeClientQueries(client: PoolClient): PoolClient {
+  let queue: Promise<unknown> = Promise.resolve();
+  const query = ((...args: Parameters<PoolClient["query"]>) => {
+    const next = queue.then(() => Reflect.apply(client.query, client, args));
+    queue = next.then(() => undefined, () => undefined);
+    return next;
+  }) as PoolClient["query"];
+
+  return new Proxy(client, {
+    get(target, property) {
+      if (property === "query") return query;
+      const value = Reflect.get(target, property, target) as unknown;
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
+}
+
 export function getTransactionClient(): PoolClient | undefined {
   return transactionContext.getStore()?.client;
 }
@@ -23,11 +40,12 @@ export async function withTransaction<T>(pool: Pool, work: (client: PoolClient) 
   if (existing) return work(existing);
 
   const client = await pool.connect();
-  const context: TransactionContext = { client, afterCommit: [] };
+  const transactionClient = serializeClientQueries(client);
+  const context: TransactionContext = { client: transactionClient, afterCommit: [] };
   try {
-    await client.query("BEGIN");
-    const result = await transactionContext.run(context, () => work(client));
-    await client.query("COMMIT");
+    await transactionClient.query("BEGIN");
+    const result = await transactionContext.run(context, () => work(transactionClient));
+    await transactionClient.query("COMMIT");
     for (const callback of context.afterCommit) {
       try {
         await callback();
@@ -37,7 +55,7 @@ export async function withTransaction<T>(pool: Pool, work: (client: PoolClient) 
     }
     return result;
   } catch (error) {
-    await client.query("ROLLBACK");
+    await transactionClient.query("ROLLBACK");
     throw error;
   } finally {
     client.release();

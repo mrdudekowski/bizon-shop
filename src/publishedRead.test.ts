@@ -10,6 +10,7 @@ import {
   readTireTypes,
   readTireVariants,
   readWheelModel,
+  readStubPatch,
 } from "./publishedRead";
 
 type QueryCall = { sql: string; params?: unknown[] };
@@ -29,10 +30,8 @@ function createRecordingDb(respond: (sql: string, params?: unknown[]) => Record<
 }
 
 describe("published catalog readers", () => {
-  it("reads only published tire types with their selection relations", async () => {
+  it("reads only published tire types without retired selector relations", async () => {
     const { db, calls } = createRecordingDb((sql) => {
-      if (sql.includes("FROM tire_types_selection_vehicle_types")) return [{ value: "truck" }];
-      if (sql.includes("FROM tire_types_selection_conditions")) return [{ value: "highway" }];
       return [
         {
           id: 1,
@@ -47,14 +46,16 @@ describe("published catalog readers", () => {
       ];
     });
 
-    await expect(readTireTypes(db)).resolves.toMatchObject([
-      { slug: "tbr", vehicleTypes: ["truck"], conditions: ["highway"] },
+    const types = await readTireTypes(db);
+    expect(types).toMatchObject([
+      { slug: "tbr", name: "TBR", imageUrl: "/media/tbr.jpg" },
     ]);
+    expect(types[0]).not.toHaveProperty("vehicleTypes");
+    expect(types[0]).not.toHaveProperty("conditions");
     expect(calls[0].sql).toContain("FROM tire_types");
     expect(calls[0].sql).toContain("LEFT JOIN media");
     expect(calls[0].sql).toContain("status = 'published'");
-    expect(calls[1].sql).toContain("parent_id");
-    expect(calls[2].sql).toContain("parent_id");
+    expect(calls).toHaveLength(1);
   });
 
   it("returns a published model with axles and ordered advantages", async () => {
@@ -65,6 +66,7 @@ describe("published catalog readers", () => {
       }
       if (sql.includes("tire_models_rels")) return [{ image_url: "/media/gallery.jpg" }];
       if (sql.includes("FROM tire_models_application_types")) return [{ value: "long_haul" }];
+      if (sql.includes("cms_document_links")) return [{ url: "/media/spec.pdf", title: "Спецификация" }];
       return [
         {
           id: 24,
@@ -88,6 +90,7 @@ describe("published catalog readers", () => {
       selectionAxles: ["drive"],
       advantages: [{ key: "handling" }],
       applicationTypes: ["long_haul"],
+      documents: [{ url: "/media/spec.pdf", title: "Спецификация" }],
     });
     expect(calls[0]).toMatchObject({ params: ["tbr", "dsr188"] });
     expect(calls[0].sql).toContain("FROM tire_models");
@@ -157,6 +160,37 @@ describe("published catalog readers", () => {
 });
 
 describe("published content readers", () => {
+  it("reads the CMS hero ownership flag so explicitly cleared copy stays empty", async () => {
+    const { db, calls } = createRecordingDb(() => [{
+      id: 41,
+      stub_hero_configured: true,
+      stub_hero_eyebrow: "",
+      stub_hero_title: "",
+      stub_hero_lead: "",
+      stub_hero_image_alt: "",
+      stub_hero_image_url: null,
+      seo_seo_title: null,
+      seo_seo_description: null,
+    }]);
+
+    await expect(readStubPatch(db, "about")).resolves.toMatchObject({
+      hero: { eyebrow: "", title: "", lead: "", imageUrl: null, imageAlt: "" },
+    });
+    expect(calls[0].sql).toContain("pages.stub_hero_configured");
+  });
+
+  it("returns ordered published documents for a legal page by its stable key", async () => {
+    const { db, calls } = createRecordingDb((sql) => {
+      if (sql.includes("cms_document_links")) return [{ url: "/media/privacy.pdf", title: "Политика PDF" }];
+      return [{ id: 41, seo_seo_title: "Политика", stub_hero_title: "Конфиденциальность" }];
+    });
+
+    await expect(readStubPatch(db, "privacy-policy")).resolves.toMatchObject({
+      documents: [{ url: "/media/privacy.pdf", title: "Политика PDF" }],
+    });
+    expect(calls[1].params).toEqual(["page", "privacy-policy"]);
+  });
+
   it("reads a published home patch and excludes drafts", async () => {
     const published = createRecordingDb(() => [
       {
@@ -171,11 +205,13 @@ describe("published content readers", () => {
         home_hero_secondary_cta_href: null,
         home_hero_metric_label: null,
         home_hero_metric_text: null,
+        home_selection_entry_title: "Старый подбор",
       },
     ]);
     const draft = createRecordingDb(() => []);
 
     await expect(readHomePatch(published.db)).resolves.toMatchObject({ seoTitle: "Bizon" });
+    await expect(readHomePatch(published.db)).resolves.not.toHaveProperty("selectionEntry");
     await expect(readHomePatch(draft.db)).resolves.toBeNull();
     expect(published.calls[0].sql).toContain("FROM pages");
     expect(published.calls[0].sql).toContain("key = 'home'");
@@ -183,6 +219,7 @@ describe("published content readers", () => {
     expect(published.calls[0].sql).toContain("home_shop_campaign_image_id");
     expect(published.calls[0].sql).toContain("home_directions_title");
     expect(published.calls[0].sql).toContain("home_expertise_title");
+    expect(published.calls[0].sql).not.toContain("home_selection_entry_");
   });
 
   it("reads published articles and returns null for an absent draft slug", async () => {
@@ -223,6 +260,7 @@ describe("published content readers", () => {
           { image_url: "data:image/png;base64,abc", image_alt: "skip" },
         ];
       }
+      if (sql.includes("cms_document_links")) return [{ url: "/media/wheel-spec.pdf", title: "Паспорт диска" }];
       return [
         {
           id: 3,
@@ -244,9 +282,11 @@ describe("published content readers", () => {
       slug: "forged-1",
       descriptionLong: "<p>Прочный</p>",
       gallery: [{ url: "/media/wheel.jpg", alt: "Диск", label: "Диск" }],
+      documents: [{ url: "/media/wheel-spec.pdf", title: "Паспорт диска" }],
     });
     expect(calls[0].sql).toContain("wheel_models.status = 'published'");
     expect(calls[0].params).toEqual(["forged", "forged-1"]);
+    expect(calls.some((call) => call.sql.includes("cms_document_links"))).toBe(true);
   });
 
   it("reads a published shop product with html description and numeric variant price", async () => {
@@ -281,6 +321,34 @@ describe("published content readers", () => {
     });
     expect(calls[0].sql).toContain("products.status = 'published'");
     expect(calls[0].params).toEqual(["valve"]);
+  });
+
+  it("publishes the selected variant image to the public color gallery", async () => {
+    const { db } = createRecordingDb((sql) => {
+      if (sql.includes("FROM products_variants WHERE")) {
+        return [{ id: "sku-red", sku: "RED-1", color: "Красный", size: "M", price: "1200", old_price: "1400", price_on_request: false, available: true }];
+      }
+      if (sql.includes("products_variants_rels")) return [{ image_url: "https://cdn.example/red.jpg" }];
+      if (sql.includes("products_rels")) return [];
+      return [{
+        id: 8,
+        name: "Чехол",
+        slug: "case",
+        short_description: "",
+        full_description: "Текст",
+        price: "1200",
+        old_price: "1500",
+        price_on_request: false,
+        available: true,
+        category_slug: "accessories",
+        image_url: null,
+      }];
+    });
+
+    await expect(readShopProductBySlug(db, "case")).resolves.toMatchObject({
+      oldPrice: 1500,
+      variants: [{ id: "sku-red", color: "Красный", oldPrice: 1400, images: ["https://cdn.example/red.jpg"] }],
+    });
   });
 
   it("reads shop-home wheels intro, order steps and vehicle shell", async () => {

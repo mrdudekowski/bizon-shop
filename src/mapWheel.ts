@@ -58,6 +58,7 @@ export type CmsWheelModel = {
   gallery: CmsWheelGalleryImage[];
   showInMenu: boolean;
   menuOrder: number;
+  documents: { url: string; title: string }[];
 };
 
 export type CmsWheelVariant = {
@@ -145,6 +146,7 @@ export function mapWheelModel(
   row: WheelModelRow,
   imageUrl: string | null | undefined,
   gallery: CmsWheelGalleryImage[],
+  documents: { url: string; title: string }[] = [],
 ): CmsWheelModel {
   return {
     id: String(row.id),
@@ -163,6 +165,7 @@ export function mapWheelModel(
     descriptionLong: lexicalToHtml(row.full_description),
     imageUrl: normalizeImageUrl(imageUrl),
     gallery,
+    documents,
     showInMenu: row.show_in_menu === true,
     menuOrder: sortOrder(row.menu_order),
   };

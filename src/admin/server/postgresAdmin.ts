@@ -3,6 +3,8 @@ import { afterTransactionCommit, getTransactionClient, withTransaction } from ".
 
 import { AdminClientError } from "../client/errors";
 import { mergeLegacyPageOverlay } from "./pageOverlay";
+import { mediaUsageSql, publicDocumentPageKeys, toMediaUsageRecord } from "./mediaUsage";
+import { detachStoredMediaReference } from "../../storage/mediaReferences";
 import type { AdminClient } from "../client/adminClient";
 import { hashPassword, parseCapabilities, resetUserPassword as resetAccountPassword, storedRole, type AuthenticatedAccount } from "./adminAuth";
 import {
@@ -61,6 +63,7 @@ import { getObjectStore } from "../../storage/objectStore";
 import type { ObjectStore } from "../../storage/objectStore";
 import { assertMediaUploadReady, MediaCleanupRequired, MediaRejected, uploadAndPersistMedia } from "../../storage/putMedia";
 import { hasMediaReference, unlinkStoredMediaReferences, removePendingMediaReplacement } from "../../storage/mediaReferences";
+import { mapAdminDocumentLinks } from "../../documentLinks";
 import { retryQueuedMediaCleanup } from "../../storage/mediaCleanup";
 import { collectPendingMediaReplacements } from "../domain/mediaReplacement";
 import { shopHomeChildRows, shopHomeParentValues } from "../shopHomeWrite";
@@ -138,6 +141,46 @@ function placement(assetId: unknown, alt = ""): ImagePlacement | undefined {
 async function query(text: string, params: unknown[] = [], client?: PoolClient): Promise<Row[]> {
   const result = await (client ?? getTransactionClient() ?? getPool()).query(text, params);
   return result.rows as Row[];
+}
+
+async function readDocumentLinks(entityType: "page" | "tire-model" | "wheel-model", entityId: string): Promise<DocumentLink[]> {
+  const rows = await query(
+    "SELECT media_id, title FROM cms_document_links WHERE entity_type = $1 AND entity_id = $2 ORDER BY sort_order, id",
+    [entityType, entityId],
+  );
+  return mapAdminDocumentLinks(rows);
+}
+
+export async function replaceDocumentLinks(
+  entityType: "page" | "tire-model" | "wheel-model",
+  entityId: string,
+  documents: DocumentLink[],
+  client?: PoolClient,
+): Promise<void> {
+  const runner = client ?? getTransactionClient() ?? getPool();
+  const mediaIds = documents.map((document) => {
+    const mediaId = numericId(document.assetId);
+    if (mediaId == null || !Number.isSafeInteger(mediaId) || mediaId <= 0 || mediaId > 2147483647) {
+      throw new AdminClientError("publish_blocked");
+    }
+    return mediaId;
+  });
+  if (new Set(mediaIds).size !== mediaIds.length) throw new AdminClientError("publish_blocked");
+  if (mediaIds.length > 0) {
+    const { rows } = await runner.query(
+      "SELECT id, mime_type FROM media WHERE id = ANY($1::int[]) FOR SHARE",
+      [mediaIds],
+    );
+    const pdfIds = new Set(rows.filter((row) => row.mime_type === "application/pdf").map((row) => Number(row.id)));
+    if (mediaIds.some((mediaId) => !pdfIds.has(mediaId))) throw new AdminClientError("publish_blocked");
+  }
+  await runner.query("DELETE FROM cms_document_links WHERE entity_type = $1 AND entity_id = $2", [entityType, entityId]);
+  for (const [sortOrder, document] of documents.entries()) {
+    await runner.query(
+      "INSERT INTO cms_document_links (entity_type, entity_id, media_id, title, sort_order) VALUES ($1, $2, $3, $4, $5)",
+      [entityType, entityId, mediaIds[sortOrder], document.title, sortOrder],
+    );
+  }
 }
 
 export async function retryPendingMediaCleanup(): Promise<void> {
@@ -385,7 +428,7 @@ function mapSize(row: Row): TireSizeDraft {
 
 async function mapTireModel(row: Row): Promise<TireModelDraft> {
   const id = Number(row.id);
-  const [sizes, features, gallery, positions, applications, vehicles, conditions, axles] = await Promise.all([
+  const [sizes, features, gallery, positions, applications, axles, documents] = await Promise.all([
     query("SELECT * FROM tire_variants WHERE tire_model_id = $1 ORDER BY sort_order, id", [id]),
     query("SELECT * FROM tire_models_features WHERE _parent_id = $1 ORDER BY _order, id", [id]),
     query(
@@ -394,9 +437,8 @@ async function mapTireModel(row: Row): Promise<TireModelDraft> {
     ),
     valuesOf("tire_models_positions", "parent_id", id),
     valuesOf("tire_models_application_types", "parent_id", id),
-    valuesOf("tire_models_selection_vehicle_types", "parent_id", id),
-    valuesOf("tire_models_selection_conditions", "parent_id", id),
     valuesOf("tire_models_selection_axles", "parent_id", id),
+    readDocumentLinks("tire-model", str(row.id)),
   ]);
   const axleValues = (axles.length > 0 ? axles : positions).filter(
     (value): value is CatalogAxle => value === "steer" || value === "drive" || value === "trailer",
@@ -415,7 +457,7 @@ async function mapTireModel(row: Row): Promise<TireModelDraft> {
         title: str(feature.title),
         description: str(feature.description),
       })),
-    documents: [] as DocumentLink[],
+    documents,
     sizes: sizes.map(mapSize),
     brand: str(row.series),
     descriptionShort: str(row.short_description),
@@ -431,8 +473,6 @@ async function mapTireModel(row: Row): Promise<TireModelDraft> {
       description: str(feature.description),
     })),
     applicationTypes: applications,
-    selectionVehicleTypes: vehicles as TireModelDraft["selectionVehicleTypes"],
-    selectionConditions: conditions as TireModelDraft["selectionConditions"],
     selectionAxles: axleValues,
     showInMenu: Boolean(row.show_in_menu),
     menuOrder: num(row.menu_order) ?? 0,
@@ -440,11 +480,6 @@ async function mapTireModel(row: Row): Promise<TireModelDraft> {
 }
 
 async function mapDirection(row: Row): Promise<TireDirectionDraft> {
-  const id = Number(row.id);
-  const [vehicles, conditions] = await Promise.all([
-    valuesOf("tire_types_selection_vehicle_types", "parent_id", id),
-    valuesOf("tire_types_selection_conditions", "parent_id", id),
-  ]);
   return {
     id: str(row.id),
     name: str(row.name),
@@ -454,16 +489,15 @@ async function mapDirection(row: Row): Promise<TireDirectionDraft> {
     sortOrder: num(row.sort_order) ?? 0,
     showInMenu: Boolean(row.show_in_menu),
     mainImage: placement(row.cover_image_id),
-    selectionVehicleTypes: vehicles as TireDirectionDraft["selectionVehicleTypes"],
-    selectionConditions: conditions as TireDirectionDraft["selectionConditions"],
   };
 }
 
 async function mapWheelModel(row: Row): Promise<WheelModelDraft> {
   const id = Number(row.id);
-  const [variants, gallery] = await Promise.all([
+  const [variants, gallery, documents] = await Promise.all([
     query("SELECT * FROM wheel_variants WHERE wheel_model_id = $1 ORDER BY sort_order, id", [id]),
     query("SELECT media_id FROM wheel_models_rels WHERE parent_id = $1 AND path = 'gallery' ORDER BY \"order\", id", [id]),
+    readDocumentLinks("wheel-model", str(row.id)),
   ]);
   return {
     id: str(row.id),
@@ -479,17 +513,29 @@ async function mapWheelModel(row: Row): Promise<WheelModelDraft> {
     descriptionLong: plainText(row.full_description),
     mainImage: placement(row.main_image_id),
     gallery: gallery.map((item) => placement(item.media_id)!).filter(Boolean),
-    documents: [],
+    documents,
     showInMenu: Boolean(row.show_in_menu),
     menuOrder: num(row.menu_order) ?? 0,
     variants: variants.map(
       (variant): WheelVariantDraft => ({
         id: str(variant.id),
         sizeLabel: str(variant.size_label),
+        sku: str(variant.sku),
+        diameter: num(variant.diameter),
+        width: num(variant.width),
+        boltHoles: num(variant.bolt_holes),
         pcd: str(variant.pcd),
+        pcdMm: num(variant.pcd_mm),
         offsetET: num(variant.offset_e_t),
         centerBore: num(variant.center_bore),
+        loadRating: str(variant.load_rating),
+        weight: num(variant.weight),
         color: str(variant.color),
+        finish: str(variant.finish),
+        fastenerType: str(variant.fastener_type),
+        fastenerMaterial: str(variant.fastener_material),
+        sourceSpecification: str(variant.source_specification),
+        compatibleTireSizes: str(variant.compatible_tire_sizes),
         price: num(variant.price),
         priceOnRequest: Boolean(variant.price_on_request),
         available: variant.available !== false,
@@ -504,6 +550,7 @@ function mapWheelType(row: Row): WheelTypeDraft {
     name: str(row.name),
     slug: str(row.slug),
     description: str(row.description),
+    shortDescription: str(row.short_description),
     mainImage: placement(row.cover_image_id),
     sortOrder: num(row.sort_order) ?? 0,
     showInMenu: false,
@@ -515,6 +562,25 @@ async function mapProduct(row: Row): Promise<ShopProductDraft> {
     query("SELECT * FROM products_variants WHERE _parent_id = $1 ORDER BY _order, id", [row.id]),
     query(`SELECT media_id FROM products_rels WHERE parent_id = $1 AND path = 'gallery' ORDER BY "order", id`, [row.id]),
   ]);
+  const variantImages = variants.length === 0
+    ? []
+    : await query(
+      `SELECT parent_id, media_id, alt, focal_x, focal_y, crop_x, crop_y, crop_width, crop_height FROM products_variants_rels
+       WHERE parent_id = ANY($1::varchar[]) AND path = 'image' ORDER BY "order", id`,
+      [variants.map((variant) => str(variant.id))],
+    );
+  const imageByVariant = new Map(variantImages.map((image) => [str(image.parent_id), image.media_id == null ? undefined : ({
+    assetId: str(image.media_id),
+    alt: str(image.alt),
+    focalX: num(image.focal_x) ?? 0.5,
+    focalY: num(image.focal_y) ?? 0.5,
+    crop: {
+      x: num(image.crop_x) ?? 0,
+      y: num(image.crop_y) ?? 0,
+      width: num(image.crop_width) ?? 1,
+      height: num(image.crop_height) ?? 1,
+    },
+  })]));
   return {
     id: str(row.id),
     name: str(row.name),
@@ -524,6 +590,7 @@ async function mapProduct(row: Row): Promise<ShopProductDraft> {
     descriptionShort: str(row.short_description),
     descriptionLong: plainText(row.full_description),
     price: num(row.price),
+    oldPrice: num(row.old_price),
     priceOnRequest: Boolean(row.price_on_request),
     mainImage: placement(row.main_image_id),
     gallery: gallery.map((item) => placement(item.media_id)!).filter(Boolean),
@@ -532,10 +599,13 @@ async function mapProduct(row: Row): Promise<ShopProductDraft> {
         id: str(variant.id),
         color: str(variant.color),
         size: str(variant.size),
+        configuration: str(variant.configuration),
         sku: str(variant.sku),
         price: num(variant.price),
+        oldPrice: num(variant.old_price),
         priceOnRequest: Boolean(variant.price_on_request),
         available: variant.available !== false,
+        ...(imageByVariant.get(str(variant.id)) ? { image: imageByVariant.get(str(variant.id)) } : {}),
       }),
     ),
   };
@@ -591,7 +661,8 @@ function mapArticle(row: Row): ArticleDraft {
     slug: str(row.slug),
     excerpt: str(row.excerpt),
     body: plainText(row.content),
-    image: placement(row.featured_image_id),
+    image: placement(row.featured_image_id) ?? null,
+    imageConfigured: row.featured_image_configured === true,
     gallery: [],
     showInMenu: Boolean(row.show_in_menu),
     menuOrder: num(row.menu_order) ?? 0,
@@ -620,10 +691,6 @@ async function mapPage(row: Row): Promise<PageDraft> {
         metricLabel: str(row.home_hero_metric_label),
         metricText: str(row.home_hero_metric_text),
       },
-      selectionEntry: {
-        ...section(row.home_selection_entry_eyebrow, row.home_selection_entry_title, row.home_selection_entry_lead),
-        image: placement(row.home_selection_entry_image_id, str(row.home_selection_entry_image_alt)),
-      },
       directions: section(row.home_directions_eyebrow, row.home_directions_title, row.home_directions_lead),
       expertise: {
         ...section(row.home_expertise_eyebrow, row.home_expertise_title, row.home_expertise_lead),
@@ -642,11 +709,6 @@ async function mapPage(row: Row): Promise<PageDraft> {
         ...section(row.home_shop_campaign_eyebrow, row.home_shop_campaign_title, row.home_shop_campaign_lead),
         image: placement(row.home_shop_campaign_image_id, str(row.home_shop_campaign_image_alt)),
         cta: { label: str(row.home_shop_campaign_cta_label), href: str(row.home_shop_campaign_cta_href) },
-      },
-      resume: {
-        ...section(row.home_resume_eyebrow, row.home_resume_title, row.home_resume_lead),
-        primaryCta: { label: str(row.home_resume_primary_cta_label), href: str(row.home_resume_primary_cta_href) },
-        secondaryCta: { label: str(row.home_resume_secondary_cta_label), href: str(row.home_resume_secondary_cta_href) },
       },
     };
   }
@@ -719,7 +781,7 @@ async function mapPage(row: Row): Promise<PageDraft> {
       },
     };
   }
-  const editorial = row.editorial_configured && ["about", "warranty", "branding", "become-a-supplier", "shop-delivery-returns"].includes(key) ? {
+  const editorial = row.editorial_configured && ["about", "warranty", "branding", "become-a-supplier", "shop-delivery-returns", "privacy-policy"].includes(key) ? {
     ...(row.editorial_heading_configured ? { featuresHeading: str(row.editorial_features_heading) } : {}),
     ...(row.editorial_features_configured ? { features: (await query("SELECT id, title, text FROM pages_editorial_features WHERE _parent_id=$1 ORDER BY _order, id", [row.id])).map((item) => ({ id: str(item.id), title: str(item.title), text: str(item.text) })) } : {}),
     ...(row.editorial_sections_configured ? { sections: (await query("SELECT id, heading, body FROM pages_editorial_sections WHERE _parent_id=$1 ORDER BY _order, id", [row.id])).map((item) => ({ id: str(item.id), heading: str(item.heading), body: str(item.body) })) } : {}),
@@ -736,7 +798,7 @@ async function mapPage(row: Row): Promise<PageDraft> {
       ...section(row.stub_hero_eyebrow, row.stub_hero_title, row.stub_hero_lead),
       image: placement(row.stub_hero_image_id, str(row.stub_hero_image_alt)),
     },
-    documents: [],
+    documents: await readDocumentLinks("page", key),
   };
 }
 
@@ -899,6 +961,7 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
     );
   }
   await replaceGallery("tire_models_rels", id, draft.gallery, client);
+  await replaceDocumentLinks("tire-model", str(draft.id), draft.documents ?? [], client);
   await replaceValues(client, "tire_models_positions", "parent_id", id, draft.selectionAxles);
   await replaceValues(client, "tire_models_application_types", "parent_id", id, draft.applicationTypes ?? []);
 }
@@ -1056,8 +1119,6 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
             draft.mainImage ? Number(draft.mainImage.assetId) : null,
           ],
         );
-        await replaceValues(client, "tire_types_selection_vehicle_types", "parent_id", Number(id), draft.selectionVehicleTypes);
-        await replaceValues(client, "tire_types_selection_conditions", "parent_id", Number(id), draft.selectionConditions);
         if (!transactionClient) await client.query("COMMIT");
       } catch (error) {
         if (!transactionClient) await client.query("ROLLBACK");
@@ -1175,6 +1236,12 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       requirePermission("delete");
       const row = await requireRow("tire_models", id);
       if (str(row.status) === "published") throw new AdminClientError("publish_blocked");
+      await clearOverlay("tire-models", id);
+      await releaseLocks("tire-model", id);
+      await query("DELETE FROM cms_document_links WHERE entity_type = 'tire-model' AND entity_id = $1", [str(id)]);
+      // The relation uses ON DELETE SET NULL, but tire_variants.tire_model_id is NOT NULL.
+      // Remove dependent variants before deleting their model.
+      await query("DELETE FROM tire_variants WHERE tire_model_id = $1", [Number(id)]);
       await query("DELETE FROM tire_models WHERE id = $1", [Number(id)]);
     },
     async createAsset(file) {
@@ -1351,62 +1418,78 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const drafts = await query("SELECT collection, doc_id, draft FROM cms_drafts");
       const changeSets = await query("SELECT id, pack FROM cms_change_sets");
       const mediaIds = rows.map((row) => Number(row.id)).filter(Number.isFinite);
-      const refs = mediaIds.length === 0 ? [] : await query(
-        `WITH usages(media_id, label) AS (
-           SELECT cover_image_id, 'Тип шин: ' || name FROM tire_types WHERE cover_image_id = ANY($1::int[])
-           UNION ALL SELECT main_image_id, 'Шина: ' || name FROM tire_models WHERE main_image_id = ANY($1::int[])
-           UNION ALL SELECT cover_image_id, 'Тип дисков: ' || name FROM wheel_types WHERE cover_image_id = ANY($1::int[])
-           UNION ALL SELECT main_image_id, 'Модель дисков: ' || name FROM wheel_models WHERE main_image_id = ANY($1::int[])
-           UNION ALL SELECT cover_image_id, 'Категория Shop: ' || name FROM shop_categories WHERE cover_image_id = ANY($1::int[])
-           UNION ALL SELECT main_image_id, 'Товар Shop: ' || name FROM products WHERE main_image_id = ANY($1::int[])
-           UNION ALL SELECT featured_image_id, 'Материал Tire IQ: ' || title FROM tire_iq_articles WHERE featured_image_id = ANY($1::int[])
-           UNION ALL SELECT s.image_id, 'Карусель категории Shop: ' || c.name FROM shop_category_carousel AS s JOIN shop_categories AS c ON c.id = s.shop_category_id WHERE s.image_id = ANY($1::int[])
-           UNION ALL SELECT home_hero_image_id, 'Главный экран сайта: ' || "key" FROM pages WHERE home_hero_image_id = ANY($1::int[])
-           UNION ALL SELECT home_selection_entry_image_id, 'Блок выбора шин на главной: ' || "key" FROM pages WHERE home_selection_entry_image_id = ANY($1::int[])
-           UNION ALL SELECT home_shop_campaign_image_id, 'Рекламный блок Shop на главной: ' || "key" FROM pages WHERE home_shop_campaign_image_id = ANY($1::int[])
-           UNION ALL SELECT home_expertise_image_id, 'Блок экспертизы на главной: ' || "key" FROM pages WHERE home_expertise_image_id = ANY($1::int[])
-           UNION ALL SELECT home_branding_before_image_id, 'Брендинг до: ' || "key" FROM pages WHERE home_branding_before_image_id = ANY($1::int[])
-           UNION ALL SELECT home_branding_after_image_id, 'Брендинг после: ' || "key" FROM pages WHERE home_branding_after_image_id = ANY($1::int[])
-           UNION ALL SELECT shop_hero_image_id, 'Обложка страницы Shop: ' || "key" FROM pages WHERE shop_hero_image_id = ANY($1::int[])
-           UNION ALL SELECT stub_hero_image_id, 'Обложка страницы-заглушки: ' || "key" FROM pages WHERE stub_hero_image_id = ANY($1::int[])
-           UNION ALL SELECT editorial_proof_image_id, 'Изображение подтверждения на странице: ' || "key" FROM pages WHERE editorial_proof_image_id = ANY($1::int[])
-           UNION ALL SELECT desktop_image_id, 'Изображение карусели Shop на странице' FROM pages_shop_category_carousel WHERE desktop_image_id = ANY($1::int[])
-           UNION ALL SELECT mobile_image_id, 'Изображение карусели Shop на странице' FROM pages_shop_category_carousel WHERE mobile_image_id = ANY($1::int[])
-           UNION ALL SELECT image_id, 'Изображение слайда транспорта на странице' FROM pages_shop_vehicles_slides WHERE image_id = ANY($1::int[])
-           UNION ALL SELECT icon_media_id, 'Элемент каталога Shop' FROM pages_shop_catalog_tiles WHERE icon_media_id = ANY($1::int[])
-           UNION ALL SELECT image_media_id, 'Элемент каталога Shop' FROM pages_shop_catalog_tiles WHERE image_media_id = ANY($1::int[])
-           UNION ALL SELECT carousel_image_media_id, 'Элемент каталога Shop' FROM pages_shop_catalog_tiles WHERE carousel_image_media_id = ANY($1::int[])
-           UNION ALL SELECT media_id, 'Галерея шины: ' || tire_models.name FROM tire_models_rels JOIN tire_models ON tire_models.id = tire_models_rels.parent_id WHERE media_id = ANY($1::int[])
-           UNION ALL SELECT media_id, 'Галерея дисков: ' || wheel_models.name FROM wheel_models_rels JOIN wheel_models ON wheel_models.id = wheel_models_rels.parent_id WHERE media_id = ANY($1::int[])
-           UNION ALL SELECT media_id, 'Галерея товара Shop: ' || products.name FROM products_rels JOIN products ON products.id = products_rels.parent_id WHERE media_id = ANY($1::int[])
-         ) SELECT media_id, label FROM usages`,
-        [mediaIds],
-      );
-      const usagesByMedia = new Map<string, string[]>();
+      const refs = mediaIds.length === 0 ? [] : await query(mediaUsageSql, [mediaIds, publicDocumentPageKeys]);
+      const usagesByMedia = new Map<string, ReturnType<typeof toMediaUsageRecord>[]>();
       for (const ref of refs) {
-        const id = str(ref.media_id);
-        usagesByMedia.set(id, [...(usagesByMedia.get(id) ?? []), str(ref.label)]);
+        const usage = toMediaUsageRecord(ref as Parameters<typeof toMediaUsageRecord>[0]);
+        usagesByMedia.set(usage.mediaId, [...(usagesByMedia.get(usage.mediaId) ?? []), usage]);
       }
       const result = [];
       for (const row of rows) {
         const id = str(row.id);
-        const usedBy: string[] = [...(usagesByMedia.get(id) ?? [])];
+        const usages = [...(usagesByMedia.get(id) ?? [])];
+        const usedBy: string[] = usages.map((usage) => `${usage.pageLabel} → ${usage.placementLabel}`);
         for (const draft of drafts) {
-          if (hasMediaReference(draft.draft, id)) usedBy.push(`Черновик: ${str(draft.collection)} / ${str(draft.doc_id)}`);
+          if (hasMediaReference(draft.draft, id)) {
+            const label = `Черновик: ${str(draft.collection)} / ${str(draft.doc_id)}`;
+            usedBy.push(label);
+            usages.push({
+              id: `draft:${str(draft.collection)}:${str(draft.doc_id)}`,
+              mediaId: id,
+              topLevelKey: str(draft.collection),
+              topLevelLabel: str(draft.collection),
+              pageKey: str(draft.doc_id),
+              pageLabel: label,
+              placementKey: "draft.reference",
+              placementLabel: "Черновик",
+              state: "draft-unpublished",
+              reviewRecommended: false,
+              detachable: false,
+            });
+          }
         }
         for (const pack of changeSets) {
-          if (hasMediaReference(pack.pack, id)) usedBy.push(`Пакет изменений: ${str(pack.id)}`);
+          if (hasMediaReference(pack.pack, id)) {
+            const label = `Пакет изменений: ${str(pack.id)}`;
+            usedBy.push(label);
+            usages.push({
+              id: `change-set:${str(pack.id)}`,
+              mediaId: id,
+              topLevelKey: "change-sets",
+              topLevelLabel: "Пакеты изменений",
+              pageKey: str(pack.id),
+              pageLabel: label,
+              placementKey: "change-set.reference",
+              placementLabel: "Несохранённое изменение",
+              state: "draft-unpublished",
+              reviewRecommended: false,
+              detachable: false,
+            });
+          }
         }
         result.push({
           id,
           name: str(row.title || row.filename),
           mimeType: str(row.mime_type),
           dataUrl: str(row.url),
+          usages,
           usedBy: [...new Set(usedBy)],
           replacementPending: row.replacement_pending === true,
         });
       }
       return result;
+    },
+    async detachAssetUsage(id, usageId) {
+      requirePermission("delete");
+      const mediaId = numericId(id);
+      if (mediaId == null || !usageId) throw new AdminClientError("publish_blocked");
+      await query("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE");
+      await query("SELECT id FROM media WHERE id = $1 FOR UPDATE", [mediaId]);
+      const candidates = await query(mediaUsageSql, [[mediaId], publicDocumentPageKeys]);
+      const candidate = candidates.find((row) => str(row.usage_id) === usageId);
+      if (!candidate || candidate.detachable !== true || !candidate.source_key) throw new AdminClientError("conflict");
+      const detached = await detachStoredMediaReference(query, String(mediaId), str(candidate.source_key));
+      if (!detached) throw new AdminClientError("conflict");
     },
     async deleteAsset(id) {
       requirePermission("delete");
@@ -1510,8 +1593,8 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       if (wheelTypePublishBlockers(draft).length > 0) throw new AdminClientError("publish_blocked");
       await applyPendingMediaReplacements(draft);
       await query(
-        "UPDATE wheel_types SET name=$2, slug=$3, description=$4, sort_order=$5, cover_image_id=$6, status='published', updated_at=now() WHERE id=$1",
-        [Number(id), draft.name, draft.slug, draft.description, draft.sortOrder, draft.mainImage ? Number(draft.mainImage.assetId) : null],
+        "UPDATE wheel_types SET name=$2, slug=$3, description=$4, short_description=$5, sort_order=$6, cover_image_id=$7, status='published', updated_at=now() WHERE id=$1",
+        [Number(id), draft.name, draft.slug, draft.description, draft.shortDescription ?? "", draft.sortOrder, draft.mainImage ? Number(draft.mainImage.assetId) : null],
       );
       await clearOverlay("wheel-types", id);
       await releaseLocks("wheel-type", id);
@@ -1623,25 +1706,38 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           const variantId = numericId(variant.id);
           const values = [
             variant.sizeLabel,
+            variant.sku || null,
+            variant.diameter ?? null,
+            variant.width ?? null,
+            variant.boltHoles ?? null,
             variant.pcd,
+            variant.pcdMm ?? null,
             variant.offsetET ?? null,
             variant.centerBore ?? null,
+            variant.loadRating || null,
+            variant.weight ?? null,
             variant.color,
+            variant.finish || null,
+            variant.fastenerType || null,
+            variant.fastenerMaterial || null,
+            variant.sourceSpecification || null,
+            variant.compatibleTireSizes || null,
             variant.price ?? null,
             variant.priceOnRequest,
             variant.available,
           ];
+          const columns = `size_label, sku, diameter, width, bolt_holes, pcd, pcd_mm, offset_e_t, center_bore, load_rating, weight, color, finish, fastener_type, fastener_material, source_specification, compatible_tire_sizes, price, price_on_request, available`;
           if (variantId == null) {
             const inserted = await client.query(
-              `INSERT INTO wheel_variants (wheel_model_id, size_label, pcd, offset_e_t, center_bore, color, price, price_on_request, available, status)
-               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'published') RETURNING id`,
-              [Number(id), ...values],
+              `INSERT INTO wheel_variants (wheel_model_id, sort_order, ${columns}, status)
+               VALUES (${Array.from({ length: 22 }, (_, index) => `$${index + 1}`).join(",")}, 'published') RETURNING id`,
+              [Number(id), keptVariantIds.length, ...values],
             );
             keptVariantIds.push(Number(inserted.rows[0].id));
           } else {
             await client.query(
-              "UPDATE wheel_variants SET size_label=$2, pcd=$3, offset_e_t=$4, center_bore=$5, color=$6, price=$7, price_on_request=$8, available=$9, status='published', updated_at=now() WHERE id=$1",
-              [variantId, ...values],
+              `UPDATE wheel_variants SET sort_order=$2, size_label=$3, sku=$4, diameter=$5, width=$6, bolt_holes=$7, pcd=$8, pcd_mm=$9, offset_e_t=$10, center_bore=$11, load_rating=$12, weight=$13, color=$14, finish=$15, fastener_type=$16, fastener_material=$17, source_specification=$18, compatible_tire_sizes=$19, price=$20, price_on_request=$21, available=$22, status='published', updated_at=now() WHERE id=$1`,
+              [variantId, keptVariantIds.length, ...values],
             );
             keptVariantIds.push(variantId);
           }
@@ -1655,6 +1751,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           );
         }
         await replaceGallery("wheel_models_rels", Number(id), draft.gallery, client);
+        await replaceDocumentLinks("wheel-model", id, draft.documents ?? [], client);
         if (!transactionClient) await client.query("COMMIT");
       } catch (error) {
         if (!transactionClient) await client.query("ROLLBACK");
@@ -1675,6 +1772,12 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       requirePermission("delete");
       const row = await requireRow("wheel_models", id);
       if (str(row.status) === "published") throw new AdminClientError("publish_blocked");
+      await clearOverlay("wheel-models", id);
+      await releaseLocks("wheel-model", id);
+      await query("DELETE FROM cms_document_links WHERE entity_type = 'wheel-model' AND entity_id = $1", [str(id)]);
+      // The Payload relation uses ON DELETE SET NULL, but wheel_variants.wheel_model_id
+      // is NOT NULL. Remove the dependent variants before deleting their model.
+      await query("DELETE FROM wheel_variants WHERE wheel_model_id = $1", [Number(id)]);
       await query("DELETE FROM wheel_models WHERE id = $1", [Number(id)]);
     },
     async listShopCategories() {
@@ -1926,7 +2029,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         if (subcategories.length === 0) throw new AdminClientError("publish_blocked");
       }
       await query(
-        "UPDATE products SET name=$2, slug=$3, shop_category_id=$4, subcategory_id=$5, short_description=$6, full_description=$7::jsonb, price=$8, price_on_request=$9, main_image_id=$10, status='published', updated_at=now() WHERE id=$1",
+        "UPDATE products SET name=$2, slug=$3, shop_category_id=$4, subcategory_id=$5, short_description=$6, full_description=$7::jsonb, price=$8, old_price=$9, price_on_request=$10, main_image_id=$11, status='published', updated_at=now() WHERE id=$1",
         [
           Number(id),
           draft.name,
@@ -1936,6 +2039,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           draft.descriptionShort,
           JSON.stringify(lexical(draft.descriptionLong)),
           draft.price ?? null,
+          draft.oldPrice ?? null,
           draft.priceOnRequest,
           draft.mainImage ? Number(draft.mainImage.assetId) : null,
         ],
@@ -1943,9 +2047,9 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const keptVariantIds = draft.variants.map((variant) => variant.id);
       for (const [index, variant] of draft.variants.entries()) {
         await query(
-          `INSERT INTO products_variants (_order, _parent_id, id, sku, color, size, price, price_on_request, available)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-           ON CONFLICT (id) DO UPDATE SET _order=$1, sku=$4, color=$5, size=$6, price=$7, price_on_request=$8, available=$9`,
+          `INSERT INTO products_variants (_order, _parent_id, id, sku, color, size, configuration, price, old_price, price_on_request, available)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+           ON CONFLICT (id) DO UPDATE SET _order=$1, sku=$4, color=$5, size=$6, configuration=$7, price=$8, old_price=$9, price_on_request=$10, available=$11`,
           [
             index,
             Number(id),
@@ -1953,11 +2057,34 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
             variant.sku,
             variant.color,
             variant.size,
+            variant.configuration ?? "",
             variant.price ?? null,
+            variant.oldPrice ?? null,
             variant.priceOnRequest,
             variant.available,
           ],
         );
+        await query("DELETE FROM products_variants_rels WHERE parent_id = $1 AND path = 'image'", [variant.id]);
+        if (variant.image) {
+          const mediaId = numericId(variant.image.assetId);
+          if (mediaId == null) throw new AdminClientError("publish_blocked");
+          await query(
+            `INSERT INTO products_variants_rels
+              ("order", parent_id, path, media_id, alt, focal_x, focal_y, crop_x, crop_y, crop_width, crop_height)
+             VALUES (0, $1, 'image', $2, $3, $4, $5, $6, $7, $8, $9)`,
+            [
+              variant.id,
+              mediaId,
+              variant.image.alt,
+              variant.image.focalX,
+              variant.image.focalY,
+              variant.image.crop.x,
+              variant.image.crop.y,
+              variant.image.crop.width,
+              variant.image.crop.height,
+            ],
+          );
+        }
       }
       if (keptVariantIds.length === 0) {
         await query("DELETE FROM products_variants WHERE _parent_id = $1", [Number(id)]);
@@ -1981,6 +2108,8 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       requirePermission("delete");
       const row = await requireRow("products", id);
       if (str(row.status) === "published") throw new AdminClientError("publish_blocked");
+      await clearOverlay("shop-products", id);
+      await releaseLocks("shop-product", id);
       await query("DELETE FROM products WHERE id = $1", [Number(id)]);
     },
     async listPages() {
@@ -2111,8 +2240,8 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       await applyPendingMediaReplacements(draft);
       const rawId = id.slice("article-".length);
       await query(
-        "UPDATE tire_iq_articles SET title=$2, slug=$3, excerpt=$4, content=$5::jsonb, featured_image_id=$6, show_in_menu=$7, menu_order=$8, status='published', updated_at=now() WHERE id=$1",
-        [Number(rawId), draft.title, draft.slug, draft.excerpt, JSON.stringify(lexical(draft.body)), draft.image ? Number(draft.image.assetId) : null, draft.showInMenu, draft.menuOrder],
+        "UPDATE tire_iq_articles SET title=$2, slug=$3, excerpt=$4, content=$5::jsonb, featured_image_id=$6, featured_image_configured=$7, show_in_menu=$8, menu_order=$9, status='published', updated_at=now() WHERE id=$1",
+        [Number(rawId), draft.title, draft.slug, draft.excerpt, JSON.stringify(lexical(draft.body)), draft.image ? Number(draft.image.assetId) : null, draft.imageConfigured, draft.showInMenu, draft.menuOrder],
       );
       const allowedTaxonomy = new Set(["selection", "wear", "pressure", "load", "axles", "quarry", "construction", "tco", "diagnostics"]);
       const taxonomy = [...new Set(Array.isArray(draft.taxonomy) ? draft.taxonomy : [])]
@@ -2360,20 +2489,18 @@ async function writePage(draft: PageDraft) {
         home_hero_secondary_cta_label=$9, home_hero_secondary_cta_href=$10,
         home_hero_metric_label=$11, home_hero_metric_text=$12,
         home_hero_image_id=$13, home_hero_image_alt=$14,
-        home_selection_entry_eyebrow=$15, home_selection_entry_title=$16, home_selection_entry_lead=$17,
-        home_selection_entry_image_id=$18, home_selection_entry_image_alt=$19,
-        home_shop_campaign_eyebrow=$20, home_shop_campaign_title=$21, home_shop_campaign_lead=$22,
-        home_shop_campaign_image_id=$23, home_shop_campaign_image_alt=$24,
-        home_shop_campaign_cta_label=$25, home_shop_campaign_cta_href=$26,
-        home_directions_eyebrow=$27, home_directions_title=$28, home_directions_lead=$29,
-        home_expertise_eyebrow=$30, home_expertise_title=$31, home_expertise_lead=$32,
-        home_expertise_image_id=$33, home_expertise_image_alt=$34,
-        home_expertise_cta_label=$35, home_expertise_cta_href=$36,
-        home_branding_eyebrow=$37, home_branding_title=$38, home_branding_lead=$39,
-        home_branding_cta_label=$40, home_branding_cta_href=$41,
-        home_branding_before_caption=$42, home_branding_after_caption=$43,
-        home_branding_before_image_id=$44, home_branding_before_image_alt=$45,
-        home_branding_after_image_id=$46, home_branding_after_image_alt=$47,
+        home_shop_campaign_eyebrow=$15, home_shop_campaign_title=$16, home_shop_campaign_lead=$17,
+        home_shop_campaign_image_id=$18, home_shop_campaign_image_alt=$19,
+        home_shop_campaign_cta_label=$20, home_shop_campaign_cta_href=$21,
+        home_directions_eyebrow=$22, home_directions_title=$23, home_directions_lead=$24,
+        home_expertise_eyebrow=$25, home_expertise_title=$26, home_expertise_lead=$27,
+        home_expertise_image_id=$28, home_expertise_image_alt=$29,
+        home_expertise_cta_label=$30, home_expertise_cta_href=$31,
+        home_branding_eyebrow=$32, home_branding_title=$33, home_branding_lead=$34,
+        home_branding_cta_label=$35, home_branding_cta_href=$36,
+        home_branding_before_caption=$37, home_branding_after_caption=$38,
+        home_branding_before_image_id=$39, home_branding_before_image_alt=$40,
+        home_branding_after_image_id=$41, home_branding_after_image_alt=$42,
         status='published', updated_at=now()
        WHERE key='home'`,
       [
@@ -2391,11 +2518,6 @@ async function writePage(draft: PageDraft) {
         draft.hero.metricText,
         draft.hero.image ? Number(draft.hero.image.assetId) : null,
         draft.hero.image?.alt || null,
-        draft.selectionEntry.eyebrow,
-        draft.selectionEntry.title,
-        draft.selectionEntry.lead,
-        draft.selectionEntry.image ? Number(draft.selectionEntry.image.assetId) : null,
-        draft.selectionEntry.image?.alt || null,
         draft.shopCampaign.eyebrow,
         draft.shopCampaign.title,
         draft.shopCampaign.lead,
@@ -2478,17 +2600,17 @@ async function writePage(draft: PageDraft) {
     }
     return;
   }
-  if (["about", "warranty", "branding", "become-a-supplier", "shop-delivery-returns"].includes(draft.id) && [draft.featuresHeading, draft.features, draft.sections, draft.notice, draft.proof, draft.cta].some((value) => value !== undefined)) {
+  if (["about", "warranty", "branding", "become-a-supplier", "shop-delivery-returns", "privacy-policy"].includes(draft.id)) {
     const [parent] = await query("SELECT id FROM pages WHERE key=$1", [draft.id]);
     if (!parent) throw new AdminClientError("publish_blocked");
-    await query(`UPDATE pages SET editorial_configured=true, editorial_features_heading=$2, editorial_notice=$3, editorial_proof_title=$4, editorial_proof_text=$5, editorial_proof_image_id=$6, editorial_proof_image_alt=$7, editorial_cta_label=$8, editorial_cta_href=$9, editorial_secondary_label=$10, editorial_secondary_href=$11, editorial_heading_configured=$12, editorial_features_configured=$13, editorial_sections_configured=$14, editorial_notice_configured=$15, editorial_proof_configured=$16, editorial_cta_configured=$17 WHERE key=$1`, [draft.id, draft.featuresHeading ?? "", draft.notice?.body ?? "", draft.proof?.title ?? "", draft.proof?.text ?? "", draft.proof?.image ? Number(draft.proof.image.assetId) : null, draft.proof?.image?.alt ?? "", draft.cta?.label ?? "", draft.cta?.href ?? "", draft.cta?.secondaryLabel ?? "", draft.cta?.secondaryHref ?? "", draft.featuresHeading !== undefined, draft.features !== undefined, draft.sections !== undefined, draft.notice !== undefined, draft.proof !== undefined, draft.cta !== undefined]);
+    await query(`UPDATE pages SET editorial_configured=$18, editorial_features_heading=$2, editorial_notice=$3, editorial_proof_title=$4, editorial_proof_text=$5, editorial_proof_image_id=$6, editorial_proof_image_alt=$7, editorial_cta_label=$8, editorial_cta_href=$9, editorial_secondary_label=$10, editorial_secondary_href=$11, editorial_heading_configured=$12, editorial_features_configured=$13, editorial_sections_configured=$14, editorial_notice_configured=$15, editorial_proof_configured=$16, editorial_cta_configured=$17 WHERE key=$1`, [draft.id, draft.featuresHeading ?? "", draft.notice?.body ?? "", draft.proof?.title ?? "", draft.proof?.text ?? "", draft.proof?.image ? Number(draft.proof.image.assetId) : null, draft.proof?.image?.alt ?? "", draft.cta?.label ?? "", draft.cta?.href ?? "", draft.cta?.secondaryLabel ?? "", draft.cta?.secondaryHref ?? "", draft.featuresHeading !== undefined, draft.features !== undefined, draft.sections !== undefined, draft.notice !== undefined, draft.proof !== undefined, draft.cta !== undefined, [draft.featuresHeading, draft.features, draft.sections, draft.notice, draft.proof, draft.cta].some((value) => value !== undefined)]);
     await query("DELETE FROM pages_editorial_features WHERE _parent_id=$1", [parent.id]);
     for (const [index, feature] of (draft.features ?? []).entries()) await query("INSERT INTO pages_editorial_features (id, _parent_id, _order, title, text) VALUES ($1,$2,$3,$4,$5)", [feature.id, parent.id, index, feature.title, feature.text]);
     await query("DELETE FROM pages_editorial_sections WHERE _parent_id=$1", [parent.id]);
     for (const [index, item] of (draft.sections ?? []).entries()) await query("INSERT INTO pages_editorial_sections (id, _parent_id, _order, heading, body) VALUES ($1,$2,$3,$4,$5)", [item.id, parent.id, index, item.heading, item.body]);
   }
   await query(
-    `UPDATE pages SET seo_seo_title=$2, seo_seo_description=$3, stub_hero_eyebrow=$4, stub_hero_title=$5, stub_hero_lead=$6, stub_hero_image_id=$7, stub_hero_image_alt=$8, status='published', updated_at=now() WHERE key=$1`,
+    `UPDATE pages SET seo_seo_title=$2, seo_seo_description=$3, stub_hero_eyebrow=$4, stub_hero_title=$5, stub_hero_lead=$6, stub_hero_image_id=$7, stub_hero_image_alt=$8, stub_hero_configured=true, status='published', updated_at=now() WHERE key=$1`,
     [
       draft.id,
       draft.seoTitle,
@@ -2500,6 +2622,7 @@ async function writePage(draft: PageDraft) {
       draft.hero.image?.alt || null,
     ],
   );
+  if ("documents" in draft) await replaceDocumentLinks("page", draft.id, draft.documents ?? []);
 }
 
 export async function catalogPublishGaps(account: AuthenticatedAccount): Promise<string[]> {

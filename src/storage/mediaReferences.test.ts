@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { hasMediaReference, unlinkMediaReferences, unlinkStoredMediaReferences, removePendingMediaReplacement } from "./mediaReferences";
+import { detachStoredMediaReference, hasMediaReference, unlinkMediaReferences, unlinkStoredMediaReferences, removePendingMediaReplacement } from "./mediaReferences";
 
 describe("CMS media references", () => {
   it("finds nested string and numeric asset ids in drafts and change sets", () => {
@@ -26,6 +26,19 @@ describe("CMS media references", () => {
     expect(hasMediaReference(unlinkMediaReferences(draft, "42"), "42")).toBe(false);
   });
 
+  it("detaches only the selected scalar placement and guards against stale or forged selectors", async () => {
+    const calls: [string, unknown[]][] = [];
+    const query = async (sql: string, params: unknown[] = []) => {
+      calls.push([sql, params]);
+      return sql.includes("RETURNING id") ? [{ id: 12 }] : [];
+    };
+
+    await expect(detachStoredMediaReference(query, "42", "pages|home_hero_image_id|12")).resolves.toBe(true);
+    await expect(detachStoredMediaReference(query, "42", "pages|password_hash|12")).resolves.toBe(false);
+    await expect(detachStoredMediaReference(query, "42", "pages|home_hero_image_id|12|extra")).resolves.toBe(false);
+    expect(calls).toEqual([["UPDATE pages SET home_hero_image_id = NULL WHERE id = $2 AND home_hero_image_id = $1 RETURNING id", [42, 12]]]);
+  });
+
   it("clears relational references and rewrites matching drafts and change sets", async () => {
     const calls: [string, unknown[]][] = [];
     const query = async (sql: string, params: unknown[] = []) => {
@@ -43,6 +56,8 @@ describe("CMS media references", () => {
 
     expect(calls).toContainEqual(["UPDATE pages SET home_hero_image_id = NULL WHERE home_hero_image_id = $1", [42]]);
     expect(calls).toContainEqual(["DELETE FROM products_rels WHERE media_id = $1", [42]]);
+    expect(calls).toContainEqual(["DELETE FROM products_variants_rels WHERE media_id = $1", [42]]);
+    expect(calls).toContainEqual(["DELETE FROM cms_document_links WHERE media_id = $1", [42]]);
     expect(calls).toContainEqual(["UPDATE pages SET editorial_proof_image_id = NULL WHERE editorial_proof_image_id = $1", [42]]);
     expect(calls).toContainEqual([
       "UPDATE cms_drafts SET draft = $3::jsonb WHERE collection = $1 AND doc_id = $2",

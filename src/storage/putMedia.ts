@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import sharp from "sharp";
 import { buildPublicObjectUrl } from "./publicObjectUrl";
 import { isS3Configured, isS3PublicUrlConfigured } from "./env";
 import type { ObjectStore } from "./objectStore";
@@ -77,6 +78,25 @@ function detectedMime(body: Buffer): string | null {
   return null;
 }
 
+async function assertImageDecodes(body: Buffer, mimeType: string): Promise<void> {
+  if (!mimeType.startsWith("image/")) return;
+
+  try {
+    const image = sharp(body, { failOn: "warning" });
+    const metadata = await image.metadata();
+    const expectedFormat = mimeType === "image/jpeg" ? "jpeg" : mimeType.slice("image/".length);
+    if (metadata.format !== expectedFormat || !metadata.width || !metadata.height) {
+      throw new Error("image_format_mismatch");
+    }
+
+    // metadata() checks only the header. A small output forces the decoder to
+    // process the compressed image data without retaining a full-size copy.
+    await sharp(body, { failOn: "warning" }).resize(1, 1).toBuffer();
+  } catch (error) {
+    throw new MediaRejected("publish_blocked", { cause: error });
+  }
+}
+
 function normalizeDeclaredMime(mimeType: string): string {
   const declared = mimeType.split(";")[0].trim().toLowerCase();
   if (declared === "image/x-png") return "image/png";
@@ -116,6 +136,7 @@ export async function putMedia(
   if (!ALLOWED_MEDIA_MIME_TYPES.includes(mimeType as (typeof ALLOWED_MEDIA_MIME_TYPES)[number])) {
     throw new MediaRejected("publish_blocked");
   }
+  await assertImageDecodes(file.body, mimeType);
   const key = `bizon/media/${randomUUID()}${extensionFor(mimeType, file.name)}`;
   const url = buildPublicObjectUrl(key);
   if (!url) throw new MediaRejected("storage_unavailable");

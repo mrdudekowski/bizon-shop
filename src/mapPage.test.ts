@@ -1,25 +1,182 @@
 import { describe, expect, it } from "vitest";
-import { mapHomePatch, mapShopHomePatch } from "./mapPage";
+import { mapHomePatch, mapShopHomePatch, mapStubPatch } from "./mapPage";
+
+describe("mapStubPatch", () => {
+  it("keeps explicitly cleared hero fields empty after CMS takes ownership", () => {
+    expect(mapStubPatch({
+      stub_hero_configured: true,
+      stub_hero_eyebrow: "",
+      stub_hero_title: "",
+      stub_hero_lead: "",
+      stub_hero_image_url: null,
+      stub_hero_image_alt: "",
+      seo_seo_title: null,
+      seo_seo_description: null,
+    })).toEqual({
+      hero: { eyebrow: "", title: "", lead: "", imageUrl: null, imageAlt: "" },
+    });
+  });
+
+  it("preserves legacy defaults for a page not yet configured in CMS", () => {
+    expect(mapStubPatch({
+      stub_hero_configured: false,
+      stub_hero_eyebrow: null,
+      stub_hero_title: null,
+      stub_hero_lead: null,
+      stub_hero_image_url: null,
+      stub_hero_image_alt: null,
+      seo_seo_title: null,
+      seo_seo_description: null,
+    })).toEqual({ hero: {} });
+  });
+
+  it("preserves explicitly cleared SEO fields while legacy null stays absent", () => {
+    expect(mapStubPatch({
+      stub_hero_configured: true,
+      stub_hero_eyebrow: "",
+      stub_hero_title: "",
+      stub_hero_lead: "",
+      stub_hero_image_url: null,
+      stub_hero_image_alt: "",
+      seo_seo_title: "",
+      seo_seo_description: "",
+    })).toMatchObject({ seoTitle: "", seoDescription: "" });
+
+    expect(mapStubPatch({
+      stub_hero_configured: false,
+      stub_hero_eyebrow: null,
+      stub_hero_title: null,
+      stub_hero_lead: null,
+      stub_hero_image_url: null,
+      stub_hero_image_alt: null,
+      seo_seo_title: null,
+      seo_seo_description: null,
+    })).not.toHaveProperty("seoTitle");
+  });
+
+  it("preserves configured empty editorial lists and clear operations", () => {
+    expect(mapStubPatch({
+      editorial_configured: true,
+      editorial_heading_configured: true,
+      editorial_features_configured: true,
+      editorial_sections_configured: true,
+      editorial_notice_configured: true,
+      editorial_proof_configured: true,
+      editorial_cta_configured: true,
+      editorial_features_heading: "",
+      editorial_notice: "",
+      editorial_proof_title: "",
+      editorial_proof_text: "",
+      editorial_proof_image_url: null,
+      editorial_cta_label: "",
+      editorial_cta_href: "",
+      features: [],
+      sections: [],
+      seo_seo_title: null,
+      seo_seo_description: null,
+      stub_hero_eyebrow: null,
+      stub_hero_title: null,
+      stub_hero_lead: null,
+      stub_hero_image_alt: null,
+    })).toMatchObject({
+      featuresHeading: "",
+      features: [],
+      sections: [],
+      notice: null,
+      proof: null,
+      cta: null,
+    });
+  });
+});
 
 describe("mapHomePatch", () => {
-  it("omits empty home strings so the site keeps its defaults", () => {
+  it("preserves explicit empty branding copy and cleared comparison images", () => {
+    expect(mapHomePatch({
+      seo_seo_title: null,
+      seo_seo_description: null,
+      home_hero_eyebrow: null,
+      home_hero_title: null,
+      home_hero_lead: null,
+      home_hero_primary_cta_label: null,
+      home_hero_primary_cta_href: null,
+      home_hero_secondary_cta_label: null,
+      home_hero_secondary_cta_href: null,
+      home_hero_metric_label: null,
+      home_hero_metric_text: null,
+      home_branding_eyebrow: "",
+      home_branding_title: "",
+      home_branding_lead: "",
+      home_branding_cta_label: "",
+      home_branding_cta_href: "",
+      home_branding_before_caption: "",
+      home_branding_after_caption: "",
+      home_branding_before_image_url: null,
+      home_branding_before_image_alt: "",
+      home_branding_after_image_url: null,
+      home_branding_after_image_alt: "",
+    }).branding).toEqual({
+      eyebrow: "",
+      title: "",
+      lead: "",
+      cta: { label: "", href: "" },
+      beforeCaption: "",
+      afterCaption: "",
+      beforeImageUrl: null,
+      beforeImageAlt: "",
+      afterImageUrl: null,
+      afterImageAlt: "",
+    });
+  });
+  it("omits legacy NULL home strings so the site keeps its defaults", () => {
     expect(
       mapHomePatch({
-        seo_seo_title: "",
-        seo_seo_description: "",
-        home_hero_eyebrow: "",
-        home_hero_title: "",
-        home_hero_lead: "",
-        home_hero_primary_cta_label: "",
-        home_hero_primary_cta_href: "",
+        seo_seo_title: null,
+        seo_seo_description: null,
+        home_hero_eyebrow: null,
+        home_hero_title: null,
+        home_hero_lead: null,
+        home_hero_primary_cta_label: null,
+        home_hero_primary_cta_href: null,
         home_hero_secondary_cta_label: "Каталог",
-        home_hero_secondary_cta_href: "",
-        home_hero_metric_label: "",
-        home_hero_metric_text: "",
+        home_hero_secondary_cta_href: null,
+        home_hero_metric_label: null,
+        home_hero_metric_text: null,
       }),
     ).toEqual({
       hero: {
         secondaryCta: { label: "Каталог" },
+      },
+    });
+  });
+
+  it("preserves explicit empty values and an explicitly cleared hero image", () => {
+    expect(mapHomePatch({
+      seo_seo_title: "",
+      seo_seo_description: "",
+      home_hero_eyebrow: "",
+      home_hero_title: "",
+      home_hero_lead: "",
+      home_hero_primary_cta_label: "",
+      home_hero_primary_cta_href: "",
+      home_hero_secondary_cta_label: "",
+      home_hero_secondary_cta_href: "",
+      home_hero_metric_label: "",
+      home_hero_metric_text: "",
+      home_hero_image_url: null,
+      home_hero_image_alt: "",
+    })).toEqual({
+      seoTitle: "",
+      seoDescription: "",
+      hero: {
+        eyebrow: "",
+        title: "",
+        lead: "",
+        primaryCta: { label: "", href: "" },
+        secondaryCta: { label: "", href: "" },
+        metricLabel: "",
+        metricText: "",
+        imageUrl: null,
+        imageAlt: "",
       },
     });
   });
@@ -55,7 +212,7 @@ describe("mapHomePatch", () => {
     });
   });
 
-  it("maps a public hero image and drops data urls", () => {
+  it("maps a public hero image and rejects data urls without a fallback", () => {
     expect(
       mapHomePatch({
         seo_seo_title: "",
@@ -88,7 +245,7 @@ describe("mapHomePatch", () => {
         home_hero_metric_text: "",
         home_hero_image_url: "data:image/png;base64,abc",
       }).hero.imageUrl,
-    ).toBeUndefined();
+    ).toBeNull();
   });
 
   it("maps a public shop campaign image", () => {
@@ -111,6 +268,36 @@ describe("mapHomePatch", () => {
     ).toEqual({
       imageUrl: "https://s3.twcstorage.ru/bucket/bizon/media/uuid.png",
       imageAlt: "Магазин",
+    });
+  });
+
+  it("preserves empty Shop campaign fields and an explicitly cleared image", () => {
+    expect(mapHomePatch({
+      seo_seo_title: null,
+      seo_seo_description: null,
+      home_hero_eyebrow: null,
+      home_hero_title: null,
+      home_hero_lead: null,
+      home_hero_primary_cta_label: null,
+      home_hero_primary_cta_href: null,
+      home_hero_secondary_cta_label: null,
+      home_hero_secondary_cta_href: null,
+      home_hero_metric_label: null,
+      home_hero_metric_text: null,
+      home_shop_campaign_eyebrow: "",
+      home_shop_campaign_title: "",
+      home_shop_campaign_lead: "",
+      home_shop_campaign_image_url: null,
+      home_shop_campaign_image_alt: "",
+      home_shop_campaign_cta_label: "",
+      home_shop_campaign_cta_href: "",
+    }).shopCampaign).toEqual({
+      eyebrow: "",
+      title: "",
+      lead: "",
+      imageUrl: null,
+      imageAlt: "",
+      cta: { label: "", href: "" },
     });
   });
 
@@ -175,6 +362,25 @@ describe("mapShopHomePatch", () => {
         orderSteps: [],
       }).hero.imageUrl,
     ).toBe("https://s3.twcstorage.ru/bucket/bizon/media/hero.png");
+  });
+
+  it("preserves explicit empty shop copy, empty CTAs, and a cleared image", () => {
+    const mapped = mapShopHomePatch({
+      row: {
+        ...emptyShopHomeRow,
+        shop_hero_title: "",
+        shop_hero_image_url: null,
+      },
+      carousel: [],
+      vehicles: [],
+      orderSteps: [],
+    });
+
+    expect(mapped.hero).toMatchObject({
+      title: "",
+      imageUrl: null,
+      cta: { label: "", href: "" },
+    });
   });
 
   it("maps catalog page copy and tile routes from the selected category", () => {

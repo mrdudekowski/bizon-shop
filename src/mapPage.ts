@@ -14,11 +14,6 @@ type HomeRow = {
   home_hero_metric_text: string | null;
   home_hero_image_url?: string | null;
   home_hero_image_alt?: string | null;
-  home_selection_entry_image_url?: string | null;
-  home_selection_entry_image_alt?: string | null;
-  home_selection_entry_eyebrow?: string | null;
-  home_selection_entry_title?: string | null;
-  home_selection_entry_lead?: string | null;
   home_shop_campaign_eyebrow?: string | null;
   home_shop_campaign_title?: string | null;
   home_shop_campaign_lead?: string | null;
@@ -65,15 +60,14 @@ export type HomePatch = {
     secondaryCta?: HomeCta;
     metricLabel?: string;
     metricText?: string;
-    imageUrl?: string;
+    imageUrl?: string | null;
     imageAlt?: string;
   };
-  selectionEntry?: { eyebrow?: string; title?: string; lead?: string; imageUrl?: string; imageAlt?: string };
   shopCampaign?: {
     eyebrow?: string;
     title?: string;
     lead?: string;
-    imageUrl?: string;
+    imageUrl?: string | null;
     imageAlt?: string;
     cta?: HomeCta;
   };
@@ -87,6 +81,8 @@ function publicImageUrl(value: string | null | undefined): string | undefined {
 }
 
 const nonEmptyString = (value: string | null): string | undefined => value || undefined;
+const configuredString = (value: string | null | undefined): string | undefined =>
+  value === null || value === undefined ? undefined : value;
 
 function hasOwn(row: HomeRow, key: keyof HomeRow): boolean {
   return Object.prototype.hasOwnProperty.call(row, key);
@@ -109,16 +105,10 @@ function mapEditableHomeCta(
   };
 }
 function mapCta(label: string | null, href: string | null): HomeCta | undefined {
-  const mappedLabel = nonEmptyString(label);
-  const mappedHref = nonEmptyString(href);
-
-  if (!mappedLabel && !mappedHref) {
-    return undefined;
-  }
-
+  if (label === null && href === null) return undefined;
   return {
-    ...(mappedLabel ? { label: mappedLabel } : {}),
-    ...(mappedHref ? { href: mappedHref } : {}),
+    ...(label !== null ? { label } : {}),
+    ...(href !== null ? { href } : {}),
   };
 }
 
@@ -142,24 +132,18 @@ export function mapHomePatch(row: HomeRow): HomePatch {
   const branding = mapHomeBranding(row);
 
   return {
-    ...(nonEmptyString(row.seo_seo_title) ? { seoTitle: nonEmptyString(row.seo_seo_title) } : {}),
-    ...(nonEmptyString(row.seo_seo_description)
-      ? { seoDescription: nonEmptyString(row.seo_seo_description) }
-      : {}),
+    ...(configuredString(row.seo_seo_title) !== undefined ? { seoTitle: row.seo_seo_title! } : {}),
+    ...(configuredString(row.seo_seo_description) !== undefined ? { seoDescription: row.seo_seo_description! } : {}),
     hero: {
-      ...(nonEmptyString(row.home_hero_eyebrow) ? { eyebrow: nonEmptyString(row.home_hero_eyebrow) } : {}),
-      ...(nonEmptyString(row.home_hero_title) ? { title: nonEmptyString(row.home_hero_title) } : {}),
-      ...(nonEmptyString(row.home_hero_lead) ? { lead: nonEmptyString(row.home_hero_lead) } : {}),
+      ...(configuredString(row.home_hero_eyebrow) !== undefined ? { eyebrow: row.home_hero_eyebrow! } : {}),
+      ...(configuredString(row.home_hero_title) !== undefined ? { title: row.home_hero_title! } : {}),
+      ...(configuredString(row.home_hero_lead) !== undefined ? { lead: row.home_hero_lead! } : {}),
       ...(primaryCta ? { primaryCta } : {}),
       ...(secondaryCta ? { secondaryCta } : {}),
-      ...(nonEmptyString(row.home_hero_metric_label)
-        ? { metricLabel: nonEmptyString(row.home_hero_metric_label) }
-        : {}),
-      ...(nonEmptyString(row.home_hero_metric_text) ? { metricText: nonEmptyString(row.home_hero_metric_text) } : {}),
-      ...(publicImageUrl(row.home_hero_image_url)
-        ? { imageUrl: publicImageUrl(row.home_hero_image_url) }
-        : {}),
-      ...(nonEmptyString(row.home_hero_image_alt ?? null) ? { imageAlt: row.home_hero_image_alt! } : {}),
+      ...(configuredString(row.home_hero_metric_label) !== undefined ? { metricLabel: row.home_hero_metric_label! } : {}),
+      ...(configuredString(row.home_hero_metric_text) !== undefined ? { metricText: row.home_hero_metric_text! } : {}),
+      ...(hasOwn(row, "home_hero_image_url") ? { imageUrl: normalizeImageUrl(row.home_hero_image_url) } : {}),
+      ...(configuredString(row.home_hero_image_alt) !== undefined ? { imageAlt: row.home_hero_image_alt! } : {}),
     },
     ...(shopCampaign ? { shopCampaign } : {}),
     ...(directions ? { directions } : {}),
@@ -174,9 +158,9 @@ function mapHomeShell(
   lead: string | null | undefined,
 ): { eyebrow?: string; title?: string; lead?: string } | undefined {
   const shell = {
-    ...(nonEmptyString(eyebrow ?? null) ? { eyebrow: nonEmptyString(eyebrow ?? null) } : {}),
-    ...(nonEmptyString(title ?? null) ? { title: nonEmptyString(title ?? null) } : {}),
-    ...(nonEmptyString(lead ?? null) ? { lead: nonEmptyString(lead ?? null) } : {}),
+      ...(configuredString(eyebrow) !== undefined ? { eyebrow: eyebrow! } : {}),
+      ...(configuredString(title) !== undefined ? { title: title! } : {}),
+      ...(configuredString(lead) !== undefined ? { lead: lead! } : {}),
   };
   return Object.keys(shell).length > 0 ? shell : undefined;
 }
@@ -186,31 +170,31 @@ function mapHomeBranding(row: HomeRow): NonNullable<HomePatch["branding"]> | und
   const beforeImageUrl = mapOptionalImageUrl(row, "home_branding_before_image_url");
   const afterImageUrl = mapOptionalImageUrl(row, "home_branding_after_image_url");
   const mapped = {
-    ...(nonEmptyString(row.home_branding_eyebrow ?? null) ? { eyebrow: row.home_branding_eyebrow! } : {}),
-    ...(nonEmptyString(row.home_branding_title ?? null) ? { title: row.home_branding_title! } : {}),
-    ...(nonEmptyString(row.home_branding_lead ?? null) ? { lead: row.home_branding_lead! } : {}),
+    ...(configuredString(row.home_branding_eyebrow) !== undefined ? { eyebrow: row.home_branding_eyebrow! } : {}),
+    ...(configuredString(row.home_branding_title) !== undefined ? { title: row.home_branding_title! } : {}),
+    ...(configuredString(row.home_branding_lead) !== undefined ? { lead: row.home_branding_lead! } : {}),
     ...(cta ? { cta } : {}),
-    ...(nonEmptyString(row.home_branding_before_caption ?? null) ? { beforeCaption: row.home_branding_before_caption! } : {}),
-    ...(nonEmptyString(row.home_branding_after_caption ?? null) ? { afterCaption: row.home_branding_after_caption! } : {}),
+    ...(configuredString(row.home_branding_before_caption) !== undefined ? { beforeCaption: row.home_branding_before_caption! } : {}),
+    ...(configuredString(row.home_branding_after_caption) !== undefined ? { afterCaption: row.home_branding_after_caption! } : {}),
     ...(beforeImageUrl !== undefined ? { beforeImageUrl } : {}),
-    ...(nonEmptyString(row.home_branding_before_image_alt ?? null) ? { beforeImageAlt: row.home_branding_before_image_alt! } : {}),
+    ...(configuredString(row.home_branding_before_image_alt) !== undefined ? { beforeImageAlt: row.home_branding_before_image_alt! } : {}),
     ...(afterImageUrl !== undefined ? { afterImageUrl } : {}),
-    ...(nonEmptyString(row.home_branding_after_image_alt ?? null) ? { afterImageAlt: row.home_branding_after_image_alt! } : {}),
+    ...(configuredString(row.home_branding_after_image_alt) !== undefined ? { afterImageAlt: row.home_branding_after_image_alt! } : {}),
   };
   return Object.keys(mapped).length ? mapped : undefined;
 }
 
 function mapHomeShopCampaign(row: HomeRow): HomePatch["shopCampaign"] | undefined {
   const cta = mapCta(row.home_shop_campaign_cta_label ?? null, row.home_shop_campaign_cta_href ?? null);
-  const imageUrl = publicImageUrl(row.home_shop_campaign_image_url);
+  const imageUrl = Object.prototype.hasOwnProperty.call(row, "home_shop_campaign_image_url")
+    ? normalizeImageUrl(row.home_shop_campaign_image_url)
+    : undefined;
   const campaign = {
-    ...(nonEmptyString(row.home_shop_campaign_eyebrow ?? null) ? { eyebrow: row.home_shop_campaign_eyebrow ?? undefined } : {}),
-    ...(nonEmptyString(row.home_shop_campaign_title ?? null) ? { title: row.home_shop_campaign_title ?? undefined } : {}),
-    ...(nonEmptyString(row.home_shop_campaign_lead ?? null) ? { lead: row.home_shop_campaign_lead ?? undefined } : {}),
-    ...(imageUrl ? { imageUrl } : {}),
-    ...(nonEmptyString(row.home_shop_campaign_image_alt ?? null)
-      ? { imageAlt: row.home_shop_campaign_image_alt ?? undefined }
-      : {}),
+    ...(configuredString(row.home_shop_campaign_eyebrow) !== undefined ? { eyebrow: row.home_shop_campaign_eyebrow! } : {}),
+    ...(configuredString(row.home_shop_campaign_title) !== undefined ? { title: row.home_shop_campaign_title! } : {}),
+    ...(configuredString(row.home_shop_campaign_lead) !== undefined ? { lead: row.home_shop_campaign_lead! } : {}),
+    ...(imageUrl !== undefined ? { imageUrl } : {}),
+    ...(configuredString(row.home_shop_campaign_image_alt) !== undefined ? { imageAlt: row.home_shop_campaign_image_alt! } : {}),
     ...(cta ? { cta } : {}),
   };
   return Object.keys(campaign).length > 0 ? campaign : undefined;
@@ -220,6 +204,7 @@ export type StubPatch = {
   featuresHeading?: string;
   features?: { id: string; title: string; text: string }[];
   sections?: { id: string; heading: string; body: string }[];
+  documents?: { url: string; title: string }[];
   notice?: { body: string } | null;
   proof?: { imageUrl: string | null; imageAlt: string; title: string; text: string } | null;
   cta?: { label: string; href: string; secondaryLabel?: string; secondaryHref?: string } | null;
@@ -229,12 +214,13 @@ export type StubPatch = {
     eyebrow?: string;
     title?: string;
     lead?: string;
-    imageUrl?: string;
+    imageUrl?: string | null;
     imageAlt?: string;
   };
 };
 
 type StubRow = {
+  stub_hero_configured?: boolean;
   editorial_configured?: boolean;
   editorial_heading_configured?: boolean;
   editorial_features_configured?: boolean;
@@ -254,6 +240,7 @@ type StubRow = {
   editorial_secondary_href?: string | null;
   features?: { id: string; title: string; text: string }[];
   sections?: { id: string; heading: string; body: string }[];
+  documents?: { url: string; title: string }[];
   seo_seo_title: string | null;
   seo_seo_description: string | null;
   stub_hero_eyebrow: string | null;
@@ -264,7 +251,23 @@ type StubRow = {
 };
 
 export function mapStubPatch(row: StubRow): StubPatch {
+  const hero = row.stub_hero_configured
+    ? {
+        eyebrow: row.stub_hero_eyebrow ?? "",
+        title: row.stub_hero_title ?? "",
+        lead: row.stub_hero_lead ?? "",
+        imageUrl: publicImageUrl(row.stub_hero_image_url) ?? null,
+        imageAlt: row.stub_hero_image_alt ?? "",
+      }
+    : {
+        ...(nonEmptyString(row.stub_hero_eyebrow) ? { eyebrow: nonEmptyString(row.stub_hero_eyebrow) } : {}),
+        ...(nonEmptyString(row.stub_hero_title) ? { title: nonEmptyString(row.stub_hero_title) } : {}),
+        ...(nonEmptyString(row.stub_hero_lead) ? { lead: nonEmptyString(row.stub_hero_lead) } : {}),
+        ...(publicImageUrl(row.stub_hero_image_url) ? { imageUrl: publicImageUrl(row.stub_hero_image_url) } : {}),
+        ...(nonEmptyString(row.stub_hero_image_alt) ? { imageAlt: nonEmptyString(row.stub_hero_image_alt) } : {}),
+      };
   return {
+    ...(row.documents !== undefined ? { documents: row.documents } : {}),
     ...(row.editorial_configured ? {
       ...(row.editorial_heading_configured ? { featuresHeading: row.editorial_features_heading ?? "" } : {}),
       ...(row.editorial_features_configured ? { features: row.features ?? [] } : {}),
@@ -273,17 +276,9 @@ export function mapStubPatch(row: StubRow): StubPatch {
       ...(row.editorial_proof_configured ? { proof: row.editorial_proof_title || row.editorial_proof_text || row.editorial_proof_image_url ? { imageUrl: publicImageUrl(row.editorial_proof_image_url) ?? null, imageAlt: row.editorial_proof_image_alt ?? "", title: row.editorial_proof_title ?? "", text: row.editorial_proof_text ?? "" } : null } : {}),
       ...(row.editorial_cta_configured ? { cta: row.editorial_cta_label && row.editorial_cta_href ? { label: row.editorial_cta_label, href: row.editorial_cta_href, secondaryLabel: row.editorial_secondary_label ?? "", secondaryHref: row.editorial_secondary_href ?? "" } : null } : {}),
     } : {}),
-    ...(nonEmptyString(row.seo_seo_title) ? { seoTitle: nonEmptyString(row.seo_seo_title) } : {}),
-    ...(nonEmptyString(row.seo_seo_description) ? { seoDescription: nonEmptyString(row.seo_seo_description) } : {}),
-    hero: {
-      ...(nonEmptyString(row.stub_hero_eyebrow) ? { eyebrow: nonEmptyString(row.stub_hero_eyebrow) } : {}),
-      ...(nonEmptyString(row.stub_hero_title) ? { title: nonEmptyString(row.stub_hero_title) } : {}),
-      ...(nonEmptyString(row.stub_hero_lead) ? { lead: nonEmptyString(row.stub_hero_lead) } : {}),
-      ...(publicImageUrl(row.stub_hero_image_url)
-        ? { imageUrl: publicImageUrl(row.stub_hero_image_url) }
-        : {}),
-      ...(nonEmptyString(row.stub_hero_image_alt) ? { imageAlt: nonEmptyString(row.stub_hero_image_alt) } : {}),
-    },
+    ...(configuredString(row.seo_seo_title) !== undefined ? { seoTitle: row.seo_seo_title! } : {}),
+    ...(configuredString(row.seo_seo_description) !== undefined ? { seoDescription: row.seo_seo_description! } : {}),
+    hero,
   };
 }
 
@@ -319,7 +314,7 @@ export type ShopHomePatch = {
     eyebrow?: string;
     title?: string;
     lead?: string;
-    imageUrl?: string;
+    imageUrl?: string | null;
     imageAlt?: string;
     cta?: HomeCta;
   };
@@ -366,7 +361,8 @@ export type ShopHomePatch = {
   };
 };
 
-const optionalText = (value: string | null | undefined): string | undefined => value || undefined;
+const optionalText = (value: string | null | undefined): string | undefined => value ?? undefined;
+const isConfiguredText = (value: string | null | undefined): value is string => value !== null && value !== undefined;
 
 export function mapShopHomePatch(input: {
   row: ShopHomeRow;
@@ -401,27 +397,29 @@ export function mapShopHomePatch(input: {
   const cta = mapCta(row.shop_hero_cta_label, row.shop_hero_cta_href);
   const vehiclesCta = mapCta(row.shop_vehicles_cta_label ?? null, row.shop_vehicles_cta_href ?? null);
   const wheelsIntro = {
-    ...(optionalText(row.shop_wheels_intro_kicker) ? { kicker: optionalText(row.shop_wheels_intro_kicker) } : {}),
-    ...(optionalText(row.shop_wheels_intro_eyebrow) ? { eyebrow: optionalText(row.shop_wheels_intro_eyebrow) } : {}),
-    ...(optionalText(row.shop_wheels_intro_title) ? { title: optionalText(row.shop_wheels_intro_title) } : {}),
-    ...(optionalText(row.shop_wheels_intro_lead) ? { lead: optionalText(row.shop_wheels_intro_lead) } : {}),
+    ...(isConfiguredText(row.shop_wheels_intro_kicker) ? { kicker: row.shop_wheels_intro_kicker } : {}),
+    ...(isConfiguredText(row.shop_wheels_intro_eyebrow) ? { eyebrow: row.shop_wheels_intro_eyebrow } : {}),
+    ...(isConfiguredText(row.shop_wheels_intro_title) ? { title: row.shop_wheels_intro_title } : {}),
+    ...(isConfiguredText(row.shop_wheels_intro_lead) ? { lead: row.shop_wheels_intro_lead } : {}),
   };
   const vehicleShell = {
-    ...(optionalText(row.shop_vehicles_eyebrow) ? { eyebrow: optionalText(row.shop_vehicles_eyebrow) } : {}),
-    ...(optionalText(row.shop_vehicles_title) ? { title: optionalText(row.shop_vehicles_title) } : {}),
-    ...(optionalText(row.shop_vehicles_lead) ? { lead: optionalText(row.shop_vehicles_lead) } : {}),
+    ...(isConfiguredText(row.shop_vehicles_eyebrow) ? { eyebrow: row.shop_vehicles_eyebrow } : {}),
+    ...(isConfiguredText(row.shop_vehicles_title) ? { title: row.shop_vehicles_title } : {}),
+    ...(isConfiguredText(row.shop_vehicles_lead) ? { lead: row.shop_vehicles_lead } : {}),
     ...(vehiclesCta ? { cta: vehiclesCta } : {}),
   };
 
   return {
-    ...(optionalText(row.seo_seo_title) ? { seoTitle: optionalText(row.seo_seo_title) } : {}),
-    ...(optionalText(row.seo_seo_description) ? { seoDescription: optionalText(row.seo_seo_description) } : {}),
+    ...(isConfiguredText(row.seo_seo_title) ? { seoTitle: row.seo_seo_title } : {}),
+    ...(isConfiguredText(row.seo_seo_description) ? { seoDescription: row.seo_seo_description } : {}),
     hero: {
-      ...(optionalText(row.shop_hero_eyebrow) ? { eyebrow: optionalText(row.shop_hero_eyebrow) } : {}),
-      ...(optionalText(row.shop_hero_title) ? { title: optionalText(row.shop_hero_title) } : {}),
-      ...(optionalText(row.shop_hero_lead) ? { lead: optionalText(row.shop_hero_lead) } : {}),
-      ...(publicImageUrl(row.shop_hero_image_url) ? { imageUrl: publicImageUrl(row.shop_hero_image_url) } : {}),
-      ...(optionalText(row.shop_hero_image_alt) ? { imageAlt: optionalText(row.shop_hero_image_alt) } : {}),
+      ...(isConfiguredText(row.shop_hero_eyebrow) ? { eyebrow: row.shop_hero_eyebrow } : {}),
+      ...(isConfiguredText(row.shop_hero_title) ? { title: row.shop_hero_title } : {}),
+      ...(isConfiguredText(row.shop_hero_lead) ? { lead: row.shop_hero_lead } : {}),
+      ...(Object.prototype.hasOwnProperty.call(row, "shop_hero_image_url")
+        ? { imageUrl: normalizeImageUrl(row.shop_hero_image_url) }
+        : {}),
+      ...(isConfiguredText(row.shop_hero_image_alt) ? { imageAlt: row.shop_hero_image_alt } : {}),
       ...(cta ? { cta } : {}),
     },
     ...(Object.keys(wheelsIntro).length > 0 ? { wheelsIntro } : {}),
@@ -450,12 +448,10 @@ export function mapShopHomePatch(input: {
     },
     catalog: {
       copy: {
-        ...(optionalText(row.shop_catalog_eyebrow) ? { eyebrow: optionalText(row.shop_catalog_eyebrow) } : {}),
-        ...(optionalText(row.shop_catalog_title) ? { title: optionalText(row.shop_catalog_title) } : {}),
-        ...(optionalText(row.shop_catalog_lead) ? { lead: optionalText(row.shop_catalog_lead) } : {}),
-        ...(optionalText(row.shop_catalog_section_title)
-          ? { sectionTitle: optionalText(row.shop_catalog_section_title) }
-          : {}),
+        ...(isConfiguredText(row.shop_catalog_eyebrow) ? { eyebrow: row.shop_catalog_eyebrow } : {}),
+        ...(isConfiguredText(row.shop_catalog_title) ? { title: row.shop_catalog_title } : {}),
+        ...(isConfiguredText(row.shop_catalog_lead) ? { lead: row.shop_catalog_lead } : {}),
+        ...(isConfiguredText(row.shop_catalog_section_title) ? { sectionTitle: row.shop_catalog_section_title } : {}),
       },
       tiles: catalogTiles.map((tile) => ({
         categoryId: String(tile.category_id),

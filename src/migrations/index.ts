@@ -1,4 +1,11 @@
 import { pageEditorialContentMigration } from "./0010-page-editorial-content";
+import { shopVariantMediaMigration } from "./0011-shop-variant-media";
+import { cmsDocumentLinksMigration } from "./0012-cms-document-links";
+import { articleImageIntentMigration } from "./0013-article-image-intent";
+import { approvedTireBenefitCopyMigration } from "./0014-approved-tire-benefit-copy";
+import { stubHeroContentMigration } from "./0015-stub-hero-content";
+import { legalPagesCmsContentMigration } from "./0016-legal-pages-cms-content";
+import { shopDeliveryEditorialContentMigration } from "./0017-shop-delivery-editorial-content";
 import type { Migration } from "../migrationRunner";
 import { cmsEditorSchemaMigration } from "./0001-cms-editor-schema";
 import { shopCategoryCarouselMigration } from "./0002-shop-category-carousel";
@@ -21,6 +28,13 @@ export const MIGRATIONS: readonly Migration[] = [
   shopCatalogShowcaseMigration,
   homepageEditorialContentMigration,
   pageEditorialContentMigration,
+  shopVariantMediaMigration,
+  cmsDocumentLinksMigration,
+  articleImageIntentMigration,
+  approvedTireBenefitCopyMigration,
+  stubHeroContentMigration,
+  legalPagesCmsContentMigration,
+  shopDeliveryEditorialContentMigration,
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.at(-1)?.version ?? "0";

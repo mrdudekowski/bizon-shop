@@ -29,6 +29,7 @@ import { parseRequestBody, validateRequest } from "./requests/validateRequest";
 import { checkRateLimit, trustedClientAddress } from "./security/rateLimit";
 import { getStaticSiteDeployStatus, isSiteAffectingPublicationMethod, triggerStaticSiteDeploy } from "./deploy/timewebApps";
 import { publishedContentFailureDetails, readPublishedContentRevision, readPublishedContentSnapshot } from "./contentRevision";
+import { serializeClientQueries } from "./databaseTransaction";
 import {
   readArticleBySlug,
   readArticles,
@@ -118,16 +119,17 @@ function createPgDatabase(connectionString: string): CartDatabase {
     },
     async transaction(run) {
       const client = await pool.connect();
+      const serializedClient = serializeClientQueries(client);
       try {
-        await client.query("BEGIN");
+        await serializedClient.query("BEGIN");
         const result = await run(async (sql, params) => {
-          const queryResult = await client.query(sql, params);
+          const queryResult = await serializedClient.query(sql, params);
           return queryResult.rows as Record<string, unknown>[];
         });
-        await client.query("COMMIT");
+        await serializedClient.query("COMMIT");
         return result;
       } catch (error) {
-        await client.query("ROLLBACK");
+        await serializedClient.query("ROLLBACK");
         throw error;
       } finally {
         client.release();
@@ -135,19 +137,20 @@ function createPgDatabase(connectionString: string): CartDatabase {
     },
     async withReadSnapshot(run) {
       const client = await pool.connect();
+      const serializedClient = serializeClientQueries(client);
       try {
-        await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+        await serializedClient.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
         const snapshot = {
           query: async (sql: string, params: unknown[] = []) => {
-            const result = await client.query(sql, params);
+            const result = await serializedClient.query(sql, params);
             return result.rows as Record<string, unknown>[];
           },
         } satisfies ReadDatabase;
         const result = await run(snapshot);
-        await client.query("COMMIT");
+        await serializedClient.query("COMMIT");
         return result;
       } catch (error) {
-        await client.query("ROLLBACK");
+        await serializedClient.query("ROLLBACK");
         throw error;
       } finally {
         client.release();

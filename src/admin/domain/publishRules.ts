@@ -11,6 +11,15 @@ function hasPrice(size: TireModelDraft["sizes"][number]): boolean {
   return size.priceOnRequest || typeof size.price === "number";
 }
 
+const EDITORIAL_PLACEHOLDER_MARKER = /редакционный\s+перевод\s*:/iu;
+
+function hasEditorialPlaceholder(model: TireModelDraft): boolean {
+  return [
+    ...(model.features ?? []).map((feature) => feature.description),
+    ...model.advantages.map((advantage) => advantage.description),
+  ].some((text) => EDITORIAL_PLACEHOLDER_MARKER.test(text));
+}
+
 export function tireModelPublishBlockers(model: TireModelDraft, parentExists = true): PublishBlocker[] {
   const blockers: PublishBlocker[] = [];
   if (model.name.trim().length === 0) blockers.push("name");
@@ -19,6 +28,7 @@ export function tireModelPublishBlockers(model: TireModelDraft, parentExists = t
   if (model.mainImage == null) blockers.push("mainImage");
   if (model.sizes.some((size) => size.size.trim().length === 0)) blockers.push("size");
   if (model.sizes.some((size) => !hasPrice(size))) blockers.push("price");
+  if (hasEditorialPlaceholder(model)) blockers.push("editorialPlaceholder");
 
   const duplicate = duplicateSizeBlocker(model.sizes.map((size) => `${size.size}|${size.sku ?? ""}`));
   if (duplicate) blockers.push(duplicate);
@@ -79,7 +89,11 @@ export function shopProductPublishBlockers(product: ShopProductDraft, parentExis
   if (product.variants.some((variant) => !variant.priceOnRequest && typeof variant.price !== "number")) {
     blockers.push("price");
   }
-  const duplicate = duplicateSizeBlocker(product.variants.map((variant) => variant.size));
+  const duplicate = duplicateSizeBlocker(product.variants.map((variant) => JSON.stringify([
+    variant.color,
+    variant.size,
+    variant.configuration ?? "",
+  ].map((value) => value.trim().toLocaleLowerCase("ru-RU")))));
   if (duplicate) blockers.push(duplicate);
   return blockers;
 }

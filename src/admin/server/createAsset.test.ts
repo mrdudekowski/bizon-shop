@@ -49,11 +49,12 @@ describe("createAsset storage", () => {
     expect(block).not.toContain("[row.target_id, row.title, row.title");
   });
 
-  it("reports editorial proof placements as media usage", () => {
-    const source = fs.readFileSync(new URL("./postgresAdmin.ts", import.meta.url), "utf8");
-    const start = source.indexOf("async listAssets()");
-    const end = source.indexOf("async deleteAsset", start);
-    expect(source.slice(start, end)).toContain("pages WHERE editorial_proof_image_id = ANY($1::int[])");
-    expect(source.slice(start, end)).toContain("const usagesByMedia = new Map<string, string[]>()");
+  it("reports editorial proof placements through the structured media usage query", () => {
+    const usageSource = fs.readFileSync(new URL("./mediaUsage.ts", import.meta.url), "utf8");
+    const adminSource = fs.readFileSync(new URL("./postgresAdmin.ts", import.meta.url), "utf8");
+    expect(usageSource).toContain("editorial_proof_image_id");
+    expect(usageSource).toContain("pages.editorial_configured AND pages.editorial_proof_configured");
+    expect(adminSource).toContain("await query(mediaUsageSql, [mediaIds, publicDocumentPageKeys])");
+    expect(adminSource).toContain("const usagesByMedia = new Map<string, ReturnType<typeof toMediaUsageRecord>[]>()");
   });
 });

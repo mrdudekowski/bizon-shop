@@ -119,7 +119,7 @@ export function mapShopCategory(
   };
 }
 
-export function mapShopVariant(row: ShopVariantRow): CmsProductVariant {
+export function mapShopVariant(row: ShopVariantRow, images: string[] = []): CmsProductVariant {
   const price = toFiniteNumber(row.price);
   const oldPrice = toFiniteNumber(row.old_price);
   return {
@@ -132,7 +132,7 @@ export function mapShopVariant(row: ShopVariantRow): CmsProductVariant {
     ...(oldPrice !== undefined ? { oldPrice } : {}),
     priceOnRequest: price === undefined || row.price_on_request === true,
     available: row.available !== false,
-    images: [],
+    images: images.filter((image) => !image.startsWith("data:")),
   };
 }
 

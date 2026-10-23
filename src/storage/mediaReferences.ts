@@ -26,6 +26,48 @@ export function unlinkMediaReferences(value: unknown, mediaId: string): unknown 
 type MediaReferenceRow = Record<string, unknown>;
 type MediaReferenceQuery = (text: string, params?: unknown[]) => Promise<MediaReferenceRow[]>;
 
+const DETACHABLE_MEDIA_SOURCES = new Map<string, { kind: "column" | "relation"; column: string }>([
+  ["tire_types|cover_image_id", { kind: "column", column: "cover_image_id" }],
+  ["tire_models|main_image_id", { kind: "column", column: "main_image_id" }],
+  ["wheel_types|cover_image_id", { kind: "column", column: "cover_image_id" }],
+  ["wheel_models|main_image_id", { kind: "column", column: "main_image_id" }],
+  ["shop_categories|cover_image_id", { kind: "column", column: "cover_image_id" }],
+  ["shop_category_carousel|image_id", { kind: "column", column: "image_id" }],
+  ["products|main_image_id", { kind: "column", column: "main_image_id" }],
+  ["tire_iq_articles|featured_image_id", { kind: "column", column: "featured_image_id" }],
+  ...[
+    "home_hero_image_id", "home_selection_entry_image_id", "home_shop_campaign_image_id", "home_expertise_image_id",
+    "home_branding_before_image_id", "home_branding_after_image_id", "shop_hero_image_id", "stub_hero_image_id",
+    "editorial_proof_image_id",
+  ].map((column) => [`pages|${column}`, { kind: "column" as const, column }] as const),
+  ...[
+    "desktop_image_id", "mobile_image_id",
+  ].map((column) => [`pages_shop_category_carousel|${column}`, { kind: "column" as const, column }] as const),
+  ["pages_shop_vehicles_slides|image_id", { kind: "column", column: "image_id" }],
+  ...["icon_media_id", "image_media_id", "carousel_image_media_id"].map((column) =>
+    [`pages_shop_catalog_tiles|${column}`, { kind: "column" as const, column }] as const),
+  ...["tire_models_rels", "wheel_models_rels", "products_rels", "products_variants_rels"].map((table) =>
+    [`${table}|media_id`, { kind: "relation" as const, column: "media_id" }] as const),
+  ["shop_category_carousel|image_id", { kind: "column", column: "image_id" }],
+  ["cms_document_links|media_id", { kind: "relation", column: "media_id" }],
+]);
+
+/** Detach one exact persisted link; returns false when it has changed since it was listed. */
+export async function detachStoredMediaReference(query: MediaReferenceQuery, mediaId: string, sourceKey: string): Promise<boolean> {
+  const [table, column, ownerId, ...extra] = sourceKey.split("|");
+  const source = DETACHABLE_MEDIA_SOURCES.get(`${table}|${column}`);
+  const mediaNumericId = Number(mediaId);
+  const ownerNumericId = Number(ownerId);
+  if (!source || extra.length > 0 || !Number.isSafeInteger(mediaNumericId) || mediaNumericId <= 0 || !Number.isSafeInteger(ownerNumericId) || ownerNumericId <= 0) {
+    return false;
+  }
+  const sql = source.kind === "column"
+    ? `UPDATE ${table} SET ${source.column} = NULL WHERE id = $2 AND ${source.column} = $1 RETURNING id`
+    : `DELETE FROM ${table} WHERE id = $2 AND ${source.column} = $1 RETURNING id`;
+  const rows = await query(sql, [mediaNumericId, ownerNumericId]);
+  return rows.length === 1;
+}
+
 export async function unlinkStoredMediaReferences(query: MediaReferenceQuery, id: string): Promise<void> {
   const mediaId = Number(id);
   const columnsToClear = [
@@ -56,9 +98,10 @@ export async function unlinkStoredMediaReferences(query: MediaReferenceQuery, id
   for (const [table, column] of columnsToClear) {
     await query(`UPDATE ${table} SET ${column} = NULL WHERE ${column} = $1`, [mediaId]);
   }
-  for (const table of ["tire_models_rels", "wheel_models_rels", "products_rels"]) {
+  for (const table of ["tire_models_rels", "wheel_models_rels", "products_rels", "products_variants_rels"]) {
     await query(`DELETE FROM ${table} WHERE media_id = $1`, [mediaId]);
   }
+  await query("DELETE FROM cms_document_links WHERE media_id = $1", [mediaId]);
 
   const drafts = await query("SELECT collection, doc_id, draft FROM cms_drafts FOR UPDATE");
   for (const row of drafts) {

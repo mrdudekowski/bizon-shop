@@ -26,6 +26,13 @@ function memoryStore(): ObjectStore & { objects: Map<string, Buffer> } {
   };
 }
 
+function validPng(): Buffer {
+  return Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==",
+    "base64",
+  );
+}
+
 describe("putMedia", () => {
   afterEach(() => {
     for (const key of ENV_KEYS) {
@@ -49,7 +56,7 @@ describe("putMedia", () => {
     setEnv("S3_ACCESS_KEY_ID", "id");
     setEnv("S3_SECRET_ACCESS_KEY", "secret");
     const store = memoryStore();
-    const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+    const png = validPng();
     const result = await putMedia(store, {
       name: "TBR cover.PNG",
       mimeType: "image/png",
@@ -67,7 +74,7 @@ describe("putMedia", () => {
     setEnv("S3_ACCESS_KEY_ID", "id");
     setEnv("S3_SECRET_ACCESS_KEY", "secret");
     const store = memoryStore();
-    const file = { name: "same-name.png", mimeType: "image/png", body: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]) };
+    const file = { name: "same-name.png", mimeType: "image/png", body: validPng() };
 
     const first = await putMedia(store, file);
     const second = await putMedia(store, file);
@@ -99,12 +106,38 @@ describe("putMedia", () => {
     ).rejects.toBeInstanceOf(MediaRejected);
   });
 
+  it("rejects a truncated PNG even when its signature is valid and does not store it", async () => {
+    setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
+    setEnv("S3_BUCKET", "bucket");
+    setEnv("S3_ACCESS_KEY_ID", "id");
+    setEnv("S3_SECRET_ACCESS_KEY", "secret");
+    const store = memoryStore();
+    const truncated = validPng().subarray(0, 16);
+
+    await expect(putMedia(store, { name: "truncated.png", mimeType: "image/png", body: truncated }))
+      .rejects.toBeInstanceOf(MediaRejected);
+    expect(store.objects.size).toBe(0);
+  });
+
+  it("rejects a signature-only PNG instead of registering it as an image", async () => {
+    setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
+    setEnv("S3_BUCKET", "bucket");
+    setEnv("S3_ACCESS_KEY_ID", "id");
+    setEnv("S3_SECRET_ACCESS_KEY", "secret");
+    const store = memoryStore();
+
+    await expect(
+      putMedia(store, { name: "signature-only.png", mimeType: "image/png", body: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]) }),
+    ).rejects.toBeInstanceOf(MediaRejected);
+    expect(store.objects.size).toBe(0);
+  });
+
   it("accepts a PNG the browser labelled as octet-stream or IMAGE/PNG", async () => {
     setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
     setEnv("S3_BUCKET", "bucket");
     setEnv("S3_ACCESS_KEY_ID", "id");
     setEnv("S3_SECRET_ACCESS_KEY", "secret");
-    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const png = validPng();
     for (const mimeType of ["application/octet-stream", "IMAGE/PNG", "image/x-png", "image/png; charset=utf-8"]) {
       const store = memoryStore();
       const result = await putMedia(store, { name: "camp.png", mimeType, body: png });
@@ -119,7 +152,7 @@ describe("putMedia", () => {
     setEnv("S3_ACCESS_KEY_ID", "id");
     setEnv("S3_SECRET_ACCESS_KEY", "secret");
     const store = memoryStore();
-    const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+    const png = validPng();
     const failure = new Error("database unavailable");
     await expect(
       uploadAndPersistMedia(store, { name: "camp.png", mimeType: "image/png", body: png }, async () => {
@@ -142,7 +175,7 @@ describe("putMedia", () => {
     await expect(
       uploadAndPersistMedia(
         store,
-        { name: "camp.png", mimeType: "image/png", body: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]) },
+        { name: "camp.png", mimeType: "image/png", body: validPng() },
         async () => {
           throw new Error("database unavailable");
         },

@@ -1,5 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { mapWheelVariant } from "./mapWheel";
+import { mapWheelType, mapWheelVariant } from "./mapWheel";
+
+describe("mapWheelType", () => {
+  it("maps the published short description and cover image", () => {
+    expect(mapWheelType({
+      name: "Кованые диски",
+      slug: "forged",
+      description: "Полное описание",
+      short_description: "Короткое описание",
+      sort_order: "2",
+      image_url: "/media/forged.webp",
+    })).toEqual({
+      slug: "forged",
+      name: "Кованые диски",
+      description: "Полное описание",
+      shortDescription: "Короткое описание",
+      sortOrder: 2,
+      imageUrl: "/media/forged.webp",
+    });
+  });
+});
 
 describe("mapWheelVariant", () => {
   it("keeps a numeric price stored as text", () => {

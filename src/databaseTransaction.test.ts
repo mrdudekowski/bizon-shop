@@ -45,6 +45,25 @@ describe("withTransaction", () => {
     expect(pool.client.release).toHaveBeenCalledTimes(1);
   });
 
+  it("serializes concurrent queries made inside one transaction", async () => {
+    const pool = fakePool();
+    let activeQueries = 0;
+    let concurrentQueryDetected = false;
+    pool.client.query.mockImplementation(async (sql: string) => {
+      activeQueries += 1;
+      if (activeQueries > 1) concurrentQueryDetected = true;
+      await new Promise((resolve) => setTimeout(resolve, 2));
+      activeQueries -= 1;
+      return { rows: [], command: sql } as never;
+    });
+
+    await withTransaction(pool as never, async (client) => {
+      await Promise.all([client.query("SELECT 1"), client.query("SELECT 2")]);
+    });
+
+    expect(concurrentQueryDetected).toBe(false);
+  });
+
   it("runs external cleanup only after the database commit", async () => {
     const pool = fakePool();
     const events: string[] = [];
