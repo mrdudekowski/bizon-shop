@@ -1,3 +1,5 @@
+import { publishedSnapshotProblem } from "./snapshotContract.js";
+
 type RecordValue = Record<string, unknown>;
 
 export type PublishedContentSnapshot = {
@@ -148,23 +150,5 @@ export function resolvePublishedSnapshotResponse(
 }
 
 export function isPublishedContentSnapshot(value: unknown): value is PublishedContentSnapshot {
-  const candidate = record(value);
-  const content = record(candidate?.content);
-  const tires = record(content?.tires);
-  const wheels = record(content?.wheels);
-  const shop = record(content?.shop);
-  return candidate?.schema === 1
-    && typeof candidate.revision === "string"
-    && /^sha256:[a-f0-9]{64}$/.test(candidate.revision)
-    && content !== null
-    && (content.home === null || record(content.home) !== null)
-    && (content.shopHome === null || record(content.shopHome) !== null)
-    && record(content.stubs) !== null
-    && Array.isArray(content.articles)
-    && Array.isArray(tires?.types)
-    && Array.isArray(tires?.models)
-    && Array.isArray(wheels?.types)
-    && Array.isArray(wheels?.byType)
-    && Array.isArray(shop?.categories)
-    && Array.isArray(shop?.products);
+  return publishedSnapshotProblem(value) === null;
 }

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { notFound } from "next/navigation";
 import { PageHero } from "@/components/content/PageHero";
 import { ContactExperience } from "@/components/forms/ContactExperience";
 import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
@@ -15,6 +16,7 @@ export async function generateMetadata() {
 
 export default async function ContactPage() {
   const page = await getPublishedStubOverlay("contact");
+  if (!page) notFound();
 
   return (
     <div data-main-chrome-tone="light">

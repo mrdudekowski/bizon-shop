@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import nextEnv from "@next/env";
+import { publishedSnapshotProblem } from "../src/lib/content/snapshotContract.js";
 import { createMediaSnapshot } from "./snapshotStaticMedia.js";
 import { validateStaticExport } from "./validateStaticExport.js";
 
@@ -18,6 +19,23 @@ const contentSnapshotTempPath = `${contentSnapshotPath}.tmp`;
 const outDir = path.join(root, "out");
 const previousSnapshotPath = path.join(root, ".content-snapshot-previous");
 const MAX_REVISION_ATTEMPTS = 3;
+const MAX_API_RETRY_WAIT_MS = 1_500;
+
+function retryAfterMilliseconds(response) {
+  const value = response.headers?.get?.("retry-after");
+  if (!value) return null;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.round(seconds * 1_000);
+  const date = Date.parse(value);
+  return Number.isFinite(date) ? Math.max(0, date - Date.now()) : null;
+}
+
+function isRetryableFetchError(error) {
+  return error?.retryable === true
+    || error?.name === "AbortError"
+    || error?.name === "TimeoutError"
+    || error instanceof TypeError;
+}
 
 function validRevision(value) {
   return value != null
@@ -28,22 +46,28 @@ function validRevision(value) {
 }
 
 function validSnapshot(value) {
-  const content = value?.content;
-  return value != null
-    && typeof value === "object"
-    && value.schema === 1
-    && typeof value.revision === "string"
-    && /^sha256:[a-f0-9]{64}$/.test(value.revision)
-    && content != null
-    && typeof content === "object"
-    && !Array.isArray(content)
-    && (content.home === null || (content.home != null && typeof content.home === "object" && !Array.isArray(content.home)))
-    && (content.shopHome === null || (content.shopHome != null && typeof content.shopHome === "object" && !Array.isArray(content.shopHome)))
-    && content.stubs != null && typeof content.stubs === "object" && !Array.isArray(content.stubs)
-    && Array.isArray(content.articles)
-    && Array.isArray(content.tires?.types) && Array.isArray(content.tires?.models)
-    && Array.isArray(content.wheels?.types) && Array.isArray(content.wheels?.byType)
-    && Array.isArray(content.shop?.categories) && Array.isArray(content.shop?.products);
+  return publishedSnapshotProblem(value) === null;
+}
+
+async function readApiJson(response, endpoint) {
+  if (typeof response.text !== "function") {
+    try {
+      return await response.json();
+    } catch (error) {
+      throw new Error(`${endpoint} returned invalid JSON (HTTP ${response.status})`, { cause: error });
+    }
+  }
+  const body = await response.text();
+  try {
+    return JSON.parse(body);
+  } catch (error) {
+    const contentType = response.headers?.get?.("content-type") ?? "unknown";
+    const reason = body.length === 0 ? "empty response body" : "invalid JSON response body";
+    throw new Error(
+      `${endpoint} returned ${reason} (HTTP ${response.status}, content-type ${contentType}, ${Buffer.byteLength(body, "utf8")} bytes)`,
+      { cause: error },
+    );
+  }
 }
 
 export async function fetchRevision({
@@ -57,6 +81,7 @@ export async function fetchRevision({
     throw new Error("CONTENT_API_URL must be an HTTP(S) base URL without credentials, query, or fragment");
   }
   const url = new URL(`${parsedBase.href.replace(/\/+$/, "")}/v1/content/revision`);
+  let totalWaitMs = 0;
 
   for (let attempt = 1; attempt <= MAX_REVISION_ATTEMPTS; attempt += 1) {
     try {
@@ -68,18 +93,21 @@ export async function fetchRevision({
       if (!response.ok) {
         const error = new Error(`Content revision API returned HTTP ${response.status}`);
         error.retryable = new Set([408, 425, 429, 500, 502, 503, 504]).has(response.status);
+        error.retryAfterMs = retryAfterMilliseconds(response);
         throw error;
       }
-      const payload = await response.json();
+      const payload = await readApiJson(response, `Content revision API ${url.pathname}`);
       if (!validRevision(payload)) throw new Error("Content revision API returned an invalid payload");
       return payload;
     } catch (error) {
-      const retryable = error?.retryable === true
-        || error?.name === "AbortError"
-        || error?.name === "TimeoutError"
-        || error instanceof TypeError;
-      if (!retryable || attempt === MAX_REVISION_ATTEMPTS) throw error;
-      await wait(500 * (2 ** (attempt - 1)));
+      if (!isRetryableFetchError(error) || attempt === MAX_REVISION_ATTEMPTS) throw error;
+      const backoffMs = 500 * (2 ** (attempt - 1));
+      const requestedWaitMs = Number.isFinite(error?.retryAfterMs) ? error.retryAfterMs : backoffMs;
+      const delayMs = Math.min(requestedWaitMs, MAX_API_RETRY_WAIT_MS - totalWaitMs);
+      if (delayMs > 0) {
+        await wait(delayMs);
+        totalWaitMs += delayMs;
+      }
     }
   }
 
@@ -89,6 +117,7 @@ export async function fetchRevision({
 export async function fetchPublishedSnapshot({
   baseUrl = process.env.CONTENT_API_URL?.trim(),
   fetchImpl = fetch,
+  wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
 } = {}) {
   if (!baseUrl) throw new Error("CONTENT_API_URL is required to build a verified static site");
   const parsedBase = new URL(baseUrl);
@@ -96,15 +125,37 @@ export async function fetchPublishedSnapshot({
     throw new Error("CONTENT_API_URL must be an HTTP(S) base URL without credentials, query, or fragment");
   }
   const url = new URL(`${parsedBase.href.replace(/\/+$/, "")}/v1/content/snapshot`);
-  const response = await fetchImpl(url, {
-    cache: "no-store",
-    redirect: "error",
-    signal: AbortSignal.timeout(30_000),
-  });
-  if (!response.ok) throw new Error(`Published content snapshot API returned HTTP ${response.status}`);
-  const payload = await response.json();
-  if (!validSnapshot(payload)) throw new Error("Published content snapshot API returned an invalid payload");
-  return payload;
+  let totalWaitMs = 0;
+  for (let attempt = 1; attempt <= MAX_REVISION_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetchImpl(url, {
+        cache: "no-store",
+        redirect: "error",
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!response.ok) {
+        const error = new Error(`Published content snapshot API returned HTTP ${response.status}`);
+        error.retryable = new Set([408, 425, 429, 500, 502, 503, 504]).has(response.status);
+        error.retryAfterMs = retryAfterMilliseconds(response);
+        throw error;
+      }
+      const payload = await readApiJson(response, `Published content snapshot API ${url.pathname}`);
+      const problem = publishedSnapshotProblem(payload);
+      if (problem) throw new Error(`Published content snapshot API returned invalid data at ${problem}`);
+      return payload;
+    } catch (error) {
+      if (!isRetryableFetchError(error) || attempt === MAX_REVISION_ATTEMPTS) throw error;
+      const backoffMs = 500 * (2 ** (attempt - 1));
+      const requestedWaitMs = Number.isFinite(error?.retryAfterMs) ? error.retryAfterMs : backoffMs;
+      const delayMs = Math.min(requestedWaitMs, MAX_API_RETRY_WAIT_MS - totalWaitMs);
+      if (delayMs > 0) {
+        await wait(delayMs);
+        totalWaitMs += delayMs;
+      }
+    }
+  }
+
+  throw new Error("Published content snapshot API request attempts exhausted");
 }
 
 export async function fetchPreviousMediaManifest({
@@ -191,11 +242,10 @@ export async function runStableRevisionBuild({
   writeMarker,
   previousOutputDir = null,
 }) {
-  const before = await fetchRevision();
   const snapshot = fetchSnapshot ? await fetchSnapshot() : undefined;
-  if (snapshot && snapshot.revision !== before.revision) {
-    throw new Error("Published content changed before the static build snapshot was captured");
-  }
+  const before = snapshot
+    ? { schema: snapshot.schema, revision: snapshot.revision }
+    : await fetchRevision();
   await runBuild(snapshot);
   const mediaSnapshot = runSnapshot ? await runSnapshot(before, { previousOutputDir }) : undefined;
   if (validateExport) await validateExport(before);

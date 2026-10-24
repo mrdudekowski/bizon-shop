@@ -2,6 +2,7 @@
 
 import { readFile } from "node:fs/promises";
 import { isPublishedContentSnapshot, resolvePublishedSnapshotResponse, type PublishedContentSnapshot } from "./publishedSnapshot";
+import { publishedSnapshotProblem } from "./snapshotContract.js";
 
 export type PublishedFetchResult<T> =
   | { kind: "ok"; data: T; status: number; requestId: string | null; durationMs: number }
@@ -11,8 +12,8 @@ export type PublishedFetchResult<T> =
   | { kind: "disabled" };
 
 export class PublishedApiError extends Error {
-  constructor(readonly kind: "unavailable" | "invalid_payload") {
-    super(`Published content API ${kind}`);
+  constructor(readonly kind: "unavailable" | "invalid_payload" | "not_found", message?: string) {
+    super(message ?? `Published content API ${kind}`);
     this.name = "PublishedApiError";
   }
 }
@@ -91,7 +92,10 @@ async function readBuildSnapshot(path: string): Promise<PublishedContentSnapshot
     cachedSnapshotPath = path;
     cachedSnapshot = readFile(path, "utf8").then((source) => {
       const payload: unknown = JSON.parse(source);
-      if (!isPublishedContentSnapshot(payload)) throw new Error("Invalid published content snapshot file");
+      if (!isPublishedContentSnapshot(payload)) {
+        const problem = publishedSnapshotProblem(payload) ?? "invalid_snapshot";
+        throw new Error(`Invalid published content snapshot file at ${problem}`);
+      }
       return payload;
     });
   }
@@ -113,8 +117,11 @@ async function fetchFromBuildSnapshot(path: string): Promise<PublishedFetchResul
       requestId: null,
       durationMs: Date.now() - startedAt,
     };
-  } catch {
-    logPublishedFailure(path, "invalid_snapshot", null, null, Date.now() - startedAt);
+  } catch (error) {
+    const reason = error instanceof Error && error.message.startsWith("Invalid published content snapshot file at ")
+      ? error.message.slice("Invalid published content snapshot file at ".length)
+      : "invalid_snapshot";
+    logPublishedFailure(path, reason, null, null, Date.now() - startedAt);
     return { kind: "invalid_payload" };
   }
 }
@@ -135,7 +142,17 @@ export async function fetchPublishedResult<T>(path: string): Promise<PublishedFe
     return { kind: "unavailable" };
   }
 
-  if (response.status === 404) return { kind: "not_found" };
+  if (response.status === 404) {
+    if (!path.startsWith("/v1/pages/")) return { kind: "not_found" };
+    try {
+      const payload: unknown = await response.json();
+      if (isRecord(payload) && payload.code === "not_found") return { kind: "not_found" };
+    } catch {
+      // A page endpoint must return an explicit not_found code for an absent CMS row.
+    }
+    logPublishedFailure(path, "unexpected_page_404", 404, responseRequestId(response), Date.now() - startedAt);
+    return { kind: "invalid_payload" };
+  }
   if (!response.ok) {
     logPublishedFailure(
       path,

@@ -62,7 +62,7 @@ describe("publishedClient", () => {
         home: null,
         shopHome: null,
         stubs: {},
-        articles: [{ slug: "story", title: "Snapshot story" }],
+        articles: [{ slug: "story", title: "Snapshot story", excerpt: "Excerpt", content: "<p>Story</p>" }],
         tires: { types: [], models: [] },
         wheels: { types: [], byType: [] },
         shop: { categories: [], products: [] },
@@ -75,7 +75,7 @@ describe("publishedClient", () => {
     try {
       const { fetchPublishedJson } = await import("./publishedClient");
       await expect(fetchPublishedJson<{ title: string }>("/v1/articles/story"))
-        .resolves.toEqual({ slug: "story", title: "Snapshot story" });
+        .resolves.toEqual({ slug: "story", title: "Snapshot story", excerpt: "Excerpt", content: "<p>Story</p>" });
       expect(fetchMock).not.toHaveBeenCalled();
     } finally {
       await rm(directory, { recursive: true, force: true });

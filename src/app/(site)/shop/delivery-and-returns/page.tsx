@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { notFound } from "next/navigation";
 import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { PageHero } from "@/components/content/PageHero";
@@ -14,6 +15,7 @@ export async function generateMetadata() {
 
 export default async function DeliveryAndReturnsPage() {
   const page = await getPublishedStubOverlay("shop-delivery-returns");
+  if (!page) notFound();
   return (
     <div>
       <PageHero

@@ -148,17 +148,24 @@ const ARTICLE = {
   menuOrder: 0,
 };
 
+// The optional branding page is intentionally absent to exercise the 404 build path.
 const PAGE_KEYS = new Set([
   "home",
   "shop-home",
   "about",
   "contact",
   "warranty",
-  "branding",
   "become-a-supplier",
   "privacy-policy",
   "shop-delivery-returns",
 ]);
+const MISSING_OPTIONAL_PAGE_KEYS = new Set(["branding"]);
+
+function pageFixture(key) {
+  return key === "home" || key === "shop-home"
+    ? { hero: {} }
+    : { hero: { title: `CI fixture ${key}` } };
+}
 
 const CONTENT_REVISION = {
   schema: 1,
@@ -172,7 +179,7 @@ const CONTENT_SNAPSHOT = {
     shopHome: { hero: {} },
     stubs: Object.fromEntries([...PAGE_KEYS]
       .filter((key) => key !== "home" && key !== "shop-home")
-      .map((key) => [key, { hero: {} }])),
+      .map((key) => [key, pageFixture(key)])),
     articles: [ARTICLE],
     tires: { types: [TIRE_TYPE], models: [{ model: TIRE_MODEL, variants: [TIRE_VARIANT] }] },
     wheels: {
@@ -211,7 +218,13 @@ export function responseForBuildApiPath(pathname) {
   if (pathname === `/v1/articles/${ARTICLE.slug}`) return json(ARTICLE);
 
   const pageMatch = /^\/v1\/pages\/([^/]+)$/.exec(pathname);
-  if (pageMatch && PAGE_KEYS.has(decodeURIComponent(pageMatch[1]))) return json({ hero: {} });
+  if (pageMatch && PAGE_KEYS.has(decodeURIComponent(pageMatch[1]))) {
+    const key = decodeURIComponent(pageMatch[1]);
+    return json(pageFixture(key));
+  }
+  if (pageMatch && MISSING_OPTIONAL_PAGE_KEYS.has(decodeURIComponent(pageMatch[1]))) {
+    return json({ ok: false, code: "not_found" }, 404);
+  }
 
   return json({ ok: false }, 404);
 }

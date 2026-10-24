@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { ServicePage } from "@/components/content/ServicePage";
 import { ROUTES } from "@/constants/navigation";
 import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
@@ -14,6 +15,7 @@ export async function generateMetadata() {
 
 export default async function BecomeASupplierPage() {
   const page = await getPublishedStubOverlay("become-a-supplier");
+  if (!page) notFound();
   return (
     <ServicePage
       kicker={page?.hero.eyebrow ?? ""}

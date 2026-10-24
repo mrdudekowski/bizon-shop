@@ -67,9 +67,9 @@ describe("static build revision guard", () => {
     expect(writeMarker).toHaveBeenCalledWith(before);
   });
 
-  it("builds from one snapshot whose revision matches the initial revision", async () => {
+  it("uses one snapshot as the initial revision and checks for changes after the build", async () => {
     const publishedSnapshot = { ...before, content: { ...snapshotContent, articles: [{ slug: "one" }] } };
-    const fetchRevision = vi.fn().mockResolvedValueOnce(before).mockResolvedValueOnce(before);
+    const fetchRevision = vi.fn().mockResolvedValueOnce(before);
     const fetchSnapshot = vi.fn().mockResolvedValue(publishedSnapshot);
     const runBuild = vi.fn().mockResolvedValue(undefined);
     const writeMarker = vi.fn().mockResolvedValue(undefined);
@@ -77,20 +77,21 @@ describe("static build revision guard", () => {
     await runStableRevisionBuild({ fetchRevision, fetchSnapshot, runBuild, writeMarker });
 
     expect(fetchSnapshot).toHaveBeenCalledOnce();
+    expect(fetchRevision).toHaveBeenCalledOnce();
     expect(runBuild).toHaveBeenCalledWith(publishedSnapshot);
     expect(writeMarker).toHaveBeenCalledWith(before, undefined, publishedSnapshot);
   });
 
-  it("refuses a snapshot that does not match the initial revision", async () => {
-    const fetchRevision = vi.fn().mockResolvedValue(before);
+  it("refuses to mark a snapshot when content changes after it was captured", async () => {
+    const fetchRevision = vi.fn().mockResolvedValue(after);
     const runBuild = vi.fn();
     await expect(runStableRevisionBuild({
       fetchRevision,
-      fetchSnapshot: vi.fn().mockResolvedValue({ ...after, content: snapshotContent }),
+      fetchSnapshot: vi.fn().mockResolvedValue({ ...before, content: snapshotContent }),
       runBuild,
       writeMarker: vi.fn(),
-    })).rejects.toThrow("changed before the static build snapshot was captured");
-    expect(runBuild).not.toHaveBeenCalled();
+    })).rejects.toThrow("Published content changed during the static build");
+    expect(runBuild).toHaveBeenCalledOnce();
   });
 
   it("downloads a complete revisioned snapshot from the one-shot endpoint", async () => {

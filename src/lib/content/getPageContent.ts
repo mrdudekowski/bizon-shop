@@ -39,12 +39,15 @@ export async function getPublishedStubOverlay(key: string): Promise<PublishedStu
     if (isStaticBuild()) throw new Error("CONTENT_API_URL is required to build the static public site.");
     return null;
   }
-  return fetchPagePatch<PublishedStubOverlay>(`/v1/pages/${encodeURIComponent(key)}`);
+  return fetchPublishedJson<PublishedStubOverlay>(`/v1/pages/${encodeURIComponent(key)}`);
 }
 
-async function fetchPagePatch<T>(path: string): Promise<T> {
+async function fetchRequiredPagePatch<T>(key: "home" | "shop-home", path: string): Promise<T> {
   const patch = await fetchPublishedJson<T>(path);
-  if (patch === null) throw new PublishedApiError("unavailable");
+  if (patch === null) {
+    const route = key === "home" ? "/" : "/shop";
+    throw new PublishedApiError("not_found", `Required public route ${route} is missing CMS page ${key}.`);
+  }
   return patch;
 }
 
@@ -63,12 +66,12 @@ export async function getPageContent<K extends PageKey>(
   }
 
   if (key === "home") {
-    const patch = await fetchPagePatch<HomePatch>("/v1/pages/home");
+    const patch = await fetchRequiredPagePatch<HomePatch>("home", "/v1/pages/home");
     return mergeHomeContent(defaults as HomePageContent, patch) as PageContentByKey[K];
   }
 
   if (key === "shop-home") {
-    const patch = await fetchPagePatch<ShopHomePatch>("/v1/pages/shop-home");
+    const patch = await fetchRequiredPagePatch<ShopHomePatch>("shop-home", "/v1/pages/shop-home");
     return mergeShopHomeContent(defaults as ShopHomePageContent, patch) as PageContentByKey[K];
   }
 

@@ -10,9 +10,16 @@ describe("static build API fixture", () => {
     expect(responseForBuildApiPath("/v1/articles").body[0].slug).toBe("ci-fixture-article");
   });
 
-  it("returns structurally valid page patches so site defaults can be statically built", () => {
+  it("returns synthetic stub titles required by the static export contract", () => {
     expect(responseForBuildApiPath("/v1/pages/home")).toEqual({ status: 200, body: { hero: {} } });
-    expect(responseForBuildApiPath("/v1/pages/about")).toEqual({ status: 200, body: { hero: {} } });
+    expect(responseForBuildApiPath("/v1/pages/about")).toEqual({
+      status: 200,
+      body: { hero: { title: "CI fixture about" } },
+    });
+    expect(responseForBuildApiPath("/v1/pages/warranty")).toEqual({
+      status: 200,
+      body: { hero: { title: "CI fixture warranty" } },
+    });
   });
 
   it("provides a valid published content revision for the guarded CI export", () => {

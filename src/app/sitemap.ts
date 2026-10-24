@@ -9,7 +9,8 @@ import {
   getAllWheelTypeSlugs,
 } from "@/lib/content";
 import { getModelApplicationCategories, getTireCategoryByValue } from "@/lib/catalog/tireCategories";
-import { SITEMAP_CONTENT_LIST_ROUTES, SITEMAP_STATIC_ROUTES } from "@/constants/navigation";
+import { ROUTES, SITEMAP_CONTENT_LIST_ROUTES, SITEMAP_STATIC_ROUTES } from "@/constants/navigation";
+import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { loadPublished } from "@/lib/content/loadPublished";
 import { getSiteUrl } from "@/lib/seo/metadata";
 
@@ -29,11 +30,21 @@ function listRouteEntry(siteUrl: string, path: string): MetadataRoute.Sitemap[nu
   };
 }
 
+const OPTIONAL_CMS_PAGE_ROUTES = [
+  { path: ROUTES.contact, key: "contact" },
+  { path: ROUTES.warranty, key: "warranty" },
+  { path: ROUTES.about, key: "about" },
+  { path: ROUTES.supplier, key: "become-a-supplier" },
+  { path: ROUTES.branding, key: "branding" },
+  { path: ROUTES.privacyPolicy, key: "privacy-policy" },
+  { path: ROUTES.shopDeliveryAndReturns, key: "shop-delivery-returns" },
+] as const;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = getSiteUrl();
 
   const loaded = await loadPublished(async () => {
-    const [productSlugs, shopCategories, tireTypeSlugs, articleSlugs, wheelTypeSlugs, wheelModelRoutes] =
+    const [productSlugs, shopCategories, tireTypeSlugs, articleSlugs, wheelTypeSlugs, wheelModelRoutes, optionalPages] =
       await Promise.all([
         getAllShopProductSlugs(),
         getShopCategories(),
@@ -41,6 +52,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         getAllTireIQSlugs(),
         getAllWheelTypeSlugs(),
         getAllWheelModelRouteParams(),
+        Promise.all(OPTIONAL_CMS_PAGE_ROUTES.map(async ({ path, key }) => ({
+          path,
+          page: await getPublishedStubOverlay(key),
+        }))),
       ]);
 
     const tireModelsByType = await Promise.all(
@@ -49,8 +64,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         models: await getTireModelsByTypeSlug(tireTypeSlug),
       })),
     );
-    return { productSlugs, shopCategories, tireTypeSlugs, articleSlugs, wheelTypeSlugs, wheelModelRoutes, tireModelsByType };
+    return {
+      productSlugs,
+      shopCategories,
+      tireTypeSlugs,
+      articleSlugs,
+      wheelTypeSlugs,
+      wheelModelRoutes,
+      tireModelsByType,
+      optionalPagePaths: optionalPages.filter(({ page }) => page !== null).map(({ path }) => path),
+    };
   });
+  const publishedOptionalPagePaths = loaded.kind === "ok" ? new Set(loaded.value.optionalPagePaths) : null;
   const {
     productSlugs,
     shopCategories,
@@ -71,7 +96,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         tireModelsByType: [],
       };
 
-  const entries: MetadataRoute.Sitemap = SITEMAP_STATIC_ROUTES.map((path) => ({
+  const staticRoutes = publishedOptionalPagePaths
+    ? SITEMAP_STATIC_ROUTES.filter((path) => {
+        const isOptionalCmsPage = OPTIONAL_CMS_PAGE_ROUTES.some((page) => page.path === path);
+        return !isOptionalCmsPage || publishedOptionalPagePaths.has(path);
+      })
+    : SITEMAP_STATIC_ROUTES;
+  const entries: MetadataRoute.Sitemap = staticRoutes.map((path) => ({
     url: publicRouteUrl(siteUrl, path),
     changeFrequency: path === "" || path === "/" ? "weekly" : "monthly",
     priority: path === "" || path === "/" ? 1 : 0.7,
