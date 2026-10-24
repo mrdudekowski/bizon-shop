@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { ShopCategoryCarousel } from "@/components/shop/ShopCategoryCarousel";
-import { shopCategoryIconUrl } from "@/lib/content/shopCategoryPresentation";
+import { shopCategoryIconUrl, shopHomeCarouselSlides } from "@/lib/content/shopCategoryPresentation";
 import { shopCategoryIndexCards } from "@/lib/content/shopCategoryPresentation";
 import type { CmsShopCategory } from "@/lib/content/types";
 import type { ShopHomePageContent } from "@/lib/content/pages/types";
