@@ -43,6 +43,8 @@ describe("mapTireModel", () => {
         full_description: { root: { children: [{ children: [{ text: "Длинный текст" }] }] } },
         series: "BIZON",
         tread_type: "ребро",
+        show_in_menu: true,
+        menu_order: 6,
         status: "published",
       },
       tireType: { slug: "tbr", name: "TBR" },
@@ -64,6 +66,8 @@ describe("mapTireModel", () => {
       gallery: [],
       selectionAxles: ["steer"],
       applicationTypes: ["long_haul"],
+      showInMenu: true,
+      menuOrder: 6,
     });
   });
 
