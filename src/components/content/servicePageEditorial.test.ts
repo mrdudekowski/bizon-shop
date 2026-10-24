@@ -4,9 +4,9 @@ import { resolveServicePageCta, resolveServicePageProof } from "./servicePageEdi
 describe("service page published proof and CTA", () => {
   it("uses the latest published proof values", () => {
     expect(resolveServicePageProof({
-      proof: { imageUrl: "https://cdn.example.test/new.jpg", imageAlt: "Новое фото", title: "Новый заголовок", text: "Новый текст" },
+      proof: { imageUrl: "https://cdn.example.test/new.jpg", imageAlt: "Новое фото", imageFocalX: 0.2, imageFocalY: 0.8, title: "Новый заголовок", text: "Новый текст" },
     }, { src: "/old.jpg", alt: "Старое фото", title: "Старый заголовок", text: "Старый текст" })).toEqual({
-      src: "https://cdn.example.test/new.jpg", alt: "Новое фото", title: "Новый заголовок", text: "Новый текст",
+      src: "https://cdn.example.test/new.jpg", alt: "Новое фото", focalX: 0.2, focalY: 0.8, title: "Новый заголовок", text: "Новый текст",
     });
   });
 

@@ -21,6 +21,10 @@ export function BrandingCampaign({ content }: { content: HomeBrandingContent }) 
         beforeImageAlt={content.beforeImageAlt}
         afterImageUrl={content.afterImageUrl}
         afterImageAlt={content.afterImageAlt}
+        beforeImageFocalX={content.beforeImageFocalX}
+        beforeImageFocalY={content.beforeImageFocalY}
+        afterImageFocalX={content.afterImageFocalX}
+        afterImageFocalY={content.afterImageFocalY}
       />
       <div className={styles.brandingOverlay} aria-hidden="true" />
       <div className={styles.inner}>

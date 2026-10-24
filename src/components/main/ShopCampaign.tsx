@@ -31,6 +31,7 @@ export function ShopCampaign({ content }: { content: HomeShopCampaignContent }) 
               alt={content.imageAlt}
               fill
               sizes="100vw"
+              style={{ objectPosition: `${(content.imageFocalX ?? 0.5) * 100}% ${(content.imageFocalY ?? 0.5) * 100}%` }}
             />
           ) : null}
         </div>

@@ -14,6 +14,7 @@ export function EditorialHighlights({ content }: { content: HomeExpertiseContent
           <Image
             className={styles.expertiseBannerImage}
             src={content.imageUrl}
+            style={{ objectPosition: `${(content.imageFocalX ?? 0.5) * 100}% ${(content.imageFocalY ?? 0.5) * 100}%` }}
             alt={content.imageAlt}
             fill
             sizes="100vw"

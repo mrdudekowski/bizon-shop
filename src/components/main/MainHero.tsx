@@ -31,6 +31,7 @@ export function MainHero({ content }: { content: HomeHeroContent }) {
             fill
             priority
             sizes="100vw"
+            style={{ objectPosition: `${(hero.imageFocalX ?? 0.5) * 100}% ${(hero.imageFocalY ?? 0.5) * 100}%` }}
           />
         ) : null}
       </div>

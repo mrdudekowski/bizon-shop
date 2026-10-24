@@ -10,7 +10,7 @@ export type PublishedStubOverlay = {
   features?: { id: string; title: string; text: string }[];
   sections?: { id: string; heading: string; body: string }[];
   notice?: { body: string } | null;
-  proof?: { imageUrl?: string | null; imageAlt?: string; title: string; text: string } | null;
+  proof?: { imageUrl?: string | null; imageAlt?: string; imageFocalX?: number; imageFocalY?: number; title: string; text: string } | null;
   cta?: { label: string; href: string; secondaryLabel?: string; secondaryHref?: string } | null;
   seoTitle?: string;
   seoDescription?: string;
@@ -20,6 +20,8 @@ export type PublishedStubOverlay = {
     lead?: string;
     imageUrl?: string | null;
     imageAlt?: string;
+    imageFocalX?: number;
+    imageFocalY?: number;
   };
 };
 

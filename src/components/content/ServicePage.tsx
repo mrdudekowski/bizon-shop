@@ -37,6 +37,8 @@ type ServicePageProps = {
   proof?: {
     src?: string;
     alt: string;
+    focalX?: number;
+    focalY?: number;
     title: string;
     text: string;
   };
@@ -47,7 +49,7 @@ type ServicePageProps = {
     features?: { id: string; title: string; text: string }[];
     sections?: { id: string; heading: string; body: string }[];
     notice?: { body: string } | null;
-    proof?: { imageUrl?: string | null; imageAlt?: string; title: string; text: string } | null;
+    proof?: { imageUrl?: string | null; imageAlt?: string; imageFocalX?: number; imageFocalY?: number; title: string; text: string } | null;
     cta?: { label: string; href: string; secondaryLabel?: string; secondaryHref?: string } | null;
   };
   runtimePageKey?: string;
@@ -77,7 +79,7 @@ export function ServicePage({
   const activeDescription = runtimePageKey ? livePage?.hero.lead ?? description : description;
   const activeKicker = runtimePageKey ? livePage?.hero.eyebrow ?? kicker : kicker;
   const activeMedia = runtimePageKey && livePage?.hero.imageUrl
-    ? { src: livePage.hero.imageUrl, alt: livePage.hero.imageAlt ?? "" }
+    ? { src: livePage.hero.imageUrl, alt: livePage.hero.imageAlt ?? "", focalX: livePage.hero.imageFocalX, focalY: livePage.hero.imageFocalY }
     : runtimePageKey ? undefined : media;
   const activeDocuments = runtimePageKey ? livePage?.documents ?? [] : documents;
   const resolvedNotice = activeEditorial?.notice !== undefined ? activeEditorial.notice?.body : notice;
@@ -123,7 +125,7 @@ export function ServicePage({
         {resolvedProof ? (
           <section className={styles.proof} aria-labelledby="service-proof-heading" data-evidence-source="service-proof">
             {resolvedProof.src ? <div className={styles.proofMedia}>
-              <Image src={resolvedProof.src} alt={resolvedProof.alt} fill sizes="(max-width: 767px) 100vw, 48vw" />
+              <Image src={resolvedProof.src} alt={resolvedProof.alt} fill sizes="(max-width: 767px) 100vw, 48vw" style={{ objectPosition: `${(resolvedProof.focalX ?? 0.5) * 100}% ${(resolvedProof.focalY ?? 0.5) * 100}%` }} />
             </div> : null}
             <div className={styles.proofCopy}>
               <h2 id="service-proof-heading">{resolvedProof.title}</h2>

@@ -12,6 +12,8 @@ export type PageHeroBreadcrumb = {
 export type PageHeroMedia = {
   src: string;
   alt: string;
+  focalX?: number;
+  focalY?: number;
 };
 
 type PageHeroProps = {
@@ -66,6 +68,7 @@ export function PageHero({
               fill
               sizes="(max-width: 767px) 100vw, 42vw"
               priority={false}
+              style={{ objectPosition: `${(media.focalX ?? 0.5) * 100}% ${(media.focalY ?? 0.5) * 100}%` }}
             />
           </div>
         ) : null}

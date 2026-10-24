@@ -11,11 +11,19 @@ export function BrandingCompare({
   beforeImageAlt,
   afterImageUrl,
   afterImageAlt,
+  beforeImageFocalX,
+  beforeImageFocalY,
+  afterImageFocalX,
+  afterImageFocalY,
 }: {
   beforeImageUrl: string | null;
   beforeImageAlt: string;
   afterImageUrl: string | null;
   afterImageAlt: string;
+  beforeImageFocalX?: number;
+  beforeImageFocalY?: number;
+  afterImageFocalX?: number;
+  afterImageFocalY?: number;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const rangeRef = useRef<HTMLInputElement>(null);
@@ -49,10 +57,10 @@ export function BrandingCompare({
       onPointerMove={onPointerMove}
     >
       <div className={styles.brandingLayer} aria-hidden="true">
-        <Image src={beforeImageUrl} alt={beforeImageAlt} fill sizes="100vw" />
+        <Image src={beforeImageUrl} alt={beforeImageAlt} fill sizes="100vw" style={{ objectPosition: `${(beforeImageFocalX ?? 0.5) * 100}% ${(beforeImageFocalY ?? 0.5) * 100}%` }} />
       </div>
       <div className={styles.brandingLayerAfter} aria-hidden="true">
-        <Image src={afterImageUrl} alt={afterImageAlt} fill sizes="100vw" />
+        <Image src={afterImageUrl} alt={afterImageAlt} fill sizes="100vw" style={{ objectPosition: `${(afterImageFocalX ?? 0.5) * 100}% ${(afterImageFocalY ?? 0.5) * 100}%` }} />
       </div>
       <div className={styles.brandingHandle} aria-hidden="true">
         <span className={styles.brandingHandleKnob}>

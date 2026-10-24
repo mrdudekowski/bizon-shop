@@ -14,6 +14,8 @@ export type PageShell = {
 export type HomeHeroContent = PageShell & {
   imageUrl: string | null;
   imageAlt: string;
+  imageFocalX?: number;
+  imageFocalY?: number;
   primaryCta: PageCta;
   secondaryCta: PageCta;
   metricLabel: string;
@@ -23,12 +25,16 @@ export type HomeHeroContent = PageShell & {
 export type HomeShopCampaignContent = PageShell & {
   imageUrl: string | null;
   imageAlt: string;
+  imageFocalX?: number;
+  imageFocalY?: number;
   cta: PageCta;
 };
 
 export type HomeExpertiseContent = PageShell & {
   imageUrl: string | null;
   imageAlt: string;
+  imageFocalX?: number;
+  imageFocalY?: number;
   cta: PageCta;
 };
 
@@ -38,8 +44,12 @@ export type HomeBrandingContent = PageShell & {
   afterCaption: string;
   beforeImageUrl: string | null;
   beforeImageAlt: string;
+  beforeImageFocalX?: number;
+  beforeImageFocalY?: number;
   afterImageUrl: string | null;
   afterImageAlt: string;
+  afterImageFocalX?: number;
+  afterImageFocalY?: number;
 };
 
 export type HomePageContent = {
@@ -129,6 +139,8 @@ export type StubMarketingPageContent = {
   hero: PageShell & {
     imageUrl: string | null;
     imageAlt: string;
+    imageFocalX?: number;
+    imageFocalY?: number;
   };
 };
 
