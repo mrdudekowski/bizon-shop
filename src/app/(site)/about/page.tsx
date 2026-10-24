@@ -18,6 +18,7 @@ export default async function AboutPage() {
   if (!page) notFound();
   return (
     <ServicePage
+      runtimePageKey="about"
       kicker={page?.hero.eyebrow ?? ""}
       title={page?.hero.title ?? ""}
       description={page?.hero.lead ?? ""}

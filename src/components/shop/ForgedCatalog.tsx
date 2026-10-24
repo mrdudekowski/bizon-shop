@@ -1,23 +1,48 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { WheelModelGrid } from "@/components/catalog/WheelModelGrid";
 import { WheelTypeCover } from "@/components/catalog/WheelTypeCover";
 import type { CmsWheelModel, CmsWheelType, CmsWheelVariant } from "@/lib/content/types";
+import { fetchBrowserPublishedJson, fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
 
 import styles from "./ForgedCatalog.module.css";
 
 const BASE_PATH = "/shop/wheels/forged";
 
 export function ForgedCatalog({
-  wheelType,
-  models,
-  variants,
+  wheelType: initialWheelType,
+  models: initialModels,
+  variants: initialVariants,
 }: {
   wheelType: CmsWheelType;
   models: CmsWheelModel[];
   variants: CmsWheelVariant[];
 }) {
+  const [wheelType, setWheelType] = useState(initialWheelType);
+  const [models, setModels] = useState(initialModels);
+  const [variants, setVariants] = useState(initialVariants);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void Promise.all([
+      fetchBrowserPublishedJson<CmsWheelType>("/v1/wheels/types/forged", controller.signal),
+      fetchBrowserPublishedList<CmsWheelModel>("/v1/wheels/types/forged/models", controller.signal),
+      fetchBrowserPublishedList<CmsWheelVariant>("/v1/wheels/types/forged/variants", controller.signal),
+    ]).then(([publishedType, publishedModels, publishedVariants]) => {
+      if (controller.signal.aborted) return;
+      setWheelType(publishedType);
+      setModels(publishedModels);
+      setVariants(publishedVariants);
+    }).catch((error: unknown) => {
+      if (!controller.signal.aborted) console.warn("Could not refresh published forged wheel catalog; showing generated content.", error);
+    });
+    return () => controller.abort();
+  }, []);
+
   const fallbackDescription = "Пять дизайнов кованых дисков BIZON, изготавливаемых под заказ.";
   const headerDescription = wheelType.shortDescription || wheelType.description || fallbackDescription;
 

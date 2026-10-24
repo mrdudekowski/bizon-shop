@@ -18,6 +18,7 @@ export default async function BecomeASupplierPage() {
   if (!page) notFound();
   return (
     <ServicePage
+      runtimePageKey="become-a-supplier"
       kicker={page?.hero.eyebrow ?? ""}
       title={page?.hero.title ?? ""}
       description={page?.hero.lead ?? ""}

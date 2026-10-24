@@ -1,6 +1,11 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { usePublishedStubOverlay } from "@/lib/content/usePublishedStubOverlay";
+import type { PublishedStubOverlay } from "@/lib/content/getPageContent";
+import { resolveServicePageCta, resolveServicePageProof } from "./servicePageEditorial";
 
 import { PageHero, type PageHeroBreadcrumb, type PageHeroMedia } from "@/components/content/PageHero";
 
@@ -45,6 +50,8 @@ type ServicePageProps = {
     proof?: { imageUrl?: string | null; imageAlt?: string; title: string; text: string } | null;
     cta?: { label: string; href: string; secondaryLabel?: string; secondaryHref?: string } | null;
   };
+  runtimePageKey?: string;
+  renderChildrenWithEditorial?: boolean;
 };
 
 export function ServicePage({
@@ -61,28 +68,31 @@ export function ServicePage({
   cta,
   children,
   editorial,
+  runtimePageKey,
+  renderChildrenWithEditorial = false,
 }: ServicePageProps) {
-  const resolvedNotice = editorial?.notice !== undefined ? editorial.notice?.body : notice;
-  const resolvedFeaturesHeading = editorial?.featuresHeading ?? featuresHeading;
-  const resolvedFeatures = editorial?.features ?? features;
-  const resolvedProof = editorial?.proof !== undefined
-    ? editorial.proof
-      ? { ...(editorial.proof.imageUrl ? { src: editorial.proof.imageUrl } : {}), alt: editorial.proof.imageAlt ?? "", title: editorial.proof.title, text: editorial.proof.text }
-      : undefined
-    : proof;
-  const resolvedCta = editorial?.cta !== undefined
-    ? editorial.cta
-      ? { href: editorial.cta.href, label: editorial.cta.label, secondaryHref: editorial.cta.secondaryHref, secondaryLabel: editorial.cta.secondaryLabel }
-      : undefined
-    : cta;
+  const livePage = usePublishedStubOverlay(runtimePageKey ?? "", runtimePageKey ? editorial as PublishedStubOverlay : null);
+  const activeEditorial = runtimePageKey ? livePage : editorial;
+  const activeTitle = runtimePageKey ? livePage?.hero.title ?? title : title;
+  const activeDescription = runtimePageKey ? livePage?.hero.lead ?? description : description;
+  const activeKicker = runtimePageKey ? livePage?.hero.eyebrow ?? kicker : kicker;
+  const activeMedia = runtimePageKey && livePage?.hero.imageUrl
+    ? { src: livePage.hero.imageUrl, alt: livePage.hero.imageAlt ?? "" }
+    : runtimePageKey ? undefined : media;
+  const activeDocuments = runtimePageKey ? livePage?.documents ?? [] : documents;
+  const resolvedNotice = activeEditorial?.notice !== undefined ? activeEditorial.notice?.body : notice;
+  const resolvedFeaturesHeading = activeEditorial?.featuresHeading ?? featuresHeading;
+  const resolvedFeatures = activeEditorial?.features ?? features;
+  const resolvedProof = resolveServicePageProof(activeEditorial, proof);
+  const resolvedCta = resolveServicePageCta(activeEditorial, cta);
   return (
     <div data-main-chrome-tone="light">
       <PageHero
-        kicker={kicker}
-        title={title}
-        description={description}
+        kicker={activeKicker}
+        title={activeTitle}
+        description={activeDescription}
         breadcrumbs={breadcrumbs}
-        media={media}
+        media={activeMedia}
       />
       <div className={styles.body}>
         {resolvedNotice ? <div className={styles.notice}>{resolvedNotice}</div> : null}
@@ -122,22 +132,25 @@ export function ServicePage({
           </section>
         ) : null}
 
-        {editorial?.sections !== undefined
-          ? editorial.sections.map((section) => (
+        {activeEditorial?.sections !== undefined ? (
+          <>
+            {activeEditorial.sections.map((section) => (
               <section key={section.id} className={styles.editorialSection}>
                 <h2>{section.heading}</h2>
                 {section.body.split(/\r?\n\s*\r?\n/).filter(Boolean).map((paragraph, index) => (
                   <p key={`${section.id}-${index}`}>{paragraph}</p>
                 ))}
               </section>
-            ))
-          : children}
+            ))}
+            {renderChildrenWithEditorial ? children : null}
+          </>
+        ) : children}
 
-        {documents.length > 0 ? (
+        {activeDocuments.length > 0 ? (
           <section className={styles.documents} aria-labelledby="service-documents-heading">
             <h2 id="service-documents-heading">Документы</h2>
             <ul>
-              {documents.map((document, index) => (
+              {activeDocuments.map((document, index) => (
                 <li key={`${document.url}-${index}`}>
                   <a href={document.url}>{document.title || "Скачать документ"}</a>
                 </li>

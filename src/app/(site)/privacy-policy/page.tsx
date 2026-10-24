@@ -18,6 +18,7 @@ export default async function PrivacyPolicyPage() {
   if (!page) notFound();
   return (
     <ServicePage
+      runtimePageKey="privacy-policy"
       kicker={page?.hero.eyebrow ?? ""}
       title={page?.hero.title ?? ""}
       description={page?.hero.lead ?? ""}

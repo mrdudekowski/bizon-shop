@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 
@@ -6,24 +8,26 @@ import type { HomeHeroContent } from "@/lib/content/pages/types";
 import styles from "./MainHome.module.css";
 
 export function MainHero({ content }: { content: HomeHeroContent }) {
-  const primaryCta = content.primaryCta.label.trim() && content.primaryCta.href.trim()
-    ? content.primaryCta
+  const hero = content;
+
+  const primaryCta = hero.primaryCta.label.trim() && hero.primaryCta.href.trim()
+    ? hero.primaryCta
     : null;
-  const secondaryCta = content.secondaryCta.label.trim() && content.secondaryCta.href.trim()
-    ? content.secondaryCta
+  const secondaryCta = hero.secondaryCta.label.trim() && hero.secondaryCta.href.trim()
+    ? hero.secondaryCta
     : null;
 
   return (
     <section className={styles.hero} data-main-chrome-tone="dark">
       <div className={styles.heroMedia}>
-        {content.imageUrl ? (
+        {hero.imageUrl ? (
           <Image
             src={
-              content.imageUrl.startsWith("/")
-                ? `${content.imageUrl}?v=otr`
-                : content.imageUrl
+              hero.imageUrl.startsWith("/")
+                ? `${hero.imageUrl}?v=otr`
+                : hero.imageUrl
             }
-            alt={content.imageAlt}
+            alt={hero.imageAlt}
             fill
             priority
             sizes="100vw"
@@ -35,9 +39,9 @@ export function MainHero({ content }: { content: HomeHeroContent }) {
 
       <div className={styles.inner}>
         <div className={styles.heroCopy}>
-          {content.eyebrow ? <p className={styles.eyebrow}>{content.eyebrow}</p> : null}
-          <h1>{content.title}</h1>
-          <p>{content.lead}</p>
+          {hero.eyebrow ? <p className={styles.eyebrow}>{hero.eyebrow}</p> : null}
+          <h1>{hero.title}</h1>
+          <p>{hero.lead}</p>
           {primaryCta || secondaryCta ? (
             <div className={styles.heroActions}>
               {primaryCta ? (
@@ -52,10 +56,10 @@ export function MainHero({ content }: { content: HomeHeroContent }) {
               ) : null}
             </div>
           ) : null}
-          {content.metricLabel || content.metricText ? (
+          {hero.metricLabel || hero.metricText ? (
             <div className={styles.heroMetric}>
-              {content.metricLabel ? <strong>{content.metricLabel}</strong> : null}
-              {content.metricText ? <span>{content.metricText}</span> : null}
+              {hero.metricLabel ? <strong>{hero.metricLabel}</strong> : null}
+              {hero.metricText ? <span>{hero.metricText}</span> : null}
             </div>
           ) : null}
         </div>

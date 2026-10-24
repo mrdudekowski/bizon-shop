@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import { WheelTypeRuntime } from "@/components/catalog/WheelTypeRuntime";
 import {
   getAllWheelTypeSlugs,
   getWheelModelsByTypeSlug,
@@ -7,10 +7,6 @@ import {
   getWheelVariantsByTypeSlug,
 } from "@/lib/content";
 import { createPageMetadata } from "@/lib/seo/metadata";
-import { PageHeader } from "@/components/catalog/PageHeader";
-import { WheelTypeCover } from "@/components/catalog/WheelTypeCover";
-import { WheelModelGrid } from "@/components/catalog/WheelModelGrid";
-import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { ForgedCatalog } from "@/components/shop/ForgedCatalog";
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { loadPublished } from "@/lib/content/loadPublished";
@@ -69,33 +65,5 @@ export default async function WheelTypePage({ params }: PageProps) {
     return <ForgedCatalog wheelType={wheelType} models={models} variants={variants} />;
   }
 
-  const typeBasePath = `/shop/wheels/${wheelType.slug}`;
-
-  return (
-    <div className="section-inner">
-      <PageHeader
-        title={wheelType.name}
-        description={wheelType.shortDescription || wheelType.description}
-        breadcrumbs={[
-          { href: "/", label: "Главная" },
-          { href: "/shop", label: "Магазин" },
-          { href: typeBasePath, label: wheelType.name },
-        ]}
-      />
-      <WheelTypeCover imageUrl={wheelType.imageUrl} name={wheelType.name} />
-      {wheelType.shortDescription && wheelType.description && (
-        <p className="section-description">{wheelType.description}</p>
-      )}
-      {models.length > 0 ? (
-        <WheelModelGrid models={models} variants={variants} typeBasePath={typeBasePath} />
-      ) : (
-        <p className="section-description">Модели этого типа скоро появятся.</p>
-      )}
-      <p className="mt-8">
-        <Link href="/shop" className="btn-glass inline-flex">
-          <SiteArrow direction="left" /> Магазин
-        </Link>
-      </p>
-    </div>
-  );
+  return <WheelTypeRuntime type={wheelType} models={models} variants={variants} />;
 }

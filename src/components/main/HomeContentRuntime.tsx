@@ -1,0 +1,53 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { BrandingCampaign } from "@/components/main/BrandingCampaign";
+import { ExpertiseSupport } from "@/components/main/ExpertiseSupport";
+import { HomeShopZoneCanvas } from "@/components/main/HomeShopZoneCanvas";
+import { MainHero } from "@/components/main/MainHero";
+import { ShopCampaign } from "@/components/main/ShopCampaign";
+import { TireDirectionShowcase } from "@/components/main/TireDirectionShowcase";
+import { fetchBrowserTireCatalog } from "@/lib/catalog/browserTireCatalog";
+import type { TireCatalogReadModel } from "@/lib/catalog/tireReadModel";
+import { fetchBrowserPublishedJson } from "@/lib/content/browserPublishedClient";
+import { getPageDefaults } from "@/lib/content/pages/defaults";
+import { mergeHomeContent } from "@/lib/content/pages/merge";
+import type { HomePageContent } from "@/lib/content/pages/types";
+import styles from "./MainHome.module.css";
+
+export function HomeContentRuntime({
+  initialPage,
+  initialCatalog,
+}: {
+  initialPage: HomePageContent;
+  initialCatalog: TireCatalogReadModel | null;
+}) {
+  const [page, setPage] = useState(initialPage);
+  const [catalog, setCatalog] = useState(initialCatalog);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchBrowserPublishedJson<Parameters<typeof mergeHomeContent>[1]>("/v1/pages/home", controller.signal)
+      .then((patch) => setPage(mergeHomeContent(getPageDefaults("home"), patch)))
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) console.warn("Could not refresh published home content; showing generated content.", error);
+      });
+    void fetchBrowserTireCatalog(controller.signal)
+      .then(setCatalog)
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) console.warn("Could not refresh published home catalog; showing generated content.", error);
+      });
+    return () => controller.abort();
+  }, []);
+
+  return (
+    <div className={styles.homeShell} data-home-shell="">
+      <HomeShopZoneCanvas />
+      <MainHero content={page.hero} />
+      <TireDirectionShowcase catalog={catalog} content={page.directions} />
+      <BrandingCampaign content={page.branding} />
+      <ShopCampaign content={page.shopCampaign} />
+      <ExpertiseSupport content={page.expertise} />
+    </div>
+  );
+}

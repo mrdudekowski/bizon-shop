@@ -1,13 +1,10 @@
 import { notFound } from "next/navigation";
 
-import { ArticleLayout } from "@/components/content/ArticleLayout";
+import { TireIqArticleRuntime } from "@/components/content/TireIqArticleRuntime";
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
-import { LexicalContent } from "@/components/content/LexicalContent";
-import { TireIqContextualVisuals } from "@/components/content/TireIqContextualVisuals";
 import { getAllTireIQSlugs, getTireIQArticleBySlug } from "@/lib/content";
 import { loadPublished } from "@/lib/content/loadPublished";
 import { createPageMetadata } from "@/lib/seo/metadata";
-import { resolveTireIqArticleCover } from "@/lib/content/tireIqVisuals";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -46,25 +43,5 @@ export default async function TireIQArticlePage({ params }: PageProps) {
   const article = loaded.value;
   if (!article) notFound();
 
-  return (
-    <ArticleLayout
-      kicker="Tire IQ"
-      title={article.title}
-      description={article.excerpt}
-      breadcrumbs={[
-        { href: "/", label: "Главная" },
-        { href: "/tire-iq", label: "Tire IQ" },
-        { href: `/tire-iq/${article.slug}`, label: article.title },
-      ]}
-      meta={article.publishedAt}
-      imageUrl={resolveTireIqArticleCover(article)}
-      imageAlt={article.title}
-      fallbackKey={article.slug}
-      backHref="/tire-iq"
-      backLabel="Все статьи"
-    >
-      <TireIqContextualVisuals slug={article.slug} />
-      <LexicalContent data={article.content} fallback={article.excerpt} />
-    </ArticleLayout>
-  );
+  return <TireIqArticleRuntime article={article} />;
 }

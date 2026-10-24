@@ -14,7 +14,11 @@ import { useMenuToggle } from "@/hooks/useMenuToggle";
 import { scrollToTop } from "@/lib/scroll";
 import { useLenis } from "lenis/react";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ROUTES } from "@/constants/navigation";
+import { fetchBrowserTireCatalog } from "@/lib/catalog/browserTireCatalog";
+import { buildMainDualPaneMenuSections, buildShopDualPaneMenuSections } from "@/lib/content/buildDualPaneMenu";
+import { fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
 
 /**
  * Client shell: header, burger menu, footer, scroll helpers.
@@ -22,18 +26,59 @@ import { ROUTES } from "@/constants/navigation";
  */
 export function SiteShell({ children, mainMenu, shopMenu }) {
   const { menuOpen, closeMenu, toggleMenu } = useMenuToggle();
+  const [runtimeMainMenu, setRuntimeMainMenu] = useState(mainMenu);
+  const [runtimeShopMenu, setRuntimeShopMenu] = useState(shopMenu);
+  const [menuRefreshed, setMenuRefreshed] = useState(false);
+  const [publishedCategories, setPublishedCategories] = useState(null);
   const lenis = useLenis();
   const pathname = usePathname();
   const isShop = pathname === ROUTES.shop || pathname.startsWith(`${ROUTES.shop}/`);
   const cartKind = isShop ? "shop" : "bizon";
   const cart = useCart(cartKind);
-  const menu = isShop ? shopMenu : mainMenu;
-  const categoryItems = shopMenu?.sections?.find((section) => section.id === "categories")?.items ?? [];
-  const categoryLinks = [
+  const menu = isShop ? runtimeShopMenu : runtimeMainMenu;
+  const categoryItems = runtimeShopMenu?.sections?.find((section) => section.id === "categories")?.items ?? [];
+  const categoryLinks = publishedCategories ? [
+    ...publishedCategories.filter((category) => category.showInMenu).sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((category) => ({ href: `${ROUTES.shop}/${category.slug}`, label: category.name })),
+    { href: ROUTES.shopCategories, label: "Все категории" },
+  ] : [
     ...categoryItems.filter((item) => item.id !== "all-categories"),
     ...categoryItems.filter((item) => item.id === "all-categories"),
   ].map((item) => ({ href: item.href, label: item.title }));
   useBodyScrollLock(cart.open, "cart-open");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchBrowserPublishedList("/v1/shop/categories", controller.signal)
+      .then(setPublishedCategories)
+      .catch((error) => {
+        if (!controller.signal.aborted) console.warn("Could not refresh Shop footer categories; showing generated links.", error);
+      });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen || menuRefreshed) return;
+    const controller = new AbortController();
+    void Promise.all([
+      fetchBrowserTireCatalog(controller.signal),
+      fetchBrowserPublishedList("/v1/articles", controller.signal),
+      fetchBrowserPublishedList("/v1/shop/categories", controller.signal),
+      fetchBrowserPublishedList("/v1/wheels/types", controller.signal),
+    ]).then(async ([tires, articles, categories, wheelTypes]) => {
+      const wheelGroups = await Promise.all(wheelTypes.map((type) =>
+        fetchBrowserPublishedList(`/v1/wheels/types/${encodeURIComponent(type.slug)}/models`, controller.signal),
+      ));
+      if (controller.signal.aborted) return;
+      const tireModels = tires.directions.flatMap((direction) => direction.models);
+      setRuntimeMainMenu({ defaultSectionId: "models", sections: buildMainDualPaneMenuSections({ models: tireModels, articles, categories }) });
+      setRuntimeShopMenu({ defaultSectionId: "wheels", sections: buildShopDualPaneMenuSections({ wheels: wheelGroups.flat(), categories }) });
+      setMenuRefreshed(true);
+    }).catch((error) => {
+      if (!controller.signal.aborted) console.warn("Could not refresh published menu content; showing generated menu.", error);
+    });
+    return () => controller.abort();
+  }, [menuOpen, menuRefreshed]);
 
   return (
     <>

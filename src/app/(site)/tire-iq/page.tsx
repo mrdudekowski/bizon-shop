@@ -1,4 +1,4 @@
-import { EditorialListing } from "@/components/content/EditorialListing";
+import { TireIqListingRuntime } from "@/components/content/TireIqListingRuntime";
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { TireIqApplicationGuide } from "@/components/content/TireIqApplicationGuide";
 import { TireIqAxleSelector } from "@/components/content/TireIqAxleSelector";
@@ -8,7 +8,6 @@ import { TireIqJobNav } from "@/components/content/TireIqJobNav";
 import { getTireIQArticles } from "@/lib/content";
 import { loadPublished } from "@/lib/content/loadPublished";
 import { TIRE_IQ_JOBS } from "@/lib/content/tireIqJobs";
-import { resolveTireIqArticleCover } from "@/lib/content/tireIqVisuals";
 import { createPageMetadata } from "@/lib/seo/metadata";
 
 export const metadata = createPageMetadata({
@@ -30,37 +29,16 @@ export default async function TireIQPage() {
   const articles = loaded.value;
   const hasKnowledge = articles.length > 0;
 
-  return (
-    <EditorialListing
-      kicker="Инженерные решения для подбора и эксплуатации"
-      title="Tire IQ"
-      description="Методики подбора, диагностики и эксплуатации шин для fleet-операторов и технических специалистов."
-      breadcrumbs={[
-        { href: "/", label: "Главная" },
-        { href: "/tire-iq", label: "Tire IQ" },
-      ]}
-      beforeContent={
-        <>
-          <TireIqJobNav jobs={TIRE_IQ_JOBS} hasKnowledge={hasKnowledge} />
-          <TireIqApplicationGuide hasKnowledge={hasKnowledge} />
-          <TireIqAxleSelector hasKnowledge={hasKnowledge} />
-          <TireIqDumpTruckSelector hasKnowledge={hasKnowledge} />
-          <TireIqBusSelector hasKnowledge={hasKnowledge} />
-        </>
-      }
-      items={articles.map((article) => ({
-        key: article.slug,
-        href: `/tire-iq/${article.slug}`,
-        title: article.title,
-        description: article.excerpt,
-        meta: article.publishedAt,
-        taxonomy: article.taxonomy,
-        imageUrl: resolveTireIqArticleCover(article),
-        showImage: resolveTireIqArticleCover(article) !== null,
-        imageAlt: article.title,
-        fallbackKey: article.slug,
-      }))}
-      emptyMessage="Опубликованных статей Tire IQ пока нет."
-    />
-  );
+  return <TireIqListingRuntime
+    articles={articles}
+    beforeContent={
+      <>
+        <TireIqJobNav jobs={TIRE_IQ_JOBS} hasKnowledge={hasKnowledge} />
+        <TireIqApplicationGuide hasKnowledge={hasKnowledge} />
+        <TireIqAxleSelector hasKnowledge={hasKnowledge} />
+        <TireIqDumpTruckSelector hasKnowledge={hasKnowledge} />
+        <TireIqBusSelector hasKnowledge={hasKnowledge} />
+      </>
+    }
+  />;
 }

@@ -14,8 +14,8 @@ import { PageHeader } from "@/components/catalog/PageHeader";
 import { TireVariantsTable } from "@/components/catalog/TireVariantsTable";
 import { getModelApplicationCategories, getModelApplicationLabels } from "@/lib/catalog/tireCategories";
 import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
-import type { CmsTireVariant } from "@/lib/content/types";
-import { fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
+import type { CmsTireModel, CmsTireVariant } from "@/lib/content/types";
+import { fetchBrowserPublishedJson, fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
 import { AXLE_OPTIONS } from "@/lib/selection/options";
 
 import styles from "./TireCatalog.module.css";
@@ -64,27 +64,36 @@ type TireModelStageProps = {
 };
 
 export function TireModelStage({
-  model,
+  model: initialModel,
   variants: initialVariants,
   modelPath,
   breadcrumbs,
 }: TireModelStageProps) {
+  const [model, setModel] = useState(initialModel);
   const [variants, setVariants] = useState(initialVariants);
 
   useEffect(() => {
     const controller = new AbortController();
-    void fetchBrowserPublishedList<CmsTireVariant>(
-      `/v1/tires/models/${encodeURIComponent(model.id)}/variants`,
+    void fetchBrowserPublishedJson<CmsTireModel>(
+      `/v1/tires/models/${encodeURIComponent(initialModel.tireTypeSlug)}/${encodeURIComponent(initialModel.slug)}`,
       controller.signal,
-    ).then((publishedVariants) => {
-      if (!controller.signal.aborted) setVariants(publishedVariants);
+    ).then((publishedModel) => {
+      if (!controller.signal.aborted) {
+        setModel({ ...publishedModel, href: initialModel.href, sizes: initialModel.sizes });
+        return fetchBrowserPublishedList<CmsTireVariant>(
+          `/v1/tires/models/${encodeURIComponent(publishedModel.id)}/variants`,
+          controller.signal,
+        ).then((publishedVariants) => {
+          if (!controller.signal.aborted) setVariants(publishedVariants);
+        });
+      }
     }).catch((error: unknown) => {
       if (!controller.signal.aborted) {
-        console.warn("Could not refresh published tire variants; showing the generated page.", error);
+        console.warn("Could not refresh published tire model; showing the generated page.", error);
       }
     });
     return () => controller.abort();
-  }, [model.id]);
+  }, [initialModel.id, initialModel.slug, initialModel.tireTypeSlug, initialModel.href, initialModel.sizes]);
 
   const applications = getModelApplicationCategories(model);
   const application = getModelApplicationLabels(model).join(" · ");

@@ -18,6 +18,7 @@ export default async function WarrantyPage() {
   if (!page) notFound();
   return (
     <ServicePage
+      runtimePageKey="warranty"
       kicker={page?.hero.eyebrow ?? ""}
       title={page?.hero.title ?? ""}
       description={page?.hero.lead ?? ""}

@@ -1,5 +1,8 @@
+"use client";
+
 import { Suspense } from "react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { TireCatalogFilters } from "@/components/catalog/TireCatalogFilters";
 import { TireCatalogFilterController } from "@/components/catalog/TireCatalogFilterController";
@@ -8,6 +11,7 @@ import { PageHeader } from "@/components/catalog/PageHeader";
 import { getTireCategoryBySlug } from "@/lib/catalog/tireCategories";
 import { filterTireModels, formatTireModelCount, type TireFilters } from "@/lib/catalog/tireFilters";
 import type { TireCatalogDirection } from "@/lib/catalog/tireReadModel";
+import { fetchBrowserTireDirection } from "@/lib/catalog/browserTireCatalog";
 
 import styles from "./TireCatalog.module.css";
 
@@ -18,10 +22,31 @@ type TireDirectionPageProps = {
 };
 
 export function TireDirectionPage({
-  direction,
+  direction: initialDirection,
   filters,
   categorySlug,
 }: TireDirectionPageProps) {
+  const [direction, setDirection] = useState(initialDirection);
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchBrowserTireDirection(initialDirection.slug, controller.signal)
+      .then((published) => {
+        if (controller.signal.aborted) return;
+        const initialModels = new Map(initialDirection.models.map((model) => [model.id, model]));
+        setDirection({
+          ...published,
+          models: published.models.map((model) => ({
+            ...model,
+            sizes: initialModels.get(model.id)?.sizes ?? [],
+          })),
+        });
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) console.warn("Could not refresh published tire direction; showing generated content.", error);
+      });
+    return () => controller.abort();
+  }, [initialDirection]);
+
   const category = categorySlug ? getTireCategoryBySlug(categorySlug) : undefined;
   const effectiveFilters = category
     ? { ...filters, application: category.value }

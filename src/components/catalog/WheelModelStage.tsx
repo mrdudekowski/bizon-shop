@@ -36,8 +36,10 @@ export function WheelModelStage({
     void Promise.all([
       fetchBrowserPublishedJson<CmsWheelType>(`/v1/wheels/types/${encodeURIComponent(initialWheelType.slug)}`, controller.signal),
       fetchBrowserPublishedJson<CmsWheelModel>(`/v1/wheels/models/${encodeURIComponent(initialWheelType.slug)}/${encodeURIComponent(initialModel.slug)}`, controller.signal),
-      fetchBrowserPublishedList<CmsWheelVariant>(`/v1/wheels/models/${encodeURIComponent(initialModel.id)}/variants`, controller.signal),
-    ]).then(([publishedType, publishedModel, publishedVariants]) => {
+    ]).then(async ([publishedType, publishedModel]) => {
+      const publishedVariants = await fetchBrowserPublishedList<CmsWheelVariant>(
+        `/v1/wheels/models/${encodeURIComponent(publishedModel.id)}/variants`, controller.signal,
+      );
       if (controller.signal.aborted) return;
       setWheelType(publishedType);
       setModel(publishedModel);

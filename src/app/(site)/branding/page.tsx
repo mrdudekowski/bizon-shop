@@ -18,6 +18,7 @@ export default async function BrandingPage() {
   if (!page) notFound();
   return (
     <ServicePage
+      runtimePageKey="branding"
       kicker={page?.hero.eyebrow ?? ""}
       title={page?.hero.title ?? ""}
       description={page?.hero.lead ?? ""}
