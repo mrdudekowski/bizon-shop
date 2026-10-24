@@ -1,6 +1,6 @@
 # BIZON public site
 
-The public BIZON site and Shop use Next.js 15 with static export. During a production build, published content and catalog routes are read from `backend-app` through `CONTENT_API_URL`. A CMS publication requests a new static-site deploy; it does not update already exported pages in place.
+The public BIZON site and Shop use Next.js 15 with static export. During a production build, published content and catalog routes are read from `backend-app` through `CONTENT_API_URL` to generate HTML and SEO metadata. The Shop home, categories, product pages, wheel model pages, and tire variant tables then refresh their published data from the public API in the visitor's browser, so edits to these records do not wait for a rebuild. Other public routes currently remain build-time snapshots. A CMS publication may still request a deploy to refresh SEO HTML and generated routes.
 
 The system has three independent applications:
 
@@ -11,7 +11,7 @@ The system has three independent applications:
 | Backend API | `backend-app/` | 4000 | Authentication, CMS operations, published read API, requests, cart and media persistence |
 | PostgreSQL | Docker Compose | 5433 | Persistent application data |
 
-The backend is the only application that connects to PostgreSQL. The CMS calls its admin API from the browser. The public site calls public API routes for forms and cart; its published page data is fetched during the static build.
+The backend is the only application that connects to PostgreSQL. The CMS calls its admin API from the browser. The public site calls public API routes for forms and cart; published data is read at build time for static HTML and refreshed in the browser on the main Shop and catalog routes after page load.
 
 ## Local development
 

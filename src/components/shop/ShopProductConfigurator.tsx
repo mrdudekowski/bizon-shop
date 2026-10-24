@@ -12,6 +12,7 @@ import { resolveCatalogImageSrc } from "@/constants/images";
 import { useCart } from "@/hooks/useCart";
 import { cartItemKey, requestOpenCart } from "@/lib/cart/cartStorage";
 import type { CmsProduct, CmsProductVariant } from "@/lib/content/types";
+import { fetchBrowserPublishedJson } from "@/lib/content/browserPublishedClient";
 import type { RequestItemInput } from "@/types/requestItem";
 import styles from "./ShopProductConfigurator.module.css";
 
@@ -37,7 +38,8 @@ function variantLabel(variant: CmsProductVariant): string {
     .join(" · ");
 }
 
-export function ShopProductConfigurator({ product }: { product: CmsProduct }) {
+export function ShopProductConfigurator({ product: initialProduct }: { product: CmsProduct }) {
+  const [product, setProduct] = useState(initialProduct);
   const router = useRouter();
   const pathname = usePathname();
   const [searchParams, setSearchParams] = useState(() => new URLSearchParams());
@@ -53,6 +55,22 @@ export function ShopProductConfigurator({ product }: { product: CmsProduct }) {
     window.addEventListener("popstate", syncSearchParams);
     return () => window.removeEventListener("popstate", syncSearchParams);
   }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setProduct(initialProduct);
+    void fetchBrowserPublishedJson<CmsProduct>(
+      `/v1/shop/products/${encodeURIComponent(initialProduct.slug)}`,
+      controller.signal,
+    ).then((publishedProduct) => {
+      if (!controller.signal.aborted) setProduct(publishedProduct);
+    }).catch((error: unknown) => {
+      if (!controller.signal.aborted) {
+        console.warn("Could not refresh published product; showing the generated page.", error);
+      }
+    });
+    return () => controller.abort();
+  }, [initialProduct]);
 
   const optionGroups = useMemo(
     () => GROUPS.map((group) => ({

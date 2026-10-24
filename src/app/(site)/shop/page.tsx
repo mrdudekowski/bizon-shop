@@ -1,22 +1,14 @@
-import Image from "next/image";
-import Link from "next/link";
-import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
-import { ShopCategoryShowcase } from "@/components/shop/ShopCategoryShowcase";
-import { ShopOrderSteps } from "./ShopOrderSteps";
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { getPageContent, getShopCategories, getWheelModelsByTypeSlug } from "@/lib/content";
 import { loadPublished } from "@/lib/content/loadPublished";
-import { shopHomeCarouselSlides, shopHomeCategoryCards } from "@/lib/content/shopCategoryPresentation";
 import { createPageMetadata } from "@/lib/seo/metadata";
-import styles from "./ShopHome.module.css";
+import { ShopHomeClient } from "./ShopHomeClient";
 
 export async function generateMetadata() {
   const page = await getPageContent("shop-home");
   return createPageMetadata({
     title: page.seoTitle ?? "BIZON Shop",
-    description:
-      page.seoDescription ??
-      "Кованые диски BIZON под заказ, аксессуары и outdoor-товары.",
+    description: page.seoDescription ?? "Кованые диски BIZON под заказ, аксессуары и outdoor-товары.",
     path: "/shop",
   });
 }
@@ -28,144 +20,13 @@ export default async function ShopPage() {
     getShopCategories(),
   ]));
   if (loaded.kind === "unavailable") return <PublishedContentUnavailable />;
-  const [page, forgedModels, shopCategories] = loaded.value;
 
-  const forgedModelsBySlug = new Map(forgedModels.map((model) => [model.slug, model]));
-  const homeModels = [...forgedModelsBySlug.values()]
-    .filter((model) => model.showInMenu && model.imageUrl)
-    .sort((a, b) => a.menuOrder - b.menuOrder)
-    .slice(0, 3);
-  const categorySlides = shopHomeCarouselSlides(shopCategories, page.catalog.tiles);
-  const categoryCards = shopHomeCategoryCards(shopCategories, page.catalog.tiles);
-
+  const [initialPage, initialModels, initialCategories] = loaded.value;
   return (
-    <div className={styles.page}>
-      <section className={styles.hero} data-shop-chrome-tone="dark">
-        <div className={styles.heroMedia}>
-          {page.hero.imageUrl ? (
-            <Image
-              src={page.hero.imageUrl}
-              alt={page.hero.imageAlt}
-              fill
-              priority
-              sizes="100vw"
-            />
-          ) : null}
-        </div>
-        <div className={styles.heroOverlay} />
-        <div className={styles.heroContent}>
-          <p className={styles.eyebrow}>{page.hero.eyebrow}</p>
-          <h1>{page.hero.title}</h1>
-          <p className={styles.heroLead}>{page.hero.lead}</p>
-          {page.hero.cta.label.trim() && page.hero.cta.href.trim() ? (
-            <Link className={styles.heroAction} href={page.hero.cta.href}>
-              {page.hero.cta.label}
-            </Link>
-          ) : null}
-        </div>
-      </section>
-
-      <section
-        className={styles.modelsSection}
-        id="wheels"
-        data-shop-chrome-tone="dark"
-        aria-labelledby="shop-title"
-      >
-        <div className={styles.content}>
-          <div className={styles.modelsIntro}>
-            <p className={styles.collectionKicker}>{page.wheelsIntro.kicker}</p>
-            <h2 id="shop-title">{page.wheelsIntro.title}</h2>
-            <p>{page.wheelsIntro.lead}</p>
-          </div>
-
-          <div className={styles.modelGrid}>
-            {homeModels.map((model) => (
-              <Link
-                className={styles.modelCard}
-                href={`/shop/wheels/forged/${model.slug}`}
-                key={model.slug}
-              >
-                <span className={styles.modelMedia}>
-                  <Image
-                    src={model.imageUrl!}
-                    alt={model.name}
-                    fill
-                    sizes="(max-width: 767px) 92vw, 33vw"
-                  />
-                </span>
-                <span className={styles.modelContent}>
-                  <span className={styles.modelStatus}>Изготавливается под заказ</span>
-                  <strong>{model.name}</strong>
-                  <span>
-                    {[model.designStyle, model.series].filter(Boolean).join(" · ")}
-                  </span>
-                </span>
-                <span className={styles.modelArrow} aria-hidden="true">
-                  <SiteArrow direction="ne" />
-                </span>
-              </Link>
-            ))}
-          </div>
-
-          <ShopOrderSteps steps={page.orderSteps} />
-        </div>
-      </section>
-
-      <section className={styles.categoriesSection} id="categories" data-shop-chrome-tone="dark" aria-labelledby="categories-title">
-        {categorySlides.length || categoryCards.length ? (
-          <ShopCategoryShowcase slides={categorySlides} cards={categoryCards} />
-        ) : (
-          <div className={styles.content}>
-            <div className={styles.categoriesEmpty}>
-              <p>Категории появятся здесь после публикации в каталоге.</p>
-              <Link href="/shop/wheels/forged">Посмотреть кованые диски <SiteArrow direction="ne" /></Link>
-            </div>
-          </div>
-        )}
-      </section>
-
-      <section
-        className={styles.vehiclesSection}
-        data-shop-section="vehicles"
-        data-shop-chrome-tone="light"
-        aria-labelledby="vehicles-title"
-      >
-        <div className={styles.vehiclesInner}>
-          <div className={styles.vehiclesHead}>
-            <div>
-              <p className={styles.darkKicker}>{page.vehicles.eyebrow}</p>
-              <h2 id="vehicles-title">{page.vehicles.title}</h2>
-              <p>{page.vehicles.lead}</p>
-            </div>
-            {page.vehicles.cta.label.trim() && page.vehicles.cta.href.trim() ? (
-              <Link className={styles.selectionAction} href={page.vehicles.cta.href}>
-                {page.vehicles.cta.label}
-              </Link>
-            ) : null}
-          </div>
-
-          <div className={styles.vehicleGrid}>
-            {page.vehicles.slides.map((story, index) => (
-              <figure
-                className={index < 2 ? styles.vehicleFeature : styles.vehicleCard}
-                key={`${story.image}-${index}`}
-              >
-                <Image
-                  src={story.image}
-                  alt={story.alt}
-                  fill
-                  sizes={
-                    index < 2
-                      ? "(max-width: 767px) 100vw, 50vw"
-                      : "(max-width: 767px) 100vw, 33vw"
-                  }
-                />
-                <figcaption>{story.title}</figcaption>
-              </figure>
-            ))}
-          </div>
-        </div>
-      </section>
-    </div>
+    <ShopHomeClient
+      initialPage={initialPage}
+      initialModels={initialModels}
+      initialCategories={initialCategories}
+    />
   );
 }

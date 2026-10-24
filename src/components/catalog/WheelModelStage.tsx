@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { WheelOrderPanel } from "@/components/catalog/WheelOrderPanel";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { LexicalContent } from "@/components/content/LexicalContent";
@@ -7,6 +10,7 @@ import { PageHeader } from "@/components/catalog/PageHeader";
 import { WheelVariantsTable } from "@/components/catalog/WheelVariantsTable";
 import { getWheelConstructionMethodLabel } from "@/lib/content/wheelConstructionMethod";
 import type { CmsWheelModel, CmsWheelType, CmsWheelVariant } from "@/lib/content/types";
+import { fetchBrowserPublishedJson, fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
 
 import styles from "./TireCatalog.module.css";
 
@@ -18,11 +22,34 @@ type WheelModelStageProps = {
 };
 
 export function WheelModelStage({
-  wheelType,
-  model,
-  variants,
+  wheelType: initialWheelType,
+  model: initialModel,
+  variants: initialVariants,
   modelPath,
 }: WheelModelStageProps) {
+  const [wheelType, setWheelType] = useState(initialWheelType);
+  const [model, setModel] = useState(initialModel);
+  const [variants, setVariants] = useState(initialVariants);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void Promise.all([
+      fetchBrowserPublishedJson<CmsWheelType>(`/v1/wheels/types/${encodeURIComponent(initialWheelType.slug)}`, controller.signal),
+      fetchBrowserPublishedJson<CmsWheelModel>(`/v1/wheels/models/${encodeURIComponent(initialWheelType.slug)}/${encodeURIComponent(initialModel.slug)}`, controller.signal),
+      fetchBrowserPublishedList<CmsWheelVariant>(`/v1/wheels/models/${encodeURIComponent(initialModel.id)}/variants`, controller.signal),
+    ]).then(([publishedType, publishedModel, publishedVariants]) => {
+      if (controller.signal.aborted) return;
+      setWheelType(publishedType);
+      setModel(publishedModel);
+      setVariants(publishedVariants);
+    }).catch((error: unknown) => {
+      if (!controller.signal.aborted) {
+        console.warn("Could not refresh published wheel model; showing the generated page.", error);
+      }
+    });
+    return () => controller.abort();
+  }, [initialModel.id, initialModel.slug, initialWheelType.slug]);
+
   const typeBasePath = `/shop/wheels/${wheelType.slug}`;
   const gallery = [
     model.imageUrl,

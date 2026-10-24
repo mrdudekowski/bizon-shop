@@ -1,22 +1,43 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { ShopProductCard } from "@/components/shop/ShopProductCard";
 import type { CmsProduct, CmsShopCategory } from "@/lib/content/types";
+import { fetchBrowserPublishedJson, fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
 import styles from "./ShopProductCatalog.module.css";
 
 export function ShopProductCatalog({
-  category,
-  products,
+  category: initialCategory,
+  products: initialProducts,
 }: {
   category: CmsShopCategory;
   products: CmsProduct[];
 }) {
+  const [category, setCategory] = useState(initialCategory);
+  const [products, setProducts] = useState(initialProducts);
   const [subcategorySlug, setSubcategorySlug] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void Promise.all([
+      fetchBrowserPublishedJson<CmsShopCategory>(`/v1/shop/categories/${encodeURIComponent(initialCategory.slug)}`, controller.signal),
+      fetchBrowserPublishedList<CmsProduct>(`/v1/shop/products?category=${encodeURIComponent(initialCategory.slug)}`, controller.signal),
+    ]).then(([publishedCategory, publishedProducts]) => {
+      if (controller.signal.aborted) return;
+      setCategory(publishedCategory);
+      setProducts(publishedProducts);
+    }).catch((error: unknown) => {
+      if (!controller.signal.aborted) {
+        console.warn("Could not refresh published Shop category; showing the generated page.", error);
+      }
+    });
+    return () => controller.abort();
+  }, [initialCategory.slug]);
+
   const subcategories = Array.from(
     new Map(products.flatMap((product) => product.subcategorySlug && product.subcategoryName
       ? [[product.subcategorySlug, product.subcategoryName] as const]

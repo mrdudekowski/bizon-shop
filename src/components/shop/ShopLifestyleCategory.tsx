@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { ShopProductCard } from "@/components/shop/ShopProductCard";
 import type { ShopLifestyleCategory } from "@/constants/shopCategories";
 import type { CmsProduct } from "@/lib/content/types";
+import { fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
 import { ShopResponsiveImage } from "./ShopResponsiveImage";
 import styles from "./ShopLifestyleCategory.module.css";
 
@@ -18,9 +22,26 @@ export function ShopLifestyleCategoryPage({
   category,
   heading,
   lead,
-  products,
+  products: initialProducts,
   sibling,
 }: ShopLifestyleCategoryProps) {
+  const [products, setProducts] = useState(initialProducts);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchBrowserPublishedList<CmsProduct>(
+      `/v1/shop/products?category=${encodeURIComponent(category.slug)}`,
+      controller.signal,
+    ).then((publishedProducts) => {
+      if (!controller.signal.aborted) setProducts(publishedProducts);
+    }).catch((error: unknown) => {
+      if (!controller.signal.aborted) {
+        console.warn("Could not refresh published lifestyle products; showing the generated page.", error);
+      }
+    });
+    return () => controller.abort();
+  }, [category.slug]);
+
   return (
     <div className={styles.page}>
       <section className={styles.hero} data-shop-chrome-tone="dark">

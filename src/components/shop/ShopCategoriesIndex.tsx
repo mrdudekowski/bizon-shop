@@ -1,24 +1,51 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { ShopCategoryCarousel } from "@/components/shop/ShopCategoryCarousel";
 import { shopCategoryIconUrl } from "@/lib/content/shopCategoryPresentation";
-import type { ShopHomeCarouselSlide } from "@/lib/content/shopCategoryPresentation";
 import { shopCategoryIndexCards } from "@/lib/content/shopCategoryPresentation";
 import type { CmsShopCategory } from "@/lib/content/types";
 import type { ShopHomePageContent } from "@/lib/content/pages/types";
+import { getPageDefaults } from "@/lib/content/pages/defaults";
+import { mergeShopHomeContent } from "@/lib/content/pages/merge";
+import { fetchBrowserPublishedJson, fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
 import styles from "./ShopCategoriesIndex.module.css";
 
 export function ShopCategoriesIndex({
-  categories,
-  catalog,
-  slides,
+  categories: initialCategories,
+  catalog: initialCatalog,
 }: {
   categories: readonly CmsShopCategory[];
   catalog: ShopHomePageContent["catalog"];
-  slides: readonly ShopHomeCarouselSlide[];
 }) {
+  const [categories, setCategories] = useState(initialCategories);
+  const [catalog, setCatalog] = useState(initialCatalog);
+  const slides = shopHomeCarouselSlides(categories, catalog.tiles);
   const cards = shopCategoryIndexCards(categories, catalog.tiles);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void Promise.all([
+      fetchBrowserPublishedJson<unknown>("/v1/pages/shop-home", controller.signal),
+      fetchBrowserPublishedList<CmsShopCategory>("/v1/shop/categories", controller.signal),
+    ]).then(([pagePatch, publishedCategories]) => {
+      if (controller.signal.aborted || !pagePatch || typeof pagePatch !== "object" || Array.isArray(pagePatch)) return;
+      const publishedPage = mergeShopHomeContent(
+        getPageDefaults("shop-home"),
+        pagePatch as Parameters<typeof mergeShopHomeContent>[1],
+      );
+      setCatalog(publishedPage.catalog);
+      setCategories(publishedCategories);
+    }).catch((error: unknown) => {
+      if (!controller.signal.aborted) {
+        console.warn("Could not refresh published Shop categories; showing the generated page.", error);
+      }
+    });
+    return () => controller.abort();
+  }, []);
 
   return (
     <div className={styles.page}>

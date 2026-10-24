@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { AdvantageIcons } from "@/components/catalog/AdvantageIcons";
 import { CatalogBuyPanel } from "@/components/catalog/CatalogBuyPanel";
@@ -12,6 +15,7 @@ import { TireVariantsTable } from "@/components/catalog/TireVariantsTable";
 import { getModelApplicationCategories, getModelApplicationLabels } from "@/lib/catalog/tireCategories";
 import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
 import type { CmsTireVariant } from "@/lib/content/types";
+import { fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
 import { AXLE_OPTIONS } from "@/lib/selection/options";
 
 import styles from "./TireCatalog.module.css";
@@ -61,10 +65,27 @@ type TireModelStageProps = {
 
 export function TireModelStage({
   model,
-  variants,
+  variants: initialVariants,
   modelPath,
   breadcrumbs,
 }: TireModelStageProps) {
+  const [variants, setVariants] = useState(initialVariants);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchBrowserPublishedList<CmsTireVariant>(
+      `/v1/tires/models/${encodeURIComponent(model.id)}/variants`,
+      controller.signal,
+    ).then((publishedVariants) => {
+      if (!controller.signal.aborted) setVariants(publishedVariants);
+    }).catch((error: unknown) => {
+      if (!controller.signal.aborted) {
+        console.warn("Could not refresh published tire variants; showing the generated page.", error);
+      }
+    });
+    return () => controller.abort();
+  }, [model.id]);
+
   const applications = getModelApplicationCategories(model);
   const application = getModelApplicationLabels(model).join(" · ");
   const axleLabels = model.selectionAxles
