@@ -40,6 +40,7 @@ import type {
 
 import type { AdminClient, SiteDeployLookup, SiteDeployResult } from "./adminClient";
 import { AdminClientError } from "./errors";
+import { ERROR_TEXT } from "./errorText";
 import { actorSession, cancelOverlappingPacks, currentUser, recordEditorMutation, requirePermission } from "./applyChangeSet";
 import {
   assertCanCancelChangeSet,
@@ -1693,7 +1694,7 @@ const savedDraftByEntity = new Map<string, unknown>();
 function remoteAdminClient(): AdminClient {
   const adminApi = adminApiBase();
   const cloneDraft = <T,>(draft: T): T => (draft == null ? draft : JSON.parse(JSON.stringify(draft)) as T);
-  const request = async (path: string, init: RequestInit) => {
+  const request = async (path: string, init: RequestInit, operation = path) => {
     if (!adminApi) throw new AdminClientError("network");
     let response: Response;
     try {
@@ -1710,9 +1711,36 @@ function remoteAdminClient(): AdminClient {
     if (typeof window !== "undefined" && (deployStatus === "started" || deployStatus === "failed" || deployStatus === "not_configured")) {
       window.dispatchEvent(new CustomEvent("bizon-site-deploy-status", { detail: { status: deployStatus, deploymentId, expectedRevision } }));
     }
-    const body = (await response.json()) as { ok: boolean; result?: unknown; code?: AdminClientError["code"] };
-    if (!body.ok) throw new AdminClientError(body.code ?? "publish_blocked");
-    return body.result;
+    const logInvalidResponse = (reason: string) => {
+      console.warn(JSON.stringify({
+        event: "admin.api_invalid_response",
+        operation,
+        status: response.status,
+        requestId: response.headers.get("x-request-id"),
+        reason,
+      }));
+    };
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      logInvalidResponse("invalid_json");
+      throw new AdminClientError("invalid_response");
+    }
+    if (body == null || typeof body !== "object" || Array.isArray(body)
+      || typeof (body as { ok?: unknown }).ok !== "boolean") {
+      logInvalidResponse("invalid_envelope");
+      throw new AdminClientError("invalid_response");
+    }
+    const payload = body as { ok: boolean; result?: unknown; code?: unknown };
+    if (!payload.ok) {
+      const code = typeof payload.code === "string" && Object.hasOwn(ERROR_TEXT, payload.code)
+        ? payload.code as AdminClientError["code"]
+        : "internal_error";
+      if (code === "internal_error" && payload.code !== "internal_error") logInvalidResponse("unknown_error_code");
+      throw new AdminClientError(code);
+    }
+    return payload.result;
   };
   const call = (method: string) => async (...args: unknown[]) => {
     const entityName = method.replace(/^(get|save|create|publish|hide)/, "");
@@ -1726,7 +1754,7 @@ function remoteAdminClient(): AdminClient {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ method, args: outgoingArgs }),
-    });
+    }, method);
     if (result != null && typeof result === "object" && "savedDraft" in result) {
       const record = result as { id: string; savedDraft: unknown };
       const key = `${entityName}:${method.startsWith("create") ? record.id : String(args[0])}`;

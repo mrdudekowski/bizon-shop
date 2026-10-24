@@ -12,6 +12,8 @@ export type AdminErrorCode =
   | "storage_unavailable"
   | "database_unavailable"
   | "database_save_failed"
+  | "internal_error"
+  | "invalid_response"
   | "network"
   | "cannot_disable_self"
   | "cannot_reset_self"

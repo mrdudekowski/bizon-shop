@@ -14,6 +14,8 @@ export const ERROR_TEXT: Record<AdminClientError["code"], string> = {
   storage_unavailable: "Хранилище файлов сейчас недоступно. Попробуйте позже.",
   database_unavailable: "База сайта сейчас недоступна. Попробуйте позже.",
   database_save_failed: "Не удалось сохранить сведения о файле. Загрузка отменена.",
+  internal_error: "Внутренняя ошибка сервера. Попробуйте позже.",
+  invalid_response: "Сервер вернул неожиданный ответ. Попробуйте позже.",
   network: "Нет связи с сервером. Проверьте, что API запущен, и повторите.",
   cannot_disable_self: "Нельзя отключить себя",
   cannot_reset_self: "Попросите другого администратора сбросить ваш пароль",
