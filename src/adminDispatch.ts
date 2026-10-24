@@ -1,4 +1,4 @@
-import { AdminClientError } from "./admin/client/errors";
+import { AdminClientError, adminCodeFromDatabaseError, adminErrorStatus } from "./admin/client/errors";
 import type { AdminClient } from "./admin/client/adminClient";
 import type { AuthenticatedAccount } from "./admin/server/adminAuth";
 import { createPostgresAdminClient } from "./admin/server/postgresAdmin";
@@ -27,8 +27,18 @@ export async function dispatchAdminCall(
     )(...(body.args ?? []));
     return { status: 200, body: { ok: true, result: result ?? null } };
   } catch (error) {
-    const code = error instanceof AdminClientError ? error.code : "publish_blocked";
-    const status = code === "forbidden" ? 403 : code === "conflict" ? 409 : 400;
-    return { status, body: { ok: false, code } };
+    if (!(error instanceof AdminClientError)) {
+      const databaseCode = adminCodeFromDatabaseError(error);
+      const code = databaseCode ?? "internal_error";
+      console.error(JSON.stringify({
+        event: "admin.action_failed",
+        method,
+        errorClass: error instanceof Error ? error.name : "unknown",
+        ...(databaseCode ? { databaseCode: (error as { code: string }).code } : {}),
+      }));
+      return { status: adminErrorStatus(code), body: { ok: false, code } };
+    }
+    const code = error.code;
+    return { status: adminErrorStatus(code), body: { ok: false, code } };
   }
 }

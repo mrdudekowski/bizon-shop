@@ -19,11 +19,11 @@ import { checkBackendReadiness } from "./readiness";
 import { createContentRevision, createRequestLogRecord } from "./requestTelemetry";
 import { CART_SESSION_COOKIES, LEGACY_CART_SESSION_COOKIE, deleteCartSession, migratedCartToken, migrateCartSessions, parseCartKind, readCartSession, sanitizeTypedCartItems, saveCartSession } from "./cartSession";
 import { insertRequest, type StoredRequestInput } from "./insertRequest";
-import { AdminClientError } from "./admin/client/errors";
+import { AdminClientError, adminCodeFromDatabaseError, adminErrorStatus } from "./admin/client/errors";
 import { LoginThrottle, type LoginAttemptTicket } from "./admin/server/loginThrottle";
 import { createPostgresAdminClient, retryPendingMediaCleanup } from "./admin/server/postgresAdmin";
 import { readJsonRequestBody, readRequestBody, RequestBodyTooLarge } from "./readRequestBody";
-import { MediaRejected, MAX_MEDIA_BYTES } from "./storage/putMedia";
+import { MediaCleanupRequired, MediaRejected, MAX_MEDIA_BYTES } from "./storage/putMedia";
 import { normalizeRequest } from "./requests/normalizeRequest";
 import { parseRequestBody, validateRequest } from "./requests/validateRequest";
 import { checkRateLimit, trustedClientAddress } from "./security/rateLimit";
@@ -357,13 +357,23 @@ async function handleRequest(
         : await client.createAsset({ name, mimeType, body });
       sendJson(res, 200, { ok: true, result }, originHeaders);
     } catch (error) {
-      const code =
-        error instanceof AdminClientError
-          ? error.code
-          : error instanceof MediaRejected
-            ? error.code
-            : "publish_blocked";
-      sendJson(res, 400, { ok: false, code }, originHeaders);
+      const knownError = error instanceof AdminClientError
+        || error instanceof MediaRejected
+        || error instanceof MediaCleanupRequired;
+      const databaseCode = adminCodeFromDatabaseError(error);
+      const code = error instanceof AdminClientError || error instanceof MediaRejected
+        ? error.code
+        : error instanceof MediaCleanupRequired
+          ? "media_cleanup_pending"
+          : databaseCode ?? "internal_error";
+      if (!knownError) {
+        console.error(JSON.stringify({
+          event: "admin.media_action_failed",
+          errorClass: error instanceof Error ? error.name : "unknown",
+          ...(databaseCode ? { databaseCode: (error as { code: string }).code } : {}),
+        }));
+      }
+      sendJson(res, knownError || databaseCode ? adminErrorStatus(code) : 500, { ok: false, code }, originHeaders);
     }
     return;
   }
@@ -397,7 +407,22 @@ async function handleRequest(
         sendJson(res, 413, { ok: false, code: "request_too_large" }, originHeaders);
         return;
       }
-      sendJson(res, 400, { ok: false, code: "publish_blocked" }, originHeaders);
+      if (error instanceof AdminClientError) {
+        sendJson(res, adminErrorStatus(error.code), { ok: false, code: error.code }, originHeaders);
+        return;
+      }
+      if (error instanceof SyntaxError) {
+        sendJson(res, 400, { ok: false, code: "publish_blocked" }, originHeaders);
+        return;
+      }
+      const databaseCode = adminCodeFromDatabaseError(error);
+      const code = databaseCode ?? "internal_error";
+      console.error(JSON.stringify({
+        event: "admin.request_failed",
+        errorClass: error instanceof Error ? error.name : "unknown",
+        ...(databaseCode ? { databaseCode: (error as { code: string }).code } : {}),
+      }));
+      sendJson(res, adminErrorStatus(code), { ok: false, code }, originHeaders);
     }
     return;
   }
@@ -717,7 +742,7 @@ async function handleRequest(
     if (path === "/v1/pages/home") {
       const home = await readHomePatch(database);
       if (!home) {
-        sendJson(res, 404, { ok: false });
+        sendJson(res, 404, { ok: false, code: "not_found" });
         return;
       }
       sendPublishedJson(res, 200, home);
@@ -727,7 +752,7 @@ async function handleRequest(
     if (path === "/v1/pages/shop-home") {
       const shopHome = await readShopHomePatch(database);
       if (!shopHome) {
-        sendJson(res, 404, { ok: false });
+        sendJson(res, 404, { ok: false, code: "not_found" });
         return;
       }
       sendPublishedJson(res, 200, shopHome);
@@ -739,7 +764,7 @@ async function handleRequest(
       if (match && match[1] !== "home" && match[1] !== "shop-home") {
         const page = await readStubPatch(database, decodeURIComponent(match[1]));
         if (!page) {
-          sendJson(res, 404, { ok: false });
+          sendJson(res, 404, { ok: false, code: "not_found" });
           return;
         }
         sendPublishedJson(res, 200, page);

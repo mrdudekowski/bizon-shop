@@ -1,7 +1,7 @@
 import { Pool, type PoolClient } from "pg";
 import { afterTransactionCommit, getTransactionClient, withTransaction } from "../../databaseTransaction";
 
-import { AdminClientError } from "../client/errors";
+import { AdminClientError, adminCodeFromDatabaseError } from "../client/errors";
 import { mergeLegacyPageOverlay } from "./pageOverlay";
 import { mediaUsageSql, publicDocumentPageKeys, toMediaUsageRecord } from "./mediaUsage";
 import { detachStoredMediaReference } from "../../storage/mediaReferences";
@@ -1272,9 +1272,12 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         if (error instanceof MediaRejected) {
           if (error.code === "database_save_failed") {
             const cause = error.cause;
-            console.error("media.metadata_save_failed", {
-              error: cause instanceof Error ? cause.message : "unknown",
-            });
+            const databaseCode = adminCodeFromDatabaseError(cause);
+            console.error(JSON.stringify({
+              event: "admin.media_metadata_save_failed",
+              errorClass: cause instanceof Error ? cause.name : "unknown",
+              ...(databaseCode ? { databaseCode: (cause as { code: string }).code } : {}),
+            }));
           }
           throw new AdminClientError(error.code);
         }
@@ -1282,7 +1285,14 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           console.error("media.cleanup_pending", { key: error.key, cleanupRecorded: error.cleanupRecorded });
           throw new AdminClientError("media_cleanup_pending");
         }
-        throw new AdminClientError("database_unavailable");
+        if (error instanceof AdminClientError) throw error;
+        const databaseCode = adminCodeFromDatabaseError(error);
+        console.error(JSON.stringify({
+          event: "admin.media_upload_failed",
+          errorClass: error instanceof Error ? error.name : "unknown",
+          ...(databaseCode ? { databaseCode: (error as { code: string }).code } : {}),
+        }));
+        throw new AdminClientError(databaseCode ?? "internal_error");
       }
     },
     async replaceAsset(id, file) {
@@ -1355,9 +1365,12 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         if (error instanceof MediaRejected) {
           if (error.code === "database_save_failed") {
             const cause = error.cause;
-            console.error("media.replacement_metadata_save_failed", {
-              error: cause instanceof Error ? cause.message : "unknown",
-            });
+            const databaseCode = adminCodeFromDatabaseError(cause);
+            console.error(JSON.stringify({
+              event: "admin.media_replacement_metadata_save_failed",
+              errorClass: cause instanceof Error ? cause.name : "unknown",
+              ...(databaseCode ? { databaseCode: (cause as { code: string }).code } : {}),
+            }));
           }
           throw new AdminClientError(error.code);
         }
@@ -1366,7 +1379,13 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           throw new AdminClientError("media_cleanup_pending");
         }
         if (error instanceof AdminClientError) throw error;
-        throw new AdminClientError("database_unavailable");
+        const databaseCode = adminCodeFromDatabaseError(error);
+        console.error(JSON.stringify({
+          event: "admin.media_replacement_failed",
+          errorClass: error instanceof Error ? error.name : "unknown",
+          ...(databaseCode ? { databaseCode: (error as { code: string }).code } : {}),
+        }));
+        throw new AdminClientError(databaseCode ?? "internal_error");
       }
     },
     async cancelAssetReplacement(id) {
