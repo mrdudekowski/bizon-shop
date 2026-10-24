@@ -17,6 +17,8 @@ import {
 } from "../domain/publishRules";
 import { isValidSlug, slugifyTitle } from "../domain/slug";
 import type { CatalogAxle } from "../domain/options";
+import { flattenImagePositions, restoreImagePositions, type ImagePosition } from "../domain/imagePositions";
+import { replaceStoredImagePositions } from "./imagePositionStore";
 import type {
   AdminSession,
   AdminUser,
@@ -341,7 +343,13 @@ async function writeOverlay(collection: string, id: string, draft: unknown): Pro
   );
 }
 
-async function clearOverlay(collection: string, id: string): Promise<void> {
+async function clearOverlay(collection: string, id: string, preserveImagePositions = false): Promise<void> {
+  if (preserveImagePositions) {
+    const overlay = await readOverlay<unknown>(collection, id);
+    if (overlay != null) {
+      await replaceStoredImagePositions(query, collection, id, flattenImagePositions(overlay));
+    }
+  }
   await query("DELETE FROM cms_drafts WHERE collection = $1 AND doc_id = $2", [collection, id]);
 }
 
@@ -360,16 +368,22 @@ function wrap<T>(id: string, draft: T, status: string, publishedBody: T | null):
 }
 
 async function present<T>(collection: string, id: string, mapped: T, status: string): Promise<EntityRecord<T>> {
+  const positionRows = await query(
+    `SELECT placement_path AS path, media_id::text AS "assetId", focal_x AS "focalX", focal_y AS "focalY"
+     FROM cms_image_focal_positions WHERE collection = $1 AND doc_id = $2`,
+    [collection, id],
+  );
+  const published = restoreImagePositions(mapped, positionRows as ImagePosition[]);
   const overlay = await readOverlay<T>(collection, id);
   const draft = overlay == null
-    ? mapped
+    ? published
     : collection === "pages"
-      ? mergeLegacyPageOverlay(mapped, overlay)
+      ? mergeLegacyPageOverlay(published, overlay)
       : collection === "materials" && typeof overlay === "object" && overlay !== null
-        ? { ...mapped as object, ...overlay as object,
-            taxonomy: (overlay as { taxonomy?: unknown }).taxonomy ?? (mapped as { taxonomy?: unknown }).taxonomy } as T
+        ? { ...published as object, ...overlay as object,
+            taxonomy: (overlay as { taxonomy?: unknown }).taxonomy ?? (published as { taxonomy?: unknown }).taxonomy } as T
         : overlay;
-  return wrap(id, draft, status, mapped);
+  return wrap(id, draft, status, published);
 }
 
 function documentStatus(record: { hidden: boolean; publishedSnapshot: unknown }): "draft" | "on_site" | "hidden" {
@@ -1126,7 +1140,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       } finally {
         if (!transactionClient) client.release();
       }
-      await clearOverlay("tire-directions", id);
+      await clearOverlay("tire-directions", id, true);
       await releaseLocks("tire-direction", id);
       return this.getTireDirection(id);
     },
@@ -1223,7 +1237,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       } finally {
         if (!transactionClient) client.release();
       }
-      await clearOverlay("tire-models", id);
+      await clearOverlay("tire-models", id, true);
       await releaseLocks("tire-model", id);
       return this.getTireModel(id);
     },
@@ -1615,7 +1629,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         "UPDATE wheel_types SET name=$2, slug=$3, description=$4, short_description=$5, sort_order=$6, cover_image_id=$7, status='published', updated_at=now() WHERE id=$1",
         [Number(id), draft.name, draft.slug, draft.description, draft.shortDescription ?? "", draft.sortOrder, draft.mainImage ? Number(draft.mainImage.assetId) : null],
       );
-      await clearOverlay("wheel-types", id);
+      await clearOverlay("wheel-types", id, true);
       await releaseLocks("wheel-type", id);
       return this.getWheelType(id);
     },
@@ -1778,7 +1792,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       } finally {
         if (!transactionClient) client.release();
       }
-      await clearOverlay("wheel-models", id);
+      await clearOverlay("wheel-models", id, true);
       await releaseLocks("wheel-model", id);
       return this.getWheelModel(id);
     },
@@ -1863,7 +1877,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           [Number(id), 0, "", Number(photo.image.assetId)],
         );
       }
-      await clearOverlay("shop-categories", id);
+      await clearOverlay("shop-categories", id, true);
       await releaseLocks("shop-category", id);
       return this.getShopCategory(id);
     },
@@ -2114,7 +2128,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         );
       }
       await replaceGallery("products_rels", Number(id), draft.gallery ?? []);
-      await clearOverlay("shop-products", id);
+      await clearOverlay("shop-products", id, true);
       await releaseLocks("shop-product", id);
       return this.getShopProduct(id);
     },
@@ -2169,7 +2183,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const draft = assertSaved(current);
       await applyPendingMediaReplacements(draft);
       await writePage(draft);
-      await clearOverlay("pages", key);
+      await clearOverlay("pages", key, true);
       await releaseLocks("page", key);
       return this.getPage(key);
     },
@@ -2181,7 +2195,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
     async resetPage(key) {
       requirePermission("publish");
       await query("UPDATE pages SET status = 'draft', updated_at = now() WHERE key = $1", [key]);
-      await clearOverlay("pages", key);
+      await clearOverlay("pages", key, true);
       return this.getPage(key);
     },
     async listMaterials() {
@@ -2269,7 +2283,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       for (const [index, value] of taxonomy.entries()) {
         await query('INSERT INTO tire_iq_articles_taxonomy (parent_id, "order", value) VALUES ($1, $2, $3)', [Number(rawId), index, value]);
       }
-      await clearOverlay("materials", id);
+      await clearOverlay("materials", id, true);
       await releaseLocks("material", id);
       return this.getMaterial(id);
     },

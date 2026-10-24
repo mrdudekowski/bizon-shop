@@ -32,6 +32,20 @@ export type ReadDatabase = {
   withReadSnapshot?<T>(run: (snapshot: ReadDatabase) => Promise<T>): Promise<T>;
 };
 
+async function readPageImageFocals(db: ReadDatabase, id: unknown): Promise<Map<string, { x: number; y: number }>> {
+  const rows = await db.query(
+    `SELECT placement_path, focal_x, focal_y FROM cms_image_focal_positions
+     WHERE collection = 'pages' AND doc_id = $1`,
+    [String(id)],
+  );
+  return new Map(rows.flatMap((row) => typeof row.placement_path === "string"
+    ? [[row.placement_path, {
+        x: typeof row.focal_x === "number" ? row.focal_x : 0.5,
+        y: typeof row.focal_y === "number" ? row.focal_y : 0.5,
+      }] as const]
+    : []));
+}
+
 export const PUBLIC_STUB_PAGE_KEYS = [
   "about",
   "contact",
@@ -258,7 +272,20 @@ export async function readHomePatch(db: ReadDatabase): Promise<HomePatch | null>
     WHERE pages.key = 'home' AND pages.status = 'published'
   `);
 
-  return homeRow ? mapHomePatch(homeRow as Parameters<typeof mapHomePatch>[0]) : null;
+  if (!homeRow) return null;
+  const focals = await readPageImageFocals(db, "home");
+  const withFocal = (key: string, x: string, y: string) => {
+    const focal = focals.get(key);
+    return focal ? { [x]: focal.x, [y]: focal.y } : {};
+  };
+  return mapHomePatch({
+    ...homeRow,
+    ...withFocal("hero.image", "home_hero_image_focal_x", "home_hero_image_focal_y"),
+    ...withFocal("shopCampaign.image", "home_shop_campaign_image_focal_x", "home_shop_campaign_image_focal_y"),
+    ...withFocal("expertise.image", "home_expertise_image_focal_x", "home_expertise_image_focal_y"),
+    ...withFocal("branding.beforeImage", "home_branding_before_image_focal_x", "home_branding_before_image_focal_y"),
+    ...withFocal("branding.afterImage", "home_branding_after_image_focal_x", "home_branding_after_image_focal_y"),
+  } as Parameters<typeof mapHomePatch>[0]);
 }
 
 export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch | null> {
@@ -380,10 +407,27 @@ export async function readStubPatch(db: ReadDatabase, key: string): Promise<Stub
     [key],
   );
   if (!row) return null;
+  const focalRows = await db.query(
+    `SELECT placement_path, focal_x, focal_y FROM cms_image_focal_positions
+     WHERE collection = 'pages' AND doc_id = $1`,
+    [key],
+  );
+  const focalByPath = new Map(focalRows.map((position) => [String(position.placement_path), position]));
+  const heroFocal = focalByPath.get("hero.image");
+  const proofFocal = focalByPath.get("proof.image");
   const features = row.editorial_configured ? await db.query(`SELECT id, title, text FROM pages_editorial_features WHERE _parent_id = $1 ORDER BY _order, id`, [row.id]) : [];
   const sections = row.editorial_configured ? await db.query(`SELECT id, heading, body FROM pages_editorial_sections WHERE _parent_id = $1 ORDER BY _order, id`, [row.id]) : [];
   const documents = await readPublishedDocuments(db, "page", key);
-  return mapStubPatch({ ...row, features, sections, documents } as unknown as Parameters<typeof mapStubPatch>[0]);
+  return mapStubPatch({
+    ...row,
+    stub_hero_image_focal_x: typeof heroFocal?.focal_x === "number" ? heroFocal.focal_x : null,
+    stub_hero_image_focal_y: typeof heroFocal?.focal_y === "number" ? heroFocal.focal_y : null,
+    editorial_proof_image_focal_x: typeof proofFocal?.focal_x === "number" ? proofFocal.focal_x : null,
+    editorial_proof_image_focal_y: typeof proofFocal?.focal_y === "number" ? proofFocal.focal_y : null,
+    features,
+    sections,
+    documents,
+  } as unknown as Parameters<typeof mapStubPatch>[0]);
 }
 
 async function readWheelGallery(db: ReadDatabase, parentId: unknown) {

@@ -188,7 +188,7 @@ describe("published content readers", () => {
     await expect(readStubPatch(db, "privacy-policy")).resolves.toMatchObject({
       documents: [{ url: "/media/privacy.pdf", title: "Политика PDF" }],
     });
-    expect(calls[1].params).toEqual(["page", "privacy-policy"]);
+    expect(calls.find((call) => call.sql.includes("cms_document_links"))?.params).toEqual(["page", "privacy-policy"]);
   });
 
   it("reads a published home patch and excludes drafts", async () => {
@@ -430,5 +430,75 @@ describe("published content readers", () => {
     const tileQuery = calls.find((call) => call.sql.includes("FROM pages_shop_catalog_tiles"));
     expect(tileQuery?.sql).toContain("categories.status = 'published'");
     expect(tileQuery?.sql).toContain("categories.slug AS category_slug");
+  });
+});
+
+describe("published page focal positions", () => {
+  it("returns homepage image positions from CMS placement metadata", async () => {
+    const { db } = createRecordingDb((sql) => {
+      if (sql.includes("cms_image_focal_positions")) return [
+        { placement_path: "hero.image", focal_x: 0.18, focal_y: 0.73 },
+        { placement_path: "expertise.image", focal_x: 0.62, focal_y: 0.31 },
+      ];
+      if (sql.includes("FROM pages") && sql.includes("home_hero_eyebrow")) return [{
+        seo_seo_title: null,
+        seo_seo_description: null,
+        home_hero_eyebrow: "",
+        home_hero_title: "Главная",
+        home_hero_lead: "",
+        home_hero_primary_cta_label: null,
+        home_hero_primary_cta_href: null,
+        home_hero_secondary_cta_label: null,
+        home_hero_secondary_cta_href: null,
+        home_hero_metric_label: "",
+        home_hero_metric_text: "",
+        home_hero_image_url: "/hero.webp",
+        home_hero_image_alt: "",
+        home_expertise_eyebrow: "",
+        home_expertise_title: "",
+        home_expertise_lead: "",
+        home_expertise_image_url: "/expertise.webp",
+        home_expertise_image_alt: "",
+      }];
+      return [];
+    });
+
+    await expect(readHomePatch(db)).resolves.toMatchObject({
+      hero: { imageFocalX: 0.18, imageFocalY: 0.73 },
+      expertise: { imageFocalX: 0.62, imageFocalY: 0.31 },
+    });
+  });
+
+  it("reads persisted hero and proof positions for the public page endpoint", async () => {
+    const { db } = createRecordingDb((sql) => {
+      if (sql.includes("cms_image_focal_positions")) return [
+        { placement_path: "hero.image", focal_x: 0.2, focal_y: 0.8 },
+        { placement_path: "proof.image", focal_x: 0.3, focal_y: 0.7 },
+      ];
+      if (sql.includes("cms_document_links")) return [];
+      if (sql.includes("pages_editorial_features") || sql.includes("pages_editorial_sections")) return [];
+      return [{
+        id: 41,
+        stub_hero_configured: true,
+        stub_hero_eyebrow: "",
+        stub_hero_title: "Branding",
+        stub_hero_lead: "",
+        stub_hero_image_alt: "",
+        stub_hero_image_url: "/branding.webp",
+        editorial_configured: true,
+        editorial_proof_configured: true,
+        editorial_proof_title: "Proof",
+        editorial_proof_text: "",
+        editorial_proof_image_url: "/proof.webp",
+        editorial_proof_image_alt: "",
+        seo_seo_title: null,
+        seo_seo_description: null,
+      }];
+    });
+
+    await expect(readStubPatch(db, "branding")).resolves.toMatchObject({
+      hero: { imageFocalX: 0.2, imageFocalY: 0.8 },
+      proof: { imageFocalX: 0.3, imageFocalY: 0.7 },
+    });
   });
 });

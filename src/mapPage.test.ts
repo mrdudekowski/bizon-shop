@@ -489,3 +489,29 @@ describe("mapShopHomePatch", () => {
     });
   });
 });
+describe("published focal point mapping", () => {
+  it("includes CMS focal coordinates for the page hero and proof image", () => {
+    const result = mapStubPatch({
+      stub_hero_configured: true,
+      stub_hero_eyebrow: "",
+      stub_hero_title: "",
+      stub_hero_lead: "",
+      stub_hero_image_url: "/branding.webp",
+      stub_hero_image_alt: "",
+      stub_hero_image_focal_x: 0.2,
+      stub_hero_image_focal_y: 0.8,
+      editorial_configured: true,
+      editorial_proof_configured: true,
+      editorial_proof_title: "Proof",
+      editorial_proof_text: "",
+      editorial_proof_image_url: "/proof.webp",
+      editorial_proof_image_alt: "",
+      editorial_proof_image_focal_x: 0.3,
+      editorial_proof_image_focal_y: 0.7,
+      seo_seo_title: null,
+      seo_seo_description: null,
+    });
+    expect(result.hero).toMatchObject({ imageFocalX: 0.2, imageFocalY: 0.8 });
+    expect(result.proof).toMatchObject({ imageFocalX: 0.3, imageFocalY: 0.7 });
+  });
+});

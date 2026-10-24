@@ -14,11 +14,15 @@ type HomeRow = {
   home_hero_metric_text: string | null;
   home_hero_image_url?: string | null;
   home_hero_image_alt?: string | null;
+  home_hero_image_focal_x?: number | null;
+  home_hero_image_focal_y?: number | null;
   home_shop_campaign_eyebrow?: string | null;
   home_shop_campaign_title?: string | null;
   home_shop_campaign_lead?: string | null;
   home_shop_campaign_image_url?: string | null;
   home_shop_campaign_image_alt?: string | null;
+  home_shop_campaign_image_focal_x?: number | null;
+  home_shop_campaign_image_focal_y?: number | null;
   home_shop_campaign_cta_label?: string | null;
   home_shop_campaign_cta_href?: string | null;
   home_directions_eyebrow?: string | null;
@@ -38,8 +42,14 @@ type HomeRow = {
   home_branding_before_image_alt?: string | null;
   home_branding_after_image_url?: string | null;
   home_branding_after_image_alt?: string | null;
+  home_branding_before_image_focal_x?: number | null;
+  home_branding_before_image_focal_y?: number | null;
+  home_branding_after_image_focal_x?: number | null;
+  home_branding_after_image_focal_y?: number | null;
   home_expertise_image_url?: string | null;
   home_expertise_image_alt?: string | null;
+  home_expertise_image_focal_x?: number | null;
+  home_expertise_image_focal_y?: number | null;
   home_expertise_cta_label?: string | null;
   home_expertise_cta_href?: string | null;
 };
@@ -62,6 +72,8 @@ export type HomePatch = {
     metricText?: string;
     imageUrl?: string | null;
     imageAlt?: string;
+    imageFocalX?: number;
+    imageFocalY?: number;
   };
   shopCampaign?: {
     eyebrow?: string;
@@ -69,11 +81,13 @@ export type HomePatch = {
     lead?: string;
     imageUrl?: string | null;
     imageAlt?: string;
+    imageFocalX?: number;
+    imageFocalY?: number;
     cta?: HomeCta;
   };
   directions?: { eyebrow?: string; title?: string; lead?: string };
-  expertise?: { eyebrow?: string; title?: string; lead?: string; imageUrl?: string | null; imageAlt?: string; cta?: HomeCta };
-  branding?: { eyebrow?: string; title?: string; lead?: string; cta?: HomeCta; beforeCaption?: string; afterCaption?: string; beforeImageUrl?: string | null; beforeImageAlt?: string; afterImageUrl?: string | null; afterImageAlt?: string };
+  expertise?: { eyebrow?: string; title?: string; lead?: string; imageUrl?: string | null; imageAlt?: string; imageFocalX?: number; imageFocalY?: number; cta?: HomeCta };
+  branding?: { eyebrow?: string; title?: string; lead?: string; cta?: HomeCta; beforeCaption?: string; afterCaption?: string; beforeImageUrl?: string | null; beforeImageAlt?: string; beforeImageFocalX?: number; beforeImageFocalY?: number; afterImageUrl?: string | null; afterImageAlt?: string; afterImageFocalX?: number; afterImageFocalY?: number };
 };
 
 function publicImageUrl(value: string | null | undefined): string | undefined {
@@ -127,6 +141,8 @@ export function mapHomePatch(row: HomeRow): HomePatch {
   const expertise = expertiseShell || expertiseImageUrl !== undefined || expertiseCta || row.home_expertise_image_alt
     ? { ...expertiseShell, ...(expertiseImageUrl !== undefined ? { imageUrl: expertiseImageUrl } : {}),
         ...(nonEmptyString(row.home_expertise_image_alt ?? null) ? { imageAlt: row.home_expertise_image_alt! } : {}),
+        ...(typeof row.home_expertise_image_focal_x === "number" ? { imageFocalX: row.home_expertise_image_focal_x } : {}),
+        ...(typeof row.home_expertise_image_focal_y === "number" ? { imageFocalY: row.home_expertise_image_focal_y } : {}),
         ...(expertiseCta ? { cta: expertiseCta } : {}) }
     : undefined;
   const branding = mapHomeBranding(row);
@@ -144,6 +160,8 @@ export function mapHomePatch(row: HomeRow): HomePatch {
       ...(configuredString(row.home_hero_metric_text) !== undefined ? { metricText: row.home_hero_metric_text! } : {}),
       ...(hasOwn(row, "home_hero_image_url") ? { imageUrl: normalizeImageUrl(row.home_hero_image_url) } : {}),
       ...(configuredString(row.home_hero_image_alt) !== undefined ? { imageAlt: row.home_hero_image_alt! } : {}),
+      ...(typeof row.home_hero_image_focal_x === "number" ? { imageFocalX: row.home_hero_image_focal_x } : {}),
+      ...(typeof row.home_hero_image_focal_y === "number" ? { imageFocalY: row.home_hero_image_focal_y } : {}),
     },
     ...(shopCampaign ? { shopCampaign } : {}),
     ...(directions ? { directions } : {}),
@@ -178,8 +196,12 @@ function mapHomeBranding(row: HomeRow): NonNullable<HomePatch["branding"]> | und
     ...(configuredString(row.home_branding_after_caption) !== undefined ? { afterCaption: row.home_branding_after_caption! } : {}),
     ...(beforeImageUrl !== undefined ? { beforeImageUrl } : {}),
     ...(configuredString(row.home_branding_before_image_alt) !== undefined ? { beforeImageAlt: row.home_branding_before_image_alt! } : {}),
+    ...(typeof row.home_branding_before_image_focal_x === "number" ? { beforeImageFocalX: row.home_branding_before_image_focal_x } : {}),
+    ...(typeof row.home_branding_before_image_focal_y === "number" ? { beforeImageFocalY: row.home_branding_before_image_focal_y } : {}),
     ...(afterImageUrl !== undefined ? { afterImageUrl } : {}),
     ...(configuredString(row.home_branding_after_image_alt) !== undefined ? { afterImageAlt: row.home_branding_after_image_alt! } : {}),
+    ...(typeof row.home_branding_after_image_focal_x === "number" ? { afterImageFocalX: row.home_branding_after_image_focal_x } : {}),
+    ...(typeof row.home_branding_after_image_focal_y === "number" ? { afterImageFocalY: row.home_branding_after_image_focal_y } : {}),
   };
   return Object.keys(mapped).length ? mapped : undefined;
 }
@@ -195,6 +217,8 @@ function mapHomeShopCampaign(row: HomeRow): HomePatch["shopCampaign"] | undefine
     ...(configuredString(row.home_shop_campaign_lead) !== undefined ? { lead: row.home_shop_campaign_lead! } : {}),
     ...(imageUrl !== undefined ? { imageUrl } : {}),
     ...(configuredString(row.home_shop_campaign_image_alt) !== undefined ? { imageAlt: row.home_shop_campaign_image_alt! } : {}),
+    ...(typeof row.home_shop_campaign_image_focal_x === "number" ? { imageFocalX: row.home_shop_campaign_image_focal_x } : {}),
+    ...(typeof row.home_shop_campaign_image_focal_y === "number" ? { imageFocalY: row.home_shop_campaign_image_focal_y } : {}),
     ...(cta ? { cta } : {}),
   };
   return Object.keys(campaign).length > 0 ? campaign : undefined;
@@ -206,7 +230,7 @@ export type StubPatch = {
   sections?: { id: string; heading: string; body: string }[];
   documents?: { url: string; title: string }[];
   notice?: { body: string } | null;
-  proof?: { imageUrl: string | null; imageAlt: string; title: string; text: string } | null;
+  proof?: { imageUrl: string | null; imageAlt: string; imageFocalX?: number; imageFocalY?: number; title: string; text: string } | null;
   cta?: { label: string; href: string; secondaryLabel?: string; secondaryHref?: string } | null;
   seoTitle?: string;
   seoDescription?: string;
@@ -216,6 +240,8 @@ export type StubPatch = {
     lead?: string;
     imageUrl?: string | null;
     imageAlt?: string;
+    imageFocalX?: number;
+    imageFocalY?: number;
   };
 };
 
@@ -234,6 +260,8 @@ type StubRow = {
   editorial_proof_text?: string | null;
   editorial_proof_image_url?: string | null;
   editorial_proof_image_alt?: string | null;
+  editorial_proof_image_focal_x?: number | null;
+  editorial_proof_image_focal_y?: number | null;
   editorial_cta_label?: string | null;
   editorial_cta_href?: string | null;
   editorial_secondary_label?: string | null;
@@ -248,6 +276,8 @@ type StubRow = {
   stub_hero_lead: string | null;
   stub_hero_image_url?: string | null;
   stub_hero_image_alt: string | null;
+  stub_hero_image_focal_x?: number | null;
+  stub_hero_image_focal_y?: number | null;
 };
 
 export function mapStubPatch(row: StubRow): StubPatch {
@@ -258,6 +288,8 @@ export function mapStubPatch(row: StubRow): StubPatch {
         lead: row.stub_hero_lead ?? "",
         imageUrl: publicImageUrl(row.stub_hero_image_url) ?? null,
         imageAlt: row.stub_hero_image_alt ?? "",
+        ...(typeof row.stub_hero_image_focal_x === "number" ? { imageFocalX: row.stub_hero_image_focal_x } : {}),
+        ...(typeof row.stub_hero_image_focal_y === "number" ? { imageFocalY: row.stub_hero_image_focal_y } : {}),
       }
     : {
         ...(nonEmptyString(row.stub_hero_eyebrow) ? { eyebrow: nonEmptyString(row.stub_hero_eyebrow) } : {}),
@@ -265,6 +297,8 @@ export function mapStubPatch(row: StubRow): StubPatch {
         ...(nonEmptyString(row.stub_hero_lead) ? { lead: nonEmptyString(row.stub_hero_lead) } : {}),
         ...(publicImageUrl(row.stub_hero_image_url) ? { imageUrl: publicImageUrl(row.stub_hero_image_url) } : {}),
         ...(nonEmptyString(row.stub_hero_image_alt) ? { imageAlt: nonEmptyString(row.stub_hero_image_alt) } : {}),
+        ...(typeof row.stub_hero_image_focal_x === "number" ? { imageFocalX: row.stub_hero_image_focal_x } : {}),
+        ...(typeof row.stub_hero_image_focal_y === "number" ? { imageFocalY: row.stub_hero_image_focal_y } : {}),
       };
   return {
     ...(row.documents !== undefined ? { documents: row.documents } : {}),
@@ -273,7 +307,7 @@ export function mapStubPatch(row: StubRow): StubPatch {
       ...(row.editorial_features_configured ? { features: row.features ?? [] } : {}),
       ...(row.editorial_sections_configured ? { sections: row.sections ?? [] } : {}),
       ...(row.editorial_notice_configured ? { notice: row.editorial_notice ? { body: row.editorial_notice } : null } : {}),
-      ...(row.editorial_proof_configured ? { proof: row.editorial_proof_title || row.editorial_proof_text || row.editorial_proof_image_url ? { imageUrl: publicImageUrl(row.editorial_proof_image_url) ?? null, imageAlt: row.editorial_proof_image_alt ?? "", title: row.editorial_proof_title ?? "", text: row.editorial_proof_text ?? "" } : null } : {}),
+      ...(row.editorial_proof_configured ? { proof: row.editorial_proof_title || row.editorial_proof_text || row.editorial_proof_image_url ? { imageUrl: publicImageUrl(row.editorial_proof_image_url) ?? null, imageAlt: row.editorial_proof_image_alt ?? "", ...(typeof row.editorial_proof_image_focal_x === "number" ? { imageFocalX: row.editorial_proof_image_focal_x } : {}), ...(typeof row.editorial_proof_image_focal_y === "number" ? { imageFocalY: row.editorial_proof_image_focal_y } : {}), title: row.editorial_proof_title ?? "", text: row.editorial_proof_text ?? "" } : null } : {}),
       ...(row.editorial_cta_configured ? { cta: row.editorial_cta_label && row.editorial_cta_href ? { label: row.editorial_cta_label, href: row.editorial_cta_href, secondaryLabel: row.editorial_secondary_label ?? "", secondaryHref: row.editorial_secondary_href ?? "" } : null } : {}),
     } : {}),
     ...(configuredString(row.seo_seo_title) !== undefined ? { seoTitle: row.seo_seo_title! } : {}),
