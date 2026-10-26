@@ -4,18 +4,29 @@ import type { ShopCatalogTile } from "./pages/types";
 
 export type ShopCategoryPageView = "catalog" | "lifestyle" | "not-found";
 
-const SHOP_CATEGORY_BLACK_ICONS: Readonly<Record<string, string>> = {
-  outdoor: "/images/shop/category-icons/camping-travel-black.png",
-  accessory: "/images/shop/category-icons/accessories-shirt-black.png",
-  accessories: "/images/shop/category-icons/car-comfort-black.png",
-  "car-comfort": "/images/shop/category-icons/car-comfort-black.png",
-  "masla-i-zapchasti": "/images/shop/category-icons/oils-spare-parts-black.png",
-  pritsepy: "/images/shop/category-icons/trailers-black.png",
-  trailers: "/images/shop/category-icons/trailers-black.png",
+const SHOP_CATEGORY_ICON_FILES: Readonly<Record<string, string>> = {
+  outdoor: "camping-travel",
+  accessory: "accessories-shirt",
+  accessories: "car-comfort",
+  "car-comfort": "car-comfort",
+  "masla-i-zapchasti": "oils-spare-parts",
+  pritsepy: "trailers",
+  trailers: "trailers",
 };
 
+function shopCategoryStaticIconUrl(slug: string, tone: "black" | "white"): string | null {
+  const file = SHOP_CATEGORY_ICON_FILES[slug];
+  return file ? `/images/shop/category-icons/${file}-${tone}.png` : null;
+}
+
+/** Dark icons for light surfaces (e.g. category index). */
 export function shopCategoryIconUrl(slug: string): string | null {
-  return SHOP_CATEGORY_BLACK_ICONS[slug] ?? null;
+  return shopCategoryStaticIconUrl(slug, "black");
+}
+
+/** White icons for the Shop home carousel overlay on dark photography. */
+export function shopCategoryCarouselIconUrl(slug: string): string | null {
+  return shopCategoryStaticIconUrl(slug, "white");
 }
 
 export function shopCategoryPageView(
@@ -87,7 +98,7 @@ export function shopHomeCategoryCards(
       slug: category.slug,
       title: tile?.title || category.name,
       href: `${ROUTES.shop}/${category.slug}`,
-      iconUrl: tile?.iconUrl || null,
+      iconUrl: shopCategoryCarouselIconUrl(category.slug),
     }));
 }
 

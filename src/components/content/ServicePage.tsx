@@ -164,7 +164,7 @@ export function ServicePage({
         {resolvedCta ? (
           <section className={styles.cta} aria-labelledby="service-cta-heading">
             <h2 id="service-cta-heading">Следующий шаг</h2>
-            <div className={styles.ctaActions}>
+            <div className={`${styles.ctaActions} action-row`}>
               <Link className="btn-accent" href={resolvedCta.href}>
                 {resolvedCta.label}
               </Link>

@@ -134,9 +134,5 @@
   .grid {
     grid-template-columns: 1fr;
   }
-
-  .submitRow button {
-    width: 100%;
-  }
 }
 

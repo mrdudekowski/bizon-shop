@@ -123,14 +123,7 @@
 }
 
 .actions :global(.btn-accent) {
-  display: inline-flex;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
   min-height: 48px;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
 }
 
 @media (max-width: 767px) {

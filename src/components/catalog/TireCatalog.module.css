@@ -520,9 +520,6 @@
   .modelFooter a { min-height: 44px; align-items: center; }
   .resultHeader, .finalCta { align-items: flex-start; flex-direction: column; }
   .resultHeader p:last-child { align-self: auto; }
-  .finalCta :global(.btn-accent),
-  .finalCta :global(.btn-secondary),
-  .finalCtaActions { width: 100%; }
   .applicationBadges { top: 10px; right: 10px; gap: 6px; }
   .applicationBadges img { width: 40px; height: 40px; }
 }

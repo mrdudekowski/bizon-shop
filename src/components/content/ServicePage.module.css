@@ -172,9 +172,6 @@
     grid-template-columns: 3rem minmax(0, 1fr);
   }
 
-  .ctaActions > * {
-    width: 100%;
-  }
   .features h2,
   .proofCopy h2,
   .cta h2 { max-width: 100%; min-width: 0; overflow-wrap: anywhere; }

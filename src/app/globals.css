@@ -550,28 +550,27 @@ a {
   .site-header .contact-button {
     display: none;
   }
-
-  .hero-actions > * {
-    width: 100%;
-    max-width: 100%;
-  }
-
 }
 
-/* Базовые стили кнопок — единая премиальная система */
+/* Базовые стили кнопок — единая премиальная система (SSOT) */
 .ghost-button,
 .btn-accent,
 .btn-glass,
-.btn-secondary {
+.btn-secondary,
+.contact-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  box-sizing: border-box;
+  width: auto;
+  max-width: 100%;
   min-height: 44px;
   padding: 13px 22px;
   font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.2;
+  flex: 0 1 auto;
   outline: none;
   cursor: pointer;
   transition:
@@ -585,6 +584,26 @@ a {
 .btn-glass,
 .btn-secondary {
   border-radius: var(--radius-pill);
+}
+
+/* Pill CTAs stay content-sized even inside legacy layout rules (forms, grids). */
+:where(button, a):is(.btn-accent, .btn-secondary, .btn-glass, .ghost-button, .contact-button) {
+  width: auto;
+  max-width: 100%;
+}
+
+/* CTA groups: flex row, children never stretch to full width */
+.action-row,
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.action-row > :where(a, button):is(.btn-accent, .btn-secondary, .btn-glass, .ghost-button),
+.hero-actions > :where(a, button):is(.btn-accent, .btn-secondary, .btn-glass, .ghost-button) {
+  align-self: flex-start;
 }
 
 .btn-accent,
@@ -762,18 +781,7 @@ main {
 }
 
 .hero-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
   margin-top: 2.25rem;
-}
-
-@media (min-width: 640px) {
-  .hero-actions {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-  }
 }
 
 .hero .ghost-button {

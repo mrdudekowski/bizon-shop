@@ -212,20 +212,6 @@
 }
 
 @media (max-width: 767px) {
-  .toggle {
-    flex: 0 0 auto;
-    display: inline-flex;
-    width: auto;
-    min-height: 44px;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    border-radius: var(--radius-pill);
-    padding: 0 0.8rem;
-  }
-
-  .toggleLabel { display: inline; white-space: nowrap; font-size: 0.8rem; font-weight: 650; }
-
   .iconLink {
     flex: 0 0 auto;
     width: auto;

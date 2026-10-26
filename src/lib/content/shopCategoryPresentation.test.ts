@@ -144,7 +144,7 @@ describe("shopCategoryPresentation", () => {
     ]);
   });
 
-  it("builds category cards from the menu icon", () => {
+  it("builds category cards with white carousel icons from static assets", () => {
     expect(
       shopHomeCategoryCards(categories).map((card) => ({
         slug: card.slug,
@@ -152,9 +152,9 @@ describe("shopCategoryPresentation", () => {
         iconUrl: card.iconUrl,
       })),
     ).toEqual([
-      { slug: "outdoor", href: "/shop/outdoor", iconUrl: null },
-      { slug: "accessories", href: "/shop/accessories", iconUrl: null },
-      { slug: "pritsepy", href: "/shop/pritsepy", iconUrl: null },
+      { slug: "outdoor", href: "/shop/outdoor", iconUrl: "/images/shop/category-icons/camping-travel-white.png" },
+      { slug: "accessories", href: "/shop/accessories", iconUrl: "/images/shop/category-icons/car-comfort-white.png" },
+      { slug: "pritsepy", href: "/shop/pritsepy", iconUrl: "/images/shop/category-icons/trailers-white.png" },
     ]);
   });
 
@@ -166,9 +166,9 @@ describe("shopCategoryPresentation", () => {
     ];
 
     expect(shopHomeCategoryCards(categories, tiles)).toEqual([
-      { slug: "pritsepy", title: "Прицепы BIZON", href: "/shop/pritsepy", iconUrl: "/page/icon.svg" },
+      { slug: "pritsepy", title: "Прицепы BIZON", href: "/shop/pritsepy", iconUrl: "/images/shop/category-icons/trailers-white.png" },
       { slug: "hidden", title: "Скрыто", href: "/shop/hidden", iconUrl: null },
-      { slug: "accessories", title: "Комфорт в автомобиле", href: "/shop/accessories", iconUrl: null },
+      { slug: "accessories", title: "Комфорт в автомобиле", href: "/shop/accessories", iconUrl: "/images/shop/category-icons/car-comfort-white.png" },
     ]);
     expect(shopHomeCarouselSlides(categories, tiles)).toEqual([
       { id: "pritsepy", title: "Прицепы BIZON", href: "/shop/pritsepy", imageUrl: "/page/trailer-slide.jpg" },

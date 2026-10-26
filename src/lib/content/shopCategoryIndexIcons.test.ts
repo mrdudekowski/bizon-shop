@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { shopCategoryIconUrl } from "./shopCategoryPresentation";
+import { shopCategoryCarouselIconUrl, shopCategoryIconUrl } from "./shopCategoryPresentation";
+
+describe("shopCategoryCarouselIconUrl", () => {
+  it.each([
+    ["outdoor", "/images/shop/category-icons/camping-travel-white.png"],
+    ["accessory", "/images/shop/category-icons/accessories-shirt-white.png"],
+    ["masla-i-zapchasti", "/images/shop/category-icons/oils-spare-parts-white.png"],
+  ])("maps %s to its white carousel icon", (slug, expected) => {
+    expect(shopCategoryCarouselIconUrl(slug)).toBe(expected);
+  });
+});
 
 describe("shopCategoryIconUrl", () => {
   it.each([

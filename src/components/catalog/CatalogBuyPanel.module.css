@@ -104,17 +104,9 @@
 }
 
 .actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.5rem;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-}
-
-.actions :global(.btn-accent) {
-  width: 100%;
-  justify-content: center;
 }
 
 .actions :global(button:disabled) {

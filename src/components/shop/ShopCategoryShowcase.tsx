@@ -86,7 +86,6 @@ export function ShopCategoryShowcase({
           <span className={styles.toggleIcon}>
             <GridIcon />
           </span>
-          <span className={styles.toggleLabel}>Все категории</span>
         </button>
       </div>
       <div className={styles.stage}>

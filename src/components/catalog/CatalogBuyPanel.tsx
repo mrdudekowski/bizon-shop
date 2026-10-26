@@ -123,7 +123,7 @@ export function CatalogBuyPanel({
         </label>
       </div>
 
-      <div className={styles.actions}>
+      <div className={`${styles.actions} action-row`}>
         {canAdd ? (
           <AddToCartButton
             cartKind="bizon"

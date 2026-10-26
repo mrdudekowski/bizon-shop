@@ -44,7 +44,7 @@ export function MainHero({ content }: { content: HomeHeroContent }) {
           <h1>{hero.title}</h1>
           <p>{hero.lead}</p>
           {primaryCta || secondaryCta ? (
-            <div className={styles.heroActions}>
+            <div className={`${styles.heroActions} action-row`}>
               {primaryCta ? (
                 <Link className="btn-accent" href={primaryCta.href}>
                   {primaryCta.label}

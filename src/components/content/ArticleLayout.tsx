@@ -77,7 +77,7 @@ export function ArticleLayout({
           <p className={styles.meta}>Следующий шаг</p>
           <h2 id="article-next-step-heading">Переведите знания в задачу</h2>
           <p>Каталог помогает изучить доступные направления, а специалист проверит решение по вашей технике и условиям эксплуатации.</p>
-          <div className={styles.actions}>
+          <div className={`${styles.actions} action-row`}>
             <Link href="/contact?subject=tire-selection" className={`btn-accent ${styles.primaryAction}`}>Передать задачу специалисту</Link>
             <Link href="/models" className={styles.secondaryAction}>Посмотреть каталог</Link>
           </div>
