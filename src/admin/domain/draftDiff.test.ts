@@ -48,7 +48,7 @@ describe("locateField", () => {
   it("names a size price with the size label", () => {
     const location = locateField("tire-model", "sizes[0].price", tireModel());
     expect(location).toMatchObject({
-      tab: "Размеры",
+      tab: "Характеристики",
       field: "Цена",
       itemLabel: "315/80R22.5",
     });

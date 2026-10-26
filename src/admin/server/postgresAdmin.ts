@@ -424,19 +424,19 @@ function mapSize(row: Row): TireSizeDraft {
     price: num(row.price),
     priceOnRequest: row.price == null || Boolean(row.price_on_request),
     available: row.available !== false,
-    rimDiameter: num(row.rim_diameter),
-    loadIndex: str(row.load_index),
+    rimDiameter: num(row.rim_diameter) ?? num(row.rim_diameter_in),
+    loadIndex: str(row.load_index) || str(row.load_index_single),
     loadIndexDual: str(row.load_index_dual),
-    speedIndex: str(row.speed_index),
-    plyRating: str(row.ply_rating),
-    overallDiameter: num(row.overall_diameter),
-    sectionWidth: num(row.section_width),
+    speedIndex: str(row.speed_index) || str(row.speed_symbol),
+    plyRating: str(row.ply_rating) || str(row.ply_rating_pr),
+    overallDiameter: num(row.overall_diameter) ?? num(row.overall_diameter_mm),
+    sectionWidth: num(row.section_width) ?? num(row.section_width_mm),
     treadDepth: num(row.tread_depth_mm),
     pressureSingleKpa: num(row.pressure_single_kpa),
     pressureDualKpa: num(row.pressure_dual_kpa),
     maxLoadSingleKg: num(row.max_load_single_kg),
     maxLoadDualKg: num(row.max_load_dual_kg),
-    recommendedRim: str(row.recommended_rim),
+    recommendedRim: str(row.recommended_rim) || str(row.standard_rim_in),
   };
 }
 
@@ -457,6 +457,13 @@ async function mapTireModel(row: Row): Promise<TireModelDraft> {
   const axleValues = (axles.length > 0 ? axles : positions).filter(
     (value): value is CatalogAxle => value === "steer" || value === "drive" || value === "trailer",
   );
+  const normalizedApplications = [
+    ...new Set(
+      applications.map((value) =>
+        value === "long-haul" ? "long_haul" : value === "off-road" ? "off_road" : value,
+      ),
+    ),
+  ];
   return {
     id: str(row.id),
     name: str(row.name),
@@ -486,7 +493,7 @@ async function mapTireModel(row: Row): Promise<TireModelDraft> {
       title: str(feature.title),
       description: str(feature.description),
     })),
-    applicationTypes: applications,
+    applicationTypes: normalizedApplications,
     selectionAxles: axleValues,
     showInMenu: Boolean(row.show_in_menu),
     menuOrder: num(row.menu_order) ?? 0,
@@ -895,19 +902,31 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
       draft.brand,
     ],
   );
-  for (const size of draft.sizes) {
+  const keptSizeIds: number[] = [];
+  for (const [sortOrder, size] of draft.sizes.entries()) {
     const sizeId = numericId(size.id);
+    const loadIndexSingleNum = size.loadIndex ? num(size.loadIndex) ?? null : null;
+    const loadIndexDualNum = size.loadIndexDual ? num(size.loadIndexDual) ?? null : null;
+    const plyRatingNum = size.plyRating ? num(size.plyRating) ?? null : null;
+    const standardRimNum = size.recommendedRim ? num(size.recommendedRim) ?? null : null;
     const fields = [
+      size.size,
       size.size,
       size.sku || null,
       size.price ?? null,
       size.priceOnRequest,
       size.available,
       size.rimDiameter ?? null,
+      size.rimDiameter ?? null,
       size.loadIndex || null,
+      loadIndexSingleNum,
+      loadIndexDualNum,
       size.speedIndex || null,
       size.plyRating || null,
+      plyRatingNum,
       size.overallDiameter ?? null,
+      size.overallDiameter ?? null,
+      size.sectionWidth ?? null,
       size.sectionWidth ?? null,
       size.treadDepth ?? null,
       size.pressureSingleKpa ?? null,
@@ -915,21 +934,46 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
       size.maxLoadSingleKg ?? null,
       size.maxLoadDualKg ?? null,
       size.recommendedRim || null,
+      standardRimNum,
+      sortOrder,
       status,
     ];
     if (sizeId == null) {
-      await client.query(
-        `INSERT INTO tire_variants (tire_model_id, size, sku, price, price_on_request, available, rim_diameter, load_index, speed_index, ply_rating, overall_diameter, section_width, tread_depth_mm, pressure_single_kpa, pressure_dual_kpa, max_load_single_kg, max_load_dual_kg, recommended_rim, status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+      const inserted = await client.query(
+        `INSERT INTO tire_variants (
+          tire_model_id, size, size_normalized, sku, price, price_on_request, available,
+          rim_diameter, rim_diameter_in, load_index, load_index_single, load_index_dual,
+          speed_index, ply_rating, ply_rating_pr, overall_diameter, overall_diameter_mm,
+          section_width, section_width_mm, tread_depth_mm, pressure_single_kpa, pressure_dual_kpa,
+          max_load_single_kg, max_load_dual_kg, recommended_rim, standard_rim_in, sort_order, status
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28)
+        RETURNING id`,
         [id, ...fields],
       );
+      if (inserted.rows[0]?.id != null) keptSizeIds.push(Number(inserted.rows[0].id));
     } else {
       await client.query(
-        `UPDATE tire_variants SET size=$2, sku=$3, price=$4, price_on_request=$5, available=$6, rim_diameter=$7, load_index=$8, speed_index=$9, ply_rating=$10, overall_diameter=$11, section_width=$12, tread_depth_mm=$13, pressure_single_kpa=$14, pressure_dual_kpa=$15, max_load_single_kg=$16, max_load_dual_kg=$17, recommended_rim=$18, status=$19, updated_at=now()
+        `UPDATE tire_variants SET
+          size=$2, size_normalized=$3, sku=$4, price=$5, price_on_request=$6, available=$7,
+          rim_diameter=$8, rim_diameter_in=$9, load_index=$10, load_index_single=$11, load_index_dual=$12,
+          speed_index=$13, ply_rating=$14, ply_rating_pr=$15, overall_diameter=$16, overall_diameter_mm=$17,
+          section_width=$18, section_width_mm=$19, tread_depth_mm=$20, pressure_single_kpa=$21, pressure_dual_kpa=$22,
+          max_load_single_kg=$23, max_load_dual_kg=$24, recommended_rim=$25, standard_rim_in=$26, sort_order=$27, status=$28,
+          updated_at=now()
          WHERE id=$1`,
         [sizeId, ...fields],
       );
+      keptSizeIds.push(sizeId);
     }
+  }
+  if (keptSizeIds.length === 0) {
+    await client.query("DELETE FROM tire_variants WHERE tire_model_id = $1", [id]);
+  } else {
+    await client.query(
+      "DELETE FROM tire_variants WHERE tire_model_id = $1 AND NOT (id = ANY($2::int[]))",
+      [id, keptSizeIds],
+    );
   }
   const keptFeatureIds: string[] = [];
   for (const [index, feature] of (draft.features ?? []).entries()) {

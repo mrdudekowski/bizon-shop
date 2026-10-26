@@ -145,6 +145,44 @@ describe("mapTireVariant", () => {
       rimDiameter: 22.5,
     });
   });
+
+  it("falls back to normalized catalog specification columns when legacy columns are null", () => {
+    expect(
+      mapTireVariant({
+        id: 44,
+        size: "12.00R20",
+        price: null,
+        price_on_request: true,
+        available: true,
+        rim_diameter: null,
+        rim_diameter_in: "20",
+        load_index: null,
+        load_index_single: "156",
+        load_index_dual: "153",
+        speed_index: null,
+        speed_symbol: "J",
+        ply_rating: null,
+        ply_rating_pr: "20",
+        overall_diameter: null,
+        overall_diameter_mm: "1125",
+        section_width: null,
+        section_width_mm: "315",
+        recommended_rim: null,
+        standard_rim_in: "8.5",
+      }),
+    ).toMatchObject({
+      id: "44",
+      size: "12.00R20",
+      rimDiameter: 20,
+      loadIndex: "156",
+      loadIndexDual: "153",
+      speedIndex: "J",
+      plyRating: "20",
+      overallDiameter: 1125,
+      sectionWidth: 315,
+      recommendedRim: "8.5",
+    });
+  });
 });
 
 describe("lexicalToHtml", () => {

@@ -44,18 +44,25 @@ type TireVariantRow = {
   price_on_request: boolean | null;
   available: boolean | null;
   rim_diameter?: unknown;
+  rim_diameter_in?: unknown;
   load_index?: unknown;
+  load_index_single?: unknown;
   load_index_dual?: unknown;
   speed_index?: unknown;
+  speed_symbol?: unknown;
   ply_rating?: unknown;
+  ply_rating_pr?: unknown;
   overall_diameter?: unknown;
+  overall_diameter_mm?: unknown;
   section_width?: unknown;
+  section_width_mm?: unknown;
   tread_depth_mm?: unknown;
   pressure_single_kpa?: unknown;
   pressure_dual_kpa?: unknown;
   max_load_single_kg?: unknown;
   max_load_dual_kg?: unknown;
   recommended_rim?: unknown;
+  standard_rim_in?: unknown;
 };
 
 export type CmsTireType = {
@@ -181,9 +188,9 @@ export function mapTireModel(input: TireModelInput): CmsTireModel {
 export function mapTireVariant(row: TireVariantRow): CmsTireVariant {
   const price = toFiniteNumber(row.price);
   const numericSpecs = {
-    rimDiameter: toFiniteNumber(row.rim_diameter),
-    overallDiameter: toFiniteNumber(row.overall_diameter),
-    sectionWidth: toFiniteNumber(row.section_width),
+    rimDiameter: toFiniteNumber(row.rim_diameter) ?? toFiniteNumber(row.rim_diameter_in),
+    overallDiameter: toFiniteNumber(row.overall_diameter) ?? toFiniteNumber(row.overall_diameter_mm),
+    sectionWidth: toFiniteNumber(row.section_width) ?? toFiniteNumber(row.section_width_mm),
     treadDepth: toFiniteNumber(row.tread_depth_mm),
     pressureSingleKpa: toFiniteNumber(row.pressure_single_kpa),
     pressureDualKpa: toFiniteNumber(row.pressure_dual_kpa),
@@ -191,11 +198,11 @@ export function mapTireVariant(row: TireVariantRow): CmsTireVariant {
     maxLoadDualKg: toFiniteNumber(row.max_load_dual_kg),
   };
   const textSpecs = {
-    loadIndex: toTextSpecification(row.load_index),
+    loadIndex: toTextSpecification(row.load_index) ?? toTextSpecification(row.load_index_single),
     loadIndexDual: toTextSpecification(row.load_index_dual),
-    speedIndex: toTextSpecification(row.speed_index),
-    plyRating: toTextSpecification(row.ply_rating),
-    recommendedRim: toTextSpecification(row.recommended_rim),
+    speedIndex: toTextSpecification(row.speed_index) ?? toTextSpecification(row.speed_symbol),
+    plyRating: toTextSpecification(row.ply_rating) ?? toTextSpecification(row.ply_rating_pr),
+    recommendedRim: toTextSpecification(row.recommended_rim) ?? toTextSpecification(row.standard_rim_in),
   };
 
   return {
