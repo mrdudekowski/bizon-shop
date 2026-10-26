@@ -305,6 +305,14 @@ export function TireModelEditor({ id }: { id: string }) {
           Полное описание
           <textarea value={draft.descriptionLong} onChange={(event) => patch({ descriptionLong: event.target.value })} />
         </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={draft.available !== false}
+            onChange={(event) => patch({ available: event.target.checked })}
+          />
+          В наличии
+        </label>
       </section>
       <section>
         <h2>Характеристики</h2>
@@ -368,13 +376,15 @@ export function TireModelEditor({ id }: { id: string }) {
             <h3>Типоразмеры и технические параметры ({draft.sizes.length})</h3>
             <p className="subheading">Все параметры синхронизированы с таблицей типоразмеров на странице модели.</p>
           </div>
-          <div className="collection">
+          <div
+            className="collection"
+            style={{ "--collection-columns": "minmax(130px,1.6fr) 104px 110px minmax(110px,1fr) 136px" } as React.CSSProperties}
+          >
             {draft.sizes.length > 0 ? (
               <div className="collectionHead" aria-hidden="true">
                 <span>Типоразмер</span>
                 <span>Цена</span>
                 <span>По запросу</span>
-                <span>В наличии</span>
                 <span>Артикул (SKU)</span>
                 <span />
               </div>
@@ -408,14 +418,6 @@ export function TireModelEditor({ id }: { id: string }) {
                       onChange={(event) => patchSize(index, { priceOnRequest: event.target.checked })}
                     />
                     <span className="collectionFieldName">Цена по запросу</span>
-                  </label>
-                  <label className="collectionCheck">
-                    <input
-                      type="checkbox"
-                      checked={size.available}
-                      onChange={(event) => patchSize(index, { available: event.target.checked })}
-                    />
-                    <span className="collectionFieldName">В наличии</span>
                   </label>
                   <label>
                     <span className="collectionFieldName">Артикул (SKU)</span>

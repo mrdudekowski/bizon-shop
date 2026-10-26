@@ -75,6 +75,7 @@ export type TireModelDraft = {
   features?: { id: string; key: string; title: string; description: string }[];
   applicationTypes?: string[];
   selectionAxles: CatalogAxle[];
+  available?: boolean;
   showInMenu: boolean;
   menuOrder: number;
 };
@@ -244,6 +245,7 @@ export type WheelModelDraft = {
   mainImage?: ImagePlacement;
   gallery: ImagePlacement[];
   documents: DocumentLink[];
+  available?: boolean;
   showInMenu: boolean;
   menuOrder: number;
   variants: WheelVariantDraft[];
@@ -299,6 +301,7 @@ export type ShopProductDraft = {
   price?: number;
   oldPrice?: number;
   priceOnRequest: boolean;
+  available?: boolean;
   mainImage?: ImagePlacement;
   gallery: ImagePlacement[];
   variants: ShopVariantDraft[];

@@ -330,6 +330,14 @@ export function ShopProductEditor({ id }: { id: string }) {
           />
           Цена по запросу
         </label>
+        <label className={styles.check}>
+          <input
+            type="checkbox"
+            checked={draft.available !== false}
+            onChange={(event) => patch({ available: event.target.checked })}
+          />
+          В наличии
+        </label>
       </section>
       <section className={styles.section}>
         <h2>Варианты</h2>
@@ -389,14 +397,6 @@ export function ShopProductEditor({ id }: { id: string }) {
                   onChange={(event) => patchVariant(index, { priceOnRequest: event.target.checked })}
                 />
                 <span className={styles.variantFieldName}>Цена по запросу</span>
-              </label>
-              <label className={styles.check}>
-                <input
-                  type="checkbox"
-                  checked={variant.available}
-                  onChange={(event) => patchVariant(index, { available: event.target.checked })}
-                />
-                <span className={styles.variantFieldName}>В наличии</span>
               </label>
               <div className={styles.variantImage}>
                 <PlacementFields

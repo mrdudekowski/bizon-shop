@@ -50,7 +50,7 @@ function summarizeWheelVariantSpecs(variant: WheelVariantDraft): { label: string
 }
 
 const VARIANT_COLUMNS = {
-  "--collection-columns": "minmax(120px,1.4fr) minmax(100px,1fr) 104px 92px 84px 136px",
+  "--collection-columns": "minmax(120px,1.4fr) minmax(100px,1fr) 104px 110px 136px",
 } as React.CSSProperties;
 
 function optionalNumber(raw: string): number | undefined {
@@ -202,6 +202,14 @@ export function WheelModelEditor({ id }: { id: string }) {
         <label className={styles.check}>
           <input
             type="checkbox"
+            checked={Boolean(draft.available)}
+            onChange={(event) => patch({ available: event.target.checked })}
+          />
+          В наличии
+        </label>
+        <label className={styles.check}>
+          <input
+            type="checkbox"
             checked={draft.showInMenu}
             onChange={(event) => patch({ showInMenu: event.target.checked })}
           />
@@ -263,7 +271,6 @@ export function WheelModelEditor({ id }: { id: string }) {
                 <span>Цвет</span>
                 <span>Цена</span>
                 <span>По запросу</span>
-                <span>В наличии</span>
                 <span />
               </div>
             ) : null}
@@ -302,14 +309,6 @@ export function WheelModelEditor({ id }: { id: string }) {
                       onChange={(event) => patchVariant(index, { priceOnRequest: event.target.checked })}
                     />
                     <span className="collectionFieldName">Цена по запросу</span>
-                  </label>
-                  <label className="collectionCheck">
-                    <input
-                      type="checkbox"
-                      checked={variant.available}
-                      onChange={(event) => patchVariant(index, { available: event.target.checked })}
-                    />
-                    <span className="collectionFieldName">В наличии</span>
                   </label>
                   <div className="collectionRowActions">
                     <button
