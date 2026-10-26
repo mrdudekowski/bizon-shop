@@ -1665,6 +1665,14 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       return pack;
     },
 
+    async listRequests() {
+      return [];
+    },
+
+    async updateRequestStatus() {
+      throw new Error("not_found");
+    },
+
     async storageNotice() {
       load();
       if (!repairedNoticePending) return null;

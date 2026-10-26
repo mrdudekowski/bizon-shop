@@ -35,6 +35,7 @@ const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
   size: { text: "Укажите читаемый размер", tab: "Характеристики", field: "Типоразмер" },
   price: { text: "Укажите цену или «по запросу»", tab: "Характеристики", field: "Цена" },
   duplicateSize: { text: "Размер повторяется", tab: "Характеристики" },
+  duplicateSku: { text: "Артикул (SKU) повторяется", tab: "Характеристики", field: "Артикул (SKU)" },
   editorialPlaceholder: { text: "Замените редакционный placeholder в тексте преимущества" },
 };
 
@@ -392,6 +393,18 @@ export function TireModelEditor({ id }: { id: string }) {
             {draft.sizes.map((size, index) => {
               const summaryItems = summarizeTireSizeSpecs(size);
               const isExpanded = expandedSizeId === size.id;
+              const normalizedSize = size.size.trim().toLowerCase();
+              const normalizedSku = (size.sku ?? "").trim().toLowerCase();
+              const sameSizeRows = normalizedSize
+                ? draft.sizes.filter((item, i) => i !== index && item.size.trim().toLowerCase() === normalizedSize)
+                : [];
+              const hasDuplicateSizeAndSku = sameSizeRows.some(
+                (item) => (item.sku ?? "").trim().toLowerCase() === normalizedSku,
+              );
+              const hasSameSizeModification = sameSizeRows.length > 0 && !hasDuplicateSizeAndSku;
+              const hasDuplicateSku = normalizedSku.length > 0 && draft.sizes.some(
+                (item, i) => i !== index && (item.sku ?? "").trim().toLowerCase() === normalizedSku,
+              );
               return (
                 <fieldset key={size.id} className="collectionRow">
                   <legend className="visuallyHidden">Размер {index + 1}</legend>
@@ -402,6 +415,11 @@ export function TireModelEditor({ id }: { id: string }) {
                       value={size.size}
                       onChange={(event) => patchSize(index, { size: event.target.value })}
                     />
+                    {hasDuplicateSizeAndSku ? (
+                      <span className="fieldError">Дубликат типоразмера (укажите разный SKU для модификаций)</span>
+                    ) : hasSameSizeModification ? (
+                      <span className="fieldWarning">Повтор размера (модификация с другим SKU)</span>
+                    ) : null}
                   </label>
                   <label>
                     <span className="collectionFieldName">Цена</span>
@@ -426,7 +444,11 @@ export function TireModelEditor({ id }: { id: string }) {
                       value={size.sku ?? ""}
                       onChange={(event) => patchSize(index, { sku: event.target.value })}
                     />
-                    {!(size.sku ?? "").trim() ? <span className="fieldHint">Заполните для публикации</span> : null}
+                    {hasDuplicateSku ? (
+                      <span className="fieldError">Артикул (SKU) уже используется в этой модели</span>
+                    ) : !(size.sku ?? "").trim() ? (
+                      <span className="fieldHint">Заполните для публикации</span>
+                    ) : null}
                   </label>
                   <div className="collectionRowActions">
                     <button
@@ -563,6 +585,25 @@ export function TireModelEditor({ id }: { id: string }) {
         <h2>Меню</h2>
         <label><input type="checkbox" checked={draft.showInMenu} onChange={(event) => patch({ showInMenu: event.target.checked })} />Показывать в меню</label>
         <label>Порядок в меню<input type="number" value={draft.menuOrder} onChange={(event) => patch({ menuOrder: Number(event.target.value) || 0 })} /></label>
+      </section>
+      <section>
+        <h2>Для поиска</h2>
+        <label>
+          Заголовок в поиске
+          <input
+            value={draft.seoTitle ?? ""}
+            placeholder={draft.name || "По умолчанию — название модели"}
+            onChange={(event) => patch({ seoTitle: event.target.value })}
+          />
+        </label>
+        <label>
+          Описание в поиске
+          <textarea
+            value={draft.seoDescription ?? ""}
+            placeholder={draft.descriptionShort || "По умолчанию — короткое описание модели"}
+            onChange={(event) => patch({ seoDescription: event.target.value })}
+          />
+        </label>
       </section>
       <DocumentReviewFooter
         entityType="tire-model"

@@ -31,6 +31,7 @@ const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
   size: { text: "Укажите читаемый размер", tab: "Характеристики", field: "Размер" },
   price: { text: "Укажите цену или «по запросу»", tab: "Характеристики", field: "Цена" },
   duplicateSize: { text: "Размер повторяется", tab: "Характеристики" },
+  duplicateSku: { text: "Артикул (SKU) повторяется", tab: "Характеристики", field: "SKU" },
 };
 
 function summarizeWheelVariantSpecs(variant: WheelVariantDraft): { label: string; value: string }[] {
@@ -233,24 +234,29 @@ export function WheelModelEditor({ id }: { id: string }) {
           </div>
           <div className="specsFieldsGrid">
             <label className={styles.field}>
-              Серия
+              Отделка / серия
               <input value={draft.series} placeholder="Например, Satin Black / Machined Silver" onChange={(event) => patch({ series: event.target.value })} />
             </label>
             <label className={styles.field}>
-              Стиль
+              Стиль / назначение
               <input value={draft.designStyle ?? ""} placeholder="Off-road / Performance / Expedition" onChange={(event) => patch({ designStyle: event.target.value })} />
             </label>
             <label className={styles.field}>
-              Материал
-              <input value={draft.material} placeholder="Кованый алюминий" onChange={(event) => patch({ material: event.target.value })} />
+              Материал / сплав
+              <input value={draft.material} placeholder="Например, Алюминиевый сплав 6061-T6" onChange={(event) => patch({ material: event.target.value })} />
             </label>
             <label className={styles.field}>
               Конструкция
-              <input
-                value={draft.constructionMethod}
-                placeholder="forged (Кованый)"
+              <select
+                value={draft.constructionMethod || "forged"}
                 onChange={(event) => patch({ constructionMethod: event.target.value })}
-              />
+              >
+                <option value="forged">Кованый (Forged)</option>
+                <option value="flow_formed">Flow-formed (раскатной)</option>
+                <option value="cast">Литой (Cast)</option>
+                <option value="steel">Стальной</option>
+                <option value="other">Другое</option>
+              </select>
             </label>
           </div>
           <label className={styles.field}>
@@ -277,6 +283,14 @@ export function WheelModelEditor({ id }: { id: string }) {
             {draft.variants.map((variant, index) => {
               const summaryItems = summarizeWheelVariantSpecs(variant);
               const isExpanded = expandedVariantId === variant.id;
+              const normalizedSize = variant.sizeLabel.trim().toLowerCase();
+              const normalizedSku = (variant.sku ?? "").trim().toLowerCase();
+              const hasDuplicateSize = normalizedSize.length > 0 && draft.variants.some(
+                (item, i) => i !== index && item.sizeLabel.trim().toLowerCase() === normalizedSize,
+              );
+              const hasDuplicateSku = normalizedSku.length > 0 && draft.variants.some(
+                (item, i) => i !== index && (item.sku ?? "").trim().toLowerCase() === normalizedSku,
+              );
               return (
                 <fieldset key={variant.id} className="collectionRow">
                   <legend className="visuallyHidden">Вариант {index + 1}</legend>
@@ -286,6 +300,8 @@ export function WheelModelEditor({ id }: { id: string }) {
                       value={variant.sizeLabel}
                       onChange={(event) => patchVariant(index, { sizeLabel: event.target.value })}
                     />
+                    {hasDuplicateSize ? <span className="fieldError">Размер повторяется</span> : null}
+                    {hasDuplicateSku && !isExpanded ? <span className="fieldError">Дубликат SKU: {variant.sku}</span> : null}
                   </label>
                   <label>
                     <span className="collectionFieldName">Цвет</span>
@@ -357,6 +373,7 @@ export function WheelModelEditor({ id }: { id: string }) {
                       <label>
                         SKU
                         <input value={variant.sku ?? ""} onChange={(event) => patchVariant(index, { sku: event.target.value })} />
+                        {hasDuplicateSku ? <span className="fieldError">Артикул (SKU) уже используется</span> : null}
                       </label>
                       <label>
                         Диаметр
@@ -444,6 +461,25 @@ export function WheelModelEditor({ id }: { id: string }) {
         />
         </section>
       <DocumentFields value={draft.documents} onChange={(documents) => patch({ documents })} />
+      <section className={styles.section}>
+        <h2>Для поиска</h2>
+        <label className={styles.field}>
+          Заголовок в поиске
+          <input
+            value={draft.seoTitle ?? ""}
+            placeholder={draft.name || "По умолчанию — название модели"}
+            onChange={(event) => patch({ seoTitle: event.target.value })}
+          />
+        </label>
+        <label className={styles.field}>
+          Описание в поиске
+          <textarea
+            value={draft.seoDescription ?? ""}
+            placeholder={draft.descriptionShort || "По умолчанию — короткое описание модели"}
+            onChange={(event) => patch({ seoDescription: event.target.value })}
+          />
+        </label>
+      </section>
       <DocumentReviewFooter
         entityType="wheel-model"
         entityId={id}

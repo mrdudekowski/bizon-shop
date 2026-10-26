@@ -159,6 +159,25 @@ export function WheelTypeEditor({ id }: { id: string }) {
           onChange={(mainImage) => patch({ mainImage })}
         />
       </section>
+      <section className={styles.section}>
+        <h2>Для поиска</h2>
+        <label className={styles.field}>
+          Заголовок в поиске
+          <input
+            value={draft.seoTitle ?? ""}
+            placeholder={draft.name || "По умолчанию — название типа дисков"}
+            onChange={(event) => patch({ seoTitle: event.target.value })}
+          />
+        </label>
+        <label className={styles.field}>
+          Описание в поиске
+          <textarea
+            value={draft.seoDescription ?? ""}
+            placeholder={draft.description || "По умолчанию — описание типа дисков"}
+            onChange={(event) => patch({ seoDescription: event.target.value })}
+          />
+        </label>
+      </section>
       <DocumentReviewFooter
         entityType="wheel-type"
         entityId={id}

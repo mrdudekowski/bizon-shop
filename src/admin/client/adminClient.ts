@@ -7,6 +7,8 @@ import type {
   DocumentStatus,
   EditorCapability,
   EntityRecord,
+  LeadRequestRecord,
+  LeadRequestStatus,
   MediaListItem,
   MediaDeletionHistoryItem,
   PasswordResetHistoryItem,
@@ -123,6 +125,8 @@ export type AdminClient = {
   publishChangeSet(id: string): Promise<ChangeSet>;
   returnChangeSet(id: string, comment: string): Promise<ChangeSet>;
   cancelChangeSet(id: string): Promise<ChangeSet>;
+  listRequests(): Promise<LeadRequestRecord[]>;
+  updateRequestStatus(id: string, status: LeadRequestStatus): Promise<LeadRequestRecord>;
   storageNotice(): Promise<string | null>;
 };
 

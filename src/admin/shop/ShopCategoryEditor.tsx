@@ -159,6 +159,22 @@ export function ShopCategoryEditor({ id }: { id: string }) {
             Описание
             <textarea value={draft.description} onChange={(event) => patch({ description: event.target.value })} />
           </label>
+          <label className={styles.field}>
+            Заголовок в поиске (SEO Title)
+            <input
+              value={draft.seoTitle ?? ""}
+              placeholder={draft.name || "По умолчанию — название категории"}
+              onChange={(event) => patch({ seoTitle: event.target.value })}
+            />
+          </label>
+          <label className={styles.field}>
+            Описание в поиске (SEO Description)
+            <textarea
+              value={draft.seoDescription ?? ""}
+              placeholder={draft.description || "По умолчанию — описание категории"}
+              onChange={(event) => patch({ seoDescription: event.target.value })}
+            />
+          </label>
         </section>
       </div>
 

@@ -34,6 +34,7 @@ const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
   size: { text: "Укажите размер варианта", tab: "Варианты", field: "Размер" },
   price: { text: "Укажите цену или «по запросу»", tab: "Карточка", field: "Цена" },
   duplicateSize: { text: "Сочетание характеристик варианта повторяется", tab: "Варианты" },
+  duplicateSku: { text: "Артикул (SKU) повторяется", tab: "Варианты", field: "SKU" },
 };
 
 function optionalNumber(raw: string): number | undefined {
@@ -306,6 +307,22 @@ export function ShopProductEditor({ id }: { id: string }) {
           />
         </label>
         <label className={styles.field}>
+          Артикул (SKU)
+          <input
+            value={draft.sku ?? ""}
+            placeholder="Например, BZN-SHP-001"
+            onChange={(event) => patch({ sku: event.target.value })}
+          />
+        </label>
+        <label className={styles.field}>
+          Порядок отображения
+          <input
+            type="number"
+            value={draft.sortOrder ?? 0}
+            onChange={(event) => patch({ sortOrder: Number(event.target.value) || 0 })}
+          />
+        </label>
+        <label className={styles.field}>
           Цена
           <input
             type="number"
@@ -340,6 +357,102 @@ export function ShopProductEditor({ id }: { id: string }) {
         </label>
       </section>
       <section className={styles.section}>
+        <h2>Характеристики</h2>
+        <div className="specsGroup">
+          <div className="specsHeader">
+            <h3>Основные характеристики товара</h3>
+            <p className="subheading">Бренд, материал и дополнительные параметры, отображаемые на странице товара.</p>
+          </div>
+          <div className="specsFieldsGrid">
+            <label className={styles.field}>
+              Бренд
+              <input
+                value={draft.brand ?? ""}
+                placeholder="Например, BIZON"
+                onChange={(event) => patch({ brand: event.target.value })}
+              />
+            </label>
+            <label className={styles.field}>
+              Материал
+              <input
+                value={draft.material ?? ""}
+                placeholder="Например, Алюминий / Кожа / Полиуретан"
+                onChange={(event) => patch({ material: event.target.value })}
+              />
+            </label>
+          </div>
+          <div className="collection" style={{ "--collection-columns": "minmax(140px, 1fr) minmax(160px, 1.4fr) 44px" } as React.CSSProperties}>
+            {(draft.specifications ?? []).length > 0 ? (
+              <div className="collectionHead" aria-hidden="true">
+                <span>Название характеристики</span>
+                <span>Значение</span>
+                <span />
+              </div>
+            ) : null}
+            {(draft.specifications ?? []).map((spec, index) => (
+              <fieldset key={spec.id} className="collectionRow">
+                <legend className="visuallyHidden">Характеристика {index + 1}</legend>
+                <label>
+                  <span className="collectionFieldName">Название характеристики</span>
+                  <input
+                    aria-label="Название характеристики"
+                    placeholder="Например, Вес или Комплектация"
+                    value={spec.label}
+                    onChange={(event) => {
+                      const nextSpecs = [...(draft.specifications ?? [])];
+                      nextSpecs[index] = { ...nextSpecs[index], label: event.target.value };
+                      patch({ specifications: nextSpecs });
+                    }}
+                  />
+                </label>
+                <label>
+                  <span className="collectionFieldName">Значение</span>
+                  <input
+                    aria-label="Значение характеристики"
+                    placeholder="Например, 1.2 кг"
+                    value={spec.value}
+                    onChange={(event) => {
+                      const nextSpecs = [...(draft.specifications ?? [])];
+                      nextSpecs[index] = { ...nextSpecs[index], value: event.target.value };
+                      patch({ specifications: nextSpecs });
+                    }}
+                  />
+                </label>
+                <div className="collectionRowActions">
+                  <button
+                    type="button"
+                    className="collectionRemove"
+                    aria-label={`Убрать характеристику ${index + 1}`}
+                    title="Убрать характеристику"
+                    onClick={() =>
+                      patch({
+                        specifications: (draft.specifications ?? []).filter((item) => item.id !== spec.id),
+                      })
+                    }
+                  >
+                    ✕
+                  </button>
+                </div>
+              </fieldset>
+            ))}
+            <button
+              type="button"
+              className="collectionAdd"
+              onClick={() =>
+                patch({
+                  specifications: [
+                    ...(draft.specifications ?? []),
+                    { id: crypto.randomUUID(), label: "", value: "" },
+                  ],
+                })
+              }
+            >
+              Добавить характеристику
+            </button>
+          </div>
+        </div>
+      </section>
+      <section className={styles.section}>
         <h2>Варианты</h2>
         <div className={styles.variantCollection}>
           {draft.variants.map((variant, index) => (
@@ -370,7 +483,11 @@ export function ShopProductEditor({ id }: { id: string }) {
               <label className={styles.field}>
                 <span className={styles.variantFieldName}>SKU</span>
                 <input value={variant.sku} onChange={(event) => patchVariant(index, { sku: event.target.value })} />
-                {!variant.sku.trim() ? <span className="fieldHint">Заполните для публикации</span> : null}
+                {variant.sku.trim() && draft.variants.some((item, i) => i !== index && item.sku.trim().toLowerCase() === variant.sku.trim().toLowerCase()) ? (
+                  <span className="fieldError">Артикул (SKU) повторяется</span>
+                ) : !variant.sku.trim() ? (
+                  <span className="fieldHint">Заполните для публикации</span>
+                ) : null}
               </label>
               <label className={styles.field}>
                 <span className={styles.variantFieldName}>Цена</span>
@@ -431,7 +548,26 @@ export function ShopProductEditor({ id }: { id: string }) {
           onCoverChange={(mainImage) => patch({ mainImage })}
           onGalleryChange={(gallery) => patch({ gallery })}
         />
-        </section>
+      </section>
+      <section className={styles.section}>
+        <h2>Для поиска</h2>
+        <label className={styles.field}>
+          Заголовок в поиске
+          <input
+            value={draft.seoTitle ?? ""}
+            placeholder={draft.name || "По умолчанию — название товара"}
+            onChange={(event) => patch({ seoTitle: event.target.value })}
+          />
+        </label>
+        <label className={styles.field}>
+          Описание в поиске
+          <textarea
+            value={draft.seoDescription ?? ""}
+            placeholder={draft.descriptionShort || "По умолчанию — короткое описание товара"}
+            onChange={(event) => patch({ seoDescription: event.target.value })}
+          />
+        </label>
+      </section>
       <DocumentReviewFooter
         entityType="shop-product"
         entityId={id}

@@ -155,6 +155,25 @@ export function TireDirectionEditor({ id }: { id: string }) {
           onChange={(mainImage) => patch({ mainImage })}
         />
       </section>
+      <section>
+        <h2>Для поиска</h2>
+        <label>
+          Заголовок в поиске
+          <input
+            value={draft.seoTitle ?? ""}
+            placeholder={draft.name || "По умолчанию — название направления"}
+            onChange={(event) => patch({ seoTitle: event.target.value })}
+          />
+        </label>
+        <label>
+          Описание в поиске
+          <textarea
+            value={draft.seoDescription ?? ""}
+            placeholder={draft.description || "По умолчанию — описание направления"}
+            onChange={(event) => patch({ seoDescription: event.target.value })}
+          />
+        </label>
+      </section>
       <DocumentReviewFooter
         entityType="tire-direction"
         entityId={id}

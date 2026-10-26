@@ -122,4 +122,30 @@ describe("media library usage and deletion controls", () => {
     expect(listAssets).toHaveBeenCalledTimes(2);
     confirm.mockRestore();
   });
+
+  it("filters by file name search, file type, and date sorting", async () => {
+    const user = userEvent.setup();
+    mockState.client = {
+      getSession: vi.fn().mockResolvedValue({ login: "admin", role: "admin", capabilities: [] }),
+      listAssets: vi.fn().mockResolvedValue([
+        { id: "1", name: "atlas-wheel.webp", mimeType: "image/webp", dataUrl: "/media/atlas.webp", createdAt: "2026-07-01T10:00:00.000Z", usedBy: [], usages: [] },
+        { id: "2", name: "dsr158-passport.pdf", mimeType: "application/pdf", dataUrl: "/media/dsr158.pdf", createdAt: "2026-10-20T10:00:00.000Z", usedBy: [], usages: [] },
+      ]),
+      listMediaDeletionHistory: vi.fn().mockResolvedValue([]),
+      deleteAsset: vi.fn(),
+    };
+    render(createElement(MediaLibrary));
+
+    await screen.findByText("atlas-wheel.webp");
+    expect(screen.getByText("dsr158-passport.pdf")).toBeTruthy();
+
+    await user.type(screen.getByLabelText("Поиск по названию"), "passport");
+    expect(screen.queryByText("atlas-wheel.webp")).toBeNull();
+    expect(screen.getByText("dsr158-passport.pdf")).toBeTruthy();
+
+    await user.clear(screen.getByLabelText("Поиск по названию"));
+    await user.selectOptions(screen.getByLabelText("Тип файла"), "image");
+    expect(screen.getByText("atlas-wheel.webp")).toBeTruthy();
+    expect(screen.queryByText("dsr158-passport.pdf")).toBeNull();
+  });
 });

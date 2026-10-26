@@ -341,6 +341,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const items = [
     ...CATALOG_NAV,
     ...(canEditPages ? CONTENT_NAV : []),
+    { href: "/requests", label: "Заявки", icon: "requests" as const },
     ...(role === "admin"
       ? [
           { href: "/media", label: "Файлы", icon: "image" as const },

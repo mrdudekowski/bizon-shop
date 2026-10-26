@@ -139,6 +139,8 @@ dialog::backdrop { background: #141b2766; backdrop-filter: blur(3px); }
 .choiceGroup > label { display: flex; align-items: center; gap: 8px; }
 .choiceIcon { width: 28px; height: 28px; flex: 0 0 28px; }
 .fieldHint { color: var(--ink-muted); font-size: 12px; font-weight: 400; }
+.fieldWarning { color: #9a5b00; font-size: 12px; font-weight: 500; }
+.fieldError { color: #a13d34; font-size: 12px; font-weight: 600; }
 @media (min-width: 1000px) { .document > section:has(> label) { grid-template-columns: repeat(2, minmax(0, 1fr)); } .document > section > h2, .document > section > fieldset, .document > section > div, .document > section > section { grid-column: 1 / -1; } }
 @media (max-width: 720px) {
   :root {

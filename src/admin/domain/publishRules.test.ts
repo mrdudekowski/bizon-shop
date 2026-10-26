@@ -80,6 +80,19 @@ describe("tireModelPublishBlockers", () => {
     ).toContain("duplicateSize");
   });
 
+  it("blocks a duplicate SKU across sizes inside the model", () => {
+    expect(
+      tireModelPublishBlockers(
+        model({
+          sizes: [
+            { id: "s1", size: "315/80R22.5", sku: "DSR-01", priceOnRequest: true, available: true },
+            { id: "s2", size: "385/65R22.5", sku: "dsr-01 ", priceOnRequest: true, available: true },
+          ],
+        }),
+      ),
+    ).toContain("duplicateSku");
+  });
+
   it("blocks publication of an explicitly marked editorial placeholder", () => {
     expect(tireModelPublishBlockers(model({
       features: [{
