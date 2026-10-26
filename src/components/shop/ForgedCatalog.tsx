@@ -43,8 +43,7 @@ export function ForgedCatalog({
     return () => controller.abort();
   }, []);
 
-  const fallbackDescription = "Пять дизайнов кованых дисков BIZON, изготавливаемых под заказ.";
-  const headerDescription = wheelType.shortDescription || wheelType.description || fallbackDescription;
+  const headerDescription = wheelType.shortDescription || wheelType.description;
 
   return (
     <div className={styles.page} data-shop-chrome-tone="light">

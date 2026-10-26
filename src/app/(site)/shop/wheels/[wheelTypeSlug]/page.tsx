@@ -23,19 +23,12 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps) {
   const { wheelTypeSlug } = await params;
-  if (wheelTypeSlug.toLowerCase() === "forged") {
-    return createPageMetadata({
-      title: "BIZON Forged",
-      description: "Пять дизайнов кованых дисков BIZON, изготавливаемых под заказ.",
-      path: "/shop/wheels/forged",
-    });
-  }
   const loaded = await loadPublished(() => getWheelTypeBySlug(wheelTypeSlug));
   const wheelType = loaded.kind === "ok" ? loaded.value : null;
   if (!wheelType) return {};
   return createPageMetadata({
-    title: wheelType.name,
-    description: wheelType.description,
+    title: wheelType.seoTitle?.trim() || wheelType.name,
+    description: wheelType.seoDescription?.trim() || wheelType.shortDescription || wheelType.description,
     path: `/shop/wheels/${wheelType.slug}`,
   });
 }
