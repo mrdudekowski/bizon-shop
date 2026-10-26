@@ -28,10 +28,26 @@ const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
   slug: { text: "Укажите адрес страницы", tab: "Карточка", field: "Адрес" },
   direction: { text: "Не найдена служебная категория дисков" },
   mainImage: { text: "Добавьте главное фото", tab: "Фото", anchor: "main" },
-  size: { text: "Укажите читаемый размер", tab: "Варианты", field: "Размер" },
-  price: { text: "Укажите цену или «по запросу»", tab: "Варианты", field: "Цена" },
-  duplicateSize: { text: "Размер повторяется", tab: "Варианты" },
+  size: { text: "Укажите читаемый размер", tab: "Характеристики", field: "Размер" },
+  price: { text: "Укажите цену или «по запросу»", tab: "Характеристики", field: "Цена" },
+  duplicateSize: { text: "Размер повторяется", tab: "Характеристики" },
 };
+
+function summarizeWheelVariantSpecs(variant: WheelVariantDraft): { label: string; value: string }[] {
+  const items: { label: string; value: string }[] = [];
+  if (variant.sku) items.push({ label: "SKU", value: variant.sku });
+  if (variant.diameter != null && variant.width != null) {
+    items.push({ label: "Габариты", value: `${variant.diameter}×${variant.width}J` });
+  }
+  if (variant.pcd) items.push({ label: "PCD", value: variant.pcd });
+  if (variant.offsetET != null) items.push({ label: "ET", value: `${variant.offsetET}` });
+  if (variant.centerBore != null) items.push({ label: "DIA", value: `${variant.centerBore}` });
+  if (variant.loadRating) items.push({ label: "Нагрузка", value: variant.loadRating });
+  if (variant.weight != null) items.push({ label: "Вес", value: `${variant.weight} кг` });
+  if (variant.finish) items.push({ label: "Покрытие", value: variant.finish });
+  if (variant.compatibleTireSizes) items.push({ label: "Шины", value: variant.compatibleTireSizes });
+  return items;
+}
 
 const VARIANT_COLUMNS = {
   "--collection-columns": "minmax(120px,1.4fr) minmax(100px,1fr) 104px 92px 84px 136px",
@@ -170,29 +186,6 @@ export function WheelModelEditor({ id }: { id: string }) {
           />
         </label>
         <label className={styles.field}>
-          Серия
-          <input value={draft.series} onChange={(event) => patch({ series: event.target.value })} />
-        </label>
-        <label className={styles.field}>
-          Стиль
-          <input value={draft.designStyle ?? ""} onChange={(event) => patch({ designStyle: event.target.value })} />
-        </label>
-        <label className={styles.field}>
-          Материал
-          <input value={draft.material} onChange={(event) => patch({ material: event.target.value })} />
-        </label>
-        <label className={styles.field}>
-          Конструкция
-          <input
-            value={draft.constructionMethod}
-            onChange={(event) => patch({ constructionMethod: event.target.value })}
-          />
-        </label>
-        <label className={styles.field}>
-          Посадка
-          <input value={draft.fitmentNotes} onChange={(event) => patch({ fitmentNotes: event.target.value })} />
-        </label>
-        <label className={styles.field}>
           Короткое описание
           <textarea
             value={draft.descriptionShort}
@@ -224,157 +217,222 @@ export function WheelModelEditor({ id }: { id: string }) {
         </label>
       </section>
       <section className={styles.section}>
-        <h2>Варианты</h2>
-        <div className="collection" style={VARIANT_COLUMNS}>
-          {draft.variants.length > 0 ? (
-            <div className="collectionHead" aria-hidden="true">
-              <span>Размер</span>
-              <span>Цвет</span>
-              <span>Цена</span>
-              <span>По запросу</span>
-              <span>В наличии</span>
-              <span />
-            </div>
-          ) : null}
-          {draft.variants.map((variant, index) => (
-            <fieldset key={variant.id} className="collectionRow">
-              <legend className="visuallyHidden">Вариант {index + 1}</legend>
-              <label>
-                <span className="collectionFieldName">Размер</span>
-                <input
-                  value={variant.sizeLabel}
-                  onChange={(event) => patchVariant(index, { sizeLabel: event.target.value })}
-                />
-              </label>
-              <label>
-                <span className="collectionFieldName">Цвет</span>
-                <input
-                  value={variant.color}
-                  onChange={(event) => patchVariant(index, { color: event.target.value })}
-                />
-              </label>
-              <label>
-                <span className="collectionFieldName">Цена</span>
-                <input
-                  type="number"
-                  value={variant.price ?? ""}
-                  onChange={(event) => patchVariant(index, { price: optionalNumber(event.target.value) })}
-                />
-              </label>
-              <label className="collectionCheck">
-                <input
-                  type="checkbox"
-                  checked={variant.priceOnRequest}
-                  onChange={(event) => patchVariant(index, { priceOnRequest: event.target.checked })}
-                />
-                <span className="collectionFieldName">Цена по запросу</span>
-              </label>
-              <label className="collectionCheck">
-                <input
-                  type="checkbox"
-                  checked={variant.available}
-                  onChange={(event) => patchVariant(index, { available: event.target.checked })}
-                />
-                <span className="collectionFieldName">В наличии</span>
-              </label>
-              <div className="collectionRowActions">
-                <button
-                  type="button"
-                  className="collectionToggle"
-                  aria-expanded={expandedVariantId === variant.id}
-                  aria-controls={`variant-details-${variant.id}`}
-                  title="Посадочные размеры"
-                  onClick={() => setExpandedVariantId(expandedVariantId === variant.id ? null : variant.id)}
-                >
-                  {expandedVariantId === variant.id ? "Свернуть" : "Ещё"}
-                </button>
-                <button
-                  type="button"
-                  className="collectionRemove"
-                  aria-label={`Убрать вариант ${index + 1}`}
-                  title="Убрать вариант"
-                  onClick={() => patch({ variants: draft.variants.filter((item) => item.id !== variant.id) })}
-                >
-                  ✕
-                </button>
+        <h2>Характеристики</h2>
+        <div className="specsGroup">
+          <div className="specsHeader">
+            <h3>Паспортные характеристики диска</h3>
+            <p className="subheading">Конструкция, материал, серия, стиль и условия посадки на ступицу.</p>
+          </div>
+          <div className="specsFieldsGrid">
+            <label className={styles.field}>
+              Серия
+              <input value={draft.series} placeholder="Например, Satin Black / Machined Silver" onChange={(event) => patch({ series: event.target.value })} />
+            </label>
+            <label className={styles.field}>
+              Стиль
+              <input value={draft.designStyle ?? ""} placeholder="Off-road / Performance / Expedition" onChange={(event) => patch({ designStyle: event.target.value })} />
+            </label>
+            <label className={styles.field}>
+              Материал
+              <input value={draft.material} placeholder="Кованый алюминий" onChange={(event) => patch({ material: event.target.value })} />
+            </label>
+            <label className={styles.field}>
+              Конструкция
+              <input
+                value={draft.constructionMethod}
+                placeholder="forged (Кованый)"
+                onChange={(event) => patch({ constructionMethod: event.target.value })}
+              />
+            </label>
+          </div>
+          <label className={styles.field}>
+            Посадка
+            <input value={draft.fitmentNotes} placeholder="Примечания по сверловке, ступице и совместимости" onChange={(event) => patch({ fitmentNotes: event.target.value })} />
+          </label>
+        </div>
+
+        <div className="specsGroup">
+          <div className="specsHeader">
+            <h3>Типоразмеры и параметры дисков ({draft.variants.length})</h3>
+            <p className="subheading">Параметры синхронизированы с таблицей характеристик и фильтрами каталога дисков.</p>
+          </div>
+          <div className="collection" style={VARIANT_COLUMNS}>
+            {draft.variants.length > 0 ? (
+              <div className="collectionHead" aria-hidden="true">
+                <span>Размер</span>
+                <span>Цвет</span>
+                <span>Цена</span>
+                <span>По запросу</span>
+                <span>В наличии</span>
+                <span />
               </div>
-              {expandedVariantId === variant.id ? (
-                <div id={`variant-details-${variant.id}`} className="collectionExtraGrid">
+            ) : null}
+            {draft.variants.map((variant, index) => {
+              const summaryItems = summarizeWheelVariantSpecs(variant);
+              const isExpanded = expandedVariantId === variant.id;
+              return (
+                <fieldset key={variant.id} className="collectionRow">
+                  <legend className="visuallyHidden">Вариант {index + 1}</legend>
                   <label>
-                    SKU
-                    <input value={variant.sku ?? ""} onChange={(event) => patchVariant(index, { sku: event.target.value })} />
-                  </label>
-                  <label>
-                    Диаметр
-                    <input type="number" min="0" step="any" value={variant.diameter ?? ""} onChange={(event) => patchVariant(index, { diameter: optionalNumber(event.target.value) })} />
-                  </label>
-                  <label>
-                    Ширина
-                    <input type="number" min="0" step="any" value={variant.width ?? ""} onChange={(event) => patchVariant(index, { width: optionalNumber(event.target.value) })} />
-                  </label>
-                  <label>
-                    Количество отверстий
-                    <input type="number" min="0" step="1" value={variant.boltHoles ?? ""} onChange={(event) => patchVariant(index, { boltHoles: optionalNumber(event.target.value) })} />
-                  </label>
-                  <label>
-                    PCD
-                    <input value={variant.pcd} onChange={(event) => patchVariant(index, { pcd: event.target.value })} />
-                  </label>
-                  <label>
-                    PCD, мм
-                    <input type="number" min="0" step="any" value={variant.pcdMm ?? ""} onChange={(event) => patchVariant(index, { pcdMm: optionalNumber(event.target.value) })} />
-                  </label>
-                  <label>
-                    Вылет ET
+                    <span className="collectionFieldName">Размер</span>
                     <input
-                      type="number"
-                      value={variant.offsetET ?? ""}
-                      onChange={(event) => patchVariant(index, { offsetET: optionalNumber(event.target.value) })}
+                      value={variant.sizeLabel}
+                      onChange={(event) => patchVariant(index, { sizeLabel: event.target.value })}
                     />
                   </label>
                   <label>
-                    Центральное отверстие
+                    <span className="collectionFieldName">Цвет</span>
                     <input
-                      type="number"
-                      value={variant.centerBore ?? ""}
-                      onChange={(event) => patchVariant(index, { centerBore: optionalNumber(event.target.value) })}
+                      value={variant.color}
+                      onChange={(event) => patchVariant(index, { color: event.target.value })}
                     />
                   </label>
                   <label>
-                    Допустимая нагрузка
-                    <input value={variant.loadRating ?? ""} onChange={(event) => patchVariant(index, { loadRating: event.target.value })} />
+                    <span className="collectionFieldName">Цена</span>
+                    <input
+                      type="number"
+                      value={variant.price ?? ""}
+                      onChange={(event) => patchVariant(index, { price: optionalNumber(event.target.value) })}
+                    />
                   </label>
-                  <label>
-                    Вес, кг
-                    <input type="number" min="0" step="any" value={variant.weight ?? ""} onChange={(event) => patchVariant(index, { weight: optionalNumber(event.target.value) })} />
+                  <label className="collectionCheck">
+                    <input
+                      type="checkbox"
+                      checked={variant.priceOnRequest}
+                      onChange={(event) => patchVariant(index, { priceOnRequest: event.target.checked })}
+                    />
+                    <span className="collectionFieldName">Цена по запросу</span>
                   </label>
-                  <label>
-                    Покрытие
-                    <input value={variant.finish ?? ""} onChange={(event) => patchVariant(index, { finish: event.target.value })} />
+                  <label className="collectionCheck">
+                    <input
+                      type="checkbox"
+                      checked={variant.available}
+                      onChange={(event) => patchVariant(index, { available: event.target.checked })}
+                    />
+                    <span className="collectionFieldName">В наличии</span>
                   </label>
-                  <label>
-                    Тип крепежа
-                    <input value={variant.fastenerType ?? ""} onChange={(event) => patchVariant(index, { fastenerType: event.target.value })} />
-                  </label>
-                  <label>
-                    Материал крепежа
-                    <input value={variant.fastenerMaterial ?? ""} onChange={(event) => patchVariant(index, { fastenerMaterial: event.target.value })} />
-                  </label>
-                  <label>
-                    Совместимые размеры шин
-                    <input value={variant.compatibleTireSizes ?? ""} onChange={(event) => patchVariant(index, { compatibleTireSizes: event.target.value })} />
-                  </label>
-                  <label>
-                    Источник спецификации
-                    <textarea value={variant.sourceSpecification ?? ""} onChange={(event) => patchVariant(index, { sourceSpecification: event.target.value })} />
-                  </label>
-                </div>
-              ) : null}
-            </fieldset>
-          ))}
-          <button type="button" className="collectionAdd" onClick={() => patch({ variants: [...draft.variants, emptyVariant()] })}>
-            Добавить вариант
-          </button>
+                  <div className="collectionRowActions">
+                    <button
+                      type="button"
+                      className="collectionToggle"
+                      aria-expanded={isExpanded}
+                      aria-controls={`variant-details-${variant.id}`}
+                      title="Посадочные размеры"
+                      onClick={() => setExpandedVariantId(isExpanded ? null : variant.id)}
+                    >
+                      {isExpanded ? "Свернуть" : "Ещё"}
+                    </button>
+                    <button
+                      type="button"
+                      className="collectionRemove"
+                      aria-label={`Убрать вариант ${index + 1}`}
+                      title="Убрать вариант"
+                      onClick={() => patch({ variants: draft.variants.filter((item) => item.id !== variant.id) })}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {!isExpanded && summaryItems.length > 0 ? (
+                    <div
+                      className="specsSummaryBar"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setExpandedVariantId(variant.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setExpandedVariantId(variant.id);
+                        }
+                      }}
+                    >
+                      {summaryItems.map((item) => (
+                        <span key={item.label} className="specsChip">
+                          <strong>{item.label}:</strong> {item.value}
+                        </span>
+                      ))}
+                      <span className="specsEditCue">Изменить параметры →</span>
+                    </div>
+                  ) : null}
+                  {isExpanded ? (
+                    <div id={`variant-details-${variant.id}`} className="collectionExtraGrid">
+                      <label>
+                        SKU
+                        <input value={variant.sku ?? ""} onChange={(event) => patchVariant(index, { sku: event.target.value })} />
+                      </label>
+                      <label>
+                        Диаметр
+                        <input type="number" min="0" step="any" value={variant.diameter ?? ""} onChange={(event) => patchVariant(index, { diameter: optionalNumber(event.target.value) })} />
+                      </label>
+                      <label>
+                        Ширина
+                        <input type="number" min="0" step="any" value={variant.width ?? ""} onChange={(event) => patchVariant(index, { width: optionalNumber(event.target.value) })} />
+                      </label>
+                      <label>
+                        Количество отверстий
+                        <input type="number" min="0" step="1" value={variant.boltHoles ?? ""} onChange={(event) => patchVariant(index, { boltHoles: optionalNumber(event.target.value) })} />
+                      </label>
+                      <label>
+                        PCD
+                        <input value={variant.pcd} onChange={(event) => patchVariant(index, { pcd: event.target.value })} />
+                      </label>
+                      <label>
+                        PCD, мм
+                        <input type="number" min="0" step="any" value={variant.pcdMm ?? ""} onChange={(event) => patchVariant(index, { pcdMm: optionalNumber(event.target.value) })} />
+                      </label>
+                      <label>
+                        Вылет ET
+                        <input
+                          type="number"
+                          value={variant.offsetET ?? ""}
+                          onChange={(event) => patchVariant(index, { offsetET: optionalNumber(event.target.value) })}
+                        />
+                      </label>
+                      <label>
+                        Центральное отверстие
+                        <input
+                          type="number"
+                          step="any"
+                          value={variant.centerBore ?? ""}
+                          onChange={(event) => patchVariant(index, { centerBore: optionalNumber(event.target.value) })}
+                        />
+                      </label>
+                      <label>
+                        Допустимая нагрузка
+                        <input value={variant.loadRating ?? ""} onChange={(event) => patchVariant(index, { loadRating: event.target.value })} />
+                      </label>
+                      <label>
+                        Вес, кг
+                        <input type="number" min="0" step="any" value={variant.weight ?? ""} onChange={(event) => patchVariant(index, { weight: optionalNumber(event.target.value) })} />
+                      </label>
+                      <label>
+                        Покрытие
+                        <input value={variant.finish ?? ""} onChange={(event) => patchVariant(index, { finish: event.target.value })} />
+                      </label>
+                      <label>
+                        Тип крепежа
+                        <input value={variant.fastenerType ?? ""} onChange={(event) => patchVariant(index, { fastenerType: event.target.value })} />
+                      </label>
+                      <label>
+                        Материал крепежа
+                        <input value={variant.fastenerMaterial ?? ""} onChange={(event) => patchVariant(index, { fastenerMaterial: event.target.value })} />
+                      </label>
+                      <label>
+                        Совместимые размеры шин
+                        <input value={variant.compatibleTireSizes ?? ""} onChange={(event) => patchVariant(index, { compatibleTireSizes: event.target.value })} />
+                      </label>
+                      <label>
+                        Источник спецификации
+                        <textarea value={variant.sourceSpecification ?? ""} onChange={(event) => patchVariant(index, { sourceSpecification: event.target.value })} />
+                      </label>
+                    </div>
+                  ) : null}
+                </fieldset>
+              );
+            })}
+            <button type="button" className="collectionAdd" onClick={() => patch({ variants: [...draft.variants, emptyVariant()] })}>
+              Добавить вариант
+            </button>
+          </div>
         </div>
       </section>
       <section className={styles.section}>

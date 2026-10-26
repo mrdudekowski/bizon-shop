@@ -32,21 +32,21 @@ const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
   slug: { text: "Укажите адрес страницы", tab: "Карточка", field: "Адрес" },
   direction: { text: "Выберите направление", tab: "Карточка", field: "Направление" },
   mainImage: { text: "Добавьте главное фото", tab: "Фото", anchor: "main" },
-  size: { text: "Укажите читаемый размер", tab: "Размеры", field: "Типоразмер" },
-  price: { text: "Укажите цену или «по запросу»", tab: "Размеры", field: "Цена" },
-  duplicateSize: { text: "Размер повторяется", tab: "Размеры" },
+  size: { text: "Укажите читаемый размер", tab: "Характеристики", field: "Типоразмер" },
+  price: { text: "Укажите цену или «по запросу»", tab: "Характеристики", field: "Цена" },
+  duplicateSize: { text: "Размер повторяется", tab: "Характеристики" },
   editorialPlaceholder: { text: "Замените редакционный placeholder в тексте преимущества" },
 };
 
-const SIZE_NUMBER_FIELDS: { key: keyof TireSizeDraft; label: string }[] = [
-  { key: "rimDiameter", label: "Диаметр обода" },
-  { key: "overallDiameter", label: "Внешний диаметр" },
-  { key: "sectionWidth", label: "Ширина профиля" },
-  { key: "treadDepth", label: "Глубина протектора" },
-  { key: "pressureSingleKpa", label: "Давление single, кПа" },
-  { key: "pressureDualKpa", label: "Давление dual, кПа" },
-  { key: "maxLoadSingleKg", label: "Нагрузка single, кг" },
-  { key: "maxLoadDualKg", label: "Нагрузка dual, кг" },
+const SIZE_NUMBER_FIELDS: { key: keyof TireSizeDraft; label: string; unit?: string }[] = [
+  { key: "rimDiameter", label: "Диаметр обода", unit: 'дюйм' },
+  { key: "overallDiameter", label: "Внешний диаметр", unit: "мм" },
+  { key: "sectionWidth", label: "Ширина профиля", unit: "мм" },
+  { key: "treadDepth", label: "Глубина протектора", unit: "мм" },
+  { key: "pressureSingleKpa", label: "Давление single, кПа", unit: "кПа" },
+  { key: "pressureDualKpa", label: "Давление dual, кПа", unit: "кПа" },
+  { key: "maxLoadSingleKg", label: "Нагрузка single, кг", unit: "кг" },
+  { key: "maxLoadDualKg", label: "Нагрузка dual, кг", unit: "кг" },
 ];
 
 const SIZE_TEXT_FIELDS: { key: keyof TireSizeDraft; label: string }[] = [
@@ -56,6 +56,36 @@ const SIZE_TEXT_FIELDS: { key: keyof TireSizeDraft; label: string }[] = [
   { key: "plyRating", label: "Слойность" },
   { key: "recommendedRim", label: "Рекомендуемый обод" },
 ];
+
+function summarizeTireSizeSpecs(size: TireSizeDraft): { label: string; value: string }[] {
+  const items: { label: string; value: string }[] = [];
+  if (size.rimDiameter != null) items.push({ label: "Обод", value: `${size.rimDiameter}"` });
+  if (size.recommendedRim) items.push({ label: "Рек. обод", value: size.recommendedRim });
+  if (size.loadIndex || size.loadIndexDual) {
+    items.push({
+      label: "LI (од./сд.)",
+      value: [size.loadIndex || "—", size.loadIndexDual || "—"].join(" / "),
+    });
+  }
+  if (size.speedIndex) items.push({ label: "SI", value: size.speedIndex });
+  if (size.plyRating) items.push({ label: "PR", value: `${size.plyRating} PR` });
+  if (size.overallDiameter != null) items.push({ label: "OD", value: `${size.overallDiameter} мм` });
+  if (size.sectionWidth != null) items.push({ label: "Ширина", value: `${size.sectionWidth} мм` });
+  if (size.treadDepth != null) items.push({ label: "Протектор", value: `${size.treadDepth} мм` });
+  if (size.pressureSingleKpa != null || size.pressureDualKpa != null) {
+    items.push({
+      label: "Давление",
+      value: `${[size.pressureSingleKpa ?? "—", size.pressureDualKpa ?? "—"].join(" / ")} кПа`,
+    });
+  }
+  if (size.maxLoadSingleKg != null || size.maxLoadDualKg != null) {
+    items.push({
+      label: "Макс. нагрузка",
+      value: `${[size.maxLoadSingleKg ?? "—", size.maxLoadDualKg ?? "—"].join(" / ")} кг`,
+    });
+  }
+  return items;
+}
 
 function optionalNumber(raw: string): number | undefined {
   if (raw === "") return undefined;
@@ -268,10 +298,6 @@ export function TireModelEditor({ id }: { id: string }) {
           </select>
         </label>
         <label>
-          Бренд
-          <input value={draft.brand} onChange={(event) => patch({ brand: event.target.value })} />
-        </label>
-        <label>
           Короткое описание
           <textarea value={draft.descriptionShort} onChange={(event) => patch({ descriptionShort: event.target.value })} />
         </label>
@@ -279,157 +305,202 @@ export function TireModelEditor({ id }: { id: string }) {
           Полное описание
           <textarea value={draft.descriptionLong} onChange={(event) => patch({ descriptionLong: event.target.value })} />
         </label>
-        <label>
-          Тип протектора
-          <input value={draft.treadType} onChange={(event) => patch({ treadType: event.target.value })} />
-        </label>
-        <fieldset className="choiceGroup">
-          <legend>Применение шины</legend>
-          <p>Выберите все подходящие условия. Эти отметки управляют фильтрами каталога на сайте.</p>
-          {TIRE_CATEGORIES.map((category) => (
-            <label key={category.value}>
-              <input
-                type="checkbox"
-                checked={(draft.applicationTypes ?? []).includes(category.value)}
-                onChange={() => patch({ applicationTypes: toggle(draft.applicationTypes ?? [], category.value) })}
-              />
-              <img className="choiceIcon" src={category.icon} alt="" width={28} height={28} />
-              {category.name}
-            </label>
-          ))}
-          {(draft.applicationTypes ?? []).filter((value) => !TIRE_CATEGORIES.some((category) => category.value === value)).map((value) => (
-            <label key={value}>
-              <input
-                type="checkbox"
-                checked
-                onChange={() => patch({ applicationTypes: (draft.applicationTypes ?? []).filter((item) => item !== value) })}
-              />
-              {value} <span>(старое значение)</span>
-            </label>
-          ))}
-        </fieldset>
-        <fieldset className="choiceGroup">
-          <legend>Оси</legend>
-          {AXLE_OPTIONS.map((option) => (
-            <label key={option.value}>
-              <input
-                type="checkbox"
-                checked={draft.selectionAxles.includes(option.value)}
-                onChange={() => patch({ selectionAxles: toggle<CatalogAxle>(draft.selectionAxles, option.value) })}
-              />
-              {option.label}
-            </label>
-          ))}
-        </fieldset>
       </section>
       <section>
-        <h2>Размеры</h2>
-        <div className="collection">
-          {draft.sizes.length > 0 ? (
-            <div className="collectionHead" aria-hidden="true">
-              <span>Типоразмер</span>
-              <span>Цена</span>
-              <span>По запросу</span>
-              <span>В наличии</span>
-              <span>Артикул (SKU)</span>
-              <span />
-            </div>
-          ) : null}
-          {draft.sizes.map((size, index) => (
-            <fieldset key={size.id} className="collectionRow">
-              <legend className="visuallyHidden">Размер {index + 1}</legend>
-              <label>
-                <span className="collectionFieldName">Типоразмер</span>
-                <input
-                  aria-label="Размер"
-                  value={size.size}
-                  onChange={(event) => patchSize(index, { size: event.target.value })}
-                />
-              </label>
-              <label>
-                <span className="collectionFieldName">Цена</span>
-                <input
-                  aria-label="Цена"
-                  value={size.price ?? ""}
-                  onChange={(event) => patchSize(index, { price: optionalNumber(event.target.value) })}
-                />
-              </label>
-              <label className="collectionCheck">
+        <h2>Характеристики</h2>
+        <div className="specsGroup">
+          <div className="specsHeader">
+            <h3>Паспортные характеристики модели</h3>
+            <p className="subheading">Бренд, протектор, условия эксплуатации и рекомендуемые оси установки.</p>
+          </div>
+          <div className="specsFieldsGrid">
+            <label>
+              Бренд
+              <input value={draft.brand} placeholder="Например, BIZON TBR" onChange={(event) => patch({ brand: event.target.value })} />
+            </label>
+            <label>
+              Тип протектора
+              <input value={draft.treadType} placeholder="Например, Магистральный тяговый" onChange={(event) => patch({ treadType: event.target.value })} />
+            </label>
+          </div>
+          <fieldset className="choiceGroup">
+            <legend>Применение шины</legend>
+            <p>Выберите все подходящие условия. Эти отметки управляют фильтрами каталога на сайте.</p>
+            {TIRE_CATEGORIES.map((category) => (
+              <label key={category.value}>
                 <input
                   type="checkbox"
-                  checked={size.priceOnRequest}
-                  onChange={(event) => patchSize(index, { priceOnRequest: event.target.checked })}
+                  checked={(draft.applicationTypes ?? []).includes(category.value)}
+                  onChange={() => patch({ applicationTypes: toggle(draft.applicationTypes ?? [], category.value) })}
                 />
-                <span className="collectionFieldName">Цена по запросу</span>
+                <img className="choiceIcon" src={category.icon} alt="" width={28} height={28} />
+                {category.name}
               </label>
-              <label className="collectionCheck">
+            ))}
+            {(draft.applicationTypes ?? []).filter((value) => !TIRE_CATEGORIES.some((category) => category.value === value)).map((value) => (
+              <label key={value}>
                 <input
                   type="checkbox"
-                  checked={size.available}
-                  onChange={(event) => patchSize(index, { available: event.target.checked })}
+                  checked
+                  onChange={() => patch({ applicationTypes: (draft.applicationTypes ?? []).filter((item) => item !== value) })}
                 />
-                <span className="collectionFieldName">В наличии</span>
+                {value} <span>(старое значение)</span>
               </label>
-              <label>
-                <span className="collectionFieldName">Артикул (SKU)</span>
+            ))}
+          </fieldset>
+          <fieldset className="choiceGroup">
+            <legend>Оси</legend>
+            {AXLE_OPTIONS.map((option) => (
+              <label key={option.value}>
                 <input
-                  aria-label="SKU"
-                  value={size.sku ?? ""}
-                  onChange={(event) => patchSize(index, { sku: event.target.value })}
+                  type="checkbox"
+                  checked={draft.selectionAxles.includes(option.value)}
+                  onChange={() => patch({ selectionAxles: toggle<CatalogAxle>(draft.selectionAxles, option.value) })}
                 />
-                {!(size.sku ?? "").trim() ? <span className="fieldHint">Заполните для публикации</span> : null}
+                {option.label}
               </label>
-              <div className="collectionRowActions">
-                <button
-                  type="button"
-                  className="collectionToggle"
-                  aria-expanded={expandedSizeId === size.id}
-                  aria-controls={`size-details-${size.id}`}
-                  title="Технические характеристики"
-                  onClick={() => setExpandedSizeId(expandedSizeId === size.id ? null : size.id)}
-                >
-                  {expandedSizeId === size.id ? "Свернуть" : "Ещё"}
-                </button>
-                <button
-                  type="button"
-                  className="collectionRemove"
-                  aria-label={`Убрать размер ${index + 1}`}
-                  title="Убрать размер"
-                  onClick={() => patch({ sizes: draft.sizes.filter((item) => item.id !== size.id) })}
-                >
-                  ✕
-                </button>
+            ))}
+          </fieldset>
+        </div>
+
+        <div className="specsGroup">
+          <div className="specsHeader">
+            <h3>Типоразмеры и технические параметры ({draft.sizes.length})</h3>
+            <p className="subheading">Все параметры синхронизированы с таблицей типоразмеров на странице модели.</p>
+          </div>
+          <div className="collection">
+            {draft.sizes.length > 0 ? (
+              <div className="collectionHead" aria-hidden="true">
+                <span>Типоразмер</span>
+                <span>Цена</span>
+                <span>По запросу</span>
+                <span>В наличии</span>
+                <span>Артикул (SKU)</span>
+                <span />
               </div>
-              {expandedSizeId === size.id ? (
-                <div id={`size-details-${size.id}`} className="collectionExtraGrid">
-                  {SIZE_TEXT_FIELDS.map((field) => (
-                    <label key={field.key}>
-                      {field.label}
-                      <input
-                        value={(size[field.key] as string | undefined) ?? ""}
-                        onChange={(event) => patchSize(index, { [field.key]: event.target.value } as Partial<TireSizeDraft>)}
-                      />
-                    </label>
-                  ))}
-                  {SIZE_NUMBER_FIELDS.map((field) => (
-                    <label key={field.key}>
-                      {field.label}
-                      <input
-                        type="number"
-                        value={(size[field.key] as number | undefined) ?? ""}
-                        onChange={(event) =>
-                          patchSize(index, { [field.key]: optionalNumber(event.target.value) } as Partial<TireSizeDraft>)
+            ) : null}
+            {draft.sizes.map((size, index) => {
+              const summaryItems = summarizeTireSizeSpecs(size);
+              const isExpanded = expandedSizeId === size.id;
+              return (
+                <fieldset key={size.id} className="collectionRow">
+                  <legend className="visuallyHidden">Размер {index + 1}</legend>
+                  <label>
+                    <span className="collectionFieldName">Типоразмер</span>
+                    <input
+                      aria-label="Размер"
+                      value={size.size}
+                      onChange={(event) => patchSize(index, { size: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span className="collectionFieldName">Цена</span>
+                    <input
+                      aria-label="Цена"
+                      value={size.price ?? ""}
+                      onChange={(event) => patchSize(index, { price: optionalNumber(event.target.value) })}
+                    />
+                  </label>
+                  <label className="collectionCheck">
+                    <input
+                      type="checkbox"
+                      checked={size.priceOnRequest}
+                      onChange={(event) => patchSize(index, { priceOnRequest: event.target.checked })}
+                    />
+                    <span className="collectionFieldName">Цена по запросу</span>
+                  </label>
+                  <label className="collectionCheck">
+                    <input
+                      type="checkbox"
+                      checked={size.available}
+                      onChange={(event) => patchSize(index, { available: event.target.checked })}
+                    />
+                    <span className="collectionFieldName">В наличии</span>
+                  </label>
+                  <label>
+                    <span className="collectionFieldName">Артикул (SKU)</span>
+                    <input
+                      aria-label="SKU"
+                      value={size.sku ?? ""}
+                      onChange={(event) => patchSize(index, { sku: event.target.value })}
+                    />
+                    {!(size.sku ?? "").trim() ? <span className="fieldHint">Заполните для публикации</span> : null}
+                  </label>
+                  <div className="collectionRowActions">
+                    <button
+                      type="button"
+                      className="collectionToggle"
+                      aria-expanded={isExpanded}
+                      aria-controls={`size-details-${size.id}`}
+                      title="Технические характеристики"
+                      onClick={() => setExpandedSizeId(isExpanded ? null : size.id)}
+                    >
+                      {isExpanded ? "Свернуть" : "Ещё"}
+                    </button>
+                    <button
+                      type="button"
+                      className="collectionRemove"
+                      aria-label={`Убрать размер ${index + 1}`}
+                      title="Убрать размер"
+                      onClick={() => patch({ sizes: draft.sizes.filter((item) => item.id !== size.id) })}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {!isExpanded && summaryItems.length > 0 ? (
+                    <div
+                      className="specsSummaryBar"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setExpandedSizeId(size.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setExpandedSizeId(size.id);
                         }
-                      />
-                    </label>
-                  ))}
-                </div>
-              ) : null}
-            </fieldset>
-          ))}
-          <button type="button" className="collectionAdd" onClick={() => patch({ sizes: [...draft.sizes, emptySize()] })}>
-            Добавить размер
-          </button>
+                      }}
+                    >
+                      {summaryItems.map((item) => (
+                        <span key={item.label} className="specsChip">
+                          <strong>{item.label}:</strong> {item.value}
+                        </span>
+                      ))}
+                      <span className="specsEditCue">Изменить параметры →</span>
+                    </div>
+                  ) : null}
+                  {isExpanded ? (
+                    <div id={`size-details-${size.id}`} className="collectionExtraGrid">
+                      {SIZE_TEXT_FIELDS.map((field) => (
+                        <label key={field.key}>
+                          {field.label}
+                          <input
+                            value={(size[field.key] as string | undefined) ?? ""}
+                            onChange={(event) => patchSize(index, { [field.key]: event.target.value } as Partial<TireSizeDraft>)}
+                          />
+                        </label>
+                      ))}
+                      {SIZE_NUMBER_FIELDS.map((field) => (
+                        <label key={field.key}>
+                          {field.label}
+                          <input
+                            type="number"
+                            step="any"
+                            value={(size[field.key] as number | undefined) ?? ""}
+                            onChange={(event) =>
+                              patchSize(index, { [field.key]: optionalNumber(event.target.value) } as Partial<TireSizeDraft>)
+                            }
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  ) : null}
+                </fieldset>
+              );
+            })}
+            <button type="button" className="collectionAdd" onClick={() => patch({ sizes: [...draft.sizes, emptySize()] })}>
+              Добавить размер
+            </button>
+          </div>
         </div>
       </section>
       <section>
