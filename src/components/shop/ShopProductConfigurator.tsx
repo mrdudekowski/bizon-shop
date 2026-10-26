@@ -273,8 +273,11 @@ export function ShopProductConfigurator({ product: initialProduct }: { product: 
         </section>
 
         <section className={styles.details} aria-labelledby="product-title">
-          <p className={styles.kicker}>{product.categorySlug}</p>
+          <p className={styles.kicker}>{product.brand || product.categorySlug}</p>
           <h1 id="product-title">{product.name}</h1>
+          {(selectedVariant?.sku || product.sku) ? (
+            <p className={styles.sku}>Артикул: {selectedVariant?.sku || product.sku}</p>
+          ) : null}
           <p className={styles.description}>{product.descriptionShort}</p>
 
           <div className={styles.price} aria-live="polite">
@@ -334,6 +337,29 @@ export function ShopProductConfigurator({ product: initialProduct }: { product: 
             </span>
           </div>
           <p className={styles.requestNote}>Добавление в корзину формирует заявку и не является оплатой.</p>
+
+          {(product.brand || product.material || (product.specifications && product.specifications.length > 0)) ? (
+            <dl className={styles.productSpecs}>
+              {product.brand ? (
+                <div>
+                  <dt>Бренд</dt>
+                  <dd>{product.brand}</dd>
+                </div>
+              ) : null}
+              {product.material ? (
+                <div>
+                  <dt>Материал</dt>
+                  <dd>{product.material}</dd>
+                </div>
+              ) : null}
+              {(product.specifications ?? []).map((spec, index) => (
+                <div key={`${spec.label}-${index}`}>
+                  <dt>{spec.label}</dt>
+                  <dd>{spec.value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
         </section>
       </div>
 

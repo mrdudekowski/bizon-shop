@@ -30,8 +30,8 @@ export async function generateMetadata({ params }: PageProps) {
   const category = loaded.kind === "ok" ? loaded.value : null;
   if (category) {
     return createPageMetadata({
-      title: category.name,
-      description: category.description,
+      title: category.seoTitle?.trim() || category.name,
+      description: category.seoDescription?.trim() || category.description,
       path: `/shop/${category.slug}`,
     });
   }

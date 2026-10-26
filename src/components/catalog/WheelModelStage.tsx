@@ -101,8 +101,12 @@ export function WheelModelStage({
                 </dd>
               </div>
               <div>
-                <dt>Материал</dt>
+                <dt>Материал / сплав</dt>
                 <dd>{model.material || "—"}</dd>
+              </div>
+              <div>
+                <dt>Отделка / серия</dt>
+                <dd>{model.series || "—"}</dd>
               </div>
               <div>
                 <dt>Стиль</dt>

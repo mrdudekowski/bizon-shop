@@ -26,8 +26,8 @@ export async function generateMetadata({ params }: PageProps) {
   if (!wheelType || !model) notFound();
 
   return createPageMetadata({
-    title: model.name,
-    description: model.descriptionShort,
+    title: model.seoTitle?.trim() || model.name,
+    description: model.seoDescription?.trim() || model.descriptionShort,
     path: `/shop/wheels/${model.wheelTypeSlug}/${model.slug}`,
   });
 }

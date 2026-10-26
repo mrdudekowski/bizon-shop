@@ -88,8 +88,8 @@ export async function generateMetadata({ params }: PageProps) {
     .find((direction) => direction.slug === tireTypeSlug)
     ?.models.find((item) => item.slug === modelSlug);
   return createPageMetadata({
-    title: model.name,
-    description: model.descriptionShort,
+    title: model.seoTitle?.trim() || model.name,
+    description: model.seoDescription?.trim() || model.descriptionShort,
     path: catalogModel?.href ?? `/models/${tireTypeSlug}/${modelSlug}`,
   });
 }

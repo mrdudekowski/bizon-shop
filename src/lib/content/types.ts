@@ -4,15 +4,23 @@ import type {
   CatalogAxle,
 } from "@/lib/selection/options";
 
+export type CmsProductSpec = {
+  label: string;
+  value: string;
+};
+
 export type CmsProduct = {
   id?: string;
   slug: string;
   name: string;
+  sku?: string;
   categorySlug: string;
   subcategorySlug?: string;
   subcategoryName?: string;
   type: string;
   brand: string;
+  sortOrder?: number;
+  specifications?: CmsProductSpec[];
   descriptionShort: string;
   descriptionLong: string;
   imageUrl?: string | null;
@@ -24,6 +32,8 @@ export type CmsProduct = {
   color?: string;
   size?: string;
   material?: string;
+  seoTitle?: string;
+  seoDescription?: string;
   variants: CmsProductVariant[];
 };
 
@@ -52,6 +62,8 @@ export type CmsShopCategory = {
   imageUrl?: string | null;
   showInMenu: boolean;
   sortOrder: number;
+  seoTitle?: string;
+  seoDescription?: string;
   carousel?: CmsShopCategoryCarouselFrame[];
 };
 
@@ -63,6 +75,8 @@ export type CmsTireType = {
   sortOrder: number;
   showInMenu: boolean;
   imageUrl?: string | null;
+  seoTitle?: string;
+  seoDescription?: string;
 };
 
 export type CmsTireAdvantage = {
@@ -97,6 +111,8 @@ export type CmsTireModel = {
   available?: boolean;
   showInMenu: boolean;
   menuOrder: number;
+  seoTitle?: string;
+  seoDescription?: string;
 };
 
 export type CmsTireVariant = {
@@ -151,6 +167,8 @@ export type CmsWheelType = {
   shortDescription: string;
   sortOrder: number;
   imageUrl?: string | null;
+  seoTitle?: string;
+  seoDescription?: string;
 };
 
 export type CmsWheelGalleryImage = {
@@ -178,6 +196,8 @@ export type CmsWheelModel = {
   available?: boolean;
   showInMenu: boolean;
   menuOrder: number;
+  seoTitle?: string;
+  seoDescription?: string;
 };
 
 export type CmsWheelVariant = {

@@ -67,11 +67,13 @@ export function createPageMetadata({
 export function createProductMetadata(product: {
   name: string;
   descriptionShort?: string;
+  seoTitle?: string;
+  seoDescription?: string;
   slug: string;
 }) {
   return createPageMetadata({
-    title: product.name,
-    description: product.descriptionShort ?? DEFAULT_DESCRIPTION,
+    title: product.seoTitle?.trim() || product.name,
+    description: product.seoDescription?.trim() || product.descriptionShort || DEFAULT_DESCRIPTION,
     path: `/shop/product/${product.slug}`,
   });
 }

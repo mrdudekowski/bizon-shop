@@ -31,6 +31,40 @@ type SpecColumn = {
   render: (variant: CmsTireVariant) => string;
 };
 
+const DISTINGUISHING_KEYS: readonly [keyof CmsTireVariant, string][] = [
+  ["rimDiameter", "Обод"],
+  ["loadIndex", "LI"],
+  ["loadIndexDual", "LI dual"],
+  ["speedIndex", "SI"],
+  ["plyRating", "PR"],
+  ["overallDiameter", "OD"],
+];
+
+function formatTireSizeLabels(variants: CmsTireVariant[]): Map<string, string> {
+  const bySize = new Map<string, CmsTireVariant[]>();
+  for (const variant of variants) {
+    const group = bySize.get(variant.size) ?? [];
+    group.push(variant);
+    bySize.set(variant.size, group);
+  }
+
+  return new Map(
+    variants.map((variant) => {
+      const sameSize = bySize.get(variant.size) ?? [];
+      if (sameSize.length < 2) return [variant.id, variant.size];
+
+      const diffs = DISTINGUISHING_KEYS.flatMap(([key, label]) => {
+        const values = new Set(sameSize.map((item) => String(item[key] ?? "").trim()).filter(Boolean));
+        const val = String(variant[key] ?? "").trim();
+        return values.size > 1 && val ? [`${label} ${val}`] : [];
+      });
+
+      const suffix = diffs.length > 0 ? diffs : [`исп. ${sameSize.indexOf(variant) + 1}`];
+      return [variant.id, [variant.size, ...suffix].join(" · ")];
+    }),
+  );
+}
+
 const SPEC_COLUMNS: readonly SpecColumn[] = [
   { key: "rimDiameter", label: "Обод", render: (v) => cell(v.rimDiameter) },
   { key: "recommendedRim", label: "Рек. обод", render: (v) => cell(v.recommendedRim) },
@@ -76,52 +110,59 @@ export function TireVariantsTable({ model, variants }: TireVariantsTableProps) {
         Технические параметры размеров
       </h2>
 
-      <div className={styles.cards}>
-        {variants.map((variant) => (
-          <article className={styles.card} key={variant.id}>
-            <header className={styles.cardHeader}>
-              <h3 className={styles.cardSize}>{variant.size}</h3>
-            </header>
-            <dl className={styles.cardFacts}>
-              {SPEC_COLUMNS.map((column) => (
-                <div key={column.key}>
-                  <dt>{column.label}</dt>
-                  <dd>{column.render(variant)}</dd>
-                </div>
+      {(() => {
+        const sizeLabels = formatTireSizeLabels(variants);
+        return (
+          <>
+            <div className={styles.cards}>
+              {variants.map((variant) => (
+                <article className={styles.card} key={variant.id}>
+                  <header className={styles.cardHeader}>
+                    <h3 className={styles.cardSize}>{sizeLabels.get(variant.id) ?? variant.size}</h3>
+                  </header>
+                  <dl className={styles.cardFacts}>
+                    {SPEC_COLUMNS.map((column) => (
+                      <div key={column.key}>
+                        <dt>{column.label}</dt>
+                        <dd>{column.render(variant)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </article>
               ))}
-            </dl>
-          </article>
-        ))}
-      </div>
+            </div>
 
-      <div className={styles.scroll}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th className={styles.colSize} scope="col">
-                Размер
-              </th>
-              {SPEC_COLUMNS.map((column) => (
-                <th key={column.key} scope="col">
-                  {column.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {variants.map((variant) => (
-              <tr key={variant.id}>
-                <th className={styles.colSize} scope="row">
-                  {variant.size}
-                </th>
-                {SPEC_COLUMNS.map((column) => (
-                  <td key={column.key}>{column.render(variant)}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            <div className={styles.scroll}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th className={styles.colSize} scope="col">
+                      Размер
+                    </th>
+                    {SPEC_COLUMNS.map((column) => (
+                      <th key={column.key} scope="col">
+                        {column.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {variants.map((variant) => (
+                    <tr key={variant.id}>
+                      <th className={styles.colSize} scope="row">
+                        {sizeLabels.get(variant.id) ?? variant.size}
+                      </th>
+                      {SPEC_COLUMNS.map((column) => (
+                        <td key={column.key}>{column.render(variant)}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        );
+      })()}
     </section>
   );
 }

@@ -110,6 +110,41 @@
   line-height: 1.58;
 }
 
+.sku {
+  margin: -10px 0 0;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-body);
+}
+
+.productSpecs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 4px 0 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.productSpecs > div {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.9fr) minmax(0, 1.1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.875rem;
+}
+
+.productSpecs dt {
+  color: var(--color-text-subtle);
+  font-weight: 500;
+}
+
+.productSpecs dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
 .price {
   display: flex;
   flex-wrap: wrap;

@@ -25,8 +25,8 @@ export async function generateMetadata({ params }: PageProps) {
   const tireType = loaded.kind === "ok" ? loaded.value : null;
   if (!tireType) return {};
   return createPageMetadata({
-    title: tireType.name,
-    description: tireType.description,
+    title: tireType.seoTitle?.trim() || tireType.name,
+    description: tireType.seoDescription?.trim() || tireType.description,
     path: `/models/${tireType.slug}`,
   });
 }
