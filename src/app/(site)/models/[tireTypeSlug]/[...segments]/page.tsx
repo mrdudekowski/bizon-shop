@@ -38,16 +38,21 @@ export async function generateStaticParams() {
       segments: [categorySlug],
     }));
   });
-  const modelRoutes = routes.map((route) => ({
-    tireTypeSlug: route.tireTypeSlug,
-    segments:
+  const modelRoutes = routes.flatMap((route) => {
+    const canonicalSegments =
       catalog.directions
         .find((direction) => direction.slug === route.tireTypeSlug)
         ?.models.find((model) => model.slug === route.modelSlug)
         ?.href.split("/")
         .filter(Boolean)
-        .slice(2) ?? [route.modelSlug],
-  }));
+        .slice(2) ?? [route.modelSlug];
+    return canonicalSegments.length > 1
+      ? [
+          { tireTypeSlug: route.tireTypeSlug, segments: canonicalSegments },
+          { tireTypeSlug: route.tireTypeSlug, segments: [route.modelSlug] },
+        ]
+      : [{ tireTypeSlug: route.tireTypeSlug, segments: canonicalSegments }];
+  });
   return [...categoryRoutes, ...modelRoutes];
 }
 
