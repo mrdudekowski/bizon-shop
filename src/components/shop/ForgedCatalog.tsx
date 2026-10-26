@@ -1,11 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { PageHeader } from "@/components/catalog/PageHeader";
 import { WheelModelGrid } from "@/components/catalog/WheelModelGrid";
-import { WheelTypeCover } from "@/components/catalog/WheelTypeCover";
 import type { CmsWheelModel, CmsWheelType, CmsWheelVariant } from "@/lib/content/types";
 import { fetchBrowserPublishedJson, fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
 
@@ -43,25 +42,54 @@ export function ForgedCatalog({
     return () => controller.abort();
   }, []);
 
-  const headerDescription = wheelType.shortDescription || wheelType.description;
+  const title = wheelType.name || "BIZON Forged";
+  const lead = wheelType.shortDescription || wheelType.description;
+  const body =
+    wheelType.shortDescription && wheelType.description && wheelType.description !== wheelType.shortDescription
+      ? wheelType.description
+      : "";
+  const breadcrumbs = [
+    { href: "/", label: "Главная" },
+    { href: "/shop", label: "Магазин" },
+    { href: BASE_PATH, label: "Кованые диски" },
+  ];
 
   return (
     <div className={styles.page} data-shop-chrome-tone="light">
+      <header className={styles.hero}>
+        {wheelType.imageUrl ? (
+          <div className={styles.heroMedia}>
+            <Image
+              src={wheelType.imageUrl}
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+            />
+          </div>
+        ) : null}
+        <div className={styles.heroScrim} aria-hidden="true" />
+        <nav aria-label="Breadcrumb" className={`${styles.heroCrumbs} breadcrumbs`}>
+          <ol>
+            {breadcrumbs.map((item, index) => (
+              <li key={item.href}>
+                {index === breadcrumbs.length - 1 ? (
+                  <span aria-current="page">{item.label}</span>
+                ) : (
+                  <Link href={item.href}>{item.label}</Link>
+                )}
+                {index < breadcrumbs.length - 1 && <span aria-hidden="true">/</span>}
+              </li>
+            ))}
+          </ol>
+        </nav>
+        <div className={styles.heroCopy}>
+          <h1>{title}</h1>
+          {lead ? <p className={styles.heroLead}>{lead}</p> : null}
+          {body ? <p className={styles.heroBody}>{body}</p> : null}
+        </div>
+      </header>
       <div className={styles.inner}>
-        <PageHeader
-          title={wheelType.name || "BIZON Forged"}
-          description={headerDescription}
-          breadcrumbs={[
-            { href: "/", label: "Главная" },
-            { href: "/shop", label: "Магазин" },
-            { href: BASE_PATH, label: "Кованые диски" },
-          ]}
-        />
-        <WheelTypeCover imageUrl={wheelType.imageUrl} name={wheelType.name} />
-        {wheelType.shortDescription && wheelType.description && (
-          <p className="section-description">{wheelType.description}</p>
-        )}
-
         <section className={styles.catalog} aria-labelledby="forged-models-title">
           <div className={styles.sectionHead}>
             <p className={styles.kicker}>Коллекция</p>

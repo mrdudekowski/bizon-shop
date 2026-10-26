@@ -18,9 +18,7 @@ describe("ForgedCatalog CMS content", () => {
       variants: [],
     }));
 
-    expect(html).toContain("Кованые диски</h1>");
-    expect(html).toContain("Высокопрочные кованые диски");
-    expect(html).toContain("Кованые диски для коммерческого транспорта.");
+    expect(html).toMatch(/<header[\s\S]*Кованые диски<\/h1>[\s\S]*Высокопрочные кованые диски[\s\S]*Кованые диски для коммерческого транспорта\./);
     expect(html).toContain("url=%2Fmedia%2Fforged.webp");
   });
 });
