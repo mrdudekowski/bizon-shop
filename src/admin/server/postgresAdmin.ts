@@ -495,6 +495,7 @@ async function mapTireModel(row: Row): Promise<TireModelDraft> {
     })),
     applicationTypes: normalizedApplications,
     selectionAxles: axleValues,
+    available: row.available !== false,
     showInMenu: Boolean(row.show_in_menu),
     menuOrder: num(row.menu_order) ?? 0,
   };
@@ -535,6 +536,7 @@ async function mapWheelModel(row: Row): Promise<WheelModelDraft> {
     mainImage: placement(row.main_image_id),
     gallery: gallery.map((item) => placement(item.media_id)!).filter(Boolean),
     documents,
+    available: Boolean(row.available),
     showInMenu: Boolean(row.show_in_menu),
     menuOrder: num(row.menu_order) ?? 0,
     variants: variants.map(
@@ -613,6 +615,7 @@ async function mapProduct(row: Row): Promise<ShopProductDraft> {
     price: num(row.price),
     oldPrice: num(row.old_price),
     priceOnRequest: Boolean(row.price_on_request),
+    available: row.available !== false,
     mainImage: placement(row.main_image_id),
     gallery: gallery.map((item) => placement(item.media_id)!).filter(Boolean),
     variants: variants.map(
@@ -881,10 +884,11 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
   const id = numericId(draft.id);
   if (id == null) throw new AdminClientError("publish_blocked");
   const description = plainText(draft.descriptionLong) === draft.descriptionLong ? lexical(draft.descriptionLong) : lexical(draft.descriptionLong);
+  const modelAvailable = draft.available !== false;
   await client.query(
     `UPDATE tire_models SET name=$2, slug=$3, tire_type_id=$4, short_description=$5, full_description=$6::jsonb,
       model_code=$7, show_in_menu=$8, menu_order=$9, status=$10, main_image_id=$11,
-      tread_type=$12, series=COALESCE(NULLIF($13, ''), series), updated_at=now()
+      tread_type=$12, series=COALESCE(NULLIF($13, ''), series), available=$14, updated_at=now()
      WHERE id=$1`,
     [
       id,
@@ -900,6 +904,7 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
       draft.mainImage ? Number(draft.mainImage.assetId) : null,
       draft.treadType || null,
       draft.brand,
+      modelAvailable,
     ],
   );
   const keptSizeIds: number[] = [];
@@ -915,7 +920,7 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
       size.sku || null,
       size.price ?? null,
       size.priceOnRequest,
-      size.available,
+      modelAvailable,
       size.rimDiameter ?? null,
       size.rimDiameter ?? null,
       size.loadIndex || null,
@@ -1757,10 +1762,11 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       await applyPendingMediaReplacements(draft);
       const transactionClient = getTransactionClient();
       const client = transactionClient ?? await getPool().connect();
+      const wheelAvailable = Boolean(draft.available);
       try {
         if (!transactionClient) await client.query("BEGIN");
         await client.query(
-          `UPDATE wheel_models SET name=$2, slug=$3, wheel_type_id=$4, series=$5, design_style=$6, material=$7, construction_method=$8, fitment_notes=$9, short_description=$10, full_description=$11::jsonb, main_image_id=$12, show_in_menu=$13, menu_order=$14, status='published', updated_at=now() WHERE id=$1`,
+          `UPDATE wheel_models SET name=$2, slug=$3, wheel_type_id=$4, series=$5, design_style=$6, material=$7, construction_method=$8, fitment_notes=$9, short_description=$10, full_description=$11::jsonb, main_image_id=$12, show_in_menu=$13, menu_order=$14, available=$15, status='published', updated_at=now() WHERE id=$1`,
           [
             Number(id),
             draft.name,
@@ -1776,6 +1782,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
             draft.mainImage ? Number(draft.mainImage.assetId) : null,
             draft.showInMenu,
             draft.menuOrder,
+            wheelAvailable,
           ],
         );
         const keptVariantIds: number[] = [];
@@ -1801,7 +1808,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
             variant.compatibleTireSizes || null,
             variant.price ?? null,
             variant.priceOnRequest,
-            variant.available,
+            wheelAvailable,
           ];
           const columns = `size_label, sku, diameter, width, bolt_holes, pcd, pcd_mm, offset_e_t, center_bore, load_rating, weight, color, finish, fastener_type, fastener_material, source_specification, compatible_tire_sizes, price, price_on_request, available`;
           if (variantId == null) {
@@ -2105,8 +2112,9 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         );
         if (subcategories.length === 0) throw new AdminClientError("publish_blocked");
       }
+      const productAvailable = draft.available !== false;
       await query(
-        "UPDATE products SET name=$2, slug=$3, shop_category_id=$4, subcategory_id=$5, short_description=$6, full_description=$7::jsonb, price=$8, old_price=$9, price_on_request=$10, main_image_id=$11, status='published', updated_at=now() WHERE id=$1",
+        "UPDATE products SET name=$2, slug=$3, shop_category_id=$4, subcategory_id=$5, short_description=$6, full_description=$7::jsonb, price=$8, old_price=$9, price_on_request=$10, main_image_id=$11, available=$12, status='published', updated_at=now() WHERE id=$1",
         [
           Number(id),
           draft.name,
@@ -2119,6 +2127,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           draft.oldPrice ?? null,
           draft.priceOnRequest,
           draft.mainImage ? Number(draft.mainImage.assetId) : null,
+          productAvailable,
         ],
       );
       const keptVariantIds = draft.variants.map((variant) => variant.id);
@@ -2138,7 +2147,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
             variant.price ?? null,
             variant.oldPrice ?? null,
             variant.priceOnRequest,
-            variant.available,
+            productAvailable,
           ],
         );
         await query("DELETE FROM products_variants_rels WHERE parent_id = $1 AND path = 'image'", [variant.id]);

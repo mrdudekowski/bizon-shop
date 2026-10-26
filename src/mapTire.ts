@@ -6,6 +6,7 @@ type TireModelRow = {
   full_description: unknown;
   series: string | null;
   tread_type: string | null;
+  available?: boolean | null;
   show_in_menu?: boolean | null;
   menu_order?: number | string | null;
 };
@@ -91,6 +92,7 @@ export type CmsTireModel = {
   selectionAxles: string[];
   applicationTypes: string[];
   documents: { url: string; title: string }[];
+  available: boolean;
   showInMenu: boolean;
   menuOrder: number;
 };
@@ -180,6 +182,7 @@ export function mapTireModel(input: TireModelInput): CmsTireModel {
     selectionAxles: input.selectionAxles ?? [],
     applicationTypes: input.applicationTypes ?? [],
     documents: input.documents ?? [],
+    available: row.available !== false,
     showInMenu: row.show_in_menu === true,
     menuOrder: toFiniteNumber(row.menu_order) ?? 0,
   };

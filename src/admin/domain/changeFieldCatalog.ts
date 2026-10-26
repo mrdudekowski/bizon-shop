@@ -93,6 +93,7 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
       },
       showInMenu: { tab: "Меню", field: "Показывать в меню" },
       menuOrder: { tab: "Меню", field: "Порядок в меню" },
+      available: { tab: "Карточка", field: "В наличии" },
     },
   },
   "tire-direction": {
@@ -136,6 +137,7 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
       descriptionLong: { tab: "Карточка", field: "Полное описание" },
       showInMenu: { tab: "Карточка", field: "Показывать в меню" },
       menuOrder: { tab: "Карточка", field: "Порядок в меню" },
+      available: { tab: "Карточка", field: "В наличии" },
       documents: { tab: "Карточка", children: DOCUMENT },
       variants: {
         tab: "Характеристики",
@@ -197,6 +199,7 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
       price: { tab: "Карточка", field: "Цена" },
       oldPrice: { tab: "Карточка", field: "Цена до скидки" },
       priceOnRequest: { tab: "Карточка", field: "Цена по запросу" },
+      available: { tab: "Карточка", field: "В наличии" },
       variants: {
         tab: "Варианты",
         itemLabelKey: "size",

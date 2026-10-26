@@ -8,6 +8,7 @@ import { legalPagesCmsContentMigration } from "./0016-legal-pages-cms-content";
 import { shopDeliveryEditorialContentMigration } from "./0017-shop-delivery-editorial-content";
 import { imageFocalPositionsMigration } from "./0018-image-focal-position";
 import { syncTireWheelCharacteristicsMigration } from "./0019-sync-tire-wheel-characteristics";
+import { productLevelAvailabilityMigration } from "./0020-product-level-availability";
 import type { Migration } from "../migrationRunner";
 import { cmsEditorSchemaMigration } from "./0001-cms-editor-schema";
 import { shopCategoryCarouselMigration } from "./0002-shop-category-carousel";
@@ -39,6 +40,7 @@ export const MIGRATIONS: readonly Migration[] = [
   shopDeliveryEditorialContentMigration,
   imageFocalPositionsMigration,
   syncTireWheelCharacteristicsMigration,
+  productLevelAvailabilityMigration,
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.at(-1)?.version ?? "0";

@@ -20,6 +20,7 @@ type WheelModelRow = {
   fitment_notes: string | null;
   short_description: string | null;
   full_description: unknown;
+  available?: boolean | null;
   show_in_menu: boolean | null;
   menu_order: unknown;
   wheel_type_slug: string;
@@ -56,6 +57,7 @@ export type CmsWheelModel = {
   descriptionLong: string;
   imageUrl: string | null;
   gallery: CmsWheelGalleryImage[];
+  available: boolean;
   showInMenu: boolean;
   menuOrder: number;
   documents: { url: string; title: string }[];
@@ -166,6 +168,7 @@ export function mapWheelModel(
     imageUrl: normalizeImageUrl(imageUrl),
     gallery,
     documents,
+    available: row.available === true,
     showInMenu: row.show_in_menu === true,
     menuOrder: sortOrder(row.menu_order),
   };
