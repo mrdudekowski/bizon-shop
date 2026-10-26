@@ -94,6 +94,8 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
       showInMenu: { tab: "Меню", field: "Показывать в меню" },
       menuOrder: { tab: "Меню", field: "Порядок в меню" },
       available: { tab: "Карточка", field: "В наличии" },
+      seoTitle: { tab: "Для поиска", field: "Заголовок в поиске" },
+      seoDescription: { tab: "Для поиска", field: "Описание в поиске" },
     },
   },
   "tire-direction": {
@@ -108,6 +110,8 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
       selectionVehicleTypes: { tab: "Карточка", field: "Техника" },
       selectionConditions: { tab: "Карточка", field: "Условия" },
       mainImage: { tab: "Фото", field: "Главное фото", children: IMAGE_CHILDREN },
+      seoTitle: { tab: "Для поиска", field: "Заголовок в поиске" },
+      seoDescription: { tab: "Для поиска", field: "Описание в поиске" },
     },
   },
   "wheel-type": {
@@ -120,6 +124,8 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
       sortOrder: { tab: "Карточка", field: "Порядок" },
       showInMenu: { tab: "Карточка", field: "Показывать в меню" },
       mainImage: { tab: "Фото", field: "Главное фото", children: IMAGE_CHILDREN },
+      seoTitle: { tab: "Для поиска", field: "Заголовок в поиске" },
+      seoDescription: { tab: "Для поиска", field: "Описание в поиске" },
     },
   },
   "wheel-model": {
@@ -167,6 +173,8 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
       },
       mainImage: { tab: "Фото", field: "Главное фото", children: IMAGE_CHILDREN },
       gallery: { tab: "Фото", field: "Фото галереи", children: IMAGE_CHILDREN },
+      seoTitle: { tab: "Для поиска", field: "Заголовок в поиске" },
+      seoDescription: { tab: "Для поиска", field: "Описание в поиске" },
     },
   },
   "shop-category": {
@@ -185,6 +193,8 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
           image: { field: "Фото галереи", children: IMAGE_CHILDREN },
         },
       },
+      seoTitle: { tab: "Для поиска", field: "Заголовок в поиске" },
+      seoDescription: { tab: "Для поиска", field: "Описание в поиске" },
     },
   },
   "shop-product": {
@@ -194,12 +204,26 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
       slug: { tab: "Карточка", field: "Адрес" },
       categoryId: { tab: "Карточка", field: "Категория" },
       subcategoryId: { tab: "Карточка", field: "Подкатегория" },
+      sku: { tab: "Карточка", field: "Артикул (SKU)" },
+      sortOrder: { tab: "Карточка", field: "Порядок отображения" },
+      brand: { tab: "Характеристики", field: "Бренд" },
+      material: { tab: "Характеристики", field: "Материал" },
+      specifications: {
+        tab: "Характеристики",
+        itemLabelKey: "label",
+        children: {
+          label: { field: "Название характеристики" },
+          value: { field: "Значение" },
+        },
+      },
       descriptionShort: { tab: "Карточка", field: "Короткое описание" },
       descriptionLong: { tab: "Карточка", field: "Полное описание" },
       price: { tab: "Карточка", field: "Цена" },
       oldPrice: { tab: "Карточка", field: "Цена до скидки" },
       priceOnRequest: { tab: "Карточка", field: "Цена по запросу" },
       available: { tab: "Карточка", field: "В наличии" },
+      seoTitle: { tab: "Для поиска", field: "Заголовок в поиске" },
+      seoDescription: { tab: "Для поиска", field: "Описание в поиске" },
       variants: {
         tab: "Варианты",
         itemLabelKey: "size",

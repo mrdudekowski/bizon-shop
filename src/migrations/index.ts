@@ -9,6 +9,7 @@ import { shopDeliveryEditorialContentMigration } from "./0017-shop-delivery-edit
 import { imageFocalPositionsMigration } from "./0018-image-focal-position";
 import { syncTireWheelCharacteristicsMigration } from "./0019-sync-tire-wheel-characteristics";
 import { productLevelAvailabilityMigration } from "./0020-product-level-availability";
+import { shopProductSpecsAndSortOrderMigration } from "./0021-shop-product-specs-and-sort-order";
 import type { Migration } from "../migrationRunner";
 import { cmsEditorSchemaMigration } from "./0001-cms-editor-schema";
 import { shopCategoryCarouselMigration } from "./0002-shop-category-carousel";
@@ -41,6 +42,7 @@ export const MIGRATIONS: readonly Migration[] = [
   imageFocalPositionsMigration,
   syncTireWheelCharacteristicsMigration,
   productLevelAvailabilityMigration,
+  shopProductSpecsAndSortOrderMigration,
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.at(-1)?.version ?? "0";

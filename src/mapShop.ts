@@ -8,6 +8,8 @@ type ShopCategoryRow = {
   show_in_menu: boolean | null;
   sort_order: unknown;
   image_url: string | null;
+  seo_seo_title?: string | null;
+  seo_seo_description?: string | null;
 };
 
 type ShopVariantRow = {
@@ -26,6 +28,10 @@ type ShopProductRow = {
   id: string | number;
   name: string;
   slug: string;
+  sku?: string | null;
+  brand?: string | null;
+  sort_order?: unknown;
+  specifications?: unknown;
   short_description: string | null;
   full_description: unknown;
   price: unknown;
@@ -38,6 +44,8 @@ type ShopProductRow = {
   category_slug: string;
   subcategory_slug?: string | null;
   subcategory_name?: string | null;
+  seo_seo_title?: string | null;
+  seo_seo_description?: string | null;
 };
 
 export type CmsShopCategoryCarouselFrame = {
@@ -53,6 +61,8 @@ export type CmsShopCategory = {
   imageUrl: string | null;
   showInMenu: boolean;
   sortOrder: number;
+  seoTitle?: string;
+  seoDescription?: string;
   carousel: CmsShopCategoryCarouselFrame[];
 };
 
@@ -69,15 +79,23 @@ export type CmsProductVariant = {
   images: string[];
 };
 
+export type CmsProductSpec = {
+  label: string;
+  value: string;
+};
+
 export type CmsProduct = {
   id: string;
   slug: string;
   name: string;
+  sku?: string;
   categorySlug: string;
   subcategorySlug?: string;
   subcategoryName?: string;
   type: string;
   brand: string;
+  sortOrder?: number;
+  specifications?: CmsProductSpec[];
   descriptionShort: string;
   descriptionLong: string;
   imageUrl: string | null;
@@ -89,6 +107,8 @@ export type CmsProduct = {
   color?: string;
   size?: string;
   material?: string;
+  seoTitle?: string;
+  seoDescription?: string;
   variants: CmsProductVariant[];
 };
 
@@ -112,6 +132,8 @@ export function mapShopCategory(
     imageUrl: normalizeImageUrl(row.image_url),
     showInMenu: row.show_in_menu === true,
     sortOrder: sortOrder(row.sort_order),
+    ...(optionalText(row.seo_seo_title) ? { seoTitle: row.seo_seo_title ?? undefined } : {}),
+    ...(optionalText(row.seo_seo_description) ? { seoDescription: row.seo_seo_description ?? undefined } : {}),
     carousel: slides.slice(0, 1).map((slide) => ({
       title: slide.title ?? "",
       imageUrl: normalizeImageUrl(slide.image_url),
@@ -136,6 +158,16 @@ export function mapShopVariant(row: ShopVariantRow, images: string[] = []): CmsP
   };
 }
 
+function parseProductSpecs(raw: unknown): CmsProductSpec[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const label = typeof (item as { label?: unknown }).label === "string" ? (item as { label: string }).label.trim() : "";
+    const value = typeof (item as { value?: unknown }).value === "string" ? (item as { value: string }).value.trim() : "";
+    return label && value ? [{ label, value }] : [];
+  });
+}
+
 export function mapShopProduct(
   row: ShopProductRow,
   imageUrl: string | null | undefined,
@@ -144,15 +176,19 @@ export function mapShopProduct(
 ): CmsProduct {
   const price = toFiniteNumber(row.price);
   const oldPrice = toFiniteNumber(row.old_price);
+  const specs = parseProductSpecs(row.specifications);
   return {
     id: String(row.id),
     slug: row.slug,
     name: row.name,
+    ...(optionalText(row.sku) ? { sku: row.sku ?? undefined } : {}),
     categorySlug: row.category_slug,
     ...(row.subcategory_slug ? { subcategorySlug: row.subcategory_slug } : {}),
     ...(row.subcategory_name ? { subcategoryName: row.subcategory_name } : {}),
     type: "",
-    brand: "",
+    brand: optionalText(row.brand) ?? "",
+    sortOrder: sortOrder(row.sort_order),
+    ...(specs.length > 0 ? { specifications: specs } : {}),
     descriptionShort: row.short_description ?? "",
     descriptionLong: lexicalToHtml(row.full_description),
     imageUrl: normalizeImageUrl(imageUrl),
@@ -164,6 +200,8 @@ export function mapShopProduct(
     ...(optionalText(row.color) ? { color: row.color ?? undefined } : {}),
     ...(optionalText(row.size) ? { size: row.size ?? undefined } : {}),
     ...(optionalText(row.material) ? { material: row.material ?? undefined } : {}),
+    ...(optionalText(row.seo_seo_title) ? { seoTitle: row.seo_seo_title ?? undefined } : {}),
+    ...(optionalText(row.seo_seo_description) ? { seoDescription: row.seo_seo_description ?? undefined } : {}),
     variants,
   };
 }

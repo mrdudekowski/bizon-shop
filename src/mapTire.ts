@@ -9,6 +9,8 @@ type TireModelRow = {
   available?: boolean | null;
   show_in_menu?: boolean | null;
   menu_order?: number | string | null;
+  seo_seo_title?: string | null;
+  seo_seo_description?: string | null;
 };
 
 type TireTypeReference = {
@@ -35,6 +37,8 @@ type TireTypeRow = {
   sort_order: number;
   show_in_menu: boolean;
   image_url: string | null;
+  seo_seo_title?: string | null;
+  seo_seo_description?: string | null;
 };
 
 type TireVariantRow = {
@@ -74,6 +78,8 @@ export type CmsTireType = {
   sortOrder: number;
   showInMenu: boolean;
   imageUrl: string | null;
+  seoTitle?: string;
+  seoDescription?: string;
 };
 
 export type CmsTireModel = {
@@ -95,6 +101,8 @@ export type CmsTireModel = {
   available: boolean;
   showInMenu: boolean;
   menuOrder: number;
+  seoTitle?: string;
+  seoDescription?: string;
 };
 
 export type CmsTireVariant = {
@@ -160,6 +168,8 @@ export function mapTireType(row: TireTypeRow): CmsTireType {
     sortOrder: toFiniteNumber(row.sort_order) ?? 0,
     showInMenu: row.show_in_menu,
     imageUrl: normalizeImageUrl(row.image_url),
+    ...(row.seo_seo_title?.trim() ? { seoTitle: row.seo_seo_title.trim() } : {}),
+    ...(row.seo_seo_description?.trim() ? { seoDescription: row.seo_seo_description.trim() } : {}),
   };
 }
 
@@ -185,6 +195,8 @@ export function mapTireModel(input: TireModelInput): CmsTireModel {
     available: row.available !== false,
     showInMenu: row.show_in_menu === true,
     menuOrder: toFiniteNumber(row.menu_order) ?? 0,
+    ...(row.seo_seo_title?.trim() ? { seoTitle: row.seo_seo_title.trim() } : {}),
+    ...(row.seo_seo_description?.trim() ? { seoDescription: row.seo_seo_description.trim() } : {}),
   };
 }
 

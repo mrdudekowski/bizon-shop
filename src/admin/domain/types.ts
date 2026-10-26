@@ -55,6 +55,8 @@ export type TireDirectionDraft = {
   sortOrder: number;
   showInMenu: boolean;
   mainImage?: ImagePlacement;
+  seoTitle?: string;
+  seoDescription?: string;
 };
 
 export type TireModelDraft = {
@@ -78,6 +80,8 @@ export type TireModelDraft = {
   available?: boolean;
   showInMenu: boolean;
   menuOrder: number;
+  seoTitle?: string;
+  seoDescription?: string;
 };
 
 export type PublishBlocker =
@@ -88,6 +92,7 @@ export type PublishBlocker =
   | "size"
   | "price"
   | "duplicateSize"
+  | "duplicateSku"
   | "editorialPlaceholder";
 
 export type DocumentStatus = "draft" | "on_site" | "hidden";
@@ -222,6 +227,8 @@ export type WheelTypeDraft = {
   mainImage?: ImagePlacement;
   sortOrder: number;
   showInMenu: boolean;
+  seoTitle?: string;
+  seoDescription?: string;
 };
 
 export type WheelModelDraft = {
@@ -242,6 +249,8 @@ export type WheelModelDraft = {
   available?: boolean;
   showInMenu: boolean;
   menuOrder: number;
+  seoTitle?: string;
+  seoDescription?: string;
   variants: WheelVariantDraft[];
 };
 
@@ -261,6 +270,8 @@ export type ShopCategoryDraft = {
   carousel: ShopCategoryCarouselSlide[];
   sortOrder: number;
   showInMenu: boolean;
+  seoTitle?: string;
+  seoDescription?: string;
 };
 
 export type ShopVariantDraft = {
@@ -276,12 +287,23 @@ export type ShopVariantDraft = {
   image?: ImagePlacement;
 };
 
+export type ShopProductSpecItem = {
+  id: string;
+  label: string;
+  value: string;
+};
+
 export type ShopProductDraft = {
   id: string;
   name: string;
   slug: string;
   categoryId: string;
   subcategoryId?: string;
+  sku?: string;
+  brand?: string;
+  material?: string;
+  sortOrder?: number;
+  specifications?: ShopProductSpecItem[];
   descriptionShort: string;
   descriptionLong: string;
   price?: number;
@@ -290,6 +312,8 @@ export type ShopProductDraft = {
   available?: boolean;
   mainImage?: ImagePlacement;
   gallery: ImagePlacement[];
+  seoTitle?: string;
+  seoDescription?: string;
   variants: ShopVariantDraft[];
 };
 
@@ -458,6 +482,7 @@ export type MediaListItem = {
   mimeType: string;
   /** Legacy API field: a public URL or site-relative path, not necessarily a data URI. */
   dataUrl: string;
+  createdAt?: string;
   usages?: MediaUsageRecord[];
   usedBy: string[];
   replacementPending?: boolean;
@@ -498,4 +523,50 @@ export type TireModelListItem = {
   status: DocumentStatus;
   hasUnpublishedDraft: boolean;
   imageAssetId: string | null;
+};
+
+export type LeadRequestStatus =
+  | "new"
+  | "in_progress"
+  | "contacted"
+  | "qualified"
+  | "won"
+  | "lost"
+  | "closed"
+  | "spam"
+  | "archived";
+
+export type LeadRequestItem = {
+  id: string;
+  itemType: string;
+  name: string;
+  slug: string;
+  parentSlug?: string;
+  variantLabel?: string;
+  quantity: number;
+  price?: number;
+  priceOnRequest: boolean;
+  url?: string;
+  notes?: string;
+};
+
+export type LeadRequestRecord = {
+  id: string;
+  status: LeadRequestStatus;
+  clientType: string;
+  name: string;
+  phone: string;
+  email?: string;
+  city?: string;
+  companyName?: string;
+  inn?: string;
+  position?: string;
+  purchaseVolume?: string;
+  preferredContact?: string;
+  message?: string;
+  sourceForm: string;
+  sourcePage?: string;
+  createdAt: string;
+  updatedAt: string;
+  items: LeadRequestItem[];
 };

@@ -7,6 +7,8 @@ type WheelTypeRow = {
   short_description: string | null;
   sort_order: unknown;
   image_url: string | null;
+  seo_seo_title?: string | null;
+  seo_seo_description?: string | null;
 };
 
 type WheelModelRow = {
@@ -25,6 +27,8 @@ type WheelModelRow = {
   menu_order: unknown;
   wheel_type_slug: string;
   wheel_type_name: string;
+  seo_seo_title?: string | null;
+  seo_seo_description?: string | null;
 };
 
 export type CmsWheelGalleryImage = {
@@ -40,6 +44,8 @@ export type CmsWheelType = {
   shortDescription: string;
   sortOrder: number;
   imageUrl: string | null;
+  seoTitle?: string;
+  seoDescription?: string;
 };
 
 export type CmsWheelModel = {
@@ -60,6 +66,8 @@ export type CmsWheelModel = {
   available: boolean;
   showInMenu: boolean;
   menuOrder: number;
+  seoTitle?: string;
+  seoDescription?: string;
   documents: { url: string; title: string }[];
 };
 
@@ -130,6 +138,8 @@ export function mapWheelType(row: WheelTypeRow): CmsWheelType {
     shortDescription: row.short_description ?? "",
     sortOrder: sortOrder(row.sort_order),
     imageUrl: normalizeImageUrl(row.image_url),
+    ...(optionalText(row.seo_seo_title) ? { seoTitle: row.seo_seo_title ?? undefined } : {}),
+    ...(optionalText(row.seo_seo_description) ? { seoDescription: row.seo_seo_description ?? undefined } : {}),
   };
 }
 
@@ -171,6 +181,8 @@ export function mapWheelModel(
     available: row.available === true,
     showInMenu: row.show_in_menu === true,
     menuOrder: sortOrder(row.menu_order),
+    ...(optionalText(row.seo_seo_title) ? { seoTitle: row.seo_seo_title ?? undefined } : {}),
+    ...(optionalText(row.seo_seo_description) ? { seoDescription: row.seo_seo_description ?? undefined } : {}),
   };
 }
 

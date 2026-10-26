@@ -593,7 +593,7 @@ async function readShopProductRows(db: ReadDatabase, slug?: string, categorySlug
       LEFT JOIN shop_subcategories ON shop_subcategories.id = products.subcategory_id
       LEFT JOIN media ON media.id = products.main_image_id
       WHERE ${filters.join(" AND ")}
-      ORDER BY products.name, products.id
+      ORDER BY COALESCE(products.sort_order, 0), products.name, products.id
     `,
     params,
   );

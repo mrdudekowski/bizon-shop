@@ -30,8 +30,10 @@ export function tireModelPublishBlockers(model: TireModelDraft, parentExists = t
   if (model.sizes.some((size) => !hasPrice(size))) blockers.push("price");
   if (hasEditorialPlaceholder(model)) blockers.push("editorialPlaceholder");
 
-  const duplicate = duplicateSizeBlocker(model.sizes.map((size) => `${size.size}|${size.sku ?? ""}`));
+  const duplicate = duplicateSizeBlocker(model.sizes.map((size) => `${size.size.trim().toLowerCase()}|${(size.sku ?? "").trim().toLowerCase()}`));
   if (duplicate) blockers.push(duplicate);
+  const skuDuplicate = duplicateSkuBlocker(model.sizes.map((size) => size.sku ?? ""));
+  if (skuDuplicate) blockers.push(skuDuplicate);
   return blockers;
 }
 
@@ -62,8 +64,19 @@ function duplicateSizeBlocker(keys: string[]): PublishBlocker | null {
   const seen = new Set<string>();
   for (const raw of keys) {
     const key = raw.trim().toLowerCase();
-    if (key.length === 0) continue;
+    if (key.length === 0 || key === "|") continue;
     if (seen.has(key)) return "duplicateSize";
+    seen.add(key);
+  }
+  return null;
+}
+
+function duplicateSkuBlocker(skus: string[]): PublishBlocker | null {
+  const seen = new Set<string>();
+  for (const raw of skus) {
+    const key = raw.trim().toLowerCase();
+    if (key.length === 0) continue;
+    if (seen.has(key)) return "duplicateSku";
     seen.add(key);
   }
   return null;
@@ -78,6 +91,8 @@ export function wheelModelPublishBlockers(model: WheelModelDraft, parentExists =
   }
   const duplicate = duplicateSizeBlocker(model.variants.map((variant) => variant.sizeLabel));
   if (duplicate) blockers.push(duplicate);
+  const skuDuplicate = duplicateSkuBlocker(model.variants.map((variant) => variant.sku ?? ""));
+  if (skuDuplicate) blockers.push(skuDuplicate);
   return blockers;
 }
 
@@ -95,6 +110,8 @@ export function shopProductPublishBlockers(product: ShopProductDraft, parentExis
     variant.configuration ?? "",
   ].map((value) => value.trim().toLocaleLowerCase("ru-RU")))));
   if (duplicate) blockers.push(duplicate);
+  const skuDuplicate = duplicateSkuBlocker(product.variants.map((variant) => variant.sku ?? ""));
+  if (skuDuplicate) blockers.push(skuDuplicate);
   return blockers;
 }
 

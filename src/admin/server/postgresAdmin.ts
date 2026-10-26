@@ -27,6 +27,9 @@ import type {
   DocumentLink,
   EntityRecord,
   ImagePlacement,
+  LeadRequestItem,
+  LeadRequestRecord,
+  LeadRequestStatus,
   PageDraft,
   PageKey,
   MediaDeletionHistoryItem,
@@ -498,6 +501,8 @@ async function mapTireModel(row: Row): Promise<TireModelDraft> {
     available: row.available !== false,
     showInMenu: Boolean(row.show_in_menu),
     menuOrder: num(row.menu_order) ?? 0,
+    seoTitle: str(row.seo_seo_title),
+    seoDescription: str(row.seo_seo_description),
   };
 }
 
@@ -511,6 +516,8 @@ async function mapDirection(row: Row): Promise<TireDirectionDraft> {
     sortOrder: num(row.sort_order) ?? 0,
     showInMenu: Boolean(row.show_in_menu),
     mainImage: placement(row.cover_image_id),
+    seoTitle: str(row.seo_seo_title),
+    seoDescription: str(row.seo_seo_description),
   };
 }
 
@@ -539,6 +546,8 @@ async function mapWheelModel(row: Row): Promise<WheelModelDraft> {
     available: Boolean(row.available),
     showInMenu: Boolean(row.show_in_menu),
     menuOrder: num(row.menu_order) ?? 0,
+    seoTitle: str(row.seo_seo_title),
+    seoDescription: str(row.seo_seo_description),
     variants: variants.map(
       (variant): WheelVariantDraft => ({
         id: str(variant.id),
@@ -577,7 +586,22 @@ function mapWheelType(row: Row): WheelTypeDraft {
     mainImage: placement(row.cover_image_id),
     sortOrder: num(row.sort_order) ?? 0,
     showInMenu: false,
+    seoTitle: str(row.seo_seo_title),
+    seoDescription: str(row.seo_seo_description),
   };
+}
+
+function parseDraftSpecs(raw: unknown): { id: string; label: string; value: string }[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((item, index) => {
+    if (!item || typeof item !== "object") return [];
+    const entry = item as Record<string, unknown>;
+    return [{
+      id: str(entry.id) || `spec-${index + 1}`,
+      label: str(entry.label),
+      value: str(entry.value),
+    }];
+  });
 }
 
 async function mapProduct(row: Row): Promise<ShopProductDraft> {
@@ -610,6 +634,11 @@ async function mapProduct(row: Row): Promise<ShopProductDraft> {
     slug: str(row.slug),
     categoryId: str(row.shop_category_id),
     subcategoryId: row.subcategory_id == null ? undefined : str(row.subcategory_id),
+    sku: str(row.sku),
+    brand: str(row.brand),
+    material: str(row.material),
+    sortOrder: num(row.sort_order) ?? 0,
+    specifications: parseDraftSpecs(row.specifications),
     descriptionShort: str(row.short_description),
     descriptionLong: plainText(row.full_description),
     price: num(row.price),
@@ -618,6 +647,8 @@ async function mapProduct(row: Row): Promise<ShopProductDraft> {
     available: row.available !== false,
     mainImage: placement(row.main_image_id),
     gallery: gallery.map((item) => placement(item.media_id)!).filter(Boolean),
+    seoTitle: str(row.seo_seo_title),
+    seoDescription: str(row.seo_seo_description),
     variants: variants.map(
       (variant): ShopVariantDraft => ({
         id: str(variant.id),
@@ -652,6 +683,8 @@ async function mapCategory(row: Row): Promise<ShopCategoryDraft> {
     })),
     sortOrder: num(row.sort_order) ?? 0,
     showInMenu: Boolean(row.show_in_menu),
+    seoTitle: str(row.seo_seo_title),
+    seoDescription: str(row.seo_seo_description),
   };
 }
 
@@ -888,7 +921,8 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
   await client.query(
     `UPDATE tire_models SET name=$2, slug=$3, tire_type_id=$4, short_description=$5, full_description=$6::jsonb,
       model_code=$7, show_in_menu=$8, menu_order=$9, status=$10, main_image_id=$11,
-      tread_type=$12, series=COALESCE(NULLIF($13, ''), series), available=$14, updated_at=now()
+      tread_type=$12, series=COALESCE(NULLIF($13, ''), series), available=$14,
+      seo_seo_title=$15, seo_seo_description=$16, updated_at=now()
      WHERE id=$1`,
     [
       id,
@@ -905,6 +939,8 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
       draft.treadType || null,
       draft.brand,
       modelAvailable,
+      draft.seoTitle ?? "",
+      draft.seoDescription ?? "",
     ],
   );
   const keptSizeIds: number[] = [];
@@ -1170,7 +1206,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       try {
         if (!transactionClient) await client.query("BEGIN");
         await client.query(
-          "UPDATE tire_types SET name=$2, slug=$3, description=$4, short_description=$5, sort_order=$6, show_in_menu=$7, cover_image_id=$8, status='published', updated_at=now() WHERE id=$1",
+          "UPDATE tire_types SET name=$2, slug=$3, description=$4, short_description=$5, sort_order=$6, show_in_menu=$7, cover_image_id=$8, seo_seo_title=$9, seo_seo_description=$10, status='published', updated_at=now() WHERE id=$1",
           [
             Number(id),
             draft.name,
@@ -1180,6 +1216,8 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
             draft.sortOrder,
             draft.showInMenu,
             draft.mainImage ? Number(draft.mainImage.assetId) : null,
+            draft.seoTitle ?? "",
+            draft.seoDescription ?? "",
           ],
         );
         if (!transactionClient) await client.query("COMMIT");
@@ -1490,6 +1528,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           COALESCE(staged.title, media.filename) AS filename,
           COALESCE(staged.mime_type, media.mime_type) AS mime_type,
           COALESCE(staged.url, media.url) AS url,
+          COALESCE(staged.created_at, media.created_at) AS created_at,
           (staged.id IS NOT NULL) AS replacement_pending
          FROM media
          LEFT JOIN cms_media_replacements AS pending ON pending.target_media_id = media.id
@@ -1554,6 +1593,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           name: str(row.title || row.filename),
           mimeType: str(row.mime_type),
           dataUrl: str(row.url),
+          ...(row.created_at ? { createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : str(row.created_at) } : {}),
           usages,
           usedBy: [...new Set(usedBy)],
           replacementPending: row.replacement_pending === true,
@@ -1675,8 +1715,8 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       if (wheelTypePublishBlockers(draft).length > 0) throw new AdminClientError("publish_blocked");
       await applyPendingMediaReplacements(draft);
       await query(
-        "UPDATE wheel_types SET name=$2, slug=$3, description=$4, short_description=$5, sort_order=$6, cover_image_id=$7, status='published', updated_at=now() WHERE id=$1",
-        [Number(id), draft.name, draft.slug, draft.description, draft.shortDescription ?? "", draft.sortOrder, draft.mainImage ? Number(draft.mainImage.assetId) : null],
+        "UPDATE wheel_types SET name=$2, slug=$3, description=$4, short_description=$5, sort_order=$6, cover_image_id=$7, seo_seo_title=$8, seo_seo_description=$9, status='published', updated_at=now() WHERE id=$1",
+        [Number(id), draft.name, draft.slug, draft.description, draft.shortDescription ?? "", draft.sortOrder, draft.mainImage ? Number(draft.mainImage.assetId) : null, draft.seoTitle ?? "", draft.seoDescription ?? ""],
       );
       await clearOverlay("wheel-types", id, true);
       await releaseLocks("wheel-type", id);
@@ -1766,7 +1806,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       try {
         if (!transactionClient) await client.query("BEGIN");
         await client.query(
-          `UPDATE wheel_models SET name=$2, slug=$3, wheel_type_id=$4, series=$5, design_style=$6, material=$7, construction_method=$8, fitment_notes=$9, short_description=$10, full_description=$11::jsonb, main_image_id=$12, show_in_menu=$13, menu_order=$14, available=$15, status='published', updated_at=now() WHERE id=$1`,
+          `UPDATE wheel_models SET name=$2, slug=$3, wheel_type_id=$4, series=$5, design_style=$6, material=$7, construction_method=$8, fitment_notes=$9, short_description=$10, full_description=$11::jsonb, main_image_id=$12, show_in_menu=$13, menu_order=$14, available=$15, seo_seo_title=$16, seo_seo_description=$17, status='published', updated_at=now() WHERE id=$1`,
           [
             Number(id),
             draft.name,
@@ -1783,6 +1823,8 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
             draft.showInMenu,
             draft.menuOrder,
             wheelAvailable,
+            draft.seoTitle ?? "",
+            draft.seoDescription ?? "",
           ],
         );
         const keptVariantIds: number[] = [];
@@ -1917,8 +1959,8 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       if (wheelTypePublishBlockers(draft).length > 0) throw new AdminClientError("publish_blocked");
       await applyPendingMediaReplacements(draft);
       await query(
-        "UPDATE shop_categories SET name=$2, slug=$3, description=$4, sort_order=$5, show_in_menu=$6, cover_image_id=$7, status='published', updated_at=now() WHERE id=$1",
-        [Number(id), draft.name, draft.slug, draft.description, draft.sortOrder, draft.showInMenu, draft.mainImage ? Number(draft.mainImage.assetId) : null],
+        "UPDATE shop_categories SET name=$2, slug=$3, description=$4, sort_order=$5, show_in_menu=$6, cover_image_id=$7, seo_seo_title=$8, seo_seo_description=$9, status='published', updated_at=now() WHERE id=$1",
+        [Number(id), draft.name, draft.slug, draft.description, draft.sortOrder, draft.showInMenu, draft.mainImage ? Number(draft.mainImage.assetId) : null, draft.seoTitle ?? "", draft.seoDescription ?? ""],
       );
       await query("DELETE FROM shop_category_carousel WHERE shop_category_id = $1", [Number(id)]);
       const photo = (draft.carousel ?? []).find((slide) => slide.image);
@@ -2113,8 +2155,11 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         if (subcategories.length === 0) throw new AdminClientError("publish_blocked");
       }
       const productAvailable = draft.available !== false;
+      const productSpecs = (draft.specifications ?? []).filter(
+        (spec) => spec.label.trim().length > 0 && spec.value.trim().length > 0,
+      );
       await query(
-        "UPDATE products SET name=$2, slug=$3, shop_category_id=$4, subcategory_id=$5, short_description=$6, full_description=$7::jsonb, price=$8, old_price=$9, price_on_request=$10, main_image_id=$11, available=$12, status='published', updated_at=now() WHERE id=$1",
+        "UPDATE products SET name=$2, slug=$3, shop_category_id=$4, subcategory_id=$5, short_description=$6, full_description=$7::jsonb, price=$8, old_price=$9, price_on_request=$10, main_image_id=$11, available=$12, sku=$13, brand=$14, material=$15, sort_order=$16, specifications=$17::jsonb, seo_seo_title=$18, seo_seo_description=$19, status='published', updated_at=now() WHERE id=$1",
         [
           Number(id),
           draft.name,
@@ -2128,6 +2173,13 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           draft.priceOnRequest,
           draft.mainImage ? Number(draft.mainImage.assetId) : null,
           productAvailable,
+          draft.sku?.trim() || null,
+          draft.brand?.trim() || null,
+          draft.material?.trim() || null,
+          draft.sortOrder ?? 0,
+          JSON.stringify(productSpecs),
+          draft.seoTitle ?? "",
+          draft.seoDescription ?? "",
         ],
       );
       const keptVariantIds = draft.variants.map((variant) => variant.id);
@@ -2546,6 +2598,86 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       };
       await upsertPack(next);
       return next;
+    },
+    async listRequests(): Promise<LeadRequestRecord[]> {
+      const rows = await query(
+        "SELECT * FROM requests ORDER BY created_at DESC, id DESC LIMIT 200",
+      );
+      if (rows.length === 0) return [];
+      const requestIds = rows.map((row) => Number(row.id)).filter(Number.isFinite);
+      const itemRows = requestIds.length === 0
+        ? []
+        : await query(
+            "SELECT * FROM requests_items WHERE _parent_id = ANY($1::int[]) ORDER BY _order, id",
+            [requestIds],
+          );
+      const itemsByParent = new Map<string, LeadRequestItem[]>();
+      for (const item of itemRows) {
+        const parentKey = str(item._parent_id);
+        const list = itemsByParent.get(parentKey) ?? [];
+        list.push({
+          id: str(item.id),
+          itemType: str(item.item_type),
+          name: str(item.item_name),
+          slug: str(item.item_slug),
+          ...(str(item.parent_slug) ? { parentSlug: str(item.parent_slug) } : {}),
+          ...(str(item.variant_label) ? { variantLabel: str(item.variant_label) } : {}),
+          quantity: num(item.quantity) ?? 1,
+          ...(num(item.price) != null ? { price: num(item.price) } : {}),
+          priceOnRequest: item.price_on_request !== false,
+          ...(str(item.url) ? { url: str(item.url) } : {}),
+          ...(str(item.notes) ? { notes: str(item.notes) } : {}),
+        });
+        itemsByParent.set(parentKey, list);
+      }
+      return rows.map((row): LeadRequestRecord => {
+        const id = str(row.id);
+        return {
+          id,
+          status: (str(row.status) || "new") as LeadRequestStatus,
+          clientType: str(row.client_type) || "company",
+          name: str(row.name),
+          phone: str(row.phone),
+          ...(str(row.email) ? { email: str(row.email) } : {}),
+          ...(str(row.city) ? { city: str(row.city) } : {}),
+          ...(str(row.company_name) ? { companyName: str(row.company_name) } : {}),
+          ...(str(row.inn) ? { inn: str(row.inn) } : {}),
+          ...(str(row.position) ? { position: str(row.position) } : {}),
+          ...(str(row.purchase_volume) ? { purchaseVolume: str(row.purchase_volume) } : {}),
+          ...(str(row.preferred_contact) ? { preferredContact: str(row.preferred_contact) } : {}),
+          ...(str(row.message) ? { message: str(row.message) } : {}),
+          sourceForm: str(row.source_form) || "contact",
+          ...(str(row.source_page) ? { sourcePage: str(row.source_page) } : {}),
+          createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : str(row.created_at),
+          updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : str(row.updated_at),
+          items: itemsByParent.get(id) ?? [],
+        };
+      });
+    },
+    async updateRequestStatus(id: string, status: LeadRequestStatus): Promise<LeadRequestRecord> {
+      const requestId = numericId(id);
+      if (requestId == null) throw new AdminClientError("not_found");
+      const validStatuses = new Set<LeadRequestStatus>([
+        "new",
+        "in_progress",
+        "contacted",
+        "qualified",
+        "won",
+        "lost",
+        "closed",
+        "spam",
+        "archived",
+      ]);
+      if (!validStatuses.has(status)) throw new AdminClientError("publish_blocked");
+      const updated = await query(
+        "UPDATE requests SET status = $2, updated_at = now() WHERE id = $1 RETURNING id",
+        [requestId, status],
+      );
+      if (updated.length === 0) throw new AdminClientError("not_found");
+      const all = await this.listRequests();
+      const found = all.find((item) => item.id === String(requestId));
+      if (!found) throw new AdminClientError("not_found");
+      return found;
     },
   };
 
