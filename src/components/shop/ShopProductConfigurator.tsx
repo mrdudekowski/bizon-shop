@@ -186,7 +186,7 @@ export function ShopProductConfigurator({ product: initialProduct }: { product: 
     next.set(key, value);
 
     const matchingVariant = product.variants.find((variant) => {
-      if (!variant.available || variant[key] !== value) return false;
+      if (variant[key] !== value) return false;
       return optionGroups.every((group) => {
         if (group.key === key) return true;
         const selectedValue = next.get(group.key);
@@ -204,7 +204,7 @@ export function ShopProductConfigurator({ product: initialProduct }: { product: 
   }
 
   function optionAvailable(key: OptionKey, value: string): boolean {
-    return product.variants.some((variant) => variant.available && variant[key] === value);
+    return product.variants.some((variant) => variant[key] === value);
   }
 
   function addToCart() {
@@ -219,7 +219,7 @@ export function ShopProductConfigurator({ product: initialProduct }: { product: 
       groupRefs.current[firstMissing.key]?.focus();
       return;
     }
-    if (!available || (optionGroups.length > 0 && !selectedVariant)) return;
+    if (optionGroups.length > 0 && !selectedVariant) return;
 
     cart.addItem(item);
     requestOpenCart("shop");
@@ -318,17 +318,21 @@ export function ShopProductConfigurator({ product: initialProduct }: { product: 
             </fieldset>
           ))}
 
-          <p className={available ? styles.availability : styles.unavailable}>
-            {available ? "Доступность подтверждается перед заказом" : "Сейчас недоступно"}
-          </p>
-          <button
-            type="button"
-            className={styles.addButton}
-            onClick={addToCart}
-            disabled={!available || (optionGroups.length > 0 && selectedVariant?.available === false)}
-          >
-            {inCart ? "Перейти в корзину" : "Добавить в корзину"}
-          </button>
+          <div className="action-row">
+            <button
+              type="button"
+              className={`btn-accent ${styles.addButton}`}
+              onClick={addToCart}
+            >
+              {inCart ? "Перейти в корзину" : "Добавить в корзину"}
+            </button>
+            <span
+              className="availability-badge"
+              data-status={available ? "in-stock" : "on-order"}
+            >
+              {available ? "В наличии" : "Под заказ"}
+            </span>
+          </div>
           <p className={styles.requestNote}>Добавление в корзину формирует заявку и не является оплатой.</p>
         </section>
       </div>

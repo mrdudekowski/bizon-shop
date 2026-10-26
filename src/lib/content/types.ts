@@ -94,6 +94,7 @@ export type CmsTireModel = {
   advantages: CmsTireAdvantage[];
   documents: CmsTireDocument[];
   selectionAxles: CatalogAxle[];
+  available?: boolean;
   showInMenu: boolean;
   menuOrder: number;
 };
@@ -174,6 +175,7 @@ export type CmsWheelModel = {
   imageUrl?: string | null;
   gallery: CmsWheelGalleryImage[];
   documents?: { url: string; title: string }[];
+  available?: boolean;
   showInMenu: boolean;
   menuOrder: number;
 };

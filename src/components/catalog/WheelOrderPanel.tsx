@@ -18,6 +18,7 @@ type WheelOrderVariant = {
 type WheelOrderPanelProps = {
   baseItem: RequestItemInput;
   variants: WheelOrderVariant[];
+  available?: boolean;
   finish?: string;
   className?: string;
 };
@@ -42,7 +43,7 @@ function formatPrice(variant: WheelOrderVariant | null): string {
   return `${variant.price.toLocaleString("ru-RU")} ₽`;
 }
 
-export function WheelOrderPanel({ baseItem, variants, finish = "", className }: WheelOrderPanelProps) {
+export function WheelOrderPanel({ baseItem, variants, available = false, finish = "", className }: WheelOrderPanelProps) {
   const cart = useCart("shop");
   const [variantId, setVariantId] = useState(variants.length === 1 ? variants[0].id : "");
   const maxQuantity = baseItem.parentSlug === "forged" ? 8 : 999;
@@ -194,13 +195,21 @@ export function WheelOrderPanel({ baseItem, variants, finish = "", className }: 
         </div>
       </details>
 
-      <button
-        className={`btn-accent ${styles.submit}`}
-        type="submit"
-        disabled={needsVariant && !selected}
-      >
-        Добавить в заявку
-      </button>
+      <div className="action-row">
+        <button
+          className={`btn-accent ${styles.submit}`}
+          type="submit"
+          disabled={needsVariant && !selected}
+        >
+          Добавить в заявку
+        </button>
+        <span
+          className="availability-badge"
+          data-status={available ? "in-stock" : "on-order"}
+        >
+          {available ? "В наличии" : "Под заказ"}
+        </span>
+      </div>
       <p className={styles.disclaimer}>
         Это запрос на подбор, а не покупка: цена и совместимость подтверждаются специалистом.
       </p>

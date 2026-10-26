@@ -597,13 +597,44 @@ a {
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 0.75rem 1rem;
 }
 
 .action-row > :where(a, button):is(.btn-accent, .btn-secondary, .btn-glass, .ghost-button),
 .hero-actions > :where(a, button):is(.btn-accent, .btn-secondary, .btn-glass, .ghost-button) {
-  align-self: flex-start;
+  align-self: center;
+}
+
+.availability-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-foreground);
+  white-space: nowrap;
+}
+
+.availability-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bizon-mint-500, #06e3be);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bizon-mint-500, #06e3be) 22%, transparent);
+  flex-shrink: 0;
+}
+
+.availability-badge[data-status="on-order"] {
+  color: var(--color-muted);
+}
+
+.availability-badge[data-status="on-order"]::before {
+  background: var(--bizon-coral-500, #e45433);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bizon-coral-500, #e45433) 18%, transparent);
 }
 
 .btn-accent,

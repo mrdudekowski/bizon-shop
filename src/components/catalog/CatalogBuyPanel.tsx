@@ -12,11 +12,13 @@ export type CatalogBuyVariant = {
   label: string;
   price?: number;
   priceOnRequest?: boolean;
+  available?: boolean;
 };
 
 type CatalogBuyPanelProps = {
   baseItem: RequestItemInput;
   variants: CatalogBuyVariant[];
+  available?: boolean;
   sizeLabel?: string;
   emptyVariantsMessage?: string;
   className?: string;
@@ -31,6 +33,7 @@ function formatPrice(variant: CatalogBuyVariant | null): string {
 export function CatalogBuyPanel({
   baseItem,
   variants,
+  available,
   sizeLabel = "Размер",
   emptyVariantsMessage = "Размеры уточняются — можно добавить модель без размера или связаться со специалистом.",
   className,
@@ -136,10 +139,16 @@ export function CatalogBuyPanel({
             Добавить в корзину
           </button>
         )}
-        {!canAdd && (
-          <p className={styles.hint}>Сначала выберите размер</p>
-        )}
+        <span
+          className="availability-badge"
+          data-status={(available ?? selected?.available ?? true) ? "in-stock" : "on-order"}
+        >
+          {(available ?? selected?.available ?? true) ? "В наличии" : "Под заказ"}
+        </span>
       </div>
+      {!canAdd && (
+        <p className={styles.hint}>Сначала выберите размер</p>
+      )}
     </div>
   );
 }

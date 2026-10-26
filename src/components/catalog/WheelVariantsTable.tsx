@@ -31,7 +31,6 @@ function extendedSpecs(variant: CmsWheelVariant): Array<[string, string]> {
     ["Совместимые размеры шин", cell(variant.compatibleTireSizes)],
     ["Источник спецификации", cell(variant.sourceSpecification)],
     ["Цена", variant.priceOnRequest ? "По запросу" : cell(variant.price)],
-    ["Наличие", variant.available ? "В наличии" : "Нет в наличии"],
   ];
 }
 
@@ -72,7 +71,10 @@ export function WheelVariantsTable({ variants }: WheelVariantsTableProps) {
       <div className={styles.cards}>
         {variants.map((variant) => (
           <article className={styles.card} key={variant.id}>
-            <h3 className={styles.cardSize}>{formatSize(variant)}</h3>
+            <header className={styles.cardHeader}>
+              <h3 className={styles.cardSize}>{formatSize(variant)}</h3>
+              {variant.sku ? <span className={styles.cardSku}>{variant.sku}</span> : null}
+            </header>
             <dl className={styles.cardFacts}>
               <div>
                 <dt>PCD</dt>
@@ -90,8 +92,14 @@ export function WheelVariantsTable({ variants }: WheelVariantsTableProps) {
                 <dt>Нагрузка</dt>
                 <dd>{cell(variant.loadRating)}</dd>
               </div>
-            </dl>
-            <dl className={styles.cardFacts}>
+              <div>
+                <dt>Вес, кг</dt>
+                <dd>{cell(variant.weight)}</dd>
+              </div>
+              <div>
+                <dt>Отверстия</dt>
+                <dd>{cell(variant.boltHoles)}</dd>
+              </div>
               <div>
                 <dt>Цвет</dt>
                 <dd>{cell(variant.color)}</dd>
@@ -100,59 +108,55 @@ export function WheelVariantsTable({ variants }: WheelVariantsTableProps) {
                 <dt>Покрытие</dt>
                 <dd>{cell(variant.finish)}</dd>
               </div>
+              {variant.fastenerType ? (
+                <div>
+                  <dt>Тип крепежа</dt>
+                  <dd>{cell(variant.fastenerType)}</dd>
+                </div>
+              ) : null}
+              {variant.compatibleTireSizes ? (
+                <div>
+                  <dt>Совместимые шины</dt>
+                  <dd>{cell(variant.compatibleTireSizes)}</dd>
+                </div>
+              ) : null}
             </dl>
             <ExtendedSpecs variant={variant} />
           </article>
         ))}
       </div>
 
-      <div className={`${styles.scroll} ${styles.scrollWide}`}>
+      <div className={styles.scroll}>
         <table className={styles.table}>
           <thead>
             <tr>
-              <th className={`${styles.stickyCol} ${styles.colSize}`} scope="col">
+              <th className={styles.colSize} scope="col">
                 Размер
               </th>
-              <th className={styles.colMid} scope="col">
-                PCD
-              </th>
-              <th className={styles.colNarrow} scope="col">
-                ET
-              </th>
-              <th className={styles.colNarrow} scope="col">
-                DIA
-              </th>
-              <th className={styles.colMid} scope="col">
-                Нагрузка
-              </th>
-              <th className={`${styles.colMid} ${styles.secondary}`} scope="col">
-                Цвет
-              </th>
-              <th className={`${styles.colWide} ${styles.secondary}`} scope="col">
-                Покрытие
-              </th>
-              <th className={styles.colExtra} scope="col">
-                Спецификация
-              </th>
+              <th scope="col">PCD</th>
+              <th scope="col">ET</th>
+              <th scope="col">DIA</th>
+              <th scope="col">Нагрузка</th>
+              <th scope="col">Вес, кг</th>
+              <th scope="col">Цвет</th>
+              <th scope="col">Покрытие</th>
+              <th scope="col">Спецификация</th>
             </tr>
           </thead>
           <tbody>
             {variants.map((variant) => (
               <tr key={variant.id}>
-                <th className={`${styles.stickyCol} ${styles.colSize}`} scope="row">
+                <th className={styles.colSize} scope="row">
                   {formatSize(variant)}
                 </th>
-                <td className={styles.colMid}>{cell(variant.pcd)}</td>
-                <td className={styles.colNarrow}>{cell(variant.offsetET)}</td>
-                <td className={styles.colNarrow}>{cell(variant.centerBore)}</td>
-                <td className={styles.colMid}>{cell(variant.loadRating)}</td>
-                <td className={`${styles.colMid} ${styles.secondary}`}>
-                  {cell(variant.color)}
-                </td>
-                <td className={`${styles.colWide} ${styles.secondary}`}>
-                  {cell(variant.finish)}
-                </td>
-                <td className={styles.colExtra}>
+                <td>{cell(variant.pcd)}</td>
+                <td>{cell(variant.offsetET)}</td>
+                <td>{cell(variant.centerBore)}</td>
+                <td>{cell(variant.loadRating)}</td>
+                <td>{cell(variant.weight)}</td>
+                <td>{cell(variant.color)}</td>
+                <td>{cell(variant.finish)}</td>
+                <td>
                   <ExtendedSpecs variant={variant} />
                 </td>
               </tr>

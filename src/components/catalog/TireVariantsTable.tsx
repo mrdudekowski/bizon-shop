@@ -9,31 +9,47 @@ type TireVariantsTableProps = {
   modelPath: string;
 };
 
-function cell(value: string | number | boolean | null | undefined): string {
+function cell(value: string | number | null | undefined): string {
   if (value == null || value === "") return "—";
-  if (typeof value === "boolean") return value ? "В наличии" : "Нет в наличии";
   return String(value);
 }
 
-const FACT_COLUMNS: Array<{
-  key: keyof CmsTireVariant;
+function pairCell(
+  single: string | number | null | undefined,
+  dual: string | number | null | undefined,
+): string {
+  const s = single != null && single !== "" ? String(single) : "";
+  const d = dual != null && dual !== "" ? String(dual) : "";
+  if (!s && !d) return "—";
+  if (s && d) return `${s} / ${d}`;
+  return s || d;
+}
+
+type SpecColumn = {
+  key: string;
   label: string;
-  secondary?: boolean;
-}> = [
-  { key: "rimDiameter", label: "Обод" },
-  { key: "loadIndex", label: "LI" },
-  { key: "loadIndexDual", label: "LI dual" },
-  { key: "speedIndex", label: "SI" },
-  { key: "plyRating", label: "PR" },
-  { key: "overallDiameter", label: "OD, мм" },
-  { key: "available", label: "Наличие" },
-  { key: "sectionWidth", label: "Ширина, мм", secondary: true },
-  { key: "treadDepth", label: "Протектор, мм", secondary: true },
-  { key: "pressureSingleKpa", label: "Давл. од., кПа", secondary: true },
-  { key: "pressureDualKpa", label: "Давл. сд., кПа", secondary: true },
-  { key: "maxLoadSingleKg", label: "Нагр. од., кг", secondary: true },
-  { key: "maxLoadDualKg", label: "Нагр. сд., кг", secondary: true },
-  { key: "recommendedRim", label: "Рек. обод", secondary: true },
+  render: (variant: CmsTireVariant) => string;
+};
+
+const SPEC_COLUMNS: readonly SpecColumn[] = [
+  { key: "rimDiameter", label: "Обод", render: (v) => cell(v.rimDiameter) },
+  { key: "recommendedRim", label: "Рек. обод", render: (v) => cell(v.recommendedRim) },
+  { key: "loadIndex", label: "LI (од./сд.)", render: (v) => pairCell(v.loadIndex, v.loadIndexDual) },
+  { key: "speedIndex", label: "SI", render: (v) => cell(v.speedIndex) },
+  { key: "plyRating", label: "PR", render: (v) => cell(v.plyRating) },
+  { key: "overallDiameter", label: "OD, мм", render: (v) => cell(v.overallDiameter) },
+  { key: "sectionWidth", label: "Ширина, мм", render: (v) => cell(v.sectionWidth) },
+  { key: "treadDepth", label: "Протектор, мм", render: (v) => cell(v.treadDepth) },
+  {
+    key: "pressure",
+    label: "Давление, кПа",
+    render: (v) => pairCell(v.pressureSingleKpa, v.pressureDualKpa),
+  },
+  {
+    key: "maxLoad",
+    label: "Нагрузка, кг",
+    render: (v) => pairCell(v.maxLoadSingleKg, v.maxLoadDualKg),
+  },
 ];
 
 export function TireVariantsTable({ model, variants }: TireVariantsTableProps) {
@@ -63,43 +79,30 @@ export function TireVariantsTable({ model, variants }: TireVariantsTableProps) {
       <div className={styles.cards}>
         {variants.map((variant) => (
           <article className={styles.card} key={variant.id}>
-            <h3 className={styles.cardSize}>{variant.size}</h3>
+            <header className={styles.cardHeader}>
+              <h3 className={styles.cardSize}>{variant.size}</h3>
+            </header>
             <dl className={styles.cardFacts}>
-              {FACT_COLUMNS.filter((column) => !column.secondary).map((column) => (
+              {SPEC_COLUMNS.map((column) => (
                 <div key={column.key}>
                   <dt>{column.label}</dt>
-                <dd>{cell(variant[column.key] as string | number | boolean | undefined)}</dd>
+                  <dd>{column.render(variant)}</dd>
                 </div>
               ))}
             </dl>
-            <details className={styles.secondaryDisclosure}>
-              <summary>Все характеристики</summary>
-              <dl className={styles.cardFacts}>
-                {FACT_COLUMNS.filter((column) => column.secondary).map((column) => (
-                  <div key={column.key}>
-                    <dt>{column.label}</dt>
-                    <dd>{cell(variant[column.key] as string | number | undefined)}</dd>
-                  </div>
-                ))}
-              </dl>
-            </details>
           </article>
         ))}
       </div>
 
-      <div className={`${styles.scroll} ${styles.scrollWide}`}>
+      <div className={styles.scroll}>
         <table className={styles.table}>
           <thead>
             <tr>
-              <th className={`${styles.stickyCol} ${styles.colSize}`} scope="col">
+              <th className={styles.colSize} scope="col">
                 Размер
               </th>
-              {FACT_COLUMNS.map((column) => (
-                <th
-                  key={column.key}
-                  className={`${styles.colNarrow} ${column.secondary ? styles.secondary : ""}`}
-                  scope="col"
-                >
+              {SPEC_COLUMNS.map((column) => (
+                <th key={column.key} scope="col">
                   {column.label}
                 </th>
               ))}
@@ -108,16 +111,11 @@ export function TireVariantsTable({ model, variants }: TireVariantsTableProps) {
           <tbody>
             {variants.map((variant) => (
               <tr key={variant.id}>
-                <th className={`${styles.stickyCol} ${styles.colSize}`} scope="row">
+                <th className={styles.colSize} scope="row">
                   {variant.size}
                 </th>
-                {FACT_COLUMNS.map((column) => (
-                  <td
-                    key={column.key}
-                    className={`${styles.colNarrow} ${column.secondary ? styles.secondary : ""}`}
-                  >
-                    {cell(variant[column.key] as string | number | boolean | undefined)}
-                  </td>
+                {SPEC_COLUMNS.map((column) => (
+                  <td key={column.key}>{column.render(variant)}</td>
                 ))}
               </tr>
             ))}

@@ -172,9 +172,11 @@ export function TireModelStage({
                 label: variantLabels.get(variant.id) ?? variant.size,
                 price: variant.price,
                 priceOnRequest: variant.priceOnRequest,
+                available: variant.available,
               }))}
+              available={model.available ?? true}
               sizeLabel="Типоразмер"
-                className={styles.productOrderPanel}
+              className={styles.productOrderPanel}
             />
 
             <p className={styles.disclaimer}>

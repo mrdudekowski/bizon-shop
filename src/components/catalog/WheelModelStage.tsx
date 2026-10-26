@@ -126,6 +126,7 @@ export function WheelModelStage({
                 price: variant.price,
                 priceOnRequest: variant.priceOnRequest,
               }))}
+              available={model.available ?? false}
               finish={model.series?.trim() || ""}
               className={styles.productOrderPanel}
             />
