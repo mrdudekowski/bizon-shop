@@ -107,6 +107,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [siteDeployMessage, setSiteDeployMessage] = useState<string | null>(null);
+  const [publishToastPhase, setPublishToastPhase] = useState<"in" | "out" | null>(null);
   const [siteDeployRetryAvailable, setSiteDeployRetryAvailable] = useState(false);
   const [siteDeployRetrying, setSiteDeployRetrying] = useState(false);
   const [siteDeployId, setSiteDeployId] = useState<string | null>(null);
@@ -137,6 +138,17 @@ export function AdminShell({ children }: { children: ReactNode }) {
       if (!document.querySelector('[data-unsaved="true"]')) return;
       event.preventDefault();
       event.returnValue = "";
+    };
+    let publishToastTimer: number | undefined;
+    let publishToastHideTimer: number | undefined;
+    const showPublishToast = () => {
+      setPublishToastPhase("in");
+      if (publishToastTimer != null) window.clearTimeout(publishToastTimer);
+      if (publishToastHideTimer != null) window.clearTimeout(publishToastHideTimer);
+      publishToastTimer = window.setTimeout(() => {
+        setPublishToastPhase("out");
+        publishToastHideTimer = window.setTimeout(() => setPublishToastPhase(null), 320);
+      }, 5_000);
     };
     const handleExpiredSession = () => {
       setSession(null);
@@ -177,8 +189,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
         setSiteDeployId(null);
         setSiteDeployExpectedRevision(null);
         try { window.localStorage.removeItem(SITE_DEPLOY_STORAGE_KEY); } catch {}
-        setSiteDeployMessage("Публикация сохранена. Автоматическая пересборка сайта ещё не настроена.");
+        setSiteDeployMessage(null);
         setSiteDeployRetryAvailable(false);
+        showPublishToast();
       }
     };
     window.addEventListener("bizon-session-expired", handleExpiredSession);
@@ -186,6 +199,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
     window.addEventListener("beforeunload", warnBeforeUnload);
     return () => {
       stopWarmup();
+      if (publishToastTimer != null) window.clearTimeout(publishToastTimer);
+      if (publishToastHideTimer != null) window.clearTimeout(publishToastHideTimer);
       window.removeEventListener("bizon-session-expired", handleExpiredSession);
       window.removeEventListener("bizon-site-deploy-status", handleSiteDeployStatus);
       window.removeEventListener("beforeunload", warnBeforeUnload);
@@ -397,6 +412,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
         </nav>
         <div className={styles.content}>
           {notice ? <p className={styles.notice}>{notice}</p> : null}
+          {publishToastPhase ? (
+            <p className={styles.publishToast} data-phase={publishToastPhase} role="status" aria-live="polite">Черновик опубликован</p>
+          ) : null}
           {siteDeployMessage ? (
             <div className={styles.siteDeployNotice} role="status" aria-live="polite">
               <p>{siteDeployMessage}</p>
