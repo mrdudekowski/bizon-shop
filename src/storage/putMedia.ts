@@ -5,6 +5,7 @@ import { isS3Configured, isS3PublicUrlConfigured } from "./env";
 import type { ObjectStore } from "./objectStore";
 
 export const MAX_MEDIA_BYTES = 20 * 1024 * 1024;
+const WEBP_QUALITY = 85;
 export const ALLOWED_MEDIA_MIME_TYPES = [
   "image/jpeg",
   "image/png",
@@ -84,14 +85,29 @@ async function assertImageDecodes(body: Buffer, mimeType: string): Promise<void>
   try {
     const image = sharp(body, { failOn: "warning" });
     const metadata = await image.metadata();
-    const expectedFormat = mimeType === "image/jpeg" ? "jpeg" : mimeType.slice("image/".length);
-    if (metadata.format !== expectedFormat || !metadata.width || !metadata.height) {
-      throw new Error("image_format_mismatch");
-    }
+    assertImageMetadata(metadata, mimeType);
 
     // metadata() checks only the header. A small output forces the decoder to
     // process the compressed image data without retaining a full-size copy.
     await sharp(body, { failOn: "warning" }).resize(1, 1).toBuffer();
+  } catch (error) {
+    throw new MediaRejected("publish_blocked", { cause: error });
+  }
+}
+
+function assertImageMetadata(metadata: { format?: string; width?: number; height?: number }, mimeType: string): void {
+  const expectedFormat = mimeType === "image/jpeg" ? "jpeg" : mimeType.slice("image/".length);
+  if (metadata.format !== expectedFormat || !metadata.width || !metadata.height) {
+    throw new Error("image_format_mismatch");
+  }
+}
+
+async function convertImageToWebp(body: Buffer, sourceMimeType: string): Promise<Buffer> {
+  try {
+    const image = sharp(body, { failOn: "warning" });
+    const metadata = await image.metadata();
+    assertImageMetadata(metadata, sourceMimeType);
+    return await image.rotate().webp({ quality: WEBP_QUALITY }).toBuffer();
   } catch (error) {
     throw new MediaRejected("publish_blocked", { cause: error });
   }
@@ -132,16 +148,24 @@ export async function putMedia(
 ): Promise<{ key: string; url: string; mimeType: string; declaredMimeType: string; name: string; byteSize: number; sha256: string }> {
   if (!isS3Configured() || !isS3PublicUrlConfigured()) throw new MediaRejected("storage_unavailable");
   if (file.body.length === 0 || file.body.length > MAX_MEDIA_BYTES) throw new MediaRejected("publish_blocked");
-  const mimeType = resolveMediaMime(file);
-  if (!ALLOWED_MEDIA_MIME_TYPES.includes(mimeType as (typeof ALLOWED_MEDIA_MIME_TYPES)[number])) {
+  const sourceMimeType = resolveMediaMime(file);
+  if (!ALLOWED_MEDIA_MIME_TYPES.includes(sourceMimeType as (typeof ALLOWED_MEDIA_MIME_TYPES)[number])) {
     throw new MediaRejected("publish_blocked");
   }
-  await assertImageDecodes(file.body, mimeType);
+  let body = file.body;
+  let mimeType = sourceMimeType;
+  if (sourceMimeType === "image/jpeg" || sourceMimeType === "image/png") {
+    body = await convertImageToWebp(file.body, sourceMimeType);
+    mimeType = "image/webp";
+  } else {
+    await assertImageDecodes(file.body, sourceMimeType);
+  }
+
   const key = `bizon/media/${randomUUID()}${extensionFor(mimeType, file.name)}`;
   const url = buildPublicObjectUrl(key);
   if (!url) throw new MediaRejected("storage_unavailable");
   try {
-    await store.put({ key, body: file.body, contentType: mimeType });
+    await store.put({ key, body, contentType: mimeType });
   } catch {
     throw new MediaRejected("storage_unavailable");
   }
@@ -151,8 +175,8 @@ export async function putMedia(
     mimeType,
     declaredMimeType: normalizeDeclaredMime(file.mimeType),
     name: file.name,
-    byteSize: file.body.length,
-    sha256: createHash("sha256").update(file.body).digest("hex"),
+    byteSize: body.length,
+    sha256: createHash("sha256").update(body).digest("hex"),
   };
 }
 

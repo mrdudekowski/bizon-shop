@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
+import sharp from "sharp";
 import { MediaCleanupRequired, MediaRejected, putMedia, uploadAndPersistMedia } from "./putMedia";
 import type { ObjectStore } from "./objectStore";
 
@@ -12,13 +13,16 @@ const ENV_KEYS = [
 
 const saved: Partial<Record<(typeof ENV_KEYS)[number], string | undefined>> = {};
 
-function memoryStore(): ObjectStore & { objects: Map<string, Buffer> } {
+function memoryStore(): ObjectStore & { objects: Map<string, Buffer>; contentTypes: Map<string, string> } {
   const objects = new Map<string, Buffer>();
+  const contentTypes = new Map<string, string>();
   return {
     objects,
+    contentTypes,
     async checkAvailable() {},
-    async put({ key, body }) {
+    async put({ key, body, contentType }) {
       objects.set(key, body);
+      contentTypes.set(key, contentType);
     },
     async delete({ key }) {
       objects.delete(key);
@@ -50,7 +54,7 @@ describe("putMedia", () => {
     process.env[key] = value;
   }
 
-  it("stores bytes and returns a public https URL", async () => {
+  it("converts PNG uploads to WebP before storing them", async () => {
     setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
     setEnv("S3_BUCKET", "bucket");
     setEnv("S3_ACCESS_KEY_ID", "id");
@@ -62,10 +66,83 @@ describe("putMedia", () => {
       mimeType: "image/png",
       body: png,
     });
-    expect(result.url).toMatch(/^https:\/\/cdn\.example\.test\/bizon\/media\/[0-9a-f-]+\.png$/);
-    expect(result.byteSize).toBe(png.length);
-    expect(result.sha256).toBe(createHash("sha256").update(png).digest("hex"));
-    expect(store.objects.get(result.key)?.length).toBe(png.length);
+    expect(result.url).toMatch(/^https:\/\/cdn\.example\.test\/bizon\/media\/[0-9a-f-]+\.webp$/);
+    expect(result.mimeType).toBe("image/webp");
+    expect(result.declaredMimeType).toBe("image/png");
+    const stored = store.objects.get(result.key);
+    expect(stored).toBeDefined();
+    expect((await sharp(stored!).metadata()).format).toBe("webp");
+    expect(store.contentTypes.get(result.key)).toBe("image/webp");
+    expect(result.byteSize).toBe(stored?.length);
+    expect(result.sha256).toBe(createHash("sha256").update(stored!).digest("hex"));
+  });
+
+  it("converts JPEG uploads to WebP and keeps the declared source type", async () => {
+    setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
+    setEnv("S3_BUCKET", "bucket");
+    setEnv("S3_ACCESS_KEY_ID", "id");
+    setEnv("S3_SECRET_ACCESS_KEY", "secret");
+    const store = memoryStore();
+    const jpeg = await sharp(validPng()).jpeg().toBuffer();
+
+    const result = await putMedia(store, { name: "TBR cover.jpeg", mimeType: "image/jpeg", body: jpeg });
+
+    expect(result.url).toMatch(/\.webp$/);
+    expect(result.mimeType).toBe("image/webp");
+    expect(result.declaredMimeType).toBe("image/jpeg");
+    expect((await sharp(store.objects.get(result.key)!).metadata()).format).toBe("webp");
+  });
+
+  it("keeps an already-WebP upload unchanged", async () => {
+    setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
+    setEnv("S3_BUCKET", "bucket");
+    setEnv("S3_ACCESS_KEY_ID", "id");
+    setEnv("S3_SECRET_ACCESS_KEY", "secret");
+    const store = memoryStore();
+    const webp = await sharp(validPng()).webp().toBuffer();
+
+    const result = await putMedia(store, { name: "TBR cover.webp", mimeType: "image/webp", body: webp });
+
+    expect(result.mimeType).toBe("image/webp");
+    expect(result.declaredMimeType).toBe("image/webp");
+    expect(store.objects.get(result.key)).toEqual(webp);
+    expect(store.contentTypes.get(result.key)).toBe("image/webp");
+  });
+
+  it("passes converted media metadata to the persistence callback", async () => {
+    setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
+    setEnv("S3_BUCKET", "bucket");
+    setEnv("S3_ACCESS_KEY_ID", "id");
+    setEnv("S3_SECRET_ACCESS_KEY", "secret");
+    const store = memoryStore();
+    const saved = await uploadAndPersistMedia(
+      store,
+      { name: "TBR cover.png", mimeType: "image/png", body: validPng() },
+      async (stored) => stored,
+    );
+    const storedBody = store.objects.get(saved.key)!;
+
+    expect(saved.mimeType).toBe("image/webp");
+    expect(saved.declaredMimeType).toBe("image/png");
+    expect(saved.byteSize).toBe(storedBody.length);
+    expect(saved.sha256).toBe(createHash("sha256").update(storedBody).digest("hex"));
+    expect(saved.name).toBe("TBR cover.png");
+  });
+
+  it("keeps document uploads as PDFs", async () => {
+    setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
+    setEnv("S3_BUCKET", "bucket");
+    setEnv("S3_ACCESS_KEY_ID", "id");
+    setEnv("S3_SECRET_ACCESS_KEY", "secret");
+    const store = memoryStore();
+    const pdf = Buffer.from("%PDF-1.4\n%%EOF");
+
+    const result = await putMedia(store, { name: "warranty.pdf", mimeType: "application/pdf", body: pdf });
+
+    expect(result.mimeType).toBe("application/pdf");
+    expect(result.url).toMatch(/\.pdf$/);
+    expect(store.objects.get(result.key)).toEqual(pdf);
+    expect(store.contentTypes.get(result.key)).toBe("application/pdf");
   });
 
   it("assigns different object keys when the same source filename is uploaded twice", async () => {
@@ -141,8 +218,8 @@ describe("putMedia", () => {
     for (const mimeType of ["application/octet-stream", "IMAGE/PNG", "image/x-png", "image/png; charset=utf-8"]) {
       const store = memoryStore();
       const result = await putMedia(store, { name: "camp.png", mimeType, body: png });
-      expect(result.mimeType, mimeType).toBe("image/png");
-      expect(result.url).toMatch(/\.png$/);
+      expect(result.mimeType, mimeType).toBe("image/webp");
+      expect(result.url).toMatch(/\.webp$/);
     }
   });
 
