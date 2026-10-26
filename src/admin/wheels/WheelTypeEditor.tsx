@@ -110,7 +110,7 @@ export function WheelTypeEditor({ id }: { id: string }) {
 
   return (
     <main className="document" data-unsaved={dirty ? "true" : undefined}>
-      <Link className="backLink" href="/wheels">← Назад к типам дисков</Link>
+      <Link className="backLink" href="/wheels">← Назад к дискам</Link>
       <h1>{draft.name || "Тип диска"}</h1>
       <section className={styles.section}>
         <h2>Карточка</h2>

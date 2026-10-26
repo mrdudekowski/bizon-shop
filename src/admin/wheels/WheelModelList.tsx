@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -115,7 +116,17 @@ export function WheelModelList() {
 
   return (
     <main>
-      <div className={styles.pageHead}><div><h1>Диски</h1><p className="subheading">Модели кованых дисков, размеры и публикация на сайте.</p></div></div>
+      <div className={styles.pageHead}>
+        <div>
+          <h1>Диски</h1>
+          <p className="subheading">Модели кованых дисков, размеры и публикация на сайте.</p>
+        </div>
+        {defaultTypeId ? (
+          <Link className={styles.manageDirections} href={`/wheels/types/editor?id=${encodeURIComponent(defaultTypeId)}`}>
+            Настроить страницу «Кованые диски»
+          </Link>
+        ) : null}
+      </div>
       <div className={styles.pageHead}><h2>Модели дисков</h2>{canCreate ? <button className="primary" type="button" onClick={openModelDialog}>Добавить модель</button> : null}</div>
       <div className={styles.catalogControls}>
         <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название модели…" />
