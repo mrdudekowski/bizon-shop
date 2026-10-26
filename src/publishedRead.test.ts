@@ -143,7 +143,7 @@ describe("published catalog readers", () => {
     expect(calls[0].sql).toContain("JOIN tire_types");
     expect(calls[0].sql).toContain("tire_models.status = 'published'");
     expect(calls[0].sql).toContain("tire_types.status = 'published'");
-    expect(calls[0].sql).toContain("ORDER BY tire_models.name, tire_models.id");
+    expect(calls[0].sql).toContain("ORDER BY COALESCE(tire_models.menu_order, 0), tire_models.name, tire_models.id");
   });
 
   it("reads only published variants in canonical order", async () => {

@@ -232,6 +232,16 @@ export type StubPatch = {
   notice?: { body: string } | null;
   proof?: { imageUrl: string | null; imageAlt: string; imageFocalX?: number; imageFocalY?: number; title: string; text: string } | null;
   cta?: { label: string; href: string; secondaryLabel?: string; secondaryHref?: string } | null;
+  footerContact?: {
+    phone?: string;
+    email?: string;
+    address?: string;
+    telegram?: string;
+    whatsapp?: string;
+    max?: string;
+    vk?: string;
+    instagram?: string;
+  };
   seoTitle?: string;
   seoDescription?: string;
   hero: {
@@ -278,6 +288,14 @@ type StubRow = {
   stub_hero_image_alt: string | null;
   stub_hero_image_focal_x?: number | null;
   stub_hero_image_focal_y?: number | null;
+  footer_phone?: string | null;
+  footer_email?: string | null;
+  footer_address?: string | null;
+  footer_telegram?: string | null;
+  footer_whatsapp?: string | null;
+  footer_max?: string | null;
+  footer_vk?: string | null;
+  footer_instagram?: string | null;
 };
 
 export function mapStubPatch(row: StubRow): StubPatch {
@@ -300,8 +318,19 @@ export function mapStubPatch(row: StubRow): StubPatch {
         ...(typeof row.stub_hero_image_focal_x === "number" ? { imageFocalX: row.stub_hero_image_focal_x } : {}),
         ...(typeof row.stub_hero_image_focal_y === "number" ? { imageFocalY: row.stub_hero_image_focal_y } : {}),
       };
+  const footerContact = {
+    ...(nonEmptyString(row.footer_phone ?? null) ? { phone: nonEmptyString(row.footer_phone ?? null)! } : {}),
+    ...(nonEmptyString(row.footer_email ?? null) ? { email: nonEmptyString(row.footer_email ?? null)! } : {}),
+    ...(nonEmptyString(row.footer_address ?? null) ? { address: nonEmptyString(row.footer_address ?? null)! } : {}),
+    ...(nonEmptyString(row.footer_telegram ?? null) ? { telegram: nonEmptyString(row.footer_telegram ?? null)! } : {}),
+    ...(nonEmptyString(row.footer_whatsapp ?? null) ? { whatsapp: nonEmptyString(row.footer_whatsapp ?? null)! } : {}),
+    ...(nonEmptyString(row.footer_max ?? null) ? { max: nonEmptyString(row.footer_max ?? null)! } : {}),
+    ...(nonEmptyString(row.footer_vk ?? null) ? { vk: nonEmptyString(row.footer_vk ?? null)! } : {}),
+    ...(nonEmptyString(row.footer_instagram ?? null) ? { instagram: nonEmptyString(row.footer_instagram ?? null)! } : {}),
+  };
   return {
     ...(row.documents !== undefined ? { documents: row.documents } : {}),
+    ...(Object.keys(footerContact).length > 0 ? { footerContact } : {}),
     ...(row.editorial_configured ? {
       ...(row.editorial_heading_configured ? { featuresHeading: row.editorial_features_heading ?? "" } : {}),
       ...(row.editorial_features_configured ? { features: row.features ?? [] } : {}),

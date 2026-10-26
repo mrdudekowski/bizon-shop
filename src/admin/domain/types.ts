@@ -352,6 +352,17 @@ export type PageSectionCopy = {
 
 export const LEGAL_PAGE_KEYS = ["privacy-policy", "warranty", "shop-delivery-returns"] as const;
 
+export type FooterContactDraft = {
+  phone: string;
+  email: string;
+  address: string;
+  telegram: string;
+  whatsapp: string;
+  max: string;
+  vk: string;
+  instagram: string;
+};
+
 export type StubPageDraft = {
   featuresHeading?: string;
   features?: { id: string; title: string; text: string }[];
@@ -359,6 +370,7 @@ export type StubPageDraft = {
   notice?: { body: string } | null;
   proof?: { image?: ImagePlacement | null; title: string; text: string } | null;
   cta?: (PageCta & { secondaryLabel?: string; secondaryHref?: string }) | null;
+  footerContact?: FooterContactDraft;
   id: Exclude<PageKey, "home" | "shop-home">;
   seoTitle: string;
   seoDescription: string;
@@ -523,7 +535,17 @@ export type TireModelListItem = {
   status: DocumentStatus;
   hasUnpublishedDraft: boolean;
   imageAssetId: string | null;
+  menuOrder?: number;
 };
+
+export type OrderableCatalogEntity =
+  | "tire-direction"
+  | "tire-model"
+  | "wheel-type"
+  | "wheel-model"
+  | "shop-category"
+  | "shop-product"
+  | "material";
 
 export type LeadRequestStatus =
   | "new"

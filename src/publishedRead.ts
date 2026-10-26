@@ -131,7 +131,7 @@ export async function readTireModelsByType(
       WHERE tire_models.status = 'published'
         AND tire_types.status = 'published'
         AND tire_types.slug = $1
-      ORDER BY tire_models.name, tire_models.id
+      ORDER BY COALESCE(tire_models.menu_order, 0), tire_models.name, tire_models.id
     `,
     [typeSlug],
   );
@@ -367,6 +367,7 @@ export async function readArticles(db: ReadDatabase): Promise<CmsArticle[]> {
     FROM tire_iq_articles
     LEFT JOIN media ON media.id = tire_iq_articles.featured_image_id
     WHERE tire_iq_articles.status = 'published'
+    ORDER BY COALESCE(tire_iq_articles.menu_order, 0), tire_iq_articles.published_at DESC NULLS LAST, tire_iq_articles.id
   `);
 
   return articleRows.map((articleRow) => mapArticle(articleRow as Parameters<typeof mapArticle>[0]));
@@ -398,7 +399,9 @@ export async function readStubPatch(db: ReadDatabase, key: string): Promise<Stub
   const [row] = await db.query(
     `
       SELECT pages.id, pages.stub_hero_configured, pages.editorial_heading_configured, pages.editorial_features_configured, pages.editorial_sections_configured, pages.editorial_notice_configured, pages.editorial_proof_configured, pages.editorial_cta_configured, pages.editorial_configured, pages.editorial_features_heading, pages.editorial_notice, pages.editorial_proof_title, pages.editorial_proof_text, pages.editorial_proof_image_alt, pages.editorial_cta_label, pages.editorial_cta_href, pages.editorial_secondary_label, pages.editorial_secondary_href, proof_media.url AS editorial_proof_image_url, pages.seo_seo_title, pages.seo_seo_description, pages.stub_hero_eyebrow, pages.stub_hero_title,
-        pages.stub_hero_lead, pages.stub_hero_image_alt, media.url AS stub_hero_image_url
+        pages.stub_hero_lead, pages.stub_hero_image_alt, media.url AS stub_hero_image_url,
+        pages.footer_phone, pages.footer_email, pages.footer_address,
+        pages.footer_telegram, pages.footer_whatsapp, pages.footer_max, pages.footer_vk, pages.footer_instagram
       FROM pages
       LEFT JOIN media ON media.id = pages.stub_hero_image_id
       LEFT JOIN media AS proof_media ON proof_media.id = pages.editorial_proof_image_id

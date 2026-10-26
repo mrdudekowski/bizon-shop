@@ -30,6 +30,7 @@ import type {
   LeadRequestItem,
   LeadRequestRecord,
   LeadRequestStatus,
+  OrderableCatalogEntity,
   PageDraft,
   PageKey,
   MediaDeletionHistoryItem,
@@ -855,6 +856,20 @@ async function mapPage(row: Row): Promise<PageDraft> {
       ...section(row.stub_hero_eyebrow, row.stub_hero_title, row.stub_hero_lead),
       image: placement(row.stub_hero_image_id, str(row.stub_hero_image_alt)),
     },
+    ...(key === "contact"
+      ? {
+          footerContact: {
+            phone: str(row.footer_phone),
+            email: str(row.footer_email),
+            address: str(row.footer_address),
+            telegram: str(row.footer_telegram),
+            whatsapp: str(row.footer_whatsapp),
+            max: str(row.footer_max),
+            vk: str(row.footer_vk),
+            instagram: str(row.footer_instagram),
+          },
+        }
+      : {}),
     documents: await readDocumentLinks("page", key),
   };
 }
@@ -1140,8 +1155,8 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return null;
     },
     async listTireDirections() {
-      const rows = await query("SELECT * FROM tire_types ORDER BY sort_order, name");
-      const items: TireDirection[] = [];
+      const rows = await query("SELECT * FROM tire_types ORDER BY COALESCE(sort_order, 0), name, id");
+      const items: (TireDirection & { sortOrder: number })[] = [];
       for (const row of rows) {
         const record = await present("tire-directions", str(row.id), await mapDirection(row), str(row.status));
         items.push({
@@ -1151,9 +1166,10 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           status: documentStatus(record),
           hasUnpublishedDraft: record.publishedSnapshot != null && !sameJson(record.draft, record.publishedSnapshot),
           imageAssetId: record.draft.mainImage?.assetId ?? null,
+          sortOrder: record.draft.sortOrder ?? 0,
         });
       }
-      return items;
+      return items.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "ru"));
     },
     async createTireDirection(input) {
       requirePermission("create_catalog_structure");
@@ -1245,7 +1261,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       await query("DELETE FROM tire_types WHERE id = $1", [Number(id)]);
     },
     async listTireModels() {
-      const rows = await query("SELECT * FROM tire_models ORDER BY name");
+      const rows = await query("SELECT * FROM tire_models ORDER BY COALESCE(menu_order, 0), name, id");
       const items: TireModelListItem[] = [];
       for (const row of rows) {
         const record = await present("tire-models", str(row.id), await mapTireModel(row), str(row.status));
@@ -1259,9 +1275,10 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           status: documentStatus(record),
           hasUnpublishedDraft: record.publishedSnapshot != null && !sameJson(record.draft, record.publishedSnapshot),
           imageAssetId: record.draft.mainImage?.assetId ?? null,
+          menuOrder: record.draft.menuOrder ?? 0,
         });
       }
-      return items;
+      return items.sort((a, b) => (a.menuOrder ?? 0) - (b.menuOrder ?? 0) || a.name.localeCompare(b.name, "ru"));
     },
     async getTireModel(id) {
       const row = await requireRow("tire_models", id);
@@ -1736,7 +1753,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       await query("DELETE FROM wheel_types WHERE id = $1", [Number(id)]);
     },
     async listWheelModels() {
-      const rows = await query("SELECT * FROM wheel_models ORDER BY name");
+      const rows = await query("SELECT * FROM wheel_models ORDER BY COALESCE(menu_order, 0), name, id");
       const items = [];
       for (const row of rows) {
         const record = await present("wheel-models", str(row.id), await mapWheelModel(row), str(row.status));
@@ -1749,9 +1766,10 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           status: documentStatus(record),
           hasUnpublishedDraft: record.publishedSnapshot != null && !sameJson(record.draft, record.publishedSnapshot),
           imageAssetId: record.draft.mainImage?.assetId ?? null,
+          menuOrder: record.draft.menuOrder ?? 0,
         });
       }
-      return items;
+      return items.sort((a, b) => (a.menuOrder ?? 0) - (b.menuOrder ?? 0) || a.name.localeCompare(b.name, "ru"));
     },
     async createWheelModel(input) {
       requirePermission("create_catalog_items");
@@ -1907,10 +1925,10 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       await query("DELETE FROM wheel_models WHERE id = $1", [Number(id)]);
     },
     async listShopCategories() {
-      const rows = await query("SELECT * FROM shop_categories ORDER BY sort_order, name");
+      const rows = await query("SELECT * FROM shop_categories ORDER BY COALESCE(sort_order, 0), name, id");
       const records = [];
       for (const row of rows) records.push(await presentCategory(row));
-      return records;
+      return records.sort((a, b) => (a.draft.sortOrder ?? 0) - (b.draft.sortOrder ?? 0) || a.draft.name.localeCompare(b.draft.name, "ru"));
     },
     async getShopCategory(id) {
       const row = await requireRow("shop_categories", id);
@@ -2071,7 +2089,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       if (deleted.length === 0) throw new AdminClientError("not_found");
     },
     async listShopProducts() {
-      const rows = await query("SELECT * FROM products ORDER BY name");
+      const rows = await query("SELECT * FROM products ORDER BY COALESCE(sort_order, 0), name, id");
       const items = [];
       for (const row of rows) {
         const record = await present("shop-products", str(row.id), await mapProduct(row), str(row.status));
@@ -2087,9 +2105,10 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           status: documentStatus(record),
           hasUnpublishedDraft: record.publishedSnapshot != null && !sameJson(record.draft, record.publishedSnapshot),
           imageAssetId: record.draft.mainImage?.assetId ?? null,
+          sortOrder: record.draft.sortOrder ?? 0,
         });
       }
-      return items;
+      return items.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name, "ru"));
     },
     async createShopProduct(input) {
       requirePermission("create_catalog_items");
@@ -2307,7 +2326,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const articles = await query(`SELECT tire_iq_articles.*,
         ARRAY(SELECT taxonomy.value FROM tire_iq_articles_taxonomy taxonomy
           WHERE taxonomy.parent_id = tire_iq_articles.id ORDER BY taxonomy."order") AS taxonomy
-        FROM tire_iq_articles ORDER BY title`);
+        FROM tire_iq_articles ORDER BY COALESCE(menu_order, 0), title, id`);
       const items = [];
       for (const row of articles) {
         const record = await present("materials", `article-${row.id}`, await mapArticle(row), str(row.status));
@@ -2318,9 +2337,10 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           status: documentStatus(record),
           hasUnpublishedDraft: record.publishedSnapshot != null && !sameJson(record.draft, record.publishedSnapshot),
           imageAssetId: record.draft.image?.assetId ?? null,
+          menuOrder: record.draft.menuOrder ?? 0,
         });
       }
-      return items;
+      return items.sort((a, b) => (a.menuOrder ?? 0) - (b.menuOrder ?? 0) || a.title.localeCompare(b.title, "ru"));
     },
     async getMaterial(id) {
       const match = /^article-(\d+)$/.exec(id);
@@ -2679,6 +2699,50 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       if (!found) throw new AdminClientError("not_found");
       return found;
     },
+    async updateCatalogOrder(entity: OrderableCatalogEntity, orderedIds: string[]): Promise<void> {
+      requirePermission(entity === "material" ? "edit_site_pages" : "edit_catalog");
+      if (!Array.isArray(orderedIds) || orderedIds.length === 0) return;
+
+      const configByEntity: Record<
+        OrderableCatalogEntity,
+        { table: string; column: "sort_order" | "menu_order"; collection: string; draftField: "sortOrder" | "menuOrder" }
+      > = {
+        "tire-direction": { table: "tire_types", column: "sort_order", collection: "tire-directions", draftField: "sortOrder" },
+        "tire-model": { table: "tire_models", column: "menu_order", collection: "tire-models", draftField: "menuOrder" },
+        "wheel-type": { table: "wheel_types", column: "sort_order", collection: "wheel-types", draftField: "sortOrder" },
+        "wheel-model": { table: "wheel_models", column: "menu_order", collection: "wheel-models", draftField: "menuOrder" },
+        "shop-category": { table: "shop_categories", column: "sort_order", collection: "shop-categories", draftField: "sortOrder" },
+        "shop-product": { table: "products", column: "sort_order", collection: "shop-products", draftField: "sortOrder" },
+        material: { table: "tire_iq_articles", column: "menu_order", collection: "materials", draftField: "menuOrder" },
+      };
+
+      const config = configByEntity[entity];
+      if (!config) throw new AdminClientError("publish_blocked");
+
+      for (const [index, rawId] of orderedIds.entries()) {
+        const order = index + 1;
+        const normalizedRaw = entity === "material" ? String(rawId).replace(/^article-/, "") : String(rawId);
+        const dbId = numericId(normalizedRaw);
+        if (dbId == null) continue;
+        const docId = entity === "material" ? `article-${dbId}` : String(dbId);
+
+        await query(
+          `UPDATE ${config.table} SET ${config.column} = $2, updated_at = now() WHERE id = $1`,
+          [dbId, order],
+        );
+        await query(
+          `UPDATE cms_drafts SET draft = jsonb_set(draft, ARRAY[$3], to_jsonb($2::int), true)
+           WHERE collection = $1 AND doc_id = $4`,
+          [config.collection, order, config.draftField, docId],
+        );
+        if (entity === "shop-category") {
+          await query(
+            "UPDATE pages_shop_catalog_tiles SET _order = $2 WHERE category_id = $1",
+            [dbId, order],
+          );
+        }
+      }
+    },
   };
 
   return new Proxy(adminClient, {
@@ -2826,6 +2890,23 @@ async function writePage(draft: PageDraft) {
     for (const [index, feature] of (draft.features ?? []).entries()) await query("INSERT INTO pages_editorial_features (id, _parent_id, _order, title, text) VALUES ($1,$2,$3,$4,$5)", [feature.id, parent.id, index, feature.title, feature.text]);
     await query("DELETE FROM pages_editorial_sections WHERE _parent_id=$1", [parent.id]);
     for (const [index, item] of (draft.sections ?? []).entries()) await query("INSERT INTO pages_editorial_sections (id, _parent_id, _order, heading, body) VALUES ($1,$2,$3,$4,$5)", [item.id, parent.id, index, item.heading, item.body]);
+  }
+  if (draft.id === "contact") {
+    const fc = draft.footerContact;
+    await query(
+      `UPDATE pages SET footer_phone=$2, footer_email=$3, footer_address=$4, footer_telegram=$5, footer_whatsapp=$6, footer_max=$7, footer_vk=$8, footer_instagram=$9 WHERE key=$1`,
+      [
+        draft.id,
+        fc?.phone ?? "",
+        fc?.email ?? "",
+        fc?.address ?? "",
+        fc?.telegram ?? "",
+        fc?.whatsapp ?? "",
+        fc?.max ?? "",
+        fc?.vk ?? "",
+        fc?.instagram ?? "",
+      ],
+    );
   }
   await query(
     `UPDATE pages SET seo_seo_title=$2, seo_seo_description=$3, stub_hero_eyebrow=$4, stub_hero_title=$5, stub_hero_lead=$6, stub_hero_image_id=$7, stub_hero_image_alt=$8, stub_hero_configured=true, status='published', updated_at=now() WHERE key=$1`,
