@@ -1,4 +1,4 @@
-import { getPageDefaults } from "./pages/defaults";
+import { getPageDefaults, stubPageDefaults } from "./pages/defaults";
 import type { PageKey } from "./pages/keys";
 import { mergeHomeContent, mergeShopHomeContent } from "./pages/merge";
 import type { HomePageContent, PageContentByKey, ShopHomePageContent } from "./pages/types";
@@ -12,6 +12,16 @@ export type PublishedStubOverlay = {
   notice?: { body: string } | null;
   proof?: { imageUrl?: string | null; imageAlt?: string; imageFocalX?: number; imageFocalY?: number; title: string; text: string } | null;
   cta?: { label: string; href: string; secondaryLabel?: string; secondaryHref?: string } | null;
+  footerContact?: {
+    phone?: string;
+    email?: string;
+    address?: string;
+    telegram?: string;
+    whatsapp?: string;
+    max?: string;
+    vk?: string;
+    instagram?: string;
+  };
   seoTitle?: string;
   seoDescription?: string;
   hero: {
@@ -39,9 +49,17 @@ export async function getPublishedStubOverlay(key: string): Promise<PublishedStu
   if (!STUB_KEYS.has(key)) return null;
   if (!publishedApiEnabled()) {
     if (isStaticBuild()) throw new Error("CONTENT_API_URL is required to build the static public site.");
-    return null;
+    const fallback = stubPageDefaults(key as Exclude<PageKey, "home" | "shop-home">);
+    return {
+      hero: fallback.hero,
+    };
   }
-  return fetchPublishedJson<PublishedStubOverlay>(`/v1/pages/${encodeURIComponent(key)}`);
+  const overlay = await fetchPublishedJson<PublishedStubOverlay>(`/v1/pages/${encodeURIComponent(key)}`);
+  if (overlay) return overlay;
+  const fallback = stubPageDefaults(key as Exclude<PageKey, "home" | "shop-home">);
+  return {
+    hero: fallback.hero,
+  };
 }
 
 async function fetchRequiredPagePatch<T>(key: "home" | "shop-home", path: string): Promise<T> {

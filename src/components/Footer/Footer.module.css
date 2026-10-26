@@ -86,6 +86,36 @@
   color: var(--bizon-coral-400);
 }
 
+.messengers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.messengerLink {
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-circle);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--bizon-white);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.messengerLink:hover {
+  border-color: var(--bizon-coral-500);
+  background: var(--bizon-coral-500);
+  color: var(--bizon-white) !important;
+  transform: translateY(-2px);
+}
+
 .nav a:focus-visible,
 .contact a:focus-visible,
 .brand a:focus-visible,

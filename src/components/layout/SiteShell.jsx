@@ -18,18 +18,19 @@ import { useEffect, useState } from "react";
 import { ROUTES } from "@/constants/navigation";
 import { fetchBrowserTireCatalog } from "@/lib/catalog/browserTireCatalog";
 import { buildMainDualPaneMenuSections, buildShopDualPaneMenuSections } from "@/lib/content/buildDualPaneMenu";
-import { fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
+import { fetchBrowserPublishedJson, fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
 
 /**
  * Client shell: header, burger menu, footer, scroll helpers.
  * Wraps all public site pages.
  */
-export function SiteShell({ children, mainMenu, shopMenu }) {
+export function SiteShell({ children, mainMenu, shopMenu, initialFooterContact = null }) {
   const { menuOpen, closeMenu, toggleMenu } = useMenuToggle();
   const [runtimeMainMenu, setRuntimeMainMenu] = useState(mainMenu);
   const [runtimeShopMenu, setRuntimeShopMenu] = useState(shopMenu);
   const [menuRefreshed, setMenuRefreshed] = useState(false);
   const [publishedCategories, setPublishedCategories] = useState(null);
+  const [footerContact, setFooterContact] = useState(initialFooterContact);
   const lenis = useLenis();
   const pathname = usePathname();
   const isShop = pathname === ROUTES.shop || pathname.startsWith(`${ROUTES.shop}/`);
@@ -54,6 +55,13 @@ export function SiteShell({ children, mainMenu, shopMenu }) {
       .catch((error) => {
         if (!controller.signal.aborted) console.warn("Could not refresh Shop footer categories; showing generated links.", error);
       });
+    void fetchBrowserPublishedJson("/v1/pages/contact", controller.signal)
+      .then((contactPatch) => {
+        if (!controller.signal.aborted && contactPatch && typeof contactPatch === "object") {
+          setFooterContact(contactPatch.footerContact ?? null);
+        }
+      })
+      .catch(() => {});
     return () => controller.abort();
   }, []);
 
@@ -109,7 +117,7 @@ export function SiteShell({ children, mainMenu, shopMenu }) {
 
         <main id="main" className={isShop ? "main--shop" : undefined}>{children}</main>
 
-        {isShop ? <ShopFooter catalogLinks={categoryLinks} /> : <Footer />}
+        {isShop ? <ShopFooter catalogLinks={categoryLinks} footerContact={footerContact} /> : <Footer footerContact={footerContact} />}
 
         <BackToTop onScrollToTop={() => scrollToTop(lenis)} />
         <MobileBottomNav context={isShop ? "shop" : "main"} cartCount={cart.count} />

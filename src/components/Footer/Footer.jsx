@@ -1,3 +1,3 @@
 import { SiteFooter } from "./SiteFooter";
 
-export const Footer = () => <SiteFooter surface="main" />;
+export const Footer = ({ footerContact } = {}) => <SiteFooter surface="main" footerContact={footerContact} />;
