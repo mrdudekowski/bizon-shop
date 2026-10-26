@@ -11,6 +11,7 @@ import type {
   LeadRequestStatus,
   MediaListItem,
   MediaDeletionHistoryItem,
+  OrderableCatalogEntity,
   PasswordResetHistoryItem,
   PageDraft,
   PageKey,
@@ -59,7 +60,7 @@ export type AdminClient = {
   hideWheelType(id: string): Promise<EntityRecord<WheelTypeDraft>>;
   deleteWheelType(id: string): Promise<void>;
   listWheelModels(): Promise<
-    { id: string; name: string; typeName: string; wheelTypeId: string; imageAssetId: string | null; status: DocumentStatus; hasUnpublishedDraft: boolean }[]
+    { id: string; name: string; typeName: string; wheelTypeId: string; imageAssetId: string | null; status: DocumentStatus; hasUnpublishedDraft: boolean; menuOrder?: number }[]
   >;
   createWheelModel(input: { name: string; wheelTypeId: string }): Promise<EntityRecord<WheelModelDraft>>;
   getWheelModel(id: string): Promise<EntityRecord<WheelModelDraft>>;
@@ -79,7 +80,7 @@ export type AdminClient = {
   saveShopSubcategory(id: string, input: { name: string; slug: string }): Promise<ShopSubcategoryDraft>;
   deleteShopSubcategory(id: string): Promise<void>;
   listShopProducts(): Promise<
-    { id: string; name: string; categoryName: string; categoryId: string; categoryPublished: boolean; isPublished: boolean; subcategoryId?: string; imageAssetId: string | null; status: DocumentStatus; hasUnpublishedDraft: boolean }[]
+    { id: string; name: string; categoryName: string; categoryId: string; categoryPublished: boolean; isPublished: boolean; subcategoryId?: string; imageAssetId: string | null; status: DocumentStatus; hasUnpublishedDraft: boolean; sortOrder?: number }[]
   >;
   createShopProduct(input: { name: string; categoryId: string }): Promise<EntityRecord<ShopProductDraft>>;
   getShopProduct(id: string): Promise<EntityRecord<ShopProductDraft>>;
@@ -100,6 +101,7 @@ export type AdminClient = {
       imageAssetId: string | null;
       status: DocumentStatus;
       hasUnpublishedDraft: boolean;
+      menuOrder?: number;
     }[]
   >;
   getMaterial(id: string): Promise<EntityRecord<ArticleDraft>>;
@@ -127,6 +129,7 @@ export type AdminClient = {
   cancelChangeSet(id: string): Promise<ChangeSet>;
   listRequests(): Promise<LeadRequestRecord[]>;
   updateRequestStatus(id: string, status: LeadRequestStatus): Promise<LeadRequestRecord>;
+  updateCatalogOrder(entity: OrderableCatalogEntity, orderedIds: string[]): Promise<void>;
   storageNotice(): Promise<string | null>;
 };
 

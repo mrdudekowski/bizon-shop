@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { browserAdminClient } from "@/admin/client/localStore";
+import { moveItemInList } from "@/admin/domain/catalogSort";
 import { resolveSiteCatalogPreview } from "@/admin/domain/catalogPreviewUrl";
 import { slugifyTitle } from "@/admin/domain/slug";
 import type { DocumentStatus, TireDirection, MediaListItem } from "@/admin/domain/types";
@@ -19,6 +20,7 @@ export function TireDirectionList() {
   const router = useRouter();
   const [role] = useAdminRole();
   const canCreate = useCanPerform("create_catalog_structure");
+  const canReorder = useCanPerform("edit_catalog");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [directions, setDirections] = useState<TireDirection[]>([]);
   const [assets, setAssets] = useState<MediaListItem[]>([]);
@@ -72,7 +74,22 @@ export function TireDirectionList() {
     const matchesStatus = status === "all" || direction.status === status;
     return matchesQuery && matchesStatus;
   });
+  const canMoveInCurrentView = canReorder && !query.trim() && status === "all";
   const { view, setView } = useCatalogView("tire-directions", directions.length);
+
+  async function moveDirection(index: number, delta: -1 | 1) {
+    const nextList = moveItemInList(visibleDirections, index, delta);
+    if (!nextList) return;
+    setDirections(nextList);
+    try {
+      await browserAdminClient().updateCatalogOrder(
+        "tire-direction",
+        nextList.map((item) => item.id),
+      );
+    } catch {
+      await reload();
+    }
+  }
 
   return (
     <main>
@@ -82,9 +99,9 @@ export function TireDirectionList() {
         <CatalogViewToggle view={view} onChange={setView} />
       </div>
       {loading ? <AdminLoading label="Загружаем направления…" /> : <ul className={view === "tiles" ? styles.catalogTiles : styles.catalogList}>
-        {visibleDirections.map((direction) => (
+        {visibleDirections.map((direction, index) => (
           <li key={direction.id}>
-          <CatalogRow view={view} href={`/tires/directions/editor?id=${encodeURIComponent(direction.id)}`} title={direction.name} meta={`/${direction.slug}`} icon="directions" imageUrl={assets.find((asset) => asset.id === direction.imageAssetId)?.dataUrl ?? resolveSiteCatalogPreview(direction.slug)} status={direction.status} hasUnpublishedDraft={direction.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeDirectionStatus(direction.id, nextStatus) : undefined} />
+          <CatalogRow view={view} href={`/tires/directions/editor?id=${encodeURIComponent(direction.id)}`} title={direction.name} meta={`/${direction.slug}`} icon="directions" imageUrl={assets.find((asset) => asset.id === direction.imageAssetId)?.dataUrl ?? resolveSiteCatalogPreview(direction.slug)} status={direction.status} hasUnpublishedDraft={direction.hasUnpublishedDraft} orderPosition={canMoveInCurrentView ? index + 1 : undefined} onMoveUp={canMoveInCurrentView ? () => moveDirection(index, -1) : undefined} onMoveDown={canMoveInCurrentView ? () => moveDirection(index, 1) : undefined} disableMoveUp={index === 0} disableMoveDown={index === visibleDirections.length - 1} onStatusChange={role === "admin" ? (nextStatus) => changeDirectionStatus(direction.id, nextStatus) : undefined} />
           </li>
         ))}
       </ul>}

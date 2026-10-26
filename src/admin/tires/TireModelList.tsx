@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { browserAdminClient } from "@/admin/client/localStore";
-import { sortModelsByPublicationStatus } from "@/admin/domain/catalogSort";
+import { moveItemInList, sortModelsByPublicationStatus } from "@/admin/domain/catalogSort";
 import { resolveMediaPreviewUrl, resolveSiteCatalogPreview } from "@/admin/domain/catalogPreviewUrl";
 import { slugifyTitle } from "@/admin/domain/slug";
 import type { DocumentStatus, TireDirection, TireModelListItem, MediaListItem } from "@/admin/domain/types";
@@ -33,6 +33,7 @@ export function TireModelList() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [role, setRole] = useAdminRole();
   const canCreate = useCanPerform("create_catalog_items");
+  const canReorder = useCanPerform("edit_catalog");
   const [loading, setLoading] = useState(true);
 
   async function reload() {
@@ -73,8 +74,26 @@ export function TireModelList() {
     return matchesName && matchesStatus && item.directionId === selectedDirectionId;
   });
   const visible = status === "all" ? sortModelsByPublicationStatus(filteredModels) : filteredModels;
+  const canMoveInCurrentView = canReorder && !query.trim() && status === "all";
   const modelsInDirection = items.filter((item) => item.directionId === selectedDirectionId).length;
   const { view, setView } = useCatalogView("tire-models", modelsInDirection);
+
+  async function moveModel(index: number, delta: -1 | 1) {
+    const nextList = moveItemInList(visible, index, delta);
+    if (!nextList) return;
+    setItems((current) => {
+      const otherDirections = current.filter((item) => item.directionId !== selectedDirectionId);
+      return [...otherDirections, ...nextList];
+    });
+    try {
+      await browserAdminClient().updateCatalogOrder(
+        "tire-model",
+        nextList.map((item) => item.id),
+      );
+    } catch {
+      await reload();
+    }
+  }
 
   function openCreate() {
     setName("");
@@ -154,9 +173,9 @@ export function TireModelList() {
       ) : (
         <>
           <ul className={view === "tiles" ? styles.catalogTiles : styles.catalogList}>
-            {visible.map((item) => (
+            {visible.map((item, index) => (
               <li key={item.id}>
-                <CatalogRow view={view} href={`/tires/editor?id=${encodeURIComponent(item.id)}`} title={item.name} meta={`${item.sizeCount} размеров`} icon="tires" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onDelete={role === "admin" ? () => deleteModel(item.id, item.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(item.id, nextStatus) : undefined} />
+                <CatalogRow view={view} href={`/tires/editor?id=${encodeURIComponent(item.id)}`} title={item.name} meta={`${item.sizeCount} размеров`} icon="tires" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} orderPosition={canMoveInCurrentView ? index + 1 : undefined} onMoveUp={canMoveInCurrentView ? () => moveModel(index, -1) : undefined} onMoveDown={canMoveInCurrentView ? () => moveModel(index, 1) : undefined} disableMoveUp={index === 0} disableMoveDown={index === visible.length - 1} onDelete={role === "admin" ? () => deleteModel(item.id, item.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(item.id, nextStatus) : undefined} />
               </li>
             ))}
           </ul>

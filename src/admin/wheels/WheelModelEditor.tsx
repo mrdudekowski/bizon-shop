@@ -216,14 +216,6 @@ export function WheelModelEditor({ id }: { id: string }) {
           />
           Показывать в меню
         </label>
-        <label className={styles.field}>
-          Порядок в меню
-          <input
-            type="number"
-            value={draft.menuOrder}
-            onChange={(event) => patch({ menuOrder: Number(event.target.value) || 0 })}
-          />
-        </label>
       </section>
       <section className={styles.section}>
         <h2>Характеристики</h2>

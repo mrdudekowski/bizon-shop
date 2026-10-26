@@ -584,7 +584,6 @@ export function TireModelEditor({ id }: { id: string }) {
       <section>
         <h2>Меню</h2>
         <label><input type="checkbox" checked={draft.showInMenu} onChange={(event) => patch({ showInMenu: event.target.checked })} />Показывать в меню</label>
-        <label>Порядок в меню<input type="number" value={draft.menuOrder} onChange={(event) => patch({ menuOrder: Number(event.target.value) || 0 })} /></label>
       </section>
       <section>
         <h2>Для поиска</h2>

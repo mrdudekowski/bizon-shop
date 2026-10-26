@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { browserAdminClient } from "@/admin/client/localStore";
-import { sortModelsByPublicationStatus } from "@/admin/domain/catalogSort";
+import { moveItemInList, sortModelsByPublicationStatus } from "@/admin/domain/catalogSort";
 import { hydrateMissingImageAssetIds } from "@/admin/domain/hydrateWheelPreviewAssets";
 import { slugifyTitle } from "@/admin/domain/slug";
 import type { DocumentStatus, EntityRecord, MediaListItem, WheelTypeDraft } from "@/admin/domain/types";
@@ -32,6 +32,7 @@ export function WheelModelList() {
   const [status, setStatus] = useState<"all" | DocumentStatus>("all");
   const [role, setRole] = useAdminRole();
   const canCreate = useCanPerform("create_catalog_items");
+  const canReorder = useCanPerform("edit_catalog");
 
   async function reload() {
     const client = browserAdminClient();
@@ -70,7 +71,22 @@ export function WheelModelList() {
     return matchesQuery && matchesStatus;
   });
   const filteredModels = status === "all" ? sortModelsByPublicationStatus(matchingModels) : matchingModels;
+  const canMoveInCurrentView = canReorder && !query.trim() && status === "all";
   const { view, setView } = useCatalogView("wheel-models", models.length);
+
+  async function moveModel(index: number, delta: -1 | 1) {
+    const nextList = moveItemInList(filteredModels, index, delta);
+    if (!nextList) return;
+    setModels(nextList);
+    try {
+      await browserAdminClient().updateCatalogOrder(
+        "wheel-model",
+        nextList.map((item) => item.id),
+      );
+    } catch {
+      await reload();
+    }
+  }
 
   function openModelDialog() {
     setName("");
@@ -106,7 +122,7 @@ export function WheelModelList() {
         <CatalogViewToggle view={view} onChange={setView} />
       </div>
       {filteredModels.length === 0 ? <p className={styles.empty}>{models.length > 0 ? "По заданным фильтрам модели не найдены" : "Моделей дисков пока нет"}</p> : <>
-        <ul className={view === "tiles" ? styles.catalogTiles : styles.catalogList}>{filteredModels.map((model) => <li key={model.id}><CatalogRow view={view} href={`/wheels/editor?id=${encodeURIComponent(model.id)}`} title={model.name} icon="wheels" imageUrl={assets.find((asset) => asset.id === model.imageAssetId)?.dataUrl} status={model.status} hasUnpublishedDraft={model.hasUnpublishedDraft} onDelete={role === "admin" ? () => deleteModel(model.id, model.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(model.id, nextStatus) : undefined} /></li>)}</ul>
+        <ul className={view === "tiles" ? styles.catalogTiles : styles.catalogList}>{filteredModels.map((model, index) => <li key={model.id}><CatalogRow view={view} href={`/wheels/editor?id=${encodeURIComponent(model.id)}`} title={model.name} icon="wheels" imageUrl={assets.find((asset) => asset.id === model.imageAssetId)?.dataUrl} status={model.status} hasUnpublishedDraft={model.hasUnpublishedDraft} orderPosition={canMoveInCurrentView ? index + 1 : undefined} onMoveUp={canMoveInCurrentView ? () => moveModel(index, -1) : undefined} onMoveDown={canMoveInCurrentView ? () => moveModel(index, 1) : undefined} disableMoveUp={index === 0} disableMoveDown={index === filteredModels.length - 1} onDelete={role === "admin" ? () => deleteModel(model.id, model.status) : undefined} onStatusChange={role === "admin" ? (nextStatus) => changeModelStatus(model.id, nextStatus) : undefined} /></li>)}</ul>
         <div className={styles.listFoot}>Показано {filteredModels.length} моделей</div>
       </>}
       <CatalogCreateDialog

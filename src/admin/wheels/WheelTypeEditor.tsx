@@ -134,14 +134,6 @@ export function WheelTypeEditor({ id }: { id: string }) {
           Короткое описание
           <textarea value={draft.shortDescription ?? ""} onChange={(event) => patch({ shortDescription: event.target.value })} />
         </label>
-        <label className={styles.field}>
-          Порядок
-          <input
-            type="number"
-            value={draft.sortOrder}
-            onChange={(event) => patch({ sortOrder: Number(event.target.value) || 0 })}
-          />
-        </label>
         <label className={styles.check}>
           <input
             type="checkbox"

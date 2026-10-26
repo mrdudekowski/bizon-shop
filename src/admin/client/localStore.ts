@@ -33,6 +33,7 @@ import type {
   PageSectionCopy,
   MediaListItem,
   MediaUsageRecord,
+  OrderableCatalogEntity,
   EntityRecord,
   EditorCapability,
   StatusEntity,
@@ -858,14 +859,17 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async listTireDirections() {
-      return load().directions.map((record) => ({
-        id: record.id,
-        name: record.draft.name,
-        slug: record.draft.slug,
-        status: listStatus(record),
-        hasUnpublishedDraft: hasUnpublishedDraft(record),
-        imageAssetId: record.draft.mainImage?.assetId ?? null,
-      }));
+      return load().directions
+        .slice()
+        .sort((a, b) => (a.draft.sortOrder ?? 0) - (b.draft.sortOrder ?? 0) || a.draft.name.localeCompare(b.draft.name, "ru"))
+        .map((record) => ({
+          id: record.id,
+          name: record.draft.name,
+          slug: record.draft.slug,
+          status: listStatus(record),
+          hasUnpublishedDraft: hasUnpublishedDraft(record),
+          imageAssetId: record.draft.mainImage?.assetId ?? null,
+        }));
     },
 
     async createTireDirection(input) {
@@ -944,19 +948,22 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async listTireModels() {
       const state = load();
-      return state.models.map((record): TireModelListItem => {
-        const direction = state.directions.find((item) => item.id === record.draft.directionId);
-        return {
-          id: record.id,
-          name: record.draft.name,
-          directionId: record.draft.directionId,
-          directionName: direction?.draft.name ?? "",
-          sizeCount: record.draft.sizes.length,
-          status: listStatus(record),
-          hasUnpublishedDraft: hasUnpublishedDraft(record),
-          imageAssetId: record.draft.mainImage?.assetId ?? null,
-        };
-      });
+      return state.models
+        .map((record): TireModelListItem => {
+          const direction = state.directions.find((item) => item.id === record.draft.directionId);
+          return {
+            id: record.id,
+            name: record.draft.name,
+            directionId: record.draft.directionId,
+            directionName: direction?.draft.name ?? "",
+            sizeCount: record.draft.sizes.length,
+            status: listStatus(record),
+            hasUnpublishedDraft: hasUnpublishedDraft(record),
+            imageAssetId: record.draft.mainImage?.assetId ?? null,
+            menuOrder: record.draft.menuOrder ?? 0,
+          };
+        })
+        .sort((a, b) => (a.menuOrder ?? 0) - (b.menuOrder ?? 0) || a.name.localeCompare(b.name, "ru"));
     },
 
     async getTireModel(id) {
@@ -1114,15 +1121,18 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async listWheelModels() {
       const state = load();
-      return state.wheelModels.map((record) => ({
-        id: record.id,
-        name: record.draft.name,
-        wheelTypeId: record.draft.wheelTypeId,
-        imageAssetId: record.draft.mainImage?.assetId ?? null,
-        typeName: state.wheelTypes.find((item) => item.id === record.draft.wheelTypeId)?.draft.name ?? "",
-        status: listStatus(record),
-        hasUnpublishedDraft: hasUnpublishedDraft(record),
-      }));
+      return state.wheelModels
+        .map((record) => ({
+          id: record.id,
+          name: record.draft.name,
+          wheelTypeId: record.draft.wheelTypeId,
+          imageAssetId: record.draft.mainImage?.assetId ?? null,
+          typeName: state.wheelTypes.find((item) => item.id === record.draft.wheelTypeId)?.draft.name ?? "",
+          status: listStatus(record),
+          hasUnpublishedDraft: hasUnpublishedDraft(record),
+          menuOrder: record.draft.menuOrder ?? 0,
+        }))
+        .sort((a, b) => (a.menuOrder ?? 0) - (b.menuOrder ?? 0) || a.name.localeCompare(b.name, "ru"));
     },
 
     async createWheelModel(input: { name: string; wheelTypeId: string }) {
@@ -1177,7 +1187,9 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async listShopCategories() {
-      return load().shopCategories;
+      return load().shopCategories
+        .slice()
+        .sort((a, b) => (a.draft.sortOrder ?? 0) - (b.draft.sortOrder ?? 0) || a.draft.name.localeCompare(b.draft.name, "ru"));
     },
 
     async getShopCategory(id: string) {
@@ -1281,24 +1293,27 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async listShopProducts() {
       const state = load();
-      return state.shopProducts.map((record) => {
-        const visibleCategoryId = record.publishedSnapshot?.categoryId ?? record.draft.categoryId;
-        const category = state.shopCategories.find((item) => item.id === visibleCategoryId);
-        const categoryPublished = category?.publishedSnapshot != null && !category.hidden;
-        const savedStatus = listStatus(record);
-        return {
-          id: record.id,
-          name: record.draft.name,
-          categoryId: record.draft.categoryId,
-          imageAssetId: record.draft.mainImage?.assetId ?? null,
-          subcategoryId: record.draft.subcategoryId,
-          categoryName: state.shopCategories.find((item) => item.id === record.draft.categoryId)?.draft.name ?? "",
-          categoryPublished,
-          isPublished: record.publishedSnapshot != null && !record.hidden,
-          status: savedStatus === "on_site" && !categoryPublished ? "draft" : savedStatus,
-          hasUnpublishedDraft: hasUnpublishedDraft(record),
-        };
-      });
+      return state.shopProducts
+        .map((record) => {
+          const visibleCategoryId = record.publishedSnapshot?.categoryId ?? record.draft.categoryId;
+          const category = state.shopCategories.find((item) => item.id === visibleCategoryId);
+          const categoryPublished = category?.publishedSnapshot != null && !category.hidden;
+          const savedStatus = listStatus(record);
+          return {
+            id: record.id,
+            name: record.draft.name,
+            categoryId: record.draft.categoryId,
+            imageAssetId: record.draft.mainImage?.assetId ?? null,
+            subcategoryId: record.draft.subcategoryId,
+            categoryName: state.shopCategories.find((item) => item.id === record.draft.categoryId)?.draft.name ?? "",
+            categoryPublished,
+            isPublished: record.publishedSnapshot != null && !record.hidden,
+            status: savedStatus === "on_site" && !categoryPublished ? "draft" : savedStatus,
+            hasUnpublishedDraft: hasUnpublishedDraft(record),
+            sortOrder: record.draft.sortOrder ?? 0,
+          };
+        })
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name, "ru"));
     },
 
     async createShopProduct(input: { name: string; categoryId: string }) {
@@ -1405,14 +1420,17 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async listMaterials() {
-      return load().materials.map((record) => ({
-        id: record.id,
-        title: record.draft.title,
-        kind: record.draft.kind,
-        imageAssetId: record.draft.image?.assetId ?? null,
-        status: listStatus(record),
-        hasUnpublishedDraft: hasUnpublishedDraft(record),
-      }));
+      return load().materials
+        .map((record) => ({
+          id: record.id,
+          title: record.draft.title,
+          kind: record.draft.kind,
+          imageAssetId: record.draft.image?.assetId ?? null,
+          status: listStatus(record),
+          hasUnpublishedDraft: hasUnpublishedDraft(record),
+          menuOrder: record.draft.menuOrder ?? 0,
+        }))
+        .sort((a, b) => (a.menuOrder ?? 0) - (b.menuOrder ?? 0) || a.title.localeCompare(b.title, "ru"));
     },
 
     async getMaterial(id: string) {
@@ -1673,6 +1691,49 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       throw new Error("not_found");
     },
 
+    async updateCatalogOrder(entity: OrderableCatalogEntity, orderedIds: string[]) {
+      const state = load();
+      requirePermission(state, entity === "material" ? "edit_site_pages" : "edit_catalog");
+      const setOrderOnList = <T extends { sortOrder?: number; menuOrder?: number }>(
+        records: EntityRecord<T>[],
+        field: "sortOrder" | "menuOrder",
+      ) => {
+        orderedIds.forEach((id, index) => {
+          const record = records.find((item) => item.id === id);
+          if (!record) return;
+          const order = index + 1;
+          record.draft = { ...record.draft, [field]: order };
+          if (record.savedDraft) record.savedDraft = { ...record.savedDraft, [field]: order };
+          if (record.publishedSnapshot) record.publishedSnapshot = { ...record.publishedSnapshot, [field]: order };
+        });
+      };
+
+      switch (entity) {
+        case "tire-direction":
+          setOrderOnList(state.directions, "sortOrder");
+          break;
+        case "tire-model":
+          setOrderOnList(state.models, "menuOrder");
+          break;
+        case "wheel-type":
+          setOrderOnList(state.wheelTypes, "sortOrder");
+          break;
+        case "wheel-model":
+          setOrderOnList(state.wheelModels, "menuOrder");
+          break;
+        case "shop-category":
+          setOrderOnList(state.shopCategories, "sortOrder");
+          break;
+        case "shop-product":
+          setOrderOnList(state.shopProducts, "sortOrder");
+          break;
+        case "material":
+          setOrderOnList(state.materials, "menuOrder");
+          break;
+      }
+      save(state);
+    },
+
     async storageNotice() {
       load();
       if (!repairedNoticePending) return null;
@@ -1757,6 +1818,9 @@ function remoteAdminClient(): AdminClient {
     const outgoingArgs = [...args];
     if (method.startsWith("save") && entityKey && savedDraftByEntity.has(entityKey)) {
       outgoingArgs.push(savedDraftByEntity.get(entityKey));
+    }
+    if (method === "updateCatalogOrder") {
+      savedDraftByEntity.clear();
     }
     const result = await request("/v1/admin", {
       method: "POST",

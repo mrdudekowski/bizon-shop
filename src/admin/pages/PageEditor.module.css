@@ -43,3 +43,47 @@
   min-width: 0;
   box-sizing: border-box;
 }
+
+.contactGrid,
+.messengerGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.messengerField {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.messengerLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.messengerIcon {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-muted, #f1f5f9);
+  color: var(--ink, #0f172a);
+}
+
+@media (min-width: 720px) {
+  .contactGrid,
+  .messengerGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

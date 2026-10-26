@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { browserAdminClient } from "@/admin/client/localStore";
+import { moveItemInList } from "@/admin/domain/catalogSort";
 import { slugifyTitle } from "@/admin/domain/slug";
 import type { EntityRecord, ShopCategoryDraft } from "@/admin/domain/types";
 import { Icon } from "@/admin/ui/Icon";
@@ -21,6 +22,7 @@ export function ShopProductList() {
   const router = useRouter();
   const [role] = useAdminRole();
   const canCreate = useCanPerform("create_catalog_structure");
+  const canReorder = useCanPerform("edit_catalog");
   const categoryDialogRef = useRef<HTMLDialogElement>(null);
   const [categories, setCategories] = useState<EntityRecord<ShopCategoryDraft>[]>([]);
   const [productCounts, setProductCounts] = useState<Record<string, number>>({});
@@ -66,6 +68,20 @@ export function ShopProductList() {
   async function changeCategoryStatus(id: string, status: "draft" | "on_site" | "hidden") {
     await browserAdminClient().changeDocumentStatus("shop-category", id, status);
     await reload();
+  }
+
+  async function moveCategory(index: number, delta: -1 | 1) {
+    const nextList = moveItemInList(categories, index, delta);
+    if (!nextList) return;
+    setCategories(nextList);
+    try {
+      await browserAdminClient().updateCatalogOrder(
+        "shop-category",
+        nextList.map((item) => item.id),
+      );
+    } catch {
+      await reload();
+    }
   }
 
   function openCategoryDialog() {
@@ -126,7 +142,7 @@ export function ShopProductList() {
 
       {!loading && !error && categories.length > 0 ? (
         <ul className={view === "tiles" ? styles.catalogTiles : styles.catalogList} aria-label="Категории Shop">
-          {categories.map((category) => (
+          {categories.map((category, index) => (
             <li key={category.id}>
               <CatalogRow
                 view={view}
@@ -139,6 +155,11 @@ export function ShopProductList() {
                 imageOnWhiteBackground
                 largeShopCategory
                 status={category.hidden ? "hidden" : category.publishedSnapshot == null ? "draft" : "on_site"}
+                orderPosition={canReorder ? index + 1 : undefined}
+                onMoveUp={canReorder ? () => moveCategory(index, -1) : undefined}
+                onMoveDown={canReorder ? () => moveCategory(index, 1) : undefined}
+                disableMoveUp={index === 0}
+                disableMoveDown={index === categories.length - 1}
                 onStatusChange={role === "admin" ? (status) => changeCategoryStatus(category.id, status) : undefined}
               />
             </li>

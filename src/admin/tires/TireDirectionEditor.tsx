@@ -131,14 +131,6 @@ export function TireDirectionEditor({ id }: { id: string }) {
           />
         </label>
         <label>
-          Порядок
-          <input
-            type="number"
-            value={draft.sortOrder}
-            onChange={(event) => patch({ sortOrder: Number(event.target.value) || 0 })}
-          />
-        </label>
-        <label>
           <input
             type="checkbox"
             checked={draft.showInMenu}

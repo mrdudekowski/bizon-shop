@@ -30,6 +30,11 @@ export function CatalogRow({
   view = "list",
   status,
   hasUnpublishedDraft = false,
+  orderPosition,
+  onMoveUp,
+  onMoveDown,
+  disableMoveUp = false,
+  disableMoveDown = false,
   onDelete,
   onStatusChange,
 }: {
@@ -44,6 +49,11 @@ export function CatalogRow({
   view?: CatalogView;
   status?: DocumentStatus;
   hasUnpublishedDraft?: boolean;
+  orderPosition?: number;
+  onMoveUp?: () => Promise<void> | void;
+  onMoveDown?: () => Promise<void> | void;
+  disableMoveUp?: boolean;
+  disableMoveDown?: boolean;
   onDelete?: () => Promise<void>;
   onStatusChange?: (status: DocumentStatus) => Promise<void>;
 }) {
@@ -132,8 +142,48 @@ export function CatalogRow({
     </dialog>
   );
 
+  const hasOrderControls = Boolean(onMoveUp || onMoveDown);
+
+  const orderControls = hasOrderControls ? (
+    <span className={styles.rowOrderControls}>
+      {typeof orderPosition === "number" ? (
+        <span className={styles.rowOrderBadge} title={`Позиция в списке: ${orderPosition}`}>
+          #{orderPosition}
+        </span>
+      ) : null}
+      <button
+        type="button"
+        className={styles.rowOrderButton}
+        aria-label={`Переместить выше: ${title}`}
+        title="Переместить выше"
+        disabled={disableMoveUp || !onMoveUp}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          void onMoveUp?.();
+        }}
+      >
+        ↑
+      </button>
+      <button
+        type="button"
+        className={styles.rowOrderButton}
+        aria-label={`Переместить ниже: ${title}`}
+        title="Переместить ниже"
+        disabled={disableMoveDown || !onMoveDown}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          void onMoveDown?.();
+        }}
+      >
+        ↓
+      </button>
+    </span>
+  ) : null;
+
   if (view === "tiles") {
-    if (!onDelete && !onStatusChange) {
+    if (!onDelete && !onStatusChange && !hasOrderControls) {
       return (
         <Link className={styles.catalogTile} href={href}>
           {tileVisual}
@@ -150,7 +200,10 @@ export function CatalogRow({
           </Link>
           <div className={styles.tileActions}>
             {status || hasUnpublishedDraft ? tileBadges : <span />}
-            {onDelete ? <button type="button" className={styles.rowDelete} aria-label={`Удалить: ${title}`} title="Удалить" onClick={openDelete}><Icon name="trash" size={17} /></button> : null}
+            <span className={styles.tileActionButtons}>
+              {orderControls}
+              {onDelete ? <button type="button" className={styles.rowDelete} aria-label={`Удалить: ${title}`} title="Удалить" onClick={openDelete}><Icon name="trash" size={17} /></button> : null}
+            </span>
           </div>
         </article>
         {deleteDialog}
@@ -158,7 +211,7 @@ export function CatalogRow({
     );
   }
 
-  if (!onDelete && !onStatusChange) {
+  if (!onDelete && !onStatusChange && !hasOrderControls) {
     return (
       <Link className={`${styles.catalogRow} ${largeShopCategory ? styles.catalogRowLarge : ""}`} href={href}>
         {rowContent}
@@ -177,6 +230,7 @@ export function CatalogRow({
         {rowContent}
       </Link>
       <div className={styles.rowActions}>
+        {orderControls}
         {onDelete ? <button
           type="button"
           className={styles.rowDelete}

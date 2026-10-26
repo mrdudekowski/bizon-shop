@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { browserAdminClient } from "@/admin/client/localStore";
 import { actionErrorText, DOCUMENT_STATUS } from "@/admin/client/actionFeedback";
+import { moveItemInList } from "@/admin/domain/catalogSort";
 import type { EntityRecord, ImagePlacement, ShopCategoryDraft, ShopHomePageDraft } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
 import { DocumentReviewFooter } from "@/admin/ui/DocumentReviewFooter";
@@ -75,6 +76,15 @@ export function ShopShowcaseEditor() {
   function patchPlacement(categoryId: string, field: "icon" | "image" | "carouselImage", image: ImagePlacement | null | undefined) {
     patchTile(categoryId, (tile) => ({ ...tile, [field]: image ?? null }));
   }
+  function moveTile(index: number, delta: -1 | 1) {
+    const swapped = moveItemInList(orderedTiles, index, delta);
+    if (!swapped) return;
+    const reindexed = swapped.map((tile, nextIndex) => ({ ...tile, sortOrder: nextIndex + 1 }));
+    setDraft((current) => current == null ? current : ({
+      ...current,
+      catalog: { ...current.catalog, tiles: reindexed },
+    }));
+  }
   async function save() {
     setSaving(true); setMessage("");
     try {
@@ -102,17 +112,36 @@ export function ShopShowcaseEditor() {
       {panel === "carousel" ? <section className={styles.list} aria-label="Карусель главной">
         <h2>Карусель категорий на главной</h2>
         <p>Название и адрес ссылки берутся из категории. Здесь настраиваются показ и фотография.</p>
-        {orderedTiles.map((tile) => <article className={styles.card} key={tile.categoryId}>
-          <div className={styles.cardHead}><h3>{tile.title || `Категория ${tile.categoryId}`}</h3><label className={styles.check}><input type="checkbox" checked={tile.carouselVisible} onChange={(e) => patchTile(tile.categoryId, (row) => ({ ...row, carouselVisible: e.target.checked }))} /> Показывать в карусели</label></div>
+        {orderedTiles.map((tile, index) => <article className={styles.card} key={tile.categoryId}>
+          <div className={styles.cardHead}>
+            <h3>{tile.title || `Категория ${tile.categoryId}`}</h3>
+            <div className={styles.cardHeadActions}>
+              <span className={styles.orderControls}>
+                <span className={styles.orderBadge}>#{index + 1}</span>
+                <button type="button" className={styles.orderBtn} aria-label={`Переместить выше: ${tile.title}`} disabled={index === 0} onClick={() => moveTile(index, -1)}>↑</button>
+                <button type="button" className={styles.orderBtn} aria-label={`Переместить ниже: ${tile.title}`} disabled={index === orderedTiles.length - 1} onClick={() => moveTile(index, 1)}>↓</button>
+              </span>
+              <label className={styles.check}><input type="checkbox" checked={tile.carouselVisible} onChange={(e) => patchTile(tile.categoryId, (row) => ({ ...row, carouselVisible: e.target.checked }))} /> Показывать в карусели</label>
+            </div>
+          </div>
           <PlacementFields label="Фото для карусели" value={tile.carouselImage} onChange={(image) => patchPlacement(tile.categoryId, "carouselImage", image)} />
         </article>)}
       </section> : null}
       {panel === "tiles" ? <section className={styles.list} aria-label="Плитки категорий">
         <h2>Плитки категорий</h2>
-        {orderedTiles.map((tile) => <article className={styles.card} key={tile.categoryId}>
+        {orderedTiles.map((tile, index) => <article className={styles.card} key={tile.categoryId}>
+          <div className={styles.cardHead}>
+            <h3>{tile.title || `Категория ${tile.categoryId}`}</h3>
+            <div className={styles.cardHeadActions}>
+              <span className={styles.orderControls}>
+                <span className={styles.orderBadge}>#{index + 1}</span>
+                <button type="button" className={styles.orderBtn} aria-label={`Переместить выше: ${tile.title}`} disabled={index === 0} onClick={() => moveTile(index, -1)}>↑</button>
+                <button type="button" className={styles.orderBtn} aria-label={`Переместить ниже: ${tile.title}`} disabled={index === orderedTiles.length - 1} onClick={() => moveTile(index, 1)}>↓</button>
+              </span>
+              <label className={styles.check}><input type="checkbox" checked={tile.visible} onChange={(e) => patchTile(tile.categoryId, (row) => ({ ...row, visible: e.target.checked }))} /> Показывать на сайте</label>
+            </div>
+          </div>
           <label className={styles.field}>Название плитки<input value={tile.title} onChange={(e) => patchTile(tile.categoryId, (row) => ({ ...row, title: e.target.value }))} /></label>
-          <label className={styles.field}>Порядок<input type="number" value={tile.sortOrder} onChange={(e) => patchTile(tile.categoryId, (row) => ({ ...row, sortOrder: Number(e.target.value) || 0 }))} /></label>
-          <label className={styles.check}><input type="checkbox" checked={tile.visible} onChange={(e) => patchTile(tile.categoryId, (row) => ({ ...row, visible: e.target.checked }))} /> Показывать на сайте</label>
           <PlacementFields label="Иконка" value={tile.icon} onChange={(image) => patchPlacement(tile.categoryId, "icon", image)} previewSurface="dark" uploadMode="new-asset" />
           <PlacementFields label="Изображение плитки" value={tile.image} onChange={(image) => patchPlacement(tile.categoryId, "image", image)} />
         </article>)}

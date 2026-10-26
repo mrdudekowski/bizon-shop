@@ -23,7 +23,13 @@
   background: #fff;
 }
 .cardHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
-.cardHead h3 { min-width: 0; overflow-wrap: anywhere; }
+.cardHead h3 { min-width: 0; overflow-wrap: anywhere; margin: 0; }
+.cardHeadActions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.orderControls { display: inline-flex; align-items: center; gap: 4px; }
+.orderBadge { padding: 0 6px; color: var(--ink-muted, #64748b); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.orderBtn { display: inline-grid; width: 32px; height: 32px; min-height: 32px; place-items: center; padding: 0; border: 1px solid #dfe4eb; border-radius: 8px; background: #fff; color: #101820; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.orderBtn:hover:not(:disabled) { border-color: #0bd5b3; background: #f8fafc; }
+.orderBtn:disabled { opacity: 0.35; cursor: not-allowed; }
 .field { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; }
 .field input,
 .field textarea { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }

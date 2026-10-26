@@ -21,13 +21,35 @@ const STATUS_OPTIONS: readonly { value: LeadRequestStatus; label: string }[] = [
 const SOURCE_LABELS: Record<string, string> = {
   tire_cart: "Корзина шин BIZON",
   shop_cart: "Корзина BIZON Shop",
+  cart: "Корзина",
   contact: "Форма контактов",
+  branding: "Брендирование",
+  supplier: "Стать поставщиком",
+  warranty: "Гарантия",
+  tire_selection: "Подбор шин",
+  wheel_selection: "Подбор дисков",
   selection: "Подбор шин / дисков",
-  supplier: "Анкета поставщика",
+  procurement: "Запрос по спецификации",
+  product_quick_order: "Быстрый заказ товара",
+  hero_cta: "Первый экран (Hero)",
+  footer_cta: "Подвал сайта",
+  custom: "Другое",
 };
 
+const SOURCE_FILTER_OPTIONS: readonly { value: string; label: string }[] = [
+  { value: "tire_cart", label: "Корзина шин BIZON" },
+  { value: "shop_cart", label: "Корзина BIZON Shop" },
+  { value: "contact", label: "Форма контактов" },
+  { value: "branding", label: "Брендирование" },
+  { value: "wheel_selection", label: "Подбор дисков" },
+  { value: "tire_selection", label: "Подбор шин" },
+  { value: "procurement", label: "Запрос по спецификации" },
+  { value: "supplier", label: "Стать поставщиком" },
+  { value: "warranty", label: "Гарантия" },
+];
+
 function formatSource(sourceForm: string): string {
-  return SOURCE_LABELS[sourceForm] ?? sourceForm;
+  return SOURCE_LABELS[sourceForm] ?? SOURCE_LABELS[sourceForm.replace(/-/g, "_")] ?? "Обращение с сайта";
 }
 
 export function RequestsList() {
@@ -134,9 +156,11 @@ export function RequestsList() {
           Источник
           <select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>
             <option value="">Все источники</option>
-            <option value="tire_cart">Корзина шин BIZON</option>
-            <option value="shop_cart">Корзина BIZON Shop</option>
-            <option value="contact">Форма контактов</option>
+            {SOURCE_FILTER_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
           </select>
         </label>
       </div>

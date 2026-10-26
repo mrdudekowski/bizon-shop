@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { sortModelsByPublicationStatus } from "./catalogSort";
+import { moveItemInList, sortModelsByPublicationStatus } from "./catalogSort";
+
+describe("moveItemInList", () => {
+  it("swaps neighboring items and returns null at boundaries", () => {
+    const items = ["a", "b", "c"];
+    expect(moveItemInList(items, 0, -1)).toBeNull();
+    expect(moveItemInList(items, 2, 1)).toBeNull();
+    expect(moveItemInList(items, 1, -1)).toEqual(["b", "a", "c"]);
+    expect(moveItemInList(items, 0, 1)).toEqual(["b", "a", "c"]);
+  });
+});
 
 describe("sortModelsByPublicationStatus", () => {
   it("places published models before drafts and hidden models", () => {

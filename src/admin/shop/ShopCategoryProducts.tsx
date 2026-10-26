@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
+import { moveItemInList } from "@/admin/domain/catalogSort";
 import { slugifyTitle } from "@/admin/domain/slug";
 import type { DocumentStatus, MediaListItem, ShopSubcategoryDraft } from "@/admin/domain/types";
 import { useAdminRole, useCanPerform } from "@/admin/ui/DocumentUI";
@@ -36,6 +37,7 @@ export function ShopCategoryProducts({ categoryId, categoryName }: { categoryId:
   const [assets, setAssets] = useState<MediaListItem[]>([]);
   const [role, setRole] = useAdminRole();
   const canCreate = useCanPerform("create_catalog_items");
+  const canReorder = useCanPerform("edit_catalog");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | DocumentStatus>("all");
   const [subcategoryId, setSubcategoryId] = useState("");
@@ -117,6 +119,22 @@ export function ShopCategoryProducts({ categoryId, categoryName }: { categoryId:
     return matchesName && matchesSubcategory && (status === "all" || product.status === status);
   });
 
+  const canMoveInCurrentView = canReorder && !query.trim() && status === "all" && !subcategoryId;
+
+  async function moveProduct(index: number, delta: -1 | 1) {
+    const nextList = moveItemInList(visibleProducts, index, delta);
+    if (!nextList) return;
+    setProducts(nextList);
+    try {
+      await browserAdminClient().updateCatalogOrder(
+        "shop-product",
+        nextList.map((item) => item.id),
+      );
+    } catch {
+      await reload();
+    }
+  }
+
   return (
     <section aria-labelledby="shop-category-products-title">
       <div className={styles.pageHead}>
@@ -157,7 +175,7 @@ export function ShopCategoryProducts({ categoryId, categoryName }: { categoryId:
       {!loading && visibleProducts.length > 0 ? (
         <>
           <ul className={styles.catalogList} aria-label={`Товары категории ${categoryName}`}>
-            {visibleProducts.map((product) => (
+            {visibleProducts.map((product, index) => (
               <li key={product.id}>
                 <CatalogRow
                   href={`/shop/product-editor?id=${encodeURIComponent(product.id)}`}
@@ -167,6 +185,11 @@ export function ShopCategoryProducts({ categoryId, categoryName }: { categoryId:
                   imageUrl={assets.find((asset) => asset.id === product.imageAssetId)?.dataUrl}
                   status={product.status}
                   hasUnpublishedDraft={product.hasUnpublishedDraft}
+                  orderPosition={canMoveInCurrentView ? index + 1 : undefined}
+                  onMoveUp={canMoveInCurrentView ? () => moveProduct(index, -1) : undefined}
+                  onMoveDown={canMoveInCurrentView ? () => moveProduct(index, 1) : undefined}
+                  disableMoveUp={index === 0}
+                  disableMoveDown={index === visibleProducts.length - 1}
                   onDelete={role === "admin" ? () => deleteProduct(product) : undefined}
                   onStatusChange={role === "admin" ? (nextStatus) => changeStatus(product.id, nextStatus) : undefined}
                 />

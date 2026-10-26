@@ -287,6 +287,19 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
         },
       },
       documents: { tab: "Документы", children: DOCUMENT },
+      footerContact: {
+        tab: "Подвал сайта и мессенджеры",
+        children: {
+          phone: { field: "Телефон" },
+          email: { field: "Email" },
+          address: { field: "Адрес / география" },
+          telegram: { field: "Telegram" },
+          whatsapp: { field: "WhatsApp" },
+          max: { field: "MAX" },
+          vk: { field: "VK" },
+          instagram: { field: "Instagram" },
+        },
+      },
     },
   },
   material: {

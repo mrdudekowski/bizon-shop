@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { browserAdminClient } from "@/admin/client/localStore";
+import { moveItemInList } from "@/admin/domain/catalogSort";
 import { slugifyTitle } from "@/admin/domain/slug";
 import type { DocumentStatus, MediaListItem } from "@/admin/domain/types";
 
@@ -75,6 +76,21 @@ export function MaterialList() {
     const matchesStatus = status === "all" || item.status === status;
     return matchesQuery && matchesStatus;
   });
+  const canMoveInCurrentView = canCreate && !query.trim() && status === "all";
+
+  async function moveMaterial(index: number, delta: -1 | 1) {
+    const nextList = moveItemInList(visibleItems, index, delta);
+    if (!nextList) return;
+    setItems(nextList);
+    try {
+      await browserAdminClient().updateCatalogOrder(
+        "material",
+        nextList.map((item) => item.id),
+      );
+    } catch {
+      await reload();
+    }
+  }
 
   function openCreate() {
     setTitle("");
@@ -110,8 +126,8 @@ export function MaterialList() {
         <CatalogViewToggle view={view} onChange={setView} />
       </div>
       {loading ? <AdminLoading label="Загружаем материалы…" /> : loadError ? <div role="alert"><p>Не удалось загрузить материалы.</p><button type="button" onClick={() => void reload()}>Повторить</button></div> : items.length === 0 ? <div className={styles.empty}><Icon name="materials" size={36} /><h2>Материалов пока нет</h2><p>Создайте статью Tire IQ.</p>{canCreate ? <button className="primary" type="button" onClick={openCreate}>Добавить материал</button> : null}</div> : visibleItems.length === 0 ? <div className={styles.empty}><h2>Ничего не найдено</h2><p>Измените запрос или выберите другой статус.</p></div> : <>
-        <ul className={view === "tiles" ? styles.catalogTiles : styles.catalogList}>{visibleItems.map((item) => (
-          <li key={item.id}><CatalogRow view={view} href={`/materials/editor/?id=${encodeURIComponent(item.id)}`} title={item.title} meta="Tire IQ" icon="materials" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} onStatusChange={role === "admin" ? (nextStatus) => changeStatus(item.id, nextStatus) : undefined} /></li>
+        <ul className={view === "tiles" ? styles.catalogTiles : styles.catalogList}>{visibleItems.map((item, index) => (
+          <li key={item.id}><CatalogRow view={view} href={`/materials/editor/?id=${encodeURIComponent(item.id)}`} title={item.title} meta="Tire IQ" icon="materials" imageUrl={assets.find((asset) => asset.id === item.imageAssetId)?.dataUrl} status={item.status} hasUnpublishedDraft={item.hasUnpublishedDraft} orderPosition={canMoveInCurrentView ? index + 1 : undefined} onMoveUp={canMoveInCurrentView ? () => moveMaterial(index, -1) : undefined} onMoveDown={canMoveInCurrentView ? () => moveMaterial(index, 1) : undefined} disableMoveUp={index === 0} disableMoveDown={index === visibleItems.length - 1} onStatusChange={role === "admin" ? (nextStatus) => changeStatus(item.id, nextStatus) : undefined} /></li>
         ))}</ul>
         <div className={styles.listFoot}>Показано {visibleItems.length} из {items.length} материалов</div>
       </>}

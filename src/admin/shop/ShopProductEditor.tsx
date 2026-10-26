@@ -315,14 +315,6 @@ export function ShopProductEditor({ id }: { id: string }) {
           />
         </label>
         <label className={styles.field}>
-          Порядок отображения
-          <input
-            type="number"
-            value={draft.sortOrder ?? 0}
-            onChange={(event) => patch({ sortOrder: Number(event.target.value) || 0 })}
-          />
-        </label>
-        <label className={styles.field}>
           Цена
           <input
             type="number"

@@ -134,10 +134,6 @@ export function MaterialEditor({ id }: { id: string }) {
           <input type="checkbox" checked={draft.showInMenu} onChange={(event) => patch({ showInMenu: event.target.checked })} />
           Показывать в меню
         </label>
-        <label>
-          Порядок в меню
-          <input type="number" value={draft.menuOrder} onChange={(event) => patch({ menuOrder: Number(event.target.value) })} />
-        </label>
         <fieldset>
           <legend>Темы Tire IQ</legend>
           {TIRE_IQ_TAXONOMY.map((topic) => (
