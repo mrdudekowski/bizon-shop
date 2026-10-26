@@ -71,7 +71,6 @@ export function ShopCategoryShowcase({
                   {card.title.trim().charAt(0)}
                 </span>
               )}
-              <span className={styles.iconLabel}>{card.title}</span>
             </Link>
           ))}
         </nav>

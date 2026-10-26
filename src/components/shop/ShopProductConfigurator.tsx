@@ -226,7 +226,7 @@ export function ShopProductConfigurator({ product: initialProduct }: { product: 
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-shop-chrome-tone="light" data-main-chrome-tone="light">
       <nav className={styles.breadcrumbs} aria-label="Хлебные крошки">
         <Link href="/shop">Shop</Link>
         <span aria-hidden="true">/</span>

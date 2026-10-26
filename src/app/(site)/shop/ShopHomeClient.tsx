@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+import { HorizontalScrollCue } from "@/components/catalog/HorizontalScrollCue";
 import { ShopCategoryShowcase } from "@/components/shop/ShopCategoryShowcase";
 import { ShopOrderSteps } from "./ShopOrderSteps";
 import type { CmsShopCategory, CmsWheelModel } from "@/lib/content/types";
@@ -28,6 +29,7 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
   const [page, setPage] = useState(initialPage);
   const [models, setModels] = useState(initialModels);
   const [categories, setCategories] = useState(initialCategories);
+  const modelsTrackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -90,7 +92,7 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
             <h2 id="shop-title">{page.wheelsIntro.title}</h2>
             <p>{page.wheelsIntro.lead}</p>
           </div>
-          <div className={styles.modelGrid}>
+          <div ref={modelsTrackRef} className={styles.modelGrid}>
             {homeModels.map((model) => (
               <Link className={styles.modelCard} href={`/shop/wheels/forged/${model.slug}`} key={model.slug}>
                 <span className={styles.modelMedia}><Image src={model.imageUrl!} alt={model.name} fill sizes="(max-width: 767px) 92vw, 33vw" /></span>
@@ -103,6 +105,7 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
               </Link>
             ))}
           </div>
+          {homeModels.length > 1 ? <HorizontalScrollCue trackRef={modelsTrackRef} tone="dark" /> : null}
           <ShopOrderSteps steps={page.orderSteps} />
         </div>
       </section>

@@ -33,13 +33,15 @@ export function buildMainDualPaneMenuSections(input: {
       advantages: model.advantages,
     }));
 
-  const articles = curateMenuItems(input.articles).map((article) => ({
-    id: article.slug,
-    title: article.title,
-    href: `${ROUTES.tireIq}/${article.slug}`,
-    imageUrl: article.imageUrl,
-    description: article.excerpt,
-  }));
+  const articles = curateMenuItems(input.articles, 5)
+    .slice(0, 5)
+    .map((article) => ({
+      id: article.slug,
+      title: article.title,
+      href: `${ROUTES.tireIq}/${article.slug}`,
+      imageUrl: article.imageUrl,
+      description: article.excerpt,
+    }));
 
   return [
     {
@@ -55,34 +57,16 @@ export function buildMainDualPaneMenuSections(input: {
       pane: "list",
       items: [
         { id: "shop-home", title: "Магазин BIZON", href: ROUTES.shop, description: "Диски и аксессуары" },
-        { id: "shop-wheels", title: "Кованые диски", href: `${ROUTES.shop}/wheels/forged` },
-        { id: "shop-categories", title: "Все категории", href: ROUTES.shopCategories },
-        ...input.categories
-          .filter((category) => category.showInMenu)
-          .sort((a, b) => a.sortOrder - b.sortOrder)
-          .map((category) => ({
-            id: category.slug,
-            title: category.name,
-            href: `${ROUTES.shop}/${category.slug}`,
-            imageUrl: category.imageUrl,
-            description: category.description,
-          })),
-        { id: "shop-delivery", title: "Доставка и возврат", href: ROUTES.shopDeliveryAndReturns },
+        { id: "shop-wheels", title: "Кованые диски", href: `${ROUTES.shop}/wheels/forged`, description: "Диски BIZON Forged под заказ" },
+        { id: "shop-categories", title: "Все категории", href: ROUTES.shopCategories, description: "Аксессуары и сопутствующие товары" },
       ],
     },
     {
       id: "branding",
       label: "Индивидуальное брендирование",
+      href: ROUTES.branding,
       pane: "list",
-      items: [
-        { id: "branding-page", title: "О брендировании", href: ROUTES.branding },
-        {
-          id: "branding-contact",
-          title: "Обсудить проект",
-          href: `${ROUTES.contact}?subject=branding`,
-          description: "Заявка на индивидуальное брендирование",
-        },
-      ],
+      items: [],
     },
     {
       id: "tire-iq",

@@ -273,7 +273,7 @@
   transform: translateY(-50%) scaleX(0);
   transform-origin: left center;
   border-radius: var(--radius-pill);
-  background: var(--bizon-mint-400);
+  background: var(--bizon-coral-500);
   animation: hero-progress 7s linear forwards;
 }
 @keyframes hero-progress {
@@ -329,6 +329,9 @@
   max-width: 36rem;
   gap: 16px;
 }
+.assortmentIntro .eyebrow {
+  color: var(--color-muted);
+}
 .directionWatermark {
   position: absolute;
   top: calc(var(--home-section-lead) - var(--home-mark-band));
@@ -380,6 +383,11 @@
 .assortmentEmpty {
   margin: 0;
   color: var(--color-muted);
+}
+.assortmentCarouselWrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 .assortmentTrack {
   display: grid;
@@ -984,7 +992,7 @@
     grid-column: auto;
   }
 }
-@media (min-width: 640px) {
+@media (min-width: 1024px) {
   .assortmentTrack {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -1009,41 +1017,68 @@
   .brandingCopy { transform: translateY(-clamp(1rem, 3vh, 2rem)); }
 }
 @media (max-width: 1023px) {
-  .homeShell { --home-feature-card-height: clamp(30rem, 80svh, 36rem); }
-}
-@media (max-width: 767px) {
+  .homeShell {
+    --home-mark-band: clamp(2rem, 5vw, 3.25rem);
+    --home-section-lead: clamp(3rem, 6vw, 4.5rem);
+    --home-section-gap: clamp(3rem, 6vw, 4.5rem);
+    --home-feature-card-height: clamp(30rem, 80svh, 36rem);
+  }
+  .directionWatermark {
+    top: 0.75rem;
+    height: min(44vw, 13rem);
+  }
   .assortmentIntro,
   .assortmentIntro h2 { width: 100%; max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
   .assortmentTrack {
-    grid-template-columns: minmax(0, calc(100% - 28px));
-    grid-auto-columns: minmax(0, calc(100% - 28px));
-    grid-auto-flow: column;
+    display: flex;
+    gap: 14px;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
     touch-action: pan-x;
+    margin-right: calc(var(--page-gutter) * -1);
+    padding-right: var(--page-gutter);
   }
   .assortmentTrack::-webkit-scrollbar { display: none; }
-  .assortmentCard { min-height: 22rem; scroll-snap-align: start; }
-  .heroOverlay { background: linear-gradient(0deg, rgba(0,0,0,.78), rgba(0,0,0,.12) 68%), linear-gradient(180deg, rgba(0,0,0,.28), transparent 30%); }
+  .assortmentCard {
+    flex: 0 0 min(86vw, 380px);
+    min-height: 24rem;
+    scroll-snap-align: start;
+  }
   .branding { width: calc(100% - (var(--page-gutter) * 2)); min-height: 0; overflow: hidden; border-radius: var(--radius-card); background: var(--color-surface-dark, #111); }
-  .brandingCompare { position: relative; inset: auto; height: min(68vw, 20rem); }
-  .branding .inner { min-height: 0; padding: 1.25rem; }
-  .brandingCopy { max-width: none; gap: .65rem; }
+  .brandingCompare { position: relative; inset: auto; height: min(62vw, 24rem); }
+  .branding .inner { min-height: 0; padding: clamp(1.25rem, 3.5vw, 2rem); }
+  .brandingCopy { max-width: none; gap: .75rem; transform: none; }
+  .brandingCopy h2 { font-size: clamp(1.6rem, 6vw, 2.4rem); width: 100%; max-width: 100%; white-space: normal; overflow-wrap: normal; }
+  .brandingCopy > p { font-size: .95rem; }
+  .brandingOverlay { display: none; }
+  .brandingCaptions {
+    position: static;
+    order: -1;
+    margin: -0.25rem 0 0.25rem;
+    padding: 0 0 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    transform: none;
+    font-size: 0.72rem;
+  }
+  .brandingCaption, .brandingCaptionAfter { color: white; }
+  .brandingCaptionAfter { color: var(--bizon-coral-400); }
+  .expertiseBannerContent {
+    padding: clamp(1.75rem, 4.5vw, 3rem) clamp(1.25rem, 4vw, 2.5rem);
+  }
+  .expertiseBannerContent h2 {
+    font-size: clamp(1.75rem, 6.2vw, 2.75rem);
+    line-height: 1.06;
+    overflow-wrap: break-word;
+  }
+}
+@media (max-width: 767px) {
+  .heroOverlay { background: linear-gradient(0deg, rgba(0,0,0,.78), rgba(0,0,0,.12) 68%), linear-gradient(180deg, rgba(0,0,0,.28), transparent 30%); }
+  .brandingCompare { height: min(68vw, 20rem); }
   .brandingCopy h2 { font-size: clamp(1.6rem, 8vw, 2.25rem); }
   .brandingCopy > p { font-size: .9rem; }
-  .brandingOverlay { display: none; }
-  .brandingCaptions { right: 1rem; bottom: auto; top: min(68vw, 20rem); transform: translateY(-100%); padding-bottom: .75rem; font-size: .62rem; }
-  .brandingCaption, .brandingCaptionAfter { color: white; }
-  .brandingCaptionAfter { color: var(--bizon-mint-400); }
-  .brandingCopy h2 {
-    width: 100%;
-    max-width: 100%;
-    white-space: normal;
-    overflow-wrap: normal;
-  }
   .heroCopy,
   .hero .inner { padding-bottom: 0; }
   .heroTires {
@@ -1053,18 +1088,23 @@
     align-content: end;
   }
   .shopCampaign { min-height: min(78svh, 40rem); }
+  .expertiseBannerContent h2 {
+    font-size: clamp(1.75rem, 7.6vw, 2.4rem);
+  }
 }
 @media (max-width: 639px) {
-  .homeShell { --home-section-lead: calc(64px + var(--home-mark-band)); }
-  .assortmentIntro h2 { font-size: clamp(2.75rem, 14vw, 4.5rem); }
-  .brandingCaptions { bottom: 1.25rem; }
+  .homeShell {
+    --home-mark-band: 2rem;
+    --home-section-lead: 3rem;
+    --home-section-gap: 3rem;
+  }
+  .assortmentIntro h2 { font-size: clamp(2rem, 9.5vw, 3.25rem); }
   .expertiseBanner::before {
     background: linear-gradient(90deg, rgba(5, 7, 7, .82), rgba(5, 7, 7, .34)), linear-gradient(0deg, rgba(5, 7, 7, .76), rgba(5, 7, 7, .08) 78%);
   }
   .expertiseBannerImage { object-position: 78% center; }
-  .expertiseBannerContent { align-content: end; padding: 2rem 1.5rem 6rem; }
-  .expertiseBannerContent h2 { font-size: clamp(2rem, 9vw, 2.75rem); }
-  .expertiseBannerMark { right: 1.25rem; bottom: 1.25rem; }
+  .expertiseBannerContent { align-content: end; padding: 1.75rem 1.25rem 2rem; }
+  .expertiseBannerContent h2 { font-size: clamp(1.7rem, 7.4vw, 2.25rem); line-height: 1.06; }
 }
 @media (prefers-reduced-motion: reduce) {
   .heroTireMedia,

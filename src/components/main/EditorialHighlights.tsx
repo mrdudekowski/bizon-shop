@@ -31,7 +31,6 @@ export function EditorialHighlights({ content }: { content: HomeExpertiseContent
             </Link>
           ) : null}
         </div>
-        <span className={styles.expertiseBannerMark} aria-hidden="true">BIZON · TIRE IQ</span>
       </div>
     </div>
   );

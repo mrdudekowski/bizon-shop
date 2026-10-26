@@ -10,7 +10,7 @@ export function DeliveryAndReturnsContent({ page }: { page: PublishedStubOverlay
   const content = live ?? page;
 
   return (
-    <div>
+    <div data-shop-chrome-tone="light" data-main-chrome-tone="light">
       <PageHero
         kicker={content.hero.eyebrow ?? ""}
         title={content.hero.title ?? ""}

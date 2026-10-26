@@ -31,7 +31,7 @@
 
 .body > p:first-child {
   margin: 0;
-  color: var(--bizon-mint-700);
+  color: var(--bizon-coral-500);
   font-size: 0.68rem;
   font-weight: var(--weight-kicker);
   letter-spacing: var(--tracking-label);

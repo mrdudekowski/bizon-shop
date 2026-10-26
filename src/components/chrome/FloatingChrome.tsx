@@ -12,7 +12,8 @@ type FloatingChromeProps = {
   menuOpen: boolean;
   onMenuToggle(open: boolean): void;
   brand: ReactNode;
-  navigation: ReactNode;
+  startNavigation?: ReactNode;
+  navigation?: ReactNode;
   utility?: ReactNode;
   action?: ReactNode;
   toneAttribute: string;
@@ -48,6 +49,7 @@ export function FloatingChrome({
   menuOpen,
   onMenuToggle,
   brand,
+  startNavigation,
   navigation,
   utility,
   action,
@@ -77,10 +79,11 @@ export function FloatingChrome({
               inverted={tone === "dark"}
             />
           </div>
+          {startNavigation ? <div className={styles.navigation}>{startNavigation}</div> : null}
         </div>
         <div className={styles.brand}>{brand}</div>
         <div className={styles.end}>
-          <div className={styles.navigation}>{navigation}</div>
+          {navigation ? <div className={styles.navigation}>{navigation}</div> : null}
           {utility ? <div className={styles.utility}>{utility}</div> : null}
           <div className={styles.action}>{action}</div>
         </div>

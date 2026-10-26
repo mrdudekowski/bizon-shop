@@ -64,7 +64,7 @@ export function WheelModelStage({
   );
 
   return (
-    <div className={styles.modelPage} data-main-chrome-tone="light">
+    <div className={styles.modelPage} data-main-chrome-tone="light" data-shop-chrome-tone="light">
       <div className={styles.pageInner}>
         <PageHeader
           title={model.name}

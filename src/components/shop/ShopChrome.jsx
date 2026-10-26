@@ -1,52 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CartHeaderButton } from "@/components/cart/CartHeaderButton";
 import { ChromeWordmark, FloatingChrome } from "@/components/chrome/FloatingChrome";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
-import styles from "./ShopChrome.module.css";
 
-const FALLBACK_CATEGORY_LINKS = [
-  { href: "/shop/categories", label: "Все категории" },
-];
-
-export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, categoryLinks }) {
-  const links = categoryLinks?.length ? categoryLinks : FALLBACK_CATEGORY_LINKS;
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const chromeRef = useRef(null);
-  const categoryTriggerRef = useRef(null);
-  const closeTimer = useRef(null);
-
-  const cancelClose = () => {
-    if (closeTimer.current) window.clearTimeout(closeTimer.current);
-  };
-
-  const scheduleClose = () => {
-    cancelClose();
-    closeTimer.current = window.setTimeout(() => setCategoriesOpen(false), 180);
-  };
-
-  useEffect(() => {
-    const onPointerDown = (event) => {
-      if (!chromeRef.current?.contains(event.target)) setCategoriesOpen(false);
-    };
-    const onKeyDown = (event) => {
-      if (event.key === "Escape" && categoriesOpen) {
-        setCategoriesOpen(false);
-        categoryTriggerRef.current?.focus();
-      }
-    };
-
-    document.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      window.removeEventListener("keydown", onKeyDown);
-      cancelClose();
-    };
-  }, [categoriesOpen]);
-
+export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen }) {
   return (
     <FloatingChrome
       ariaLabel="Навигация BIZON Shop"
@@ -57,35 +16,14 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
           <ChromeWordmark />
         </Link>
       }
-      navigation={
+      startNavigation={
         <>
           <Link href="/shop/categories">Каталог</Link>
-          <div
-            className={styles.categoryMenu}
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget)) setCategoriesOpen(false);
-            }}
-          >
-            <button
-              ref={categoryTriggerRef}
-              className={`${styles.menuTrigger} ${categoriesOpen ? styles.menuTriggerActive : ""}`}
-              type="button"
-              aria-expanded={categoriesOpen}
-              aria-controls="shop-category-menu"
-              aria-haspopup="true"
-              onClick={() => setCategoriesOpen((open) => !open)}
-            >
-              Категории
-              <span className={styles.chevron} aria-hidden="true" />
-            </button>
-            {categoriesOpen ? (
-              <div id="shop-category-menu" className={styles.dropdown} onMouseEnter={cancelClose}>
-                {links.map((item) => (
-                  <Link key={item.href} href={item.href} onClick={() => setCategoriesOpen(false)}>{item.label}</Link>
-                ))}
-              </div>
-            ) : null}
-          </div>
+          <Link href="/shop/wheels/forged">Диски</Link>
+        </>
+      }
+      navigation={
+        <>
           <Link href="/contact?subject=wheel-selection">Заявка</Link>
           <Link href="/shop/delivery-and-returns">Возврат</Link>
         </>
@@ -95,8 +33,6 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
       toneAttribute="data-shop-chrome-tone"
       fallbackTone="dark"
       surface="shop"
-      rootRef={chromeRef}
-      onMouseLeave={scheduleClose}
     />
   );
 }

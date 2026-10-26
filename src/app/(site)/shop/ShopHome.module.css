@@ -121,7 +121,7 @@
 .collectionKicker,
 .darkKicker {
   margin: 0;
-  color: var(--bizon-mint-700);
+  color: var(--bizon-coral-500);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: var(--tracking-kicker);
@@ -177,7 +177,7 @@
 }
 
 .modelCard:hover {
-  border-color: color-mix(in srgb, var(--bizon-mint-500) 46%, var(--color-border));
+  border-color: color-mix(in srgb, var(--bizon-coral-500) 56%, var(--color-border));
   box-shadow: 0 24px 64px rgba(28, 28, 28, 0.12);
   transform: var(--transform-hover-lift);
 }
@@ -226,7 +226,7 @@
 }
 
 .modelStatus {
-  color: var(--bizon-mint-700);
+  color: var(--bizon-coral-500);
   font-size: var(--type-kicker);
   font-weight: 700;
   letter-spacing: var(--tracking-label);
@@ -251,14 +251,17 @@
   width: 44px;
   height: 44px;
   place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: var(--radius-circle);
-  background: var(--bizon-black);
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(10px);
   color: var(--bizon-white);
   font-size: 1.35rem;
-  transition: background-color var(--transition-fast), transform var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .modelCard:hover .modelArrow {
+  border-color: var(--bizon-coral-500);
   background: var(--bizon-coral-500);
   transform: translate(2px, -2px);
 }
@@ -358,7 +361,7 @@
 }
 
 .darkKicker {
-  color: var(--bizon-mint-700);
+  color: var(--bizon-coral-500);
 }
 
 .vehiclesHead h2 {
@@ -452,8 +455,28 @@
   }
 }
 
+@media (max-width: 1023px) {
+  .modelGrid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    margin-right: calc(var(--page-gutter) * -1);
+    padding-right: var(--page-gutter);
+    grid-template-columns: none;
+    min-width: 0;
+  }
+
+  .modelGrid::-webkit-scrollbar { display: none; }
+
+  .modelCard {
+    flex: 0 0 min(86vw, 380px);
+    scroll-snap-align: start;
+    min-height: 360px;
+  }
+}
+
 @media (max-width: 900px) {
-  .modelGrid,
   .orderSteps {
     grid-template-columns: 1fr;
   }
@@ -471,13 +494,17 @@
   }
 
   .vehicleGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .vehicleFeature,
   .vehicleCard {
     grid-column: auto;
-    min-height: clamp(300px, 68vw, 520px);
+    min-height: clamp(280px, 48vw, 420px);
+  }
+
+  .vehicleFeature:first-child {
+    grid-column: 1 / -1;
   }
 }
 
@@ -486,17 +513,8 @@
   .content { width: min(var(--container-max), calc(100% - (var(--page-gutter) * 2))); }
   .heroMedia :global(img) { object-position: left center; }
   .heroContent {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    padding-top: clamp(180px, 24vh, 240px);
-    padding-bottom: 52px;
-  }
-}
-
-@media (max-width: 400px) {
-  .heroContent {
-    padding-left: 0;
+    gap: 12px;
+    padding: clamp(148px, 20vh, 210px) 0 52px;
   }
 }
 
@@ -505,11 +523,9 @@
     padding-top: 64px;
   }
 
-  .modelsIntro h2 { font-size: clamp(2.6rem, 12vw, 4rem); }
-
   .modelsIntro h2,
   .vehiclesHead h2 {
-    font-size: clamp(2.75rem, 14vw, 4.5rem);
+    font-size: clamp(2rem, 9.5vw, 3.25rem);
   }
 
   .modelGrid {
@@ -526,7 +542,7 @@
   .modelGrid::-webkit-scrollbar { display: none; }
 
   .modelCard {
-    flex: 0 0 min(88vw, 390px);
+    flex: 0 0 min(86vw, 360px);
     scroll-snap-align: start;
     min-height: 360px;
   }

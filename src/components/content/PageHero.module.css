@@ -108,14 +108,17 @@
   object-fit: var(--media-fit-cover);
 }
 
-@media (max-width: 767px) {
-  .breadcrumbs li:not(:nth-last-child(-n + 2)) { display: none; }
-  .breadcrumbs li:nth-last-child(2) > span[aria-hidden="true"] { display: none; }
+@media (max-width: 900px) {
   .inner {
     grid-template-columns: minmax(0, 1fr);
     box-sizing: border-box;
     width: 100%;
   }
+}
+
+@media (max-width: 767px) {
+  .breadcrumbs li:not(:nth-last-child(-n + 2)) { display: none; }
+  .breadcrumbs li:nth-last-child(2) > span[aria-hidden="true"] { display: none; }
 
   .copy h1[data-title-long="true"] {
     max-width: 100%;

@@ -34,7 +34,7 @@ export function PageHero({
   actions,
 }: PageHeroProps) {
   return (
-    <header className={styles.hero} data-main-chrome-tone="light">
+    <header className={styles.hero} data-main-chrome-tone="light" data-shop-chrome-tone="light">
       <div className={styles.inner}>
         <div className={styles.copy}>
           {breadcrumbs.length > 0 && (

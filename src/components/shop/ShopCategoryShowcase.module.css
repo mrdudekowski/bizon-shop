@@ -186,10 +186,6 @@
   font-weight: var(--weight-display);
 }
 
-.iconLabel {
-  display: none;
-}
-
 @media (max-width: 639px) {
   .controls {
     gap: 6px;
@@ -200,28 +196,15 @@
   }
 
   .iconLink {
-    flex-basis: 36px;
-    width: 36px;
-    height: 36px;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
   }
 
   .iconImage {
-    width: 23px;
-    height: 23px;
+    width: 24px;
+    height: 24px;
   }
-}
-
-@media (max-width: 767px) {
-  .iconLink {
-    flex: 0 0 auto;
-    width: auto;
-    min-height: 44px;
-    gap: 0.5rem;
-    border-radius: var(--radius-pill);
-    padding: 0 0.8rem;
-  }
-
-  .iconLabel { display: inline; max-width: 12rem; overflow: hidden; color: inherit; font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -76,12 +76,31 @@ describe("buildMainDualPaneMenuSections", () => {
       "shop-home",
       "shop-wheels",
       "shop-categories",
-      "pritsepy",
-      "shop-delivery",
     ]);
-    expect(sections.find((section) => section.id === "shop")?.items).toEqual(
-      expect.arrayContaining([{ id: "pritsepy", title: "Прицепы", href: "/shop/pritsepy", imageUrl: "/cms/trailer.png", description: "" }]),
-    );
+    expect(sections.find((section) => section.id === "branding")).toMatchObject({
+      id: "branding",
+      href: "/branding",
+      items: [],
+    });
+  });
+
+  it("caps Tire IQ menu items at first 5 articles", () => {
+    const sections = buildMainDualPaneMenuSections({
+      models: [],
+      articles: Array.from({ length: 8 }, (_, index) => ({
+        slug: `article-${index + 1}`,
+        title: `Article ${index + 1}`,
+        excerpt: "",
+        publishedAt: "2026-01-01",
+        content: null,
+        showInMenu: true,
+        menuOrder: index,
+      })),
+      categories: [],
+    });
+    const tireIq = sections.find((section) => section.id === "tire-iq");
+    expect(tireIq?.items).toHaveLength(5);
+    expect(tireIq?.footerLink).toEqual({ label: "Все материалы", href: "/tire-iq" });
   });
 
   it("lists every published model, not only showInMenu", () => {

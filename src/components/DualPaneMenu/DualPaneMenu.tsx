@@ -332,6 +332,23 @@ export function DualPaneMenu({
                 <ul className={styles.sectionList}>
                   {sections.map((section) => {
                     const selected = section.id === activeSectionId;
+                    if (section.href) {
+                      return (
+                        <li key={section.id}>
+                          <Link
+                            href={section.href}
+                            className={styles.sectionButton}
+                            aria-current={isCurrentLink(section.href) ? "page" : undefined}
+                            onClick={handleLinkNavigate}
+                          >
+                            <span>{section.label}</span>
+                            <span className={styles.sectionChevron} aria-hidden="true">
+                              <SiteArrow />
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    }
                     return (
                       <li key={section.id}>
                         <button

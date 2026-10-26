@@ -48,7 +48,7 @@ export function ShopProductCatalog({
     : products;
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-shop-chrome-tone="light" data-main-chrome-tone="light">
       <PageHeader
         title={category.name}
         description={category.description}

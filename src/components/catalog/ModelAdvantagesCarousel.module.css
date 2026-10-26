@@ -165,27 +165,23 @@
   animation: advantages-progress 7s linear forwards;
 }
 
-.autoplay {
-  width: auto !important;
-  min-width: 76px;
-  border-radius: var(--radius-pill) !important;
-  padding: 0 14px;
-  font-size: 0.75rem !important;
-}
-
 .arrows {
   display: flex;
+  flex-shrink: 0;
   min-width: 0;
   gap: 10px;
 }
 
 .arrows button {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  display: inline-flex;
+  flex: 0 0 46px;
   width: 46px;
-  max-width: 100%;
+  min-width: 46px;
   height: 46px;
-  place-items: center;
+  min-height: 46px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: var(--radius-circle);
   background: rgba(20, 22, 22, 0.34);
@@ -196,6 +192,15 @@
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast);
+}
+
+.arrows button.autoplay {
+  flex: 0 0 auto;
+  width: auto !important;
+  min-width: 76px;
+  border-radius: var(--radius-pill) !important;
+  padding: 0 14px;
+  font-size: 0.75rem !important;
 }
 
 .arrows button:hover {
@@ -248,7 +253,9 @@
 
   .content h2,
   .title {
-    font-size: clamp(2.5rem, 13vw, 4rem);
+    font-size: clamp(1.85rem, 8.2vw, 2.75rem);
+    line-height: 1.08;
+    overflow-wrap: break-word;
   }
 
   .controls {
@@ -260,8 +267,11 @@
   }
 
   .arrows button {
+    flex: 0 0 44px;
     width: 44px;
+    min-width: 44px;
     height: 44px;
+    min-height: 44px;
   }
 }
 

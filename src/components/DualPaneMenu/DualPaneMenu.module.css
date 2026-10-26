@@ -1,7 +1,7 @@
 .menuOverlay {
   --menu-link-hover: var(--color-accent-coral);
-  --pane-left-width: min(320px, 34vw);
-  --pane-right-width: min(420px, 42vw);
+  --pane-left-width: clamp(280px, 34vw, 340px);
+  --pane-right-width: clamp(340px, 44vw, 440px);
   --menu-duration: 240ms;
   --menu-ease: cubic-bezier(0.22, 1, 0.36, 1);
   position: fixed;
@@ -15,7 +15,7 @@
 }
 
 .menuOverlay[data-menu-context="shop"] {
-  --menu-link-hover: var(--color-accent-mint);
+  --menu-link-hover: var(--color-accent-coral);
 }
 
 .menuOpen {

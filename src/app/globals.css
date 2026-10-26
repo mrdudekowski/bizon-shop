@@ -73,9 +73,9 @@ img {
   --color-accent-coral-dark: var(--bizon-coral-600);
   --color-accent-mint: var(--bizon-mint-500);
   --color-accent-mint-dark: var(--bizon-mint-600);
-  --color-kicker: var(--bizon-mint-700);
-  --color-link: var(--bizon-mint-600);
-  --color-link-hover: var(--bizon-mint-700);
+  --color-kicker: var(--bizon-coral-500);
+  --color-link: var(--bizon-coral-600);
+  --color-link-hover: var(--bizon-coral-500);
 
   --font-sans: var(--font-manrope), Manrope, "Helvetica Neue", Arial, sans-serif;
   --font-display: var(--font-bounded), Bounded, "Arial Narrow", var(--font-sans);
@@ -790,7 +790,7 @@ main {
 .hero .eyebrow,
 .section--dark .eyebrow,
 .section--dark .section-kicker {
-  color: var(--bizon-mint-400);
+  color: var(--bizon-coral-500);
 }
 
 .hero h1 {
@@ -1510,7 +1510,7 @@ textarea.field-input {
 
 .footer-nav a:hover,
 .footer-contact a:hover {
-  color: var(--bizon-mint-400);
+  color: var(--bizon-coral-400);
 }
 
 .footer-legal {

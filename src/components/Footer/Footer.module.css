@@ -42,7 +42,7 @@
   min-height: 44px;
   display: inline-flex;
   align-items: center;
-  color: var(--bizon-mint-300);
+  color: var(--bizon-coral-400);
   font-weight: 600;
 }
 
@@ -83,7 +83,7 @@
 .nav a:hover,
 .contact a:hover,
 .brand a:hover {
-  color: var(--bizon-mint-300);
+  color: var(--bizon-coral-400);
 }
 
 .nav a:focus-visible,
@@ -118,7 +118,7 @@
 }
 
 .legal a:hover {
-  color: var(--bizon-mint-300);
+  color: var(--bizon-coral-400);
 }
 
 @media (max-width: 1023px) {

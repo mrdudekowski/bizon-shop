@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 export type ChromeTone = "light" | "dark";
 
@@ -8,6 +9,7 @@ export function useAdaptiveChrome(
   toneAttribute: string,
   fallbackTone: ChromeTone,
 ) {
+  const pathname = usePathname();
   const [tone, setTone] = useState<ChromeTone>(fallbackTone);
 
   useEffect(() => {
@@ -16,10 +18,15 @@ export function useAdaptiveChrome(
     const update = () => {
       window.cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => {
-        const section = document
-          .elementsFromPoint(window.innerWidth / 2, 104)
-          .map((element) => element.closest?.(`[${toneAttribute}]`))
-          .find(Boolean);
+        const probeY = Math.min(window.innerHeight - 1, 112);
+        const section =
+          document
+            .elementsFromPoint(window.innerWidth / 2, probeY)
+            .map((element) => element.closest?.(`[${toneAttribute}]`))
+            .find(Boolean) ??
+          (window.scrollY < 64
+            ? document.querySelector<HTMLElement>(`main [${toneAttribute}]`)
+            : null);
         const requestedTone = section?.getAttribute(toneAttribute);
 
         setTone(
@@ -39,7 +46,7 @@ export function useAdaptiveChrome(
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-  }, [fallbackTone, toneAttribute]);
+  }, [fallbackTone, pathname, toneAttribute]);
 
   return { tone };
 }

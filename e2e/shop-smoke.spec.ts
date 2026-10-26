@@ -73,7 +73,7 @@ test("burger preserves the current scroll position", async ({ page }) => {
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(before);
 });
 
-test("desktop categories menu toggles and restores focus", async ({ page }, testInfo) => {
+test("desktop shop navbar distributes catalog and wheels links symmetrically", async ({ page }, testInfo) => {
   test.skip(
     testInfo.project.name !== "desktop-1440",
     "Desktop navigation only",
@@ -81,17 +81,11 @@ test("desktop categories menu toggles and restores focus", async ({ page }, test
   await page.goto("/shop", { waitUntil: "domcontentloaded" });
   await page.waitForLoadState("networkidle");
 
-  const trigger = page.getByRole("button", { name: "Категории", exact: true });
-  await expect(trigger).toHaveCount(1);
-  await trigger.click();
-  await expect(trigger).toHaveAttribute("aria-expanded", "true");
-  const menu = page.locator("#shop-category-menu");
-  await expect(menu.getByRole("link", { name: "Все категории" })).toBeVisible();
-  await expect(menu.getByRole("link")).not.toHaveCount(0);
-
-  await trigger.press("Escape");
-  await expect(trigger).toHaveAttribute("aria-expanded", "false");
-  await expect(trigger).toBeFocused();
+  const nav = page.getByRole("navigation", { name: "Навигация BIZON Shop", exact: true });
+  await expect(nav.getByRole("link", { name: "Каталог", exact: true })).toHaveAttribute("href", "/shop/categories/");
+  await expect(nav.getByRole("link", { name: "Диски", exact: true })).toHaveAttribute("href", "/shop/wheels/forged/");
+  await expect(nav.getByRole("link", { name: "Заявка", exact: true })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Возврат", exact: true })).toBeVisible();
 });
 
 test("shop burger exposes wheel selection and links to the Shop cart", async ({ page }) => {

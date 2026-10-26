@@ -11,6 +11,7 @@ export type DualPaneItem = {
 export type DualPaneSection = {
   id: string;
   label: string;
+  href?: string;
   pane: "gallery" | "list";
   items: DualPaneItem[];
   footerLink?: { label: string; href: string };

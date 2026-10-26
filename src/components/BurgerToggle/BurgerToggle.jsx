@@ -14,7 +14,6 @@ const BurgerToggle = ({ isOpen, onToggle, inverted = false }) => (
       <span className={`${styles.bar} ${styles.barMiddle}`} />
       <span className={`${styles.bar} ${styles.barBottom}`} />
     </span>
-    <span className={styles.label}>Все разделы</span>
   </button>
 );
 
