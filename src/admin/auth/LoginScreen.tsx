@@ -38,6 +38,7 @@ export function LoginScreen({ onLogin }: { onLogin: (session: AdminSession) => v
 
   return (
     <main className={styles.screen}>
+      <img className={styles.mark} src="/brand/bizon-mark-black.svg" alt="" />
       <section className={styles.card} aria-labelledby="login-title">
         <Image className={styles.logo} src="/brand/bizon-full.svg" alt="BIZON" width={132} height={62} priority unoptimized />
         <div>
