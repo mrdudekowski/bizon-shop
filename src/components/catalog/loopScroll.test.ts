@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { activeLoopIndex, nextLoopScroll } from "./loopScroll";
+import { activeLoopIndex, loopPeriod, nextLoopScroll } from "./loopScroll";
 
 describe("nextLoopScroll", () => {
   it("moves a stuck start forward one cycle and a passed cycle back one cycle", () => {
@@ -12,6 +12,19 @@ describe("nextLoopScroll", () => {
 
   it("leaves the position alone when there is nothing to loop", () => {
     expect(nextLoopScroll(20, 0)).toBe(20);
+  });
+});
+
+describe("loopPeriod", () => {
+  it("uses the clone offset instead of half the track", () => {
+    const offsets = [0, 345, 690, 1032, 1377, 1722];
+    expect(loopPeriod(offsets, 3)).toBe(1032);
+    expect(loopPeriod(offsets, 3)).not.toBe(1035);
+  });
+
+  it("returns 0 when the clone has not been laid out", () => {
+    expect(loopPeriod([0, 345], 3)).toBe(0);
+    expect(loopPeriod([], 3)).toBe(0);
   });
 });
 

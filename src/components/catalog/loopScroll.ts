@@ -19,3 +19,10 @@ export function activeLoopIndex(scrollLeft: number, itemCount: number, cardOffse
   });
   return nearest % itemCount;
 }
+
+/** Distance from the first card to its clone. Half of scrollWidth includes leftover gap and padding. */
+export function loopPeriod(cardOffsets: number[], itemCount: number): number {
+  if (itemCount < 1 || cardOffsets.length < itemCount + 1) return 0;
+  const period = cardOffsets[itemCount] - cardOffsets[0];
+  return period > 0 ? period : 0;
+}
