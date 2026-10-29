@@ -4,10 +4,10 @@ import { MIGRATIONS } from "./index";
 import { pageFormsMigration } from "./0025-page-forms";
 
 describe("page forms migration", () => {
-  it("is the last migration and seeds the supplier form from shared copy", () => {
+  it("is registered and seeds the supplier form from shared copy", () => {
     const sql = pageFormsMigration.sql;
     expect(pageFormsMigration.version).toBe("202610290025");
-    expect(MIGRATIONS.at(-1)).toBe(pageFormsMigration);
+    expect(MIGRATIONS).toContain(pageFormsMigration);
     expect(sql).toContain(CUSTOMER_COPY.supplierSuccess);
     expect(sql).not.toContain("delivery-geography");
     expect(sql.match(/ON CONFLICT[^;]*DO NOTHING/g)).toHaveLength(2);

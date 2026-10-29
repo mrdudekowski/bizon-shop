@@ -14,6 +14,8 @@ import { restoreServicePagesAndFooterContactsMigration } from "./0022-restore-se
 import { siteProfileMigration } from "./0023-site-profile";
 import { customerProseMigration } from "./0024-customer-prose";
 import { pageFormsMigration } from "./0025-page-forms";
+import { deliveryGeographyEnumValueMigration } from "./0026-delivery-geography-page";
+import { deliveryGeographyPageMigration } from "./0027-delivery-geography-page";
 import type { Migration } from "../migrationRunner";
 import { cmsEditorSchemaMigration } from "./0001-cms-editor-schema";
 import { shopCategoryCarouselMigration } from "./0002-shop-category-carousel";
@@ -51,6 +53,8 @@ export const MIGRATIONS: readonly Migration[] = [
   siteProfileMigration,
   customerProseMigration,
   pageFormsMigration,
+  deliveryGeographyEnumValueMigration,
+  deliveryGeographyPageMigration,
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.at(-1)?.version ?? "0";

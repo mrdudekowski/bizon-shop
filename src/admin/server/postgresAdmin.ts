@@ -841,7 +841,7 @@ async function mapPage(row: Row): Promise<PageDraft> {
       },
     };
   }
-  const editorial = row.editorial_configured && ["about", "warranty", "branding", "become-a-supplier", "shop-delivery-returns", "privacy-policy"].includes(key) ? {
+  const editorial = row.editorial_configured && ["about", "warranty", "branding", "become-a-supplier", "delivery-geography", "shop-delivery-returns", "privacy-policy"].includes(key) ? {
     ...(row.editorial_heading_configured ? { featuresHeading: str(row.editorial_features_heading) } : {}),
     ...(row.editorial_features_configured ? { features: (await query("SELECT id, title, text FROM pages_editorial_features WHERE _parent_id=$1 ORDER BY _order, id", [row.id])).map((item) => ({ id: str(item.id), title: str(item.title), text: str(item.text) })) } : {}),
     ...(row.editorial_sections_configured ? { sections: (await query("SELECT id, heading, body FROM pages_editorial_sections WHERE _parent_id=$1 ORDER BY _order, id", [row.id])).map((item) => ({ id: str(item.id), heading: str(item.heading), body: str(item.body) })) } : {}),
@@ -2881,7 +2881,7 @@ async function writePage(draft: PageDraft) {
     }
     return;
   }
-  if (["about", "warranty", "branding", "become-a-supplier", "shop-delivery-returns", "privacy-policy"].includes(draft.id)) {
+  if (["about", "warranty", "branding", "become-a-supplier", "delivery-geography", "shop-delivery-returns", "privacy-policy"].includes(draft.id)) {
     const [parent] = await query("SELECT id FROM pages WHERE key=$1", [draft.id]);
     if (!parent) throw new AdminClientError("publish_blocked");
     await query(`UPDATE pages SET editorial_configured=$18, editorial_features_heading=$2, editorial_notice=$3, editorial_proof_title=$4, editorial_proof_text=$5, editorial_proof_image_id=$6, editorial_proof_image_alt=$7, editorial_cta_label=$8, editorial_cta_href=$9, editorial_secondary_label=$10, editorial_secondary_href=$11, editorial_heading_configured=$12, editorial_features_configured=$13, editorial_sections_configured=$14, editorial_notice_configured=$15, editorial_proof_configured=$16, editorial_cta_configured=$17 WHERE key=$1`, [draft.id, draft.featuresHeading ?? "", draft.notice?.body ?? "", draft.proof?.title ?? "", draft.proof?.text ?? "", draft.proof?.image ? Number(draft.proof.image.assetId) : null, draft.proof?.image?.alt ?? "", draft.cta?.label ?? "", draft.cta?.href ?? "", draft.cta?.secondaryLabel ?? "", draft.cta?.secondaryHref ?? "", draft.featuresHeading !== undefined, draft.features !== undefined, draft.sections !== undefined, draft.notice !== undefined, draft.proof !== undefined, draft.cta !== undefined, [draft.featuresHeading, draft.features, draft.sections, draft.notice, draft.proof, draft.cta].some((value) => value !== undefined)]);

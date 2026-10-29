@@ -333,6 +333,7 @@ export const PAGE_KEYS = [
   "warranty",
   "branding",
   "become-a-supplier",
+  "delivery-geography",
   "privacy-policy",
   "shop-delivery-returns",
 ] as const;
