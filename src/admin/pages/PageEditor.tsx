@@ -28,8 +28,20 @@ import {
 import { PlacementFields } from "@/admin/media/PlacementFields";
 import { DocumentFields } from "@/admin/media/DocumentFields";
 
+import { editorialSaveBlockReason } from "./editorialSaveBlock";
 import { PAGE_LABELS } from "./pageLabels";
 import styles from "./PageEditor.module.css";
+
+const PARAGRAPH_HINT = "Пустая строка начинает новый абзац.";
+
+function moveItem<T>(items: T[], index: number, direction: -1 | 1): T[] {
+  const target = index + direction;
+  if (target < 0 || target >= items.length) return items;
+  const next = items.slice();
+  const [item] = next.splice(index, 1);
+  next.splice(target, 0, item);
+  return next;
+}
 
 function SectionFields({
   value,
@@ -141,6 +153,8 @@ function StubFields({
   const patchChannel = (index: number, patch: Partial<SiteProfileDraft["channels"][number]>) => {
     patchSiteProfile({ channels: siteProfile.channels.map((channel, channelIndex) => (channelIndex === index ? { ...channel, ...patch } : channel)) });
   };
+  const [openPointId, setOpenPointId] = useState<string | null>(null);
+  const [openSectionId, setOpenSectionId] = useState<string | null>(null);
   const form = draft.form ?? EMPTY_PAGE_FORM;
   const patchForm = (patch: Partial<PageFormDraft>) => onChange({ ...draft, form: { ...form, ...patch } });
   const patchFormField = (index: number, patch: Partial<PageFormDraft["fields"][number]>) => {
@@ -327,57 +341,95 @@ function StubFields({
           </button>
         </section>
       ) : null}
-      {draft.id !== "contact" ? <section className={styles.section}>
-        <h2>Дополнительный контент</h2>
-        <label>
-          Заголовок списка
-          <input value={draft.featuresHeading ?? ""} onChange={(event) => onChange({ ...draft, featuresHeading: event.target.value })} />
-        </label>
-        {(draft.features ?? []).map((feature, index) => (
-          <fieldset className={styles.row} key={feature.id}>
-            <legend>Пункт {index + 1}</legend>
-            <label>Заголовок пункта<input value={feature.title} onChange={(event) => onChange({ ...draft, features: draft.features!.map((item, itemIndex) => itemIndex === index ? { ...item, title: event.target.value } : item) })} /></label>
-            <label>Текст<textarea value={feature.text} onChange={(event) => onChange({ ...draft, features: draft.features!.map((item, itemIndex) => itemIndex === index ? { ...item, text: event.target.value } : item) })} /></label>
-            <button type="button" onClick={() => onChange({ ...draft, features: draft.features!.filter((_, itemIndex) => itemIndex !== index) })}>Удалить пункт</button>
-          </fieldset>
-        ))}
-        <button type="button" onClick={() => onChange({ ...draft, features: [...(draft.features ?? []), { id: `feature-${crypto.randomUUID()}`, title: "", text: "" }] })}>Добавить пункт</button>
-        {(draft.sections ?? []).map((section, index) => (
-          <fieldset className={styles.row} key={section.id}>
-            <legend>Раздел {index + 1}</legend>
-            <label>Заголовок раздела<input value={section.heading} onChange={(event) => onChange({ ...draft, sections: draft.sections!.map((item, itemIndex) => itemIndex === index ? { ...item, heading: event.target.value } : item) })} /></label>
-            <label>Текст раздела<textarea value={section.body} onChange={(event) => onChange({ ...draft, sections: draft.sections!.map((item, itemIndex) => itemIndex === index ? { ...item, body: event.target.value } : item) })} /></label>
-            <button type="button" onClick={() => onChange({ ...draft, sections: draft.sections!.filter((_, itemIndex) => itemIndex !== index) })}>Удалить раздел</button>
-          </fieldset>
-        ))}
-        <button type="button" onClick={() => onChange({ ...draft, sections: [...(draft.sections ?? []), { id: `section-${crypto.randomUUID()}`, heading: "", body: "" }] })}>Добавить раздел</button>
-        <label>
-          Уведомление
-          <textarea value={draft.notice?.body ?? ""} onChange={(event) => onChange({ ...draft, notice: { body: event.target.value } })} />
-        </label>
-        {draft.notice !== undefined ? <button type="button" onClick={() => onChange({ ...draft, notice: null })}>Убрать уведомление</button> : null}
-        {draft.proof ? (
-          <fieldset className={styles.row}>
-            <legend>Блок подтверждения</legend>
-            <label>Заголовок<input value={draft.proof.title} onChange={(event) => onChange({ ...draft, proof: { ...draft.proof!, title: event.target.value } })} /></label>
-            <label>Текст<textarea value={draft.proof.text} onChange={(event) => onChange({ ...draft, proof: { ...draft.proof!, text: event.target.value } })} /></label>
-            <PlacementFields label="Изображение подтверждения" value={draft.proof.image} onChange={(image) => onChange({ ...draft, proof: { ...draft.proof!, image: image ?? null } })} />
-            <button type="button" onClick={() => onChange({ ...draft, proof: null })}>Убрать блок подтверждения</button>
-          </fieldset>
-        ) : <button type="button" onClick={() => onChange({ ...draft, proof: { title: "", text: "", image: null } })}>Добавить блок подтверждения</button>}
-        {draft.cta ? (
-          <fieldset className={styles.row}>
-            <legend>Кнопка страницы</legend>
-            <CtaFields label="Основная кнопка" value={draft.cta} onChange={(cta) => onChange({ ...draft, cta: { ...draft.cta!, ...cta } })} />
-            <label>Текст второй кнопки<input value={draft.cta.secondaryLabel ?? ""} onChange={(event) => onChange({ ...draft, cta: { ...draft.cta!, secondaryLabel: event.target.value } })} /></label>
-            <label>Ссылка второй кнопки<input value={draft.cta.secondaryHref ?? ""} onChange={(event) => onChange({ ...draft, cta: { ...draft.cta!, secondaryHref: event.target.value } })} /></label>
-            <button type="button" onClick={() => onChange({ ...draft, cta: null })}>Убрать кнопки страницы</button>
-          </fieldset>
-        ) : <button type="button" onClick={() => onChange({ ...draft, cta: { label: "", href: "" } })}>Добавить кнопки страницы</button>}
-      </section> : null}
-      {isLegalPage(draft.id) ? (
-        <DocumentFields value={draft.documents} onChange={(documents) => onChange({ ...draft, documents })} />
-      ) : null}
+      {draft.id !== "contact" ? <>
+        <section className={styles.section}>
+          <h2>Уведомление</h2>
+          <label>
+            Текст
+            <textarea value={draft.notice?.body ?? ""} onChange={(event) => onChange({ ...draft, notice: { body: event.target.value } })} />
+          </label>
+          {draft.notice !== undefined ? <button type="button" onClick={() => onChange({ ...draft, notice: null })}>Убрать уведомление</button> : null}
+        </section>
+        <section className={styles.section}>
+          <h2>Пункты</h2>
+          <label>
+            Заголовок списка
+            <input value={draft.featuresHeading ?? ""} onChange={(event) => onChange({ ...draft, featuresHeading: event.target.value })} />
+          </label>
+          <p className={styles.hint}>{PARAGRAPH_HINT}</p>
+          {(draft.features ?? []).map((feature, index) => (
+            <div className={styles.editorialRow} key={feature.id}>
+              <button type="button" className={styles.editorialSummary} aria-expanded={openPointId === feature.id} onClick={() => setOpenPointId(openPointId === feature.id ? null : feature.id)}>
+                {feature.title.trim() || "Без заголовка"}
+              </button>
+              <button type="button" aria-label="Поднять пункт" disabled={index === 0} onClick={() => onChange({ ...draft, features: moveItem(draft.features ?? [], index, -1) })}>Выше</button>
+              <button type="button" aria-label="Опустить пункт" disabled={index === (draft.features ?? []).length - 1} onClick={() => onChange({ ...draft, features: moveItem(draft.features ?? [], index, 1) })}>Ниже</button>
+              {openPointId === feature.id ? (
+                <div className={styles.editorialBody}>
+                  <label>Заголовок пункта<input value={feature.title} onChange={(event) => onChange({ ...draft, features: draft.features!.map((item, itemIndex) => itemIndex === index ? { ...item, title: event.target.value } : item) })} /></label>
+                  <label>Текст<textarea value={feature.text} onChange={(event) => onChange({ ...draft, features: draft.features!.map((item, itemIndex) => itemIndex === index ? { ...item, text: event.target.value } : item) })} /></label>
+                  <button type="button" onClick={() => onChange({ ...draft, features: draft.features!.filter((_, itemIndex) => itemIndex !== index) })}>Удалить пункт</button>
+                </div>
+              ) : null}
+            </div>
+          ))}
+          <button type="button" onClick={() => {
+            const id = `feature-${crypto.randomUUID()}`;
+            setOpenPointId(id);
+            onChange({ ...draft, features: [...(draft.features ?? []), { id, title: "", text: "" }] });
+          }}>Добавить пункт</button>
+        </section>
+        <section className={styles.section}>
+          <h2>Подтверждение</h2>
+          {draft.proof ? (
+            <fieldset className={styles.row}>
+              <label>Заголовок<input value={draft.proof.title} onChange={(event) => onChange({ ...draft, proof: { ...draft.proof!, title: event.target.value } })} /></label>
+              <label>Текст<textarea value={draft.proof.text} onChange={(event) => onChange({ ...draft, proof: { ...draft.proof!, text: event.target.value } })} /></label>
+              <PlacementFields label="Изображение подтверждения" value={draft.proof.image} onChange={(image) => onChange({ ...draft, proof: { ...draft.proof!, image: image ?? null } })} />
+              <button type="button" onClick={() => onChange({ ...draft, proof: null })}>Убрать подтверждение</button>
+            </fieldset>
+          ) : <button type="button" onClick={() => onChange({ ...draft, proof: { title: "", text: "", image: null } })}>Добавить подтверждение</button>}
+        </section>
+        <section className={styles.section}>
+          <h2>Разделы</h2>
+          <p className={styles.hint}>{PARAGRAPH_HINT}</p>
+          {(draft.sections ?? []).map((section, index) => (
+            <div className={styles.editorialRow} key={section.id}>
+              <button type="button" className={styles.editorialSummary} aria-expanded={openSectionId === section.id} onClick={() => setOpenSectionId(openSectionId === section.id ? null : section.id)}>
+                {section.heading.trim() || "Без заголовка"}
+              </button>
+              <button type="button" aria-label="Поднять раздел" disabled={index === 0} onClick={() => onChange({ ...draft, sections: moveItem(draft.sections ?? [], index, -1) })}>Выше</button>
+              <button type="button" aria-label="Опустить раздел" disabled={index === (draft.sections ?? []).length - 1} onClick={() => onChange({ ...draft, sections: moveItem(draft.sections ?? [], index, 1) })}>Ниже</button>
+              {openSectionId === section.id ? (
+                <div className={styles.editorialBody}>
+                  <label>Заголовок раздела<input value={section.heading} onChange={(event) => onChange({ ...draft, sections: draft.sections!.map((item, itemIndex) => itemIndex === index ? { ...item, heading: event.target.value } : item) })} /></label>
+                  <label>Текст раздела<textarea value={section.body} onChange={(event) => onChange({ ...draft, sections: draft.sections!.map((item, itemIndex) => itemIndex === index ? { ...item, body: event.target.value } : item) })} /></label>
+                  <button type="button" onClick={() => onChange({ ...draft, sections: draft.sections!.filter((_, itemIndex) => itemIndex !== index) })}>Удалить раздел</button>
+                </div>
+              ) : null}
+            </div>
+          ))}
+          <button type="button" onClick={() => {
+            const id = `section-${crypto.randomUUID()}`;
+            setOpenSectionId(id);
+            onChange({ ...draft, sections: [...(draft.sections ?? []), { id, heading: "", body: "" }] });
+          }}>Добавить раздел</button>
+        </section>
+        {isLegalPage(draft.id) ? (
+          <DocumentFields value={draft.documents} onChange={(documents) => onChange({ ...draft, documents })} />
+        ) : null}
+        <section className={styles.section}>
+          <h2>Кнопки</h2>
+          {draft.cta ? (
+            <fieldset className={styles.row}>
+              <CtaFields label="Основная кнопка" value={draft.cta} onChange={(cta) => onChange({ ...draft, cta: { ...draft.cta!, ...cta } })} />
+              <label>Текст второй кнопки<input value={draft.cta.secondaryLabel ?? ""} onChange={(event) => onChange({ ...draft, cta: { ...draft.cta!, secondaryLabel: event.target.value } })} /></label>
+              <label>Ссылка второй кнопки<input value={draft.cta.secondaryHref ?? ""} onChange={(event) => onChange({ ...draft, cta: { ...draft.cta!, secondaryHref: event.target.value } })} /></label>
+              <button type="button" onClick={() => onChange({ ...draft, cta: null })}>Убрать кнопки</button>
+            </fieldset>
+          ) : <button type="button" onClick={() => onChange({ ...draft, cta: { label: "", href: "" } })}>Добавить кнопки</button>}
+        </section>
+      </> : null}
     </>
   );
 }
@@ -719,12 +771,20 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
   if (!canEditorPerform(session, "edit_site_pages")) return <SectionAccessNotice title="Страницы" icon="pages" />;
   const draft = record.draft;
   const dirty = JSON.stringify(draft) !== JSON.stringify(record.savedDraft);
+  const saveBlockReason = editorialSaveBlockReason(draft.id, {
+    features: "features" in draft ? draft.features : undefined,
+    sections: "sections" in draft ? draft.sections : undefined,
+  });
 
   function setDraft(next: PageDraft) {
     setRecord({ ...record!, draft: next });
   }
 
   async function onSave() {
+    if (saveBlockReason) {
+      setMessage(saveBlockReason);
+      return;
+    }
     setSaving(true);
     setMessage("");
     try {
@@ -790,7 +850,9 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
         entityId={pageKey}
         dirty={dirty}
         saving={saving}
+        saveDisabled={saveBlockReason != null}
         message={message}
+        blockers={saveBlockReason ? [{ text: saveBlockReason }] : []}
         lastSavedBy={record.lastSavedBy}
         lastPublishedBy={record.lastPublishedBy}
         onSave={onSave}

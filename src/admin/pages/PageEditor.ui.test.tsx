@@ -95,6 +95,19 @@ describe("PageEditor conflict recovery", () => {
     }));
   });
 
+  it("refuses to save a section that has no heading", async () => {
+    const savePage = vi.fn();
+    mockState.client.savePage = savePage;
+    const user = userEvent.setup();
+    render(createElement(PageEditor, { pageKey: "about" }));
+
+    await user.click(await screen.findByRole("button", { name: "Добавить раздел" }));
+
+    expect(screen.getByRole("button", { name: "Без заголовка" }).getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByRole("button", { name: "Сохранить" })).toHaveProperty("disabled", true);
+    expect(savePage).not.toHaveBeenCalled();
+  });
+
   it("exposes and saves the existing Expertise media and CTA placements", async () => {
     const record = { ...pageRecord, id: "home", draft: homeDraft, savedDraft: homeDraft, publishedSnapshot: homeDraft };
     const savePage = vi.fn().mockResolvedValue(record);

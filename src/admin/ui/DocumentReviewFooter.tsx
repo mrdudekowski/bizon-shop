@@ -25,6 +25,7 @@ export function DocumentReviewFooter({
   entityId,
   dirty,
   saving,
+  saveDisabled = false,
   message,
   blockers = [],
   extraFeedback,
@@ -37,6 +38,7 @@ export function DocumentReviewFooter({
   entityId: string;
   dirty: boolean;
   saving: boolean;
+  saveDisabled?: boolean;
   message?: string;
   blockers?: PublishBlockerHint[];
   extraFeedback?: ReactNode;
@@ -121,7 +123,7 @@ export function DocumentReviewFooter({
           <Link href={`/publications/editor?id=${encodeURIComponent(foreignPending.id)}`}>Открыть пакет</Link>
         </p>
       ) : null}
-      <button type="button" disabled={saving} onClick={() => void save()}>
+      <button type="button" disabled={saving || saveDisabled} onClick={() => void save()}>
         {saving ? "Сохраняем…" : "Сохранить"}
       </button>
       {role === "editor" ? (

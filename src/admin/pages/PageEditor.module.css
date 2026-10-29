@@ -68,6 +68,44 @@
   flex: none;
 }
 
+.hint {
+  margin: 0;
+  color: var(--color-muted, #6b6b6b);
+  font-size: 0.8125rem;
+}
+
+.editorialRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-border, #e4e4e4);
+}
+
+.editorialSummary {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.editorialBody {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+  padding-bottom: 0.75rem;
+}
+
 @media (min-width: 720px) {
   .contactGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
