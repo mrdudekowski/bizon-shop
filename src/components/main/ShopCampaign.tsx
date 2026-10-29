@@ -63,13 +63,6 @@ export function ShopCampaign({ content }: { content: HomeShopCampaignContent }) 
 
   return (
     <div className={styles.shopLead}>
-      <img
-        className={styles.directionWatermark}
-        src="/brand/bizon.svg"
-        alt=""
-        aria-hidden="true"
-        draggable={false}
-      />
       <section
         id={HOME_SHOP_ZONE_SECTION_ID}
         className={styles.shopCampaign}

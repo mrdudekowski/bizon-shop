@@ -84,7 +84,7 @@ export function AssortmentCarousel({ models }: { models: TireCatalogModel[] }) {
           );
         }))}
       </div>
-      {models.length > 1 ? <HorizontalScrollCue trackRef={trackRef} tone="light" /> : null}
+      {models.length > 1 ? <HorizontalScrollCue trackRef={trackRef} count={models.length} tone="light" /> : null}
     </div>
   );
 }

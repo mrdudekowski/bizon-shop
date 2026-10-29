@@ -10,29 +10,28 @@
 }
 
 .rail {
-  position: relative;
+  display: flex;
+  gap: 6px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
   height: 4px;
-  overflow: hidden;
+}
+
+.segment {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 4px;
   border-radius: var(--radius-pill);
   background: rgba(28, 28, 28, 0.14);
 }
 
-.cue[data-tone="dark"] .rail {
+.cue[data-tone="dark"] .segment {
   background: rgba(255, 255, 255, 0.18);
 }
 
-.thumb {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: var(--thumb-offset, 0%);
-  width: var(--thumb-width, 34%);
-  border-radius: var(--radius-pill);
+.segment[data-active="true"] {
   background: var(--bizon-coral-500);
-  transition: left 80ms linear, width 160ms ease-out;
 }
 
 .hint {
@@ -76,8 +75,3 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .thumb {
-    transition: none;
-  }
-}

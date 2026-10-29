@@ -118,7 +118,7 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
               </Link>
             ))}
           </div>
-          {homeModels.length > 1 ? <HorizontalScrollCue trackRef={modelsTrackRef} tone="dark" /> : null}
+          {homeModels.length > 1 ? <HorizontalScrollCue trackRef={modelsTrackRef} count={homeModels.length} tone="dark" /> : null}
           <ShopOrderSteps steps={page.orderSteps} />
         </div>
       </section>
