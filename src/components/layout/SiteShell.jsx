@@ -20,6 +20,7 @@ import { ROUTES } from "@/constants/navigation";
 import { fetchBrowserTireCatalog } from "@/lib/catalog/browserTireCatalog";
 import { buildMainDualPaneMenuSections, buildShopDualPaneMenuSections } from "@/lib/content/buildDualPaneMenu";
 import { fetchBrowserPublishedJson, fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
+import { readPublishedRevision } from "@/lib/content/readPublishedRevision";
 
 /**
  * Client shell: header, burger menu, footer, scroll helpers.
@@ -55,16 +56,21 @@ export function SiteShell({ children, mainMenu, shopMenu, initialFooterContact =
 
   useEffect(() => {
     const controller = new AbortController();
-    void fetchBrowserPublishedList("/v1/shop/categories", controller.signal)
-      .then(setPublishedCategories)
-      .catch((error) => {
-        if (!controller.signal.aborted) console.warn("Could not refresh Shop footer categories; showing generated links.", error);
-      });
-    void fetchBrowserPublishedJson("/v1/pages/contact", controller.signal)
-      .then((contactPatch) => {
-        if (!controller.signal.aborted && contactPatch && typeof contactPatch === "object") {
-          setFooterContact(contactPatch.footerContact ?? null);
-        }
+    void readPublishedRevision(controller.signal)
+      .then((refresh) => {
+        if (!refresh || controller.signal.aborted) return;
+        void fetchBrowserPublishedList("/v1/shop/categories", controller.signal)
+          .then(setPublishedCategories)
+          .catch((error) => {
+            if (!controller.signal.aborted) console.warn("Could not refresh Shop footer categories; showing generated links.", error);
+          });
+        void fetchBrowserPublishedJson("/v1/pages/contact", controller.signal)
+          .then((contactPatch) => {
+            if (!controller.signal.aborted && contactPatch && typeof contactPatch === "object") {
+              setFooterContact(contactPatch.footerContact ?? null);
+            }
+          })
+          .catch(() => {});
       })
       .catch(() => {});
     return () => controller.abort();

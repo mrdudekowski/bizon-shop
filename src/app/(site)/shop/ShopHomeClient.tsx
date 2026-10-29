@@ -13,6 +13,7 @@ import type { ShopHomePageContent } from "@/lib/content/pages/types";
 import { getPageDefaults } from "@/lib/content/pages/defaults";
 import { mergeShopHomeContent } from "@/lib/content/pages/merge";
 import { fetchBrowserPublishedJson, fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
+import { readPublishedRevision } from "@/lib/content/readPublishedRevision";
 import { shopHomeCarouselSlides, shopHomeCategoryCards } from "@/lib/content/shopCategoryPresentation";
 import styles from "./ShopHome.module.css";
 
@@ -36,6 +37,8 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
     const controller = new AbortController();
     const refresh = async () => {
       try {
+        const refreshNeeded = await readPublishedRevision(controller.signal);
+        if (!refreshNeeded || controller.signal.aborted) return;
         const [pagePatch, nextCategories, nextModels] = await Promise.all([
           fetchBrowserPublishedJson<unknown>("/v1/pages/shop-home", controller.signal),
           fetchBrowserPublishedList<CmsShopCategory>("/v1/shop/categories", controller.signal),

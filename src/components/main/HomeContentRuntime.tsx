@@ -6,9 +6,9 @@ import { ExpertiseSupport } from "@/components/main/ExpertiseSupport";
 import { MainHero } from "@/components/main/MainHero";
 import { ShopCampaign } from "@/components/main/ShopCampaign";
 import { TireDirectionShowcase } from "@/components/main/TireDirectionShowcase";
-import { fetchBrowserTireCatalog } from "@/lib/catalog/browserTireCatalog";
 import type { TireCatalogReadModel } from "@/lib/catalog/tireReadModel";
 import { fetchBrowserPublishedJson } from "@/lib/content/browserPublishedClient";
+import { readPublishedRevision } from "@/lib/content/readPublishedRevision";
 import { getPageDefaults } from "@/lib/content/pages/defaults";
 import { mergeHomeContent } from "@/lib/content/pages/merge";
 import type { HomePageContent } from "@/lib/content/pages/types";
@@ -22,19 +22,21 @@ export function HomeContentRuntime({
   initialCatalog: TireCatalogReadModel | null;
 }) {
   const [page, setPage] = useState(initialPage);
-  const [catalog, setCatalog] = useState(initialCatalog);
+  const [catalog] = useState(initialCatalog);
 
   useEffect(() => {
     const controller = new AbortController();
-    void fetchBrowserPublishedJson<Parameters<typeof mergeHomeContent>[1]>("/v1/pages/home", controller.signal)
-      .then((patch) => setPage(mergeHomeContent(getPageDefaults("home"), patch)))
+    void readPublishedRevision(controller.signal)
+      .then((refresh) => {
+        if (!refresh || controller.signal.aborted) return null;
+        return fetchBrowserPublishedJson<Parameters<typeof mergeHomeContent>[1]>("/v1/pages/home", controller.signal);
+      })
+      .then((patch) => {
+        if (!patch || controller.signal.aborted) return;
+        setPage(mergeHomeContent(getPageDefaults("home"), patch));
+      })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) console.warn("Could not refresh published home content; showing generated content.", error);
-      });
-    void fetchBrowserTireCatalog(controller.signal)
-      .then(setCatalog)
-      .catch((error: unknown) => {
-        if (!controller.signal.aborted) console.warn("Could not refresh published home catalog; showing generated content.", error);
       });
     return () => controller.abort();
   }, []);
