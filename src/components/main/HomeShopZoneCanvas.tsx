@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
-import { canvasToneColor, inkForCanvas, resolveCanvasColor } from "./canvasColor";
+import { canvasToneColor, inkForCanvas } from "./canvasColor";
 
 export function HomeShopZoneCanvas() {
   const pathname = usePathname();
@@ -11,36 +11,28 @@ export function HomeShopZoneCanvas() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>("[data-canvas-page]");
     if (!root) return undefined;
-
-    let frame = 0;
-    const apply = () => {
-      const headerLine = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-height")) || 80;
-      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-      const stops = [...root.querySelectorAll<HTMLElement>("[data-canvas-tone]")].map((element) => ({
-        top: element.getBoundingClientRect().top,
-        color: canvasToneColor(element.getAttribute("data-canvas-tone")),
-      }));
-      const canvas = resolveCanvasColor(stops, viewportHeight, headerLine);
+    const sections = [...root.querySelectorAll<HTMLElement>("[data-canvas-tone]")];
+    let painted = "";
+    const paint = (tone: string | null) => {
+      const canvas = canvasToneColor(tone);
+      if (canvas === painted) return;
+      painted = canvas;
       document.documentElement.style.setProperty("--page-canvas", canvas);
       document.documentElement.style.setProperty("--page-ink", inkForCanvas(canvas));
     };
-    const schedule = () => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
-        apply();
-      });
-    };
-
-    apply();
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule);
-    window.visualViewport?.addEventListener("resize", schedule);
+    const headerLine = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-height")) || 80;
+    const visible = new Map<Element, number>();
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) visible.set(entry.target, entry.boundingClientRect.top);
+        else visible.delete(entry.target);
+      }
+      const active = [...visible.entries()].sort((left, right) => left[1] - right[1])[0];
+      paint(active ? (active[0] as HTMLElement).getAttribute("data-canvas-tone") : null);
+    }, { rootMargin: `-${headerLine}px 0px -60% 0px`, threshold: 0 });
+    for (const section of sections) observer.observe(section);
     return () => {
-      window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
-      window.visualViewport?.removeEventListener("resize", schedule);
-      if (frame) window.cancelAnimationFrame(frame);
+      observer.disconnect();
       document.documentElement.style.removeProperty("--page-canvas");
       document.documentElement.style.removeProperty("--page-ink");
     };

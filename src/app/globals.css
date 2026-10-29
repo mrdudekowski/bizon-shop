@@ -283,6 +283,7 @@ body {
   font-family: var(--font-sans);
   color: var(--color-foreground);
   background: var(--page-canvas, var(--color-background));
+  transition: background-color 200ms linear;
   min-height: 100vh;
   /* Предотвращаем горизонтальный скролл при переполнении контента */
   overflow-x: hidden;
@@ -2067,6 +2068,10 @@ textarea.field-input {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
+  }
+
+  body {
+    transition: none;
   }
 }
 
