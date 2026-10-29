@@ -77,6 +77,25 @@ describe("putMedia", () => {
     expect(result.sha256).toBe(createHash("sha256").update(stored!).digest("hex"));
   });
 
+  it("stores a wide PNG as a WebP no wider than 1600", async () => {
+    setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
+    setEnv("S3_BUCKET", "bucket");
+    setEnv("S3_ACCESS_KEY_ID", "id");
+    setEnv("S3_SECRET_ACCESS_KEY", "secret");
+    const wide = await sharp({
+      create: { width: 2400, height: 1200, channels: 3, background: { r: 200, g: 40, b: 30 } },
+    }).png().toBuffer();
+    const store = memoryStore();
+    const result = await putMedia(store, { name: "hero.png", mimeType: "image/png", body: wide });
+    const stored = store.objects.get(result.key);
+    const meta = await sharp(stored!).metadata();
+    expect(result.mimeType).toBe("image/webp");
+    expect(meta.format).toBe("webp");
+    expect(meta.width).toBe(1600);
+    expect(meta.height).toBe(800);
+    expect(result.byteSize).toBe(stored!.length);
+  });
+
   it("converts JPEG uploads to WebP and keeps the declared source type", async () => {
     setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
     setEnv("S3_BUCKET", "bucket");

@@ -5,6 +5,7 @@ import { isS3Configured, isS3PublicUrlConfigured } from "./env";
 import type { ObjectStore } from "./objectStore";
 
 export const MAX_MEDIA_BYTES = 20 * 1024 * 1024;
+export const DISPLAY_MAX_EDGE = 1600;
 const WEBP_QUALITY = 85;
 export const ALLOWED_MEDIA_MIME_TYPES = [
   "image/jpeg",
@@ -102,15 +103,17 @@ function assertImageMetadata(metadata: { format?: string; width?: number; height
   }
 }
 
-async function convertImageToWebp(body: Buffer, sourceMimeType: string): Promise<Buffer> {
-  try {
-    const image = sharp(body, { failOn: "warning" });
-    const metadata = await image.metadata();
-    assertImageMetadata(metadata, sourceMimeType);
-    return await image.rotate().webp({ quality: WEBP_QUALITY }).toBuffer();
-  } catch (error) {
-    throw new MediaRejected("publish_blocked", { cause: error });
-  }
+async function displayWebp(body: Buffer): Promise<Buffer> {
+  return sharp(body, { failOn: "warning" })
+    .rotate()
+    .resize({
+      width: DISPLAY_MAX_EDGE,
+      height: DISPLAY_MAX_EDGE,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({ quality: WEBP_QUALITY })
+    .toBuffer();
 }
 
 function normalizeDeclaredMime(mimeType: string): string {
@@ -155,8 +158,25 @@ export async function putMedia(
   let body = file.body;
   let mimeType = sourceMimeType;
   if (sourceMimeType === "image/jpeg" || sourceMimeType === "image/png") {
-    body = await convertImageToWebp(file.body, sourceMimeType);
+    try {
+      body = await displayWebp(file.body);
+    } catch (error) {
+      throw new MediaRejected("publish_blocked", { cause: error });
+    }
     mimeType = "image/webp";
+  } else if (sourceMimeType === "image/webp") {
+    const meta = await sharp(file.body).metadata();
+    const tooWide = (meta.width ?? 0) > DISPLAY_MAX_EDGE || (meta.height ?? 0) > DISPLAY_MAX_EDGE;
+    if (tooWide) {
+      try {
+        body = await displayWebp(file.body);
+      } catch (error) {
+        throw new MediaRejected("publish_blocked", { cause: error });
+      }
+      mimeType = "image/webp";
+    } else {
+      await assertImageDecodes(file.body, sourceMimeType);
+    }
   } else {
     await assertImageDecodes(file.body, sourceMimeType);
   }
