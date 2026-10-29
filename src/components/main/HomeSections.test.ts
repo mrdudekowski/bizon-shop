@@ -38,6 +38,7 @@ describe("CMS driven home sections", () => {
         lead: "Созданы для вашей техники",
         imageUrl: "/media/wheel.jpg",
         imageAlt: "Диск BIZON",
+        frames: [],
         cta: { label: "Выбрать диск", href: "/shop" },
       },
     });

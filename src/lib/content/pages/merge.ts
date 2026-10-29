@@ -62,7 +62,9 @@ export function pickImageUrl(value: string | null | undefined, fallback: string)
 }
 
 function focalField<Key extends string>(key: Key, value: number | undefined): Partial<Record<Key, number>> {
-  return typeof value === "number" ? { [key]: value } : {};
+  const result: Partial<Record<Key, number>> = {};
+  if (typeof value === "number") result[key] = value;
+  return result;
 }
 
 type CtaPatch = Partial<PageCta> | undefined;
