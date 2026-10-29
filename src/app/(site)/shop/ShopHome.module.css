@@ -488,7 +488,7 @@
     min-height: 360px;
   }
 
-  .loopClone { display: flex; }
+  .loopClone { display: block; }
 }
 
 @media (max-width: 900px) {

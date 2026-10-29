@@ -2,7 +2,7 @@
 
 import { useEffect, type RefObject } from "react";
 
-import { nextLoopScroll } from "./loopScroll";
+import { loopPeriod, nextLoopScroll } from "./loopScroll";
 
 export function useLoopingTrack(
   trackRef: RefObject<HTMLElement | null>,
@@ -12,12 +12,14 @@ export function useLoopingTrack(
     const track = trackRef.current;
     if (!track || itemCount < 2) return undefined;
     const media = window.matchMedia("(max-width: 1023px)");
-    let frame = 0;
+
+    const offsets = () => Array.from(track.children, (card) => (card as HTMLElement).offsetLeft);
 
     const pin = () => {
       if (!media.matches) return;
-      const cycleWidth = track.scrollWidth / 2;
-      const next = nextLoopScroll(track.scrollLeft, cycleWidth);
+      const period = loopPeriod(offsets(), itemCount);
+      if (period <= 0) return;
+      const next = nextLoopScroll(track.scrollLeft, period);
       if (next !== track.scrollLeft) track.scrollLeft = next;
     };
 
@@ -26,19 +28,15 @@ export function useLoopingTrack(
         track.scrollLeft = 0;
         return;
       }
-      track.scrollLeft = track.scrollWidth / 2;
+      const period = loopPeriod(offsets(), itemCount);
+      if (period > 0) track.scrollLeft = period;
     };
 
     start();
-    const onScroll = () => {
-      window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(pin);
-    };
-    track.addEventListener("scroll", onScroll, { passive: true });
+    track.addEventListener("scrollend", pin);
     media.addEventListener("change", start);
     return () => {
-      window.cancelAnimationFrame(frame);
-      track.removeEventListener("scroll", onScroll);
+      track.removeEventListener("scrollend", pin);
       media.removeEventListener("change", start);
     };
   }, [itemCount, trackRef]);

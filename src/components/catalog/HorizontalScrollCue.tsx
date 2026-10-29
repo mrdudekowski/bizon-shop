@@ -36,10 +36,10 @@ export function HorizontalScrollCue({
     };
 
     update();
-    track.addEventListener("scroll", update, { passive: true });
+    track.addEventListener("scrollend", update);
     window.addEventListener("resize", update);
     return () => {
-      track.removeEventListener("scroll", update);
+      track.removeEventListener("scrollend", update);
       window.removeEventListener("resize", update);
     };
   }, [count, trackRef]);
