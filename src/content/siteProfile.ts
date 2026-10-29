@@ -57,21 +57,21 @@ export function siteChannelsAreValid(channels: SiteChannel[]): boolean {
   );
 }
 
-/** Replaces phone, email, address and all channel rows; legal text and requisites are left untouched. */
+/** Replaces contact fields, messenger channels, legal summary, and all requisite rows in one write. */
 export async function writeSiteProfileContacts(
   db: SiteProfileDatabase,
-  contacts: Pick<SiteProfile, "phone" | "email" | "address" | "channels">,
+  contacts: Pick<SiteProfile, "phone" | "email" | "address" | "channels" | "legalSummary" | "requisites">,
 ): Promise<void> {
   await db.query(
     `INSERT INTO site_profile (id, phone, email, address, channels_note, legal_summary, price_notice, made_to_order_notice)
      VALUES (1, $1, $2, $3, $4, $5, $6, $7)
-     ON CONFLICT (id) DO UPDATE SET phone = EXCLUDED.phone, email = EXCLUDED.email, address = EXCLUDED.address`,
+     ON CONFLICT (id) DO UPDATE SET phone = EXCLUDED.phone, email = EXCLUDED.email, address = EXCLUDED.address, legal_summary = EXCLUDED.legal_summary`,
     [
       contacts.phone,
       contacts.email,
       contacts.address,
       SITE_PROFILE_DEFAULTS.channelsNote,
-      SITE_PROFILE_DEFAULTS.legalSummary,
+      contacts.legalSummary,
       SITE_PROFILE_DEFAULTS.priceNotice,
       SITE_PROFILE_DEFAULTS.madeToOrderNotice,
     ],
@@ -81,6 +81,13 @@ export async function writeSiteProfileContacts(
     await db.query(
       `INSERT INTO site_profile_channels (id, sort_order, label, href, enabled) VALUES ($1, $2, $3, $4, $5)`,
       [channel.id.trim(), index, channel.label.trim(), channel.href.trim(), channel.enabled],
+    );
+  }
+  await db.query(`DELETE FROM site_profile_requisites`);
+  for (const [index, requisite] of contacts.requisites.entries()) {
+    await db.query(
+      `INSERT INTO site_profile_requisites (id, sort_order, label, value) VALUES ($1, $2, $3, $4)`,
+      [requisite.id.trim(), index, requisite.label.trim(), requisite.value],
     );
   }
 }

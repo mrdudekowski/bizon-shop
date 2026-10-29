@@ -849,7 +849,14 @@ async function mapPage(row: Row): Promise<PageDraft> {
     ...(row.editorial_cta_configured ? { cta: row.editorial_cta_label && row.editorial_cta_href ? { label: str(row.editorial_cta_label), href: str(row.editorial_cta_href), secondaryLabel: str(row.editorial_secondary_label), secondaryHref: str(row.editorial_secondary_href) } : null } : {}),
   } : {};
   const profile = key === "contact" ? await readSiteProfile({ query }) : null;
-  const contactProfile = profile && { phone: profile.phone, email: profile.email, address: profile.address, channels: profile.channels };
+  const contactProfile = profile && {
+    phone: profile.phone,
+    email: profile.email,
+    address: profile.address,
+    channels: profile.channels,
+    legalSummary: profile.legalSummary,
+    requisites: profile.requisites,
+  };
   return {
     ...editorial,
     id: key as Exclude<PageKey, "home" | "shop-home">,

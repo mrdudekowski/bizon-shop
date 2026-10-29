@@ -46,6 +46,11 @@ describe("site profile contact write", () => {
     phone: "+7 (421) 200-00-00",
     email: "sales@bizon.ru",
     address: "Хабаровск",
+    legalSummary: "Реквизиты оператора.",
+    requisites: [
+      { id: "inn", label: "ИНН", value: "000" },
+      { id: "kpp", label: "КПП", value: "111" },
+    ],
     channels: [
       { id: "telegram", label: "Telegram", href: "https://t.me/bizon", enabled: true },
       { id: "channel-1", label: "Дзен", href: "", enabled: false },
@@ -58,11 +63,17 @@ describe("site profile contact write", () => {
 
     expect(calls[0].sql).toContain("INSERT INTO site_profile");
     expect(calls[0].sql).toContain("ON CONFLICT (id) DO UPDATE");
-    expect(calls[0].params.slice(0, 3)).toEqual(["+7 (421) 200-00-00", "sales@bizon.ru", "Хабаровск"]);
+    expect(calls[0].sql).toContain("legal_summary = EXCLUDED.legal_summary");
+    expect(calls[0].params.slice(0, 5)).toEqual(["+7 (421) 200-00-00", "sales@bizon.ru", "Хабаровск", CUSTOMER_COPY.channelsNote, "Реквизиты оператора."]);
     expect(calls[1].sql).toContain("DELETE FROM site_profile_channels");
-    expect(calls.slice(2).map((call) => call.params)).toEqual([
+    expect(calls.slice(2, 4).map((call) => call.params)).toEqual([
       ["telegram", 0, "Telegram", "https://t.me/bizon", true],
       ["channel-1", 1, "Дзен", "", false],
+    ]);
+    expect(calls[4].sql).toContain("DELETE FROM site_profile_requisites");
+    expect(calls.slice(5).map((call) => call.params)).toEqual([
+      ["inn", 0, "ИНН", "000"],
+      ["kpp", 1, "КПП", "111"],
     ]);
   });
 
