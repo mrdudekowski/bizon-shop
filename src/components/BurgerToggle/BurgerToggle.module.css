@@ -11,11 +11,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform var(--transition-premium), background-color var(--transition-fast);
-}
-
-.toggle:hover {
-  background: var(--chrome-hover-bg, rgba(228, 84, 51, 0.1));
+  transition: transform var(--transition-premium);
 }
 
 .icon {

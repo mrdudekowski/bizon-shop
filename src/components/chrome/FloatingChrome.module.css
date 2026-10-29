@@ -2,7 +2,6 @@
   --chrome-bg: rgba(248, 249, 248, 0.88);
   --chrome-border: rgba(28, 28, 28, 0.14);
   --chrome-color: var(--bizon-neutral-900);
-  --chrome-hover-bg: rgba(228, 84, 51, 0.1);
   --chrome-hover-color: var(--bizon-coral-600);
   position: sticky;
   top: var(--chrome-inset-top, 12px);
@@ -19,7 +18,6 @@
   --chrome-bg: rgba(16, 19, 19, 0.68);
   --chrome-border: rgba(255, 255, 255, 0.25);
   --chrome-color: rgba(255, 255, 255, 0.92);
-  --chrome-hover-bg: rgba(228, 84, 51, 0.18);
   --chrome-hover-color: var(--bizon-coral-300);
 }
 
@@ -170,7 +168,7 @@
 .navigation :global(a:hover),
 .navigation :global(button:hover),
 .utility :global(a:hover) {
-  background: var(--chrome-hover-bg);
+  background: transparent;
   color: var(--chrome-hover-color);
 }
 
