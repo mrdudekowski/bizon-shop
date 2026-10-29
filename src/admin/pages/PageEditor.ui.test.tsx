@@ -327,7 +327,7 @@ describe("PageEditor conflict recovery", () => {
         successMessage: "Спасибо за предложение.",
         fields: [
           { id: "companyName", label: "Название компании", type: "text", required: true },
-          { id: "catalogFile", label: "Файл или каталог", type: "file", required: false },
+          { id: "companySite", label: "Сайт", type: "url", required: false },
         ],
       },
     };
@@ -340,7 +340,8 @@ describe("PageEditor conflict recovery", () => {
 
     expect(await screen.findByLabelText("Текст после отправки")).toHaveProperty("value", "Спасибо за предложение.");
     expect(screen.getByDisplayValue("Название компании")).toBeTruthy();
-    await user.click(within(screen.getByRole("group", { name: "Файл или каталог" })).getByRole("button", { name: "Удалить поле" }));
+    expect(screen.queryByRole("option", { name: "Файл" })).toBeNull();
+    await user.click(within(screen.getByRole("group", { name: "Сайт" })).getByRole("button", { name: "Удалить поле" }));
     await user.click(screen.getByRole("button", { name: "Добавить поле" }));
     const created = screen.getByRole("group", { name: "Новое поле" });
     await user.type(within(created).getByLabelText("Название поля"), "Регион");

@@ -113,7 +113,6 @@ const FIELD_TYPE_LABELS: Record<PageFormDraft["fields"][number]["type"], string>
   email: "Email",
   url: "Ссылка",
   textarea: "Многострочный текст",
-  file: "Файл",
 };
 
 const EMPTY_SITE_PROFILE: SiteProfileDraft = {
@@ -157,8 +156,9 @@ function StubFields({
   const [openSectionId, setOpenSectionId] = useState<string | null>(null);
   const form = draft.form ?? EMPTY_PAGE_FORM;
   const patchForm = (patch: Partial<PageFormDraft>) => onChange({ ...draft, form: { ...form, ...patch } });
+  const formFields = form.fields.filter((field) => field.type in FIELD_TYPE_LABELS);
   const patchFormField = (index: number, patch: Partial<PageFormDraft["fields"][number]>) => {
-    patchForm({ fields: form.fields.map((field, fieldIndex) => (fieldIndex === index ? { ...field, ...patch } : field)) });
+    patchForm({ fields: formFields.map((field, fieldIndex) => (fieldIndex === index ? { ...field, ...patch } : field)) });
   };
   const patchRequisite = (index: number, patch: Partial<SiteProfileDraft["requisites"][number]>) => {
     patchSiteProfile({ requisites: siteProfile.requisites.map((requisite, requisiteIndex) => (requisiteIndex === index ? { ...requisite, ...patch } : requisite)) });
@@ -306,7 +306,7 @@ function StubFields({
             Текст после отправки
             <textarea value={form.successMessage} onChange={(event) => patchForm({ successMessage: event.target.value })} />
           </label>
-          {form.fields.map((field, index) => (
+          {formFields.map((field, index) => (
             <fieldset className={styles.row} key={field.id}>
               <legend>{field.label || "Новое поле"}</legend>
               <label>
@@ -328,14 +328,14 @@ function StubFields({
                 <input type="checkbox" checked={field.required} onChange={(event) => patchFormField(index, { required: event.target.checked })} />
                 Обязательное
               </label>
-              <button type="button" onClick={() => patchForm({ fields: form.fields.filter((_, fieldIndex) => fieldIndex !== index) })}>
+              <button type="button" onClick={() => patchForm({ fields: formFields.filter((_, fieldIndex) => fieldIndex !== index) })}>
                 Удалить поле
               </button>
             </fieldset>
           ))}
           <button
             type="button"
-            onClick={() => patchForm({ fields: [...form.fields, { id: `field-${crypto.randomUUID()}`, label: "", type: "text", required: false }] })}
+            onClick={() => patchForm({ fields: [...formFields, { id: `field-${crypto.randomUUID()}`, label: "", type: "text", required: false }] })}
           >
             Добавить поле
           </button>
@@ -418,7 +418,7 @@ function StubFields({
         {isLegalPage(draft.id) ? (
           <DocumentFields value={draft.documents} onChange={(documents) => onChange({ ...draft, documents })} />
         ) : null}
-        <section className={styles.section}>
+        {(PAGE_FORM_KEYS as readonly string[]).includes(draft.id) ? null : <section className={styles.section}>
           <h2>Кнопки</h2>
           {draft.cta ? (
             <fieldset className={styles.row}>
@@ -428,7 +428,7 @@ function StubFields({
               <button type="button" onClick={() => onChange({ ...draft, cta: null })}>Убрать кнопки</button>
             </fieldset>
           ) : <button type="button" onClick={() => onChange({ ...draft, cta: { label: "", href: "" } })}>Добавить кнопки</button>}
-        </section>
+        </section>}
       </> : null}
     </>
   );

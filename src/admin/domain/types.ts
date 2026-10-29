@@ -377,7 +377,7 @@ export type SiteProfileDraft = {
 /** Request form of the supplier and delivery-geography pages; stored in page_forms and page_form_fields. */
 export type PageFormDraft = {
   successMessage: string;
-  fields: { id: string; label: string; type: "text" | "tel" | "email" | "url" | "textarea" | "file"; required: boolean }[];
+  fields: { id: string; label: string; type: "text" | "tel" | "email" | "url" | "textarea"; required: boolean }[];
 };
 
 export type StubPageDraft = {
