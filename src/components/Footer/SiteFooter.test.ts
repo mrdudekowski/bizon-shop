@@ -16,10 +16,10 @@ describe("SiteFooter contacts", () => {
       "Телефон",
       "Email",
       "Адрес",
-      "Контактный номер будет опубликован позже.",
-      "Контактный email будет опубликован позже.",
-      "Адрес компании будет опубликован позже.",
-      "Актуальные ссылки на каналы связи будут опубликованы позже.",
+      PLACEHOLDER_SITE_PROFILE.phone,
+      PLACEHOLDER_SITE_PROFILE.email,
+      PLACEHOLDER_SITE_PROFILE.address,
+      PLACEHOLDER_SITE_PROFILE.channelsNote,
     ]) {
       expect(html).toContain(text);
     }
@@ -51,9 +51,9 @@ describe("SiteFooter contacts", () => {
   it("shows the placeholder sentence when the editor clears a contact value", () => {
     const html = renderFooter({ ...PLACEHOLDER_SITE_PROFILE, phone: "", email: " ", address: "" });
 
-    expect(html).toContain("Контактный номер будет опубликован позже.");
-    expect(html).toContain("Контактный email будет опубликован позже.");
-    expect(html).toContain("Адрес компании будет опубликован позже.");
+    expect(html).toContain(PLACEHOLDER_SITE_PROFILE.phone);
+    expect(html).toContain(PLACEHOLDER_SITE_PROFILE.email);
+    expect(html).toContain(PLACEHOLDER_SITE_PROFILE.address);
   });
 
   it("renders a custom channel as a text link with its label", () => {

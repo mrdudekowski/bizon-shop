@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { PLACEHOLDER_SITE_PROFILE } from "@/lib/content/siteProfile";
 import {
   assertPublicSiteReadiness,
   findPublicSiteReadinessIssues,
@@ -9,8 +10,8 @@ describe("findPublicSiteReadinessIssues", () => {
   it("rejects placeholder contact sentences, example host, and missing public assets", () => {
     expect(
       findPublicSiteReadinessIssues({
-        phone: "Контактный номер будет опубликован позже.",
-        email: "Контактный email будет опубликован позже.",
+        phone: PLACEHOLDER_SITE_PROFILE.phone,
+        email: PLACEHOLDER_SITE_PROFILE.email,
         siteUrl: "https://bizontires.example",
         publicAssets: new Set<string>(),
       }).map((issue) => issue.code),
