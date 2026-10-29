@@ -263,4 +263,62 @@ describe("PageEditor conflict recovery", () => {
 
     expect((await screen.findByRole("alert")).textContent).toContain("Не удалось загрузить файл");
   });
+
+  it("edits the supplier form: success text, a field, and removal; the about page has no form editor", async () => {
+    const supplierDraft = {
+      id: "become-a-supplier",
+      seoTitle: "Поставщикам",
+      seoDescription: "",
+      hero: { eyebrow: "", title: "", lead: "" },
+      documents: [],
+      form: {
+        successMessage: "Спасибо за предложение.",
+        fields: [
+          { id: "companyName", label: "Название компании", type: "text", required: true },
+          { id: "catalogFile", label: "Файл или каталог", type: "file", required: false },
+        ],
+      },
+    };
+    const record = { ...pageRecord, id: "become-a-supplier", draft: supplierDraft, savedDraft: supplierDraft, publishedSnapshot: supplierDraft };
+    const savePage = vi.fn().mockImplementation(async (_key: string, next: typeof supplierDraft) => ({ ...record, draft: next, savedDraft: next }));
+    mockState.client.getPage = vi.fn().mockResolvedValue(record);
+    mockState.client.savePage = savePage;
+    const user = userEvent.setup();
+    render(createElement(PageEditor, { pageKey: "become-a-supplier" }));
+
+    expect(await screen.findByLabelText("Текст после отправки")).toHaveProperty("value", "Спасибо за предложение.");
+    expect(screen.getByDisplayValue("Название компании")).toBeTruthy();
+    await user.click(within(screen.getByRole("group", { name: "Файл или каталог" })).getByRole("button", { name: "Удалить поле" }));
+    await user.click(screen.getByRole("button", { name: "Добавить поле" }));
+    const created = screen.getByRole("group", { name: "Новое поле" });
+    await user.type(within(created).getByLabelText("Название поля"), "Регион");
+    await user.selectOptions(within(created).getByLabelText("Тип поля"), "textarea");
+    await user.click(within(created).getByRole("checkbox", { name: "Обязательное" }));
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    expect((await screen.findByRole("status")).textContent).toBe("Черновик сохранён");
+    expect(savePage).toHaveBeenCalledWith("become-a-supplier", expect.objectContaining({
+      form: {
+        successMessage: "Спасибо за предложение.",
+        fields: [
+          { id: "companyName", label: "Название компании", type: "text", required: true },
+          { id: expect.stringMatching(/^field-/), label: "Регион", type: "textarea", required: true },
+        ],
+      },
+    }));
+
+    cleanup();
+    mockState.client.getPage = vi.fn().mockResolvedValue(pageRecord);
+    render(createElement(PageEditor, { pageKey: "about" }));
+    await screen.findByLabelText("Заголовок страницы в поиске");
+    expect(screen.queryByLabelText("Текст после отправки")).toBeNull();
+  });
+
+  it("does not throw on an older supplier draft without a form", async () => {
+    const olderDraft = { ...draft, id: "become-a-supplier" };
+    mockState.client.getPage = vi.fn().mockResolvedValue({ ...pageRecord, id: "become-a-supplier", draft: olderDraft, savedDraft: olderDraft, publishedSnapshot: olderDraft });
+    render(createElement(PageEditor, { pageKey: "become-a-supplier" }));
+
+    expect(await screen.findByLabelText("Текст после отправки")).toHaveProperty("value", "");
+  });
 });

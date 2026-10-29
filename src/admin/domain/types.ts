@@ -356,6 +356,9 @@ export type PageSectionCopy = {
   lead: string;
 };
 
+/** Pages whose request form is edited with the page. `delivery-geography` joins `PageKey` when its page exists. */
+export const PAGE_FORM_KEYS = ["become-a-supplier", "delivery-geography"] as const;
+
 export const LEGAL_PAGE_KEYS = ["privacy-policy", "warranty", "shop-delivery-returns"] as const;
 
 /** Contacts and messenger channels of the contact page; stored in site_profile and site_profile_channels. */
@@ -366,6 +369,12 @@ export type SiteProfileDraft = {
   channels: { id: string; label: string; href: string; enabled: boolean }[];
   legalSummary: string;
   requisites: { id: string; label: string; value: string }[];
+};
+
+/** Request form of the supplier and delivery-geography pages; stored in page_forms and page_form_fields. */
+export type PageFormDraft = {
+  successMessage: string;
+  fields: { id: string; label: string; type: "text" | "tel" | "email" | "url" | "textarea" | "file"; required: boolean }[];
 };
 
 export type StubPageDraft = {
@@ -381,6 +390,7 @@ export type StubPageDraft = {
   proof?: { image?: ImagePlacement | null; title: string; text: string } | null;
   cta?: (PageCta & { secondaryLabel?: string; secondaryHref?: string }) | null;
   siteProfile?: SiteProfileDraft;
+  form?: PageFormDraft;
 };
 
 export type HomePageDraft = {

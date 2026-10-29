@@ -13,10 +13,12 @@ import { DOCUMENT_STATUS, actionErrorText } from "@/admin/client/actionFeedback"
 import { browserAdminClient } from "@/admin/client/localStore";
 import {
   LEGAL_PAGE_KEYS,
+  PAGE_FORM_KEYS,
   type EntityRecord,
   type HomePageDraft,
   type PageCta,
   type PageDraft,
+  type PageFormDraft,
   type PageKey,
   type PageSectionCopy,
   type ShopHomePageDraft,
@@ -91,6 +93,17 @@ function isLegalPage(id: string): boolean {
   return (LEGAL_PAGE_KEYS as readonly string[]).includes(id);
 }
 
+const EMPTY_PAGE_FORM: PageFormDraft = { successMessage: "", fields: [] };
+
+const FIELD_TYPE_LABELS: Record<PageFormDraft["fields"][number]["type"], string> = {
+  text: "Текст",
+  tel: "Телефон",
+  email: "Email",
+  url: "Ссылка",
+  textarea: "Многострочный текст",
+  file: "Файл",
+};
+
 const EMPTY_SITE_PROFILE: SiteProfileDraft = { phone: "", email: "", address: "", channels: [], legalSummary: "", requisites: [] };
 
 function mergeSiteProfileDraft(raw: SiteProfileDraft | undefined): SiteProfileDraft {
@@ -116,6 +129,11 @@ function StubFields({
   };
   const patchChannel = (index: number, patch: Partial<SiteProfileDraft["channels"][number]>) => {
     patchSiteProfile({ channels: siteProfile.channels.map((channel, channelIndex) => (channelIndex === index ? { ...channel, ...patch } : channel)) });
+  };
+  const form = draft.form ?? EMPTY_PAGE_FORM;
+  const patchForm = (patch: Partial<PageFormDraft>) => onChange({ ...draft, form: { ...form, ...patch } });
+  const patchFormField = (index: number, patch: Partial<PageFormDraft["fields"][number]>) => {
+    patchForm({ fields: form.fields.map((field, fieldIndex) => (fieldIndex === index ? { ...field, ...patch } : field)) });
   };
   const patchRequisite = (index: number, patch: Partial<SiteProfileDraft["requisites"][number]>) => {
     patchSiteProfile({ requisites: siteProfile.requisites.map((requisite, requisiteIndex) => (requisiteIndex === index ? { ...requisite, ...patch } : requisite)) });
@@ -241,6 +259,48 @@ function StubFields({
           >
             Добавить канал
           </button>        </section>
+      ) : null}
+      {(PAGE_FORM_KEYS as readonly string[]).includes(draft.id) ? (
+        <section className={styles.section}>
+          <h2>Форма заявки</h2>
+          <label>
+            Текст после отправки
+            <textarea value={form.successMessage} onChange={(event) => patchForm({ successMessage: event.target.value })} />
+          </label>
+          {form.fields.map((field, index) => (
+            <fieldset className={styles.row} key={field.id}>
+              <legend>{field.label || "Новое поле"}</legend>
+              <label>
+                Название поля
+                <input value={field.label} onChange={(event) => patchFormField(index, { label: event.target.value })} />
+              </label>
+              <label>
+                Тип поля
+                <select
+                  value={field.type}
+                  onChange={(event) => patchFormField(index, { type: event.target.value as typeof field.type })}
+                >
+                  {Object.entries(FIELD_TYPE_LABELS).map(([type, label]) => (
+                    <option key={type} value={type}>{label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className={styles.checkboxField}>
+                <input type="checkbox" checked={field.required} onChange={(event) => patchFormField(index, { required: event.target.checked })} />
+                Обязательное
+              </label>
+              <button type="button" onClick={() => patchForm({ fields: form.fields.filter((_, fieldIndex) => fieldIndex !== index) })}>
+                Удалить поле
+              </button>
+            </fieldset>
+          ))}
+          <button
+            type="button"
+            onClick={() => patchForm({ fields: [...form.fields, { id: `field-${crypto.randomUUID()}`, label: "", type: "text", required: false }] })}
+          >
+            Добавить поле
+          </button>
+        </section>
       ) : null}
       {draft.id !== "contact" ? <section className={styles.section}>
         <h2>Дополнительный контент</h2>
