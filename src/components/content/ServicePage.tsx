@@ -114,8 +114,8 @@ export function ServicePage({
                   {feature.index ?? String(index + 1).padStart(2, "0")}
                 </span>
                 <div>
-                  <h3>{feature.title}</h3>
-                  <p>{feature.text}</p>
+                  {feature.title.trim() ? <h3>{feature.title}</h3> : null}
+                  {feature.text.trim() ? <p>{feature.text}</p> : null}
                 </div>
               </li>
             ))}
@@ -123,27 +123,31 @@ export function ServicePage({
         </section> : null}
 
         {resolvedProof ? (
-          <section className={styles.proof} aria-labelledby="service-proof-heading" data-evidence-source="service-proof">
+          <section className={styles.proof} aria-labelledby={resolvedProof.title.trim() ? "service-proof-heading" : undefined} data-evidence-source="service-proof">
             {resolvedProof.src ? <div className={styles.proofMedia}>
               <Image src={resolvedProof.src} alt={resolvedProof.alt} fill sizes="(max-width: 767px) 100vw, 48vw" style={{ objectPosition: `${(resolvedProof.focalX ?? 0.5) * 100}% ${(resolvedProof.focalY ?? 0.5) * 100}%` }} />
             </div> : null}
             <div className={styles.proofCopy}>
-              <h2 id="service-proof-heading">{resolvedProof.title}</h2>
-              <p>{resolvedProof.text}</p>
+              {resolvedProof.title.trim() ? <h2 id="service-proof-heading">{resolvedProof.title}</h2> : null}
+              {resolvedProof.text.trim() ? <p>{resolvedProof.text}</p> : null}
             </div>
           </section>
         ) : null}
 
         {activeEditorial?.sections !== undefined ? (
           <>
-            {activeEditorial.sections.map((section) => (
-              <section key={section.id} className={styles.editorialSection}>
-                <h2>{section.heading}</h2>
-                {section.body.split(/\r?\n\s*\r?\n/).filter(Boolean).map((paragraph, index) => (
-                  <p key={`${section.id}-${index}`}>{paragraph}</p>
-                ))}
-              </section>
-            ))}
+            {activeEditorial.sections.map((section) => {
+              const paragraphs = section.body.split(/\r?\n\s*\r?\n/).map((paragraph) => paragraph.trim()).filter(Boolean);
+              if (!section.heading.trim() && paragraphs.length === 0) return null;
+              return (
+                <section key={section.id} className={styles.editorialSection}>
+                  {section.heading.trim() ? <h2>{section.heading}</h2> : null}
+                  {paragraphs.map((paragraph, index) => (
+                    <p key={`${section.id}-${index}`}>{paragraph}</p>
+                  ))}
+                </section>
+              );
+            })}
             {renderChildrenWithEditorial ? children : null}
           </>
         ) : children}

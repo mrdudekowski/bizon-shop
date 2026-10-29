@@ -88,4 +88,24 @@ describe("ServicePage documents", () => {
     );
     expect(html).not.toContain("Legacy paragraph");
   });
+
+  it("shows text for an untitled section and point without an empty heading", () => {
+    const html = renderToStaticMarkup(
+      createElement(ServicePage, {
+        title: "Гарантия",
+        description: "Условия",
+        breadcrumbs: [],
+        features: [],
+        editorial: {
+          features: [{ id: "point", title: "", text: "Текст пункта без названия" }],
+          sections: [{ id: "section", heading: "", body: "Текст раздела без названия" }],
+        },
+      }),
+    );
+
+    expect(html).toContain("Текст пункта без названия");
+    expect(html).toContain("Текст раздела без названия");
+    expect(html).not.toMatch(/<h2>\s*<\/h2>/);
+    expect(html).not.toMatch(/<h3>\s*<\/h3>/);
+  });
 });

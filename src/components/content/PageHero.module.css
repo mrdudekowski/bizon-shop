@@ -73,8 +73,8 @@
 }
 
 .copy h1[data-title-long="true"] {
-  max-width: 100%;
-  font-size: clamp(2.75rem, 4.5vw, 4.5rem);
+  max-width: 22ch;
+  font-size: clamp(1.75rem, 3.2vw, 2.5rem);
   overflow-wrap: normal;
 }
 
@@ -121,9 +121,10 @@
   .breadcrumbs li:nth-last-child(2) > span[aria-hidden="true"] { display: none; }
 
   .copy h1[data-title-long="true"] {
-    max-width: 100%;
+    width: 100%;
+    max-width: min(22ch, 100%);
     min-width: 0;
-    font-size: clamp(2rem, 9vw, 3rem);
+    font-size: clamp(1.75rem, 3.2vw, 2.5rem);
     overflow-wrap: anywhere;
   }
 
