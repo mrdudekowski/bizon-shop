@@ -17,6 +17,7 @@ import { pageFormsMigration } from "./0025-page-forms";
 import { deliveryGeographyEnumValueMigration } from "./0026-delivery-geography-page";
 import { deliveryGeographyPageMigration } from "./0027-delivery-geography-page";
 import { requestSourceFormDeliveryQuoteMigration } from "./0028-request-source-form-delivery-quote";
+import { dropFormFilesAndProcessHeadingsMigration } from "./0029-drop-form-files-and-process-headings";
 import type { Migration } from "../migrationRunner";
 import { cmsEditorSchemaMigration } from "./0001-cms-editor-schema";
 import { shopCategoryCarouselMigration } from "./0002-shop-category-carousel";
@@ -57,6 +58,7 @@ export const MIGRATIONS: readonly Migration[] = [
   deliveryGeographyEnumValueMigration,
   deliveryGeographyPageMigration,
   requestSourceFormDeliveryQuoteMigration,
+  dropFormFilesAndProcessHeadingsMigration,
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.at(-1)?.version ?? "0";

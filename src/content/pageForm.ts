@@ -1,7 +1,7 @@
 import type { StoredRequestInput } from "../insertRequest";
 import type { ReadDatabase } from "../publishedRead";
 
-export const FORM_FIELD_TYPES = ["text", "tel", "email", "url", "textarea", "file"] as const;
+export const FORM_FIELD_TYPES = ["text", "tel", "email", "url", "textarea"] as const;
 export type FormFieldType = (typeof FORM_FIELD_TYPES)[number];
 
 export type PageFormField = {
@@ -93,12 +93,11 @@ export async function loadPageForm(db: ReadDatabase, pageKey: PageFormKey): Prom
   return {
     pageKey,
     successMessage: String(form.success_message),
-    fields: rows.map((row) => ({
-      id: String(row.id),
-      label: String(row.label),
-      type: row.field_type as FormFieldType,
-      required: row.required === true,
-    })),
+    fields: rows.flatMap((row) => {
+      const type = String(row.field_type);
+      if (!(FORM_FIELD_TYPES as readonly string[]).includes(type)) return [];
+      return [{ id: String(row.id), label: String(row.label), type: type as FormFieldType, required: row.required === true }];
+    }),
   };
 }
 

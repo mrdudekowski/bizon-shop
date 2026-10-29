@@ -104,7 +104,6 @@ describe("writePageForm", () => {
     successMessage: "Спасибо",
     fields: [
       { id: "companyName", label: "Название компании", type: "text" as const, required: true },
-      { id: "catalogFile", label: "Файл", type: "file" as const, required: false },
     ],
   };
 
@@ -116,12 +115,12 @@ describe("writePageForm", () => {
     expect(calls[1].sql).toContain("DELETE FROM page_form_fields");
     expect(calls.slice(2).map((call) => call.params)).toEqual([
       ["become-a-supplier", "companyName", 0, "Название компании", "text", true],
-      ["become-a-supplier", "catalogFile", 1, "Файл", "file", false],
     ]);
   });
 
-  it("rejects a field type outside the six, a blank id, and a duplicate id", () => {
+  it("rejects a file field, a blank id, and a duplicate id", () => {
     const bad = (field: object) => pageFormFieldsAreValid([{ ...form.fields[0], ...field }] as never);
+    expect(bad({ type: "file" })).toBe(false);
     expect(bad({ type: "number" })).toBe(false);
     expect(bad({ id: " " })).toBe(false);
     expect(pageFormFieldsAreValid([form.fields[0], form.fields[0]])).toBe(false);

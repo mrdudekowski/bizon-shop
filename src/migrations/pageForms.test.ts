@@ -28,6 +28,12 @@ describe("page forms migration", () => {
     expect(ids.map((match) => Number(match[2]))).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
   });
 
+  it("drops the seeded file field after the form exists", () => {
+    const drop = MIGRATIONS.find((migration) => migration.version === "202610300029");
+    expect(drop?.sql).toContain("DELETE FROM page_form_fields WHERE field_type = 'file'");
+    expect(MIGRATIONS.indexOf(pageFormsMigration)).toBeLessThan(MIGRATIONS.indexOf(drop!));
+  });
+
   it("adds answer and attachment columns to requests", () => {
     expect(pageFormsMigration.sql).toContain("ADD COLUMN IF NOT EXISTS form_answers jsonb");
     expect(pageFormsMigration.sql).toContain("ADD COLUMN IF NOT EXISTS attachment_url text");

@@ -27,7 +27,8 @@ describe("delivery geography page migrations", () => {
     expect(requestSourceFormDeliveryQuoteMigration.sql.trim()).toBe(
       "ALTER TYPE enum_requests_source_form ADD VALUE IF NOT EXISTS 'delivery_quote';",
     );
-    expect(MIGRATIONS.at(-1)).toBe(requestSourceFormDeliveryQuoteMigration);
+    expect(MIGRATIONS.indexOf(requestSourceFormDeliveryQuoteMigration)).toBeGreaterThanOrEqual(0);
+    expect(MIGRATIONS.at(-1)?.version).toBe("202610300029");
   });
 
   it("seeds the page row, section, and form from shared copy", () => {

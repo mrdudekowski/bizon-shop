@@ -10,5 +10,5 @@ export const PAGE_LABELS: Record<PageKey, string> = {
   "become-a-supplier": "Стать поставщиком",
   "delivery-geography": "География поставок",
   "privacy-policy": "Политика конфиденциальности",
-  "shop-delivery-returns": "Доставка и возврат",
+  "shop-delivery-returns": "Оплата, доставка и возврат",
 };
