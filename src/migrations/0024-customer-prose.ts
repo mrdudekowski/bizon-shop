@@ -3,6 +3,8 @@ import type { Migration } from "../migrationRunner";
 
 const sqlLiteral = (text: string): string => `'${text.replaceAll("'", "''")}'`;
 
+const joinParagraphs = (paragraphs: readonly string[]): string => paragraphs.join("\n\n");
+
 const heroLeadReplaceWhere = (previous: string): string =>
   `(btrim(COALESCE(stub_hero_lead, '')) = '' OR stub_hero_lead = ${sqlLiteral(previous)})`;
 
@@ -14,9 +16,12 @@ const warrantyClaimBody = sqlLiteral(CUSTOMER_COPY.warranty[1]);
 const warrantyReviewBody = sqlLiteral(CUSTOMER_COPY.warranty[2]);
 const warrantyExclusionsBody = sqlLiteral(CUSTOMER_COPY.warranty[3]);
 const warrantyTermsBody = sqlLiteral(CUSTOMER_COPY.warranty[4]);
+const deliveryShippingBody = sqlLiteral(joinParagraphs(CUSTOMER_COPY.delivery));
+const deliveryPaymentBody = sqlLiteral(joinParagraphs(CUSTOMER_COPY.payment));
+const deliveryReturnsBody = sqlLiteral(joinParagraphs(CUSTOMER_COPY.returns));
 
 /**
- * Replaces legacy about/warranty story cards with customer-template prose sections.
+ * Replaces legacy about/warranty story cards and 0017 shop delivery sections with customer-template prose.
  * Hero leads and feature deletes run only while the row still matches migration 0022 seeds.
  */
 export const customerProseMigration: Migration = {
@@ -103,5 +108,35 @@ export const customerProseMigration: Migration = {
       AND p.key = 'warranty'
       AND feature.id = 'warranty-feature-3'
       AND text = ${sqlLiteral(SEEDED_COPY.warrantyFeatureTexts["warranty-feature-3"])};
+
+    UPDATE pages
+    SET editorial_sections_configured = true,
+        updated_at = now()
+    WHERE key = 'shop-delivery-returns';
+
+    -- shop delivery, payment, and returns prose
+    UPDATE pages_editorial_sections AS section
+    SET heading = 'Доставка',
+        body = ${deliveryShippingBody}
+    FROM pages AS p
+    WHERE section._parent_id = p.id
+      AND p.key = 'shop-delivery-returns'
+      AND section.id = 'delivery-section-shipping'
+      AND section.body = ${sqlLiteral(SEEDED_COPY.deliverySectionShipping)};
+
+    INSERT INTO pages_editorial_sections (id, _parent_id, _order, heading, body)
+    SELECT 'delivery-section-payment', p.id, 2, 'Оплата', ${deliveryPaymentBody}
+    FROM pages AS p
+    WHERE p.key = 'shop-delivery-returns'
+    ON CONFLICT (_parent_id, id) DO NOTHING;
+
+    UPDATE pages_editorial_sections AS section
+    SET heading = 'Возврат',
+        body = ${deliveryReturnsBody}
+    FROM pages AS p
+    WHERE section._parent_id = p.id
+      AND p.key = 'shop-delivery-returns'
+      AND section.id = 'delivery-section-returns'
+      AND section.body = ${sqlLiteral(SEEDED_COPY.deliverySectionReturns)};
   `,
 };

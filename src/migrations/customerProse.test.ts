@@ -40,4 +40,32 @@ describe("customer prose migration", () => {
       expect(block).not.toContain("editorial_sections_configured");
     }
   });
+
+  it("seeds shop delivery, payment, and returns prose from shared customer copy", () => {
+    const sql = customerProseMigration.sql;
+    for (const paragraph of [...CUSTOMER_COPY.delivery, ...CUSTOMER_COPY.payment, ...CUSTOMER_COPY.returns]) {
+      expect(sql).toContain(paragraph);
+    }
+    expect(sql).toContain("Доставка");
+    expect(sql).toContain("Оплата непосредственно на сайте не производится.");
+    expect(sql).toContain("Возврат");
+    expect(sql).toContain("'delivery-section-payment'");
+    expect(sql).toMatch(/ON CONFLICT \(_parent_id, id\) DO NOTHING/);
+  });
+
+  it("only replaces delivery editorial sections while body still matches the 0017 seed", () => {
+    const sql = customerProseMigration.sql;
+    expect(sql).toContain(`section.body = ${sqlLiteral(SEEDED_COPY.deliverySectionShipping)}`);
+    expect(sql).toContain(`section.body = ${sqlLiteral(SEEDED_COPY.deliverySectionReturns)}`);
+    expect(sql).toMatch(
+      /UPDATE pages[\s\S]*?editorial_sections_configured = true[\s\S]*?WHERE key = 'shop-delivery-returns'/,
+    );
+    const deliverySectionUpdates =
+      sql.match(/UPDATE pages_editorial_sections[\s\S]*?delivery-section-(?:shipping|returns)[\s\S]*?;/g) ?? [];
+    expect(deliverySectionUpdates.length).toBeGreaterThanOrEqual(2);
+    for (const block of deliverySectionUpdates) {
+      expect(block).toContain("section.body =");
+      expect(block).not.toContain("editorial_sections_configured");
+    }
+  });
 });
