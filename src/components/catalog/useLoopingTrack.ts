@@ -33,10 +33,27 @@ export function useLoopingTrack(
     };
 
     start();
-    track.addEventListener("scrollend", pin);
+
+    let scrollTimer: ReturnType<typeof setTimeout> | undefined;
+    const onScrollFallback = () => {
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(pin, 120);
+    };
+
+    if ("onscrollend" in window) {
+      track.addEventListener("scrollend", pin);
+    } else {
+      track.addEventListener("scroll", onScrollFallback, { passive: true });
+    }
+
     media.addEventListener("change", start);
     return () => {
-      track.removeEventListener("scrollend", pin);
+      if ("onscrollend" in window) {
+        track.removeEventListener("scrollend", pin);
+      } else {
+        track.removeEventListener("scroll", onScrollFallback);
+        clearTimeout(scrollTimer);
+      }
       media.removeEventListener("change", start);
     };
   }, [itemCount, trackRef]);

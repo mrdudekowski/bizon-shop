@@ -21,14 +21,14 @@ export function HomeShopZoneCanvas() {
       document.documentElement.style.setProperty("--page-ink", inkForCanvas(canvas));
     };
     const headerLine = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-height")) || 80;
-    const visible = new Map<Element, number>();
+    const visible = new Set<Element>();
     const observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
-        if (entry.isIntersecting) visible.set(entry.target, entry.boundingClientRect.top);
+        if (entry.isIntersecting) visible.add(entry.target);
         else visible.delete(entry.target);
       }
-      const active = [...visible.entries()].sort((left, right) => left[1] - right[1])[0];
-      paint(active ? (active[0] as HTMLElement).getAttribute("data-canvas-tone") : null);
+      const active = sections.find((section) => visible.has(section));
+      paint(active ? active.getAttribute("data-canvas-tone") : null);
     }, { rootMargin: `-${headerLine}px 0px -60% 0px`, threshold: 0 });
     for (const section of sections) observer.observe(section);
     return () => {
