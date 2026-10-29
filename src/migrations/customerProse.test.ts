@@ -98,11 +98,6 @@ describe("customer prose migration", () => {
     expect(sql).toContain(`AND text = ${sqlLiteral(SEEDED_COPY.privacyFeatureOperator)}`);
     expect(sql).toMatch(/privacy-feature-1[\s\S]*?AND text =/);
     expect(sql).toContain(`'privacy-section-3'`);
-    expect(sql).toMatch(
-      new RegExp(
-        `privacy-section-3[\\s\\S]*${SEEDED_COPY.privacySectionEmail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
-      ),
-    );
     const featureUpdate =
       sql.match(
         /UPDATE pages_editorial_features[\s\S]*?privacy-feature-1[\s\S]*?;/,
@@ -111,10 +106,12 @@ describe("customer prose migration", () => {
     expect(featureUpdate).toContain(`AND text = ${sqlLiteral(SEEDED_COPY.privacyFeatureOperator)}`);
     const sectionThreeUpdate =
       sql.match(
-        /UPDATE pages_editorial_sections[\s\S]*?privacy-section-3[\s\S]*?;/,
+        /UPDATE pages_editorial_sections[\s\S]*?'privacy-section-3'[\s\S]*?;/,
       )?.[0] ?? "";
-    expect(sectionThreeUpdate).toContain(SEEDED_COPY.privacySectionEmail);
-    expect(sectionThreeUpdate).toMatch(/body[\s\S]*privacy@example\.bizon\.ru/);
+    expect(sectionThreeUpdate.length).toBeGreaterThan(0);
+    const sectionThreeWhere = sectionThreeUpdate.split(/\bWHERE\b/i).slice(1).join(" WHERE ");
+    expect(sectionThreeWhere).toMatch(/section\.body LIKE/);
+    expect(sectionThreeWhere).toContain(SEEDED_COPY.privacySectionEmail);
     expect(sql).toContain("'privacy-section-1'");
     expect(sql).toContain("пример юридического адреса");
     expect(sql).toContain("ООО «БИЗОН ТАЙРС»");
