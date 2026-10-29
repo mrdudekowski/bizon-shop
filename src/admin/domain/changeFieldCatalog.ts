@@ -293,6 +293,14 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
           phone: { field: "Телефон" },
           email: { field: "Email" },
           address: { field: "Адрес" },
+          legalSummary: { field: "Краткое описание реквизитов" },
+          requisites: {
+            itemLabelKey: "label",
+            children: {
+              label: { field: "Подпись" },
+              value: { field: "Значение" },
+            },
+          },
           channels: {
             itemLabelKey: "label",
             children: {

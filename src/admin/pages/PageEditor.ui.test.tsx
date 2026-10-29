@@ -214,6 +214,10 @@ describe("PageEditor conflict recovery", () => {
         phone: "+7 (421) 200-00-00",
         email: "sales@bizon.ru",
         address: "Хабаровск",
+        legalSummary: "Юридические реквизиты будут предоставлены позже.",
+        requisites: [
+          { id: "inn", label: "ИНН", value: "Информация будет предоставлена позже." },
+        ],
         channels: [
           { id: "telegram", label: "Telegram", href: "https://t.me/bizon", enabled: true },
           { id: "vk", label: "VK", href: "https://vk.com/bizon", enabled: true },

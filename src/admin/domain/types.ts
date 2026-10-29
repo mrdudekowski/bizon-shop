@@ -364,6 +364,8 @@ export type SiteProfileDraft = {
   email: string;
   address: string;
   channels: { id: string; label: string; href: string; enabled: boolean }[];
+  legalSummary: string;
+  requisites: { id: string; label: string; value: string }[];
 };
 
 export type StubPageDraft = {

@@ -91,7 +91,7 @@ function isLegalPage(id: string): boolean {
   return (LEGAL_PAGE_KEYS as readonly string[]).includes(id);
 }
 
-const EMPTY_SITE_PROFILE: SiteProfileDraft = { phone: "", email: "", address: "", channels: [] };
+const EMPTY_SITE_PROFILE: SiteProfileDraft = { phone: "", email: "", address: "", channels: [], legalSummary: "", requisites: [] };
 
 function StubFields({
   draft,
@@ -106,6 +106,9 @@ function StubFields({
   };
   const patchChannel = (index: number, patch: Partial<SiteProfileDraft["channels"][number]>) => {
     patchSiteProfile({ channels: siteProfile.channels.map((channel, channelIndex) => (channelIndex === index ? { ...channel, ...patch } : channel)) });
+  };
+  const patchRequisite = (index: number, patch: Partial<SiteProfileDraft["requisites"][number]>) => {
+    patchSiteProfile({ requisites: siteProfile.requisites.map((requisite, requisiteIndex) => (requisiteIndex === index ? { ...requisite, ...patch } : requisite)) });
   };
   return (
     <>
@@ -152,6 +155,43 @@ function StubFields({
               />
             </label>
           </div>
+          <label className={styles.fullWidth}>
+            Краткое описание реквизитов
+            <textarea
+              value={siteProfile.legalSummary}
+              onChange={(event) => patchSiteProfile({ legalSummary: event.target.value })}
+            />
+          </label>
+          <h3>Юридические реквизиты</h3>
+          {siteProfile.requisites.map((requisite, index) => (
+            <fieldset className={styles.row} key={requisite.id}>
+              <legend>{requisite.label || "Новый реквизит"}</legend>
+              <label>
+                Подпись
+                <input value={requisite.label} onChange={(event) => patchRequisite(index, { label: event.target.value })} />
+              </label>
+              <label>
+                Значение
+                <textarea value={requisite.value} onChange={(event) => patchRequisite(index, { value: event.target.value })} />
+              </label>
+              <button
+                type="button"
+                onClick={() => patchSiteProfile({ requisites: siteProfile.requisites.filter((_, requisiteIndex) => requisiteIndex !== index) })}
+              >
+                Удалить реквизит
+              </button>
+            </fieldset>
+          ))}
+          <button
+            type="button"
+            onClick={() =>
+              patchSiteProfile({
+                requisites: [...siteProfile.requisites, { id: `requisite-${crypto.randomUUID()}`, label: "", value: "" }],
+              })
+            }
+          >
+            Добавить реквизит
+          </button>
           <h3>Каналы связи (мессенджеры и соцсети)</h3>
           {siteProfile.channels.map((channel, index) => (
             <fieldset className={styles.row} key={channel.id}>
