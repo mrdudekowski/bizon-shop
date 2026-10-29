@@ -12,6 +12,7 @@ import { productLevelAvailabilityMigration } from "./0020-product-level-availabi
 import { shopProductSpecsAndSortOrderMigration } from "./0021-shop-product-specs-and-sort-order";
 import { restoreServicePagesAndFooterContactsMigration } from "./0022-restore-service-pages-and-footer-contacts";
 import { siteProfileMigration } from "./0023-site-profile";
+import { customerProseMigration } from "./0024-customer-prose";
 import type { Migration } from "../migrationRunner";
 import { cmsEditorSchemaMigration } from "./0001-cms-editor-schema";
 import { shopCategoryCarouselMigration } from "./0002-shop-category-carousel";
@@ -47,6 +48,7 @@ export const MIGRATIONS: readonly Migration[] = [
   shopProductSpecsAndSortOrderMigration,
   restoreServicePagesAndFooterContactsMigration,
   siteProfileMigration,
+  customerProseMigration,
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.at(-1)?.version ?? "0";

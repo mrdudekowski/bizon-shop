@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { MIGRATIONS } from "../migrations";
 import { siteProfileMigration } from "../migrations/0023-site-profile";
 import { CUSTOMER_COPY } from "./customerTemplateCopy";
 import { contactHref, siteChannelsAreValid, visibleChannels, writeSiteProfileContacts } from "./siteProfile";
@@ -38,7 +37,6 @@ describe("site profile migration", () => {
     ]) {
       expect(siteProfileMigration.sql).toContain(sentence);
     }
-    expect(MIGRATIONS.at(-1)).toBe(siteProfileMigration);
   });
 });
 
