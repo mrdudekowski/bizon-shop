@@ -349,8 +349,8 @@
 }
 
 .vehiclesSection {
-  background: transparent;
-  color: var(--page-ink, var(--color-foreground));
+  background: #ffffff;
+  color: #1c1c1c;
   padding: clamp(88px, 10vw, 160px) var(--page-gutter);
 }
 

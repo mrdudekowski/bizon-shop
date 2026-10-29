@@ -277,13 +277,25 @@ section[id] {
   scroll-margin-top: var(--header-height);
 }
 
+@property --page-canvas {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #0a0a0a;
+}
+
+@property --page-ink {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffffff;
+}
+
 /* Базовые стили body - используем CSS-переменные для единообразия темы */
 body {
   margin: 0;
   font-family: var(--font-sans);
   color: var(--color-foreground);
-  background: var(--page-canvas, var(--color-background));
-  transition: background-color 200ms linear;
+  background-color: var(--page-canvas, #0a0a0a);
+  transition: --page-canvas 480ms linear, background-color 480ms linear;
   min-height: 100vh;
   /* Предотвращаем горизонтальный скролл при переполнении контента */
   overflow-x: hidden;

@@ -37,26 +37,22 @@ export function HorizontalScrollCue({
 
     update();
 
-    let scrollTimer: ReturnType<typeof setTimeout> | undefined;
-    const onScrollFallback = () => {
-      clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(update, 120);
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        update();
+      });
     };
 
-    if ("onscrollend" in window) {
-      track.addEventListener("scrollend", update);
-    } else {
-      track.addEventListener("scroll", onScrollFallback, { passive: true });
-    }
-
+    track.addEventListener("scroll", onScroll, { passive: true });
+    track.addEventListener("scrollend", update);
     window.addEventListener("resize", update);
     return () => {
-      if ("onscrollend" in window) {
-        track.removeEventListener("scrollend", update);
-      } else {
-        track.removeEventListener("scroll", onScrollFallback);
-        clearTimeout(scrollTimer);
-      }
+      window.cancelAnimationFrame(frame);
+      track.removeEventListener("scroll", onScroll);
+      track.removeEventListener("scrollend", update);
       window.removeEventListener("resize", update);
     };
   }, [count, trackRef]);

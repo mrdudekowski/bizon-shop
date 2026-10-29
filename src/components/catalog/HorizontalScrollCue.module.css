@@ -24,14 +24,21 @@
   height: 4px;
   border-radius: var(--radius-pill);
   background: rgba(28, 28, 28, 0.14);
+  transition: flex-grow 180ms linear, background-color 180ms linear;
 }
 
 .cue[data-tone="dark"] .segment {
   background: rgba(255, 255, 255, 0.18);
 }
 
-.segment[data-active="true"] {
+.segment[data-active="true"],
+.cue[data-tone="dark"] .segment[data-active="true"] {
+  flex-grow: 2.4;
   background: var(--bizon-coral-500);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segment { transition: none; }
 }
 
 .hint {

@@ -35,10 +35,10 @@
 }
 .expertise {
   padding-top: var(--home-section-gap);
-  background: transparent;
-  color: var(--home-ink);
+  background: #0a0a0a;
+  color: #ffffff;
 }
-.editorial { background: var(--color-surface); color: var(--color-foreground); }
+.editorial { background: transparent; color: inherit; }
 .hero {
   position: relative;
   display: grid;
@@ -305,8 +305,8 @@
   --mark-band: var(--home-mark-band);
   padding: var(--home-section-lead) 0 var(--home-section-gap);
   scroll-margin-top: var(--header-height);
-  background: transparent;
-  color: var(--home-ink);
+  background: #ffffff;
+  color: #1c1c1c;
 }
 .darkHeading { display: grid; grid-template-columns: 1.25fr .75fr; gap: .75rem clamp(2rem, 7vw, 7rem); align-items: end; margin-bottom: clamp(3rem, 7vw, 6rem); }
 .darkHeading .eyebrow { grid-column: 1 / -1; }
