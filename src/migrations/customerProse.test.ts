@@ -60,12 +60,25 @@ describe("customer prose migration", () => {
     expect(sql).toMatch(
       /UPDATE pages[\s\S]*?editorial_sections_configured = true[\s\S]*?WHERE key = 'shop-delivery-returns'/,
     );
-    const deliverySectionUpdates =
-      sql.match(/UPDATE pages_editorial_sections[\s\S]*?delivery-section-(?:shipping|returns)[\s\S]*?;/g) ?? [];
-    expect(deliverySectionUpdates.length).toBeGreaterThanOrEqual(2);
-    for (const block of deliverySectionUpdates) {
-      expect(block).toContain("section.body =");
+    const shippingBodyUpdate =
+      sql.match(
+        /UPDATE pages_editorial_sections[\s\S]*?delivery-section-shipping[\s\S]*?section\.body =[\s\S]*?;/,
+      )?.[0] ?? "";
+    const returnsBodyUpdate =
+      sql.match(
+        /UPDATE pages_editorial_sections[\s\S]*?delivery-section-returns[\s\S]*?section\.body =[\s\S]*?;/,
+      )?.[0] ?? "";
+    expect(shippingBodyUpdate).toContain("section.body =");
+    expect(returnsBodyUpdate).toContain("section.body =");
+    for (const block of [shippingBodyUpdate, returnsBodyUpdate]) {
       expect(block).not.toContain("editorial_sections_configured");
     }
+    const returnsOrderUpdates =
+      sql.match(/UPDATE pages_editorial_sections[\s\S]*?SET _order = 3[\s\S]*?delivery-section-returns[\s\S]*?;/g) ??
+      [];
+    expect(returnsOrderUpdates.length).toBeGreaterThanOrEqual(1);
+    expect(sql).toMatch(
+      /SELECT 'delivery-section-payment', p\.id, 2, 'Оплата'/,
+    );
   });
 });

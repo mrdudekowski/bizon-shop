@@ -131,6 +131,13 @@ export const customerProseMigration: Migration = {
     ON CONFLICT (_parent_id, id) DO NOTHING;
 
     UPDATE pages_editorial_sections AS section
+    SET _order = 3
+    FROM pages AS p
+    WHERE section._parent_id = p.id
+      AND p.key = 'shop-delivery-returns'
+      AND section.id = 'delivery-section-returns';
+
+    UPDATE pages_editorial_sections AS section
     SET heading = 'Возврат',
         body = ${deliveryReturnsBody}
     FROM pages AS p
