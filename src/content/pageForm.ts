@@ -1,7 +1,8 @@
 import type { StoredRequestInput } from "../insertRequest";
 import type { ReadDatabase } from "../publishedRead";
 
-export type FormFieldType = "text" | "tel" | "email" | "url" | "textarea" | "file";
+export const FORM_FIELD_TYPES = ["text", "tel", "email", "url", "textarea", "file"] as const;
+export type FormFieldType = (typeof FORM_FIELD_TYPES)[number];
 
 export type PageFormField = {
   id: string;
@@ -10,11 +11,16 @@ export type PageFormField = {
   required: boolean;
 };
 
+export const PAGE_FORM_KEYS = ["become-a-supplier", "delivery-geography"] as const;
+export type PageFormKey = (typeof PAGE_FORM_KEYS)[number];
+
 export type PageForm = {
-  pageKey: "become-a-supplier" | "delivery-geography";
+  pageKey: PageFormKey;
   successMessage: string;
   fields: PageFormField[];
 };
+
+export const isPageFormKey = (key: string): key is PageFormKey => (PAGE_FORM_KEYS as readonly string[]).includes(key);
 
 /** Request field that bots fill. Supplier company site is `companySite`, never this key. */
 const HONEYPOT_KEY = "website";
@@ -77,7 +83,7 @@ export function requestFromAnswers(
   };
 }
 
-export async function loadPageForm(db: ReadDatabase, pageKey: PageForm["pageKey"]): Promise<PageForm | null> {
+export async function loadPageForm(db: ReadDatabase, pageKey: PageFormKey): Promise<PageForm | null> {
   const [form] = await db.query("SELECT success_message FROM page_forms WHERE page_key = $1", [pageKey]);
   if (!form) return null;
   const rows = await db.query(
@@ -94,4 +100,39 @@ export async function loadPageForm(db: ReadDatabase, pageKey: PageForm["pageKey"
       required: row.required === true,
     })),
   };
+}
+
+/** The editable part of a page form, as the admin draft carries it (same shape as `PageFormDraft` in admin types). */
+type PageFormDraft = Pick<PageForm, "successMessage" | "fields">;
+
+/** A page without a stored form edits as an empty one, so an older draft never lacks `form`. */
+export async function readPageFormDraft(db: ReadDatabase, pageKey: PageFormKey): Promise<PageFormDraft> {
+  const form = await loadPageForm(db, pageKey);
+  return { successMessage: form?.successMessage ?? "", fields: form?.fields ?? [] };
+}
+
+/** Field ids are the keys of the stored answers, so they must be unique and must not collide with the honeypot. */
+export function pageFormFieldsAreValid(fields: PageFormField[]): boolean {
+  const ids = fields.map((field) => field.id.trim());
+  return (
+    ids.every((id) => id && id !== HONEYPOT_KEY) &&
+    new Set(ids).size === ids.length &&
+    fields.every((field) => (FORM_FIELD_TYPES as readonly string[]).includes(field.type))
+  );
+}
+
+/** Upserts the form and replaces its fields in draft order. Run inside the page-save transaction. */
+export async function writePageForm(db: ReadDatabase, pageKey: PageFormKey, form: PageFormDraft): Promise<void> {
+  await db.query(
+    `INSERT INTO page_forms (page_key, success_message) VALUES ($1, $2)
+     ON CONFLICT (page_key) DO UPDATE SET success_message = EXCLUDED.success_message`,
+    [pageKey, form.successMessage],
+  );
+  await db.query("DELETE FROM page_form_fields WHERE page_key = $1", [pageKey]);
+  for (const [index, field] of form.fields.entries()) {
+    await db.query(
+      "INSERT INTO page_form_fields (page_key, id, sort_order, label, field_type, required) VALUES ($1, $2, $3, $4, $5, $6)",
+      [pageKey, field.id, index, field.label, field.type, field.required],
+    );
+  }
 }

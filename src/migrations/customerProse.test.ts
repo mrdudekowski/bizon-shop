@@ -30,12 +30,12 @@ describe("customer prose migration", () => {
     }
     expect(sql).not.toMatch(/UPDATE pages SET stub_hero_lead/m);
     expect(sql).toMatch(
-      /UPDATE pages[\s\S]*?editorial_sections_configured = true[\s\S]*?WHERE key IN \('about', 'warranty'\)/,
+      /UPDATE pages[\s\S]*?editorial_sections_configured = true[\s\S]*?WHERE key IN \('about', 'warranty', 'become-a-supplier'\)/,
     );
     const heroUpdates = sql.match(/UPDATE pages\s+SET stub_hero_lead[\s\S]*?;/g) ?? [];
-    expect(heroUpdates).toHaveLength(2);
+    expect(heroUpdates).toHaveLength(3);
     for (const block of heroUpdates) {
-      expect(block).toMatch(/WHERE key = '(?:about|warranty)'/);
+      expect(block).toMatch(/WHERE key = '(?:about|warranty|become-a-supplier)'/);
       expect(block).toMatch(/btrim\(COALESCE\(stub_hero_lead, ''\)\) = '' OR stub_hero_lead =/);
       expect(block).not.toContain("editorial_sections_configured");
     }
@@ -115,5 +115,31 @@ describe("customer prose migration", () => {
     expect(sql).toContain("'privacy-section-1'");
     expect(sql).toContain("пример юридического адреса");
     expect(sql).toContain("ООО «БИЗОН ТАЙРС»");
+  });
+
+  it("seeds the supplier prose and replaces the 0022 supplier cards only while unchanged", () => {
+    const sql = customerProseMigration.sql;
+    for (const paragraph of CUSTOMER_COPY.supplier) {
+      expect(sql).toContain(paragraph);
+    }
+    expect(sql).toContain("'supplier-cooperation'");
+    expect(sql).toContain("'supplier-terms'");
+    for (const text of Object.values(SEEDED_COPY.supplierFeatureTexts)) {
+      expect(sql).toContain(`AND text = ${sqlLiteral(text)}`);
+    }
+
+    const leadUpdate =
+      sql.match(/UPDATE pages\s+SET stub_hero_lead = [^;]*WHERE key = 'become-a-supplier'[^;]*;/)?.[0] ?? "";
+    expect(leadUpdate).toContain(sqlLiteral(CUSTOMER_COPY.supplier[0]));
+    expect(leadUpdate).toContain(`stub_hero_lead = ${sqlLiteral(SEEDED_COPY.supplierHeroLead)}`);
+    expect(leadUpdate).toMatch(/btrim\(COALESCE\(stub_hero_lead, ''\)\) = '' OR stub_hero_lead =/);
+    expect(leadUpdate).not.toContain("editorial_sections_configured");
+  });
+
+  it("reveals the supplier sections even when the lead was customized", () => {
+    const configuredUpdate =
+      customerProseMigration.sql.match(/UPDATE pages\s+SET editorial_sections_configured = true[^;]*;/)?.[0] ?? "";
+    expect(configuredUpdate).toMatch(/WHERE key IN \('about', 'warranty', 'become-a-supplier'\)/);
+    expect(configuredUpdate).not.toContain("stub_hero_lead");
   });
 });

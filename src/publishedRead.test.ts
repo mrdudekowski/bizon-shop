@@ -520,3 +520,19 @@ describe("published page focal positions", () => {
     });
   });
 });
+
+describe("readStubPatch page form", () => {
+  const respond = (sql: string) => {
+    if (sql.includes("FROM page_form_fields")) return [{ id: "companyName", label: "Название компании", field_type: "text", required: true }];
+    if (sql.includes("FROM page_forms")) return [{ success_message: "Спасибо" }];
+    return [{ id: 41, seo_seo_title: "Поставщикам" }];
+  };
+
+  it("attaches the stored form to the supplier page only", async () => {
+    const { db } = createRecordingDb(respond);
+    await expect(readStubPatch(db, "become-a-supplier")).resolves.toMatchObject({
+      form: { pageKey: "become-a-supplier", successMessage: "Спасибо", fields: [{ id: "companyName", type: "text", required: true }] },
+    });
+    await expect(readStubPatch(db, "about")).resolves.not.toHaveProperty("form");
+  });
+});

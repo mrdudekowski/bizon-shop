@@ -3,6 +3,7 @@ import { afterTransactionCommit, getTransactionClient, withTransaction } from ".
 
 import { AdminClientError, adminCodeFromDatabaseError } from "../client/errors";
 import { mergeLegacyPageOverlay } from "./pageOverlay";
+import { isPageFormKey, pageFormFieldsAreValid, readPageFormDraft, writePageForm } from "../../content/pageForm";
 import { readSiteProfile, siteChannelsAreValid, writeSiteProfileContacts } from "../../content/siteProfile";
 import { mediaUsageSql, publicDocumentPageKeys, toMediaUsageRecord } from "./mediaUsage";
 import { detachStoredMediaReference } from "../../storage/mediaReferences";
@@ -867,6 +868,7 @@ async function mapPage(row: Row): Promise<PageDraft> {
       image: placement(row.stub_hero_image_id, str(row.stub_hero_image_alt)),
     },
     ...(contactProfile ? { siteProfile: contactProfile } : {}),
+    ...(isPageFormKey(key) ? { form: await readPageFormDraft({ query }, key) } : {}),
     documents: await readDocumentLinks("page", key),
   };
 }
@@ -2908,6 +2910,10 @@ async function writePage(draft: PageDraft) {
         enabledHref("instagram"),
       ],
     );
+  }
+  if (isPageFormKey(draft.id) && draft.form) {
+    if (!pageFormFieldsAreValid(draft.form.fields)) throw new AdminClientError("publish_blocked");
+    await writePageForm({ query }, draft.id, draft.form);
   }
   await query(
     `UPDATE pages SET seo_seo_title=$2, seo_seo_description=$3, stub_hero_eyebrow=$4, stub_hero_title=$5, stub_hero_lead=$6, stub_hero_image_id=$7, stub_hero_image_alt=$8, stub_hero_configured=true, status='published', updated_at=now() WHERE key=$1`,

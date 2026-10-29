@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { insertRequest } from "../insertRequest";
-import { answersFromFields, requestFromAnswers, trustedAttachmentUrl } from "./pageForm";
+import { answersFromFields, pageFormFieldsAreValid, readPageFormDraft, requestFromAnswers, trustedAttachmentUrl, writePageForm } from "./pageForm";
 
 const fields = [
   { id: "companyName", label: "Название компании", type: "text" as const, required: true },
@@ -96,5 +96,41 @@ describe("insertRequest attachment guard", () => {
       "https://cdn.example/bizon/requests/a.pdf",
     );
     expect(await storedAttachment("https://evil.example/file.pdf")).toBeNull();
+  });
+});
+
+describe("writePageForm", () => {
+  const form = {
+    successMessage: "Спасибо",
+    fields: [
+      { id: "companyName", label: "Название компании", type: "text" as const, required: true },
+      { id: "catalogFile", label: "Файл", type: "file" as const, required: false },
+    ],
+  };
+
+  it("upserts the form and replaces its fields in order", async () => {
+    const calls: { sql: string; params?: unknown[] }[] = [];
+    await writePageForm({ query: async (sql, params) => (calls.push({ sql, params }), []) }, "become-a-supplier", form);
+    expect(calls[0].sql).toContain("INSERT INTO page_forms");
+    expect(calls[0].params).toEqual(["become-a-supplier", "Спасибо"]);
+    expect(calls[1].sql).toContain("DELETE FROM page_form_fields");
+    expect(calls.slice(2).map((call) => call.params)).toEqual([
+      ["become-a-supplier", "companyName", 0, "Название компании", "text", true],
+      ["become-a-supplier", "catalogFile", 1, "Файл", "file", false],
+    ]);
+  });
+
+  it("rejects a field type outside the six, a blank id, and a duplicate id", () => {
+    const bad = (field: object) => pageFormFieldsAreValid([{ ...form.fields[0], ...field }] as never);
+    expect(bad({ type: "number" })).toBe(false);
+    expect(bad({ id: " " })).toBe(false);
+    expect(pageFormFieldsAreValid([form.fields[0], form.fields[0]])).toBe(false);
+    expect(pageFormFieldsAreValid(form.fields)).toBe(true);
+  });
+});
+
+describe("readPageFormDraft", () => {
+  it("returns an empty form when the page has no stored form", async () => {
+    await expect(readPageFormDraft({ query: async () => [] }, "become-a-supplier")).resolves.toEqual({ successMessage: "", fields: [] });
   });
 });

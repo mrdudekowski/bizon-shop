@@ -362,6 +362,12 @@ export type SiteProfileDraft = {
   requisites: { id: string; label: string; value: string }[];
 };
 
+/** Request form of the supplier and delivery-geography pages; stored in page_forms and page_form_fields. */
+export type PageFormDraft = {
+  successMessage: string;
+  fields: { id: string; label: string; type: "text" | "tel" | "email" | "url" | "textarea" | "file"; required: boolean }[];
+};
+
 export type StubPageDraft = {
   featuresHeading?: string;
   features?: { id: string; title: string; text: string }[];
@@ -370,6 +376,7 @@ export type StubPageDraft = {
   proof?: { image?: ImagePlacement | null; title: string; text: string } | null;
   cta?: (PageCta & { secondaryLabel?: string; secondaryHref?: string }) | null;
   siteProfile?: SiteProfileDraft;
+  form?: PageFormDraft;
   id: Exclude<PageKey, "home" | "shop-home">;
   seoTitle: string;
   seoDescription: string;

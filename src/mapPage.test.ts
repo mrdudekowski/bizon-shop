@@ -568,3 +568,13 @@ describe("mapStubPatch site profile", () => {
     expect(mapStubPatch(baseRow)).not.toHaveProperty("siteProfile");
   });
 });
+
+describe("mapStubPatch page form", () => {
+  const row = { stub_hero_configured: false, stub_hero_eyebrow: null, stub_hero_title: null, stub_hero_lead: null, stub_hero_image_url: null, stub_hero_image_alt: null, seo_seo_title: null, seo_seo_description: null };
+  const form = { pageKey: "become-a-supplier" as const, successMessage: "Спасибо", fields: [] };
+
+  it("copies the loaded form and omits it when none was loaded", () => {
+    expect(mapStubPatch({ ...row, page_form: form }).form).toEqual(form);
+    expect(mapStubPatch(row)).not.toHaveProperty("form");
+  });
+});

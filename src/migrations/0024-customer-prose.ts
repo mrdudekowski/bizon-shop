@@ -11,6 +11,9 @@ const heroLeadReplaceWhere = (previous: string): string =>
 const aboutLead = sqlLiteral(CUSTOMER_COPY.about[0]);
 const aboutCustomersBody = sqlLiteral(CUSTOMER_COPY.about[1]);
 const aboutTermsBody = sqlLiteral(CUSTOMER_COPY.about[2]);
+const supplierLead = sqlLiteral(CUSTOMER_COPY.supplier[0]);
+const supplierCooperationBody = sqlLiteral(CUSTOMER_COPY.supplier[1]);
+const supplierTermsBody = sqlLiteral(CUSTOMER_COPY.supplier[2]);
 const warrantyLead = sqlLiteral(CUSTOMER_COPY.warranty[0]);
 const warrantyClaimBody = sqlLiteral(CUSTOMER_COPY.warranty[1]);
 const warrantyReviewBody = sqlLiteral(CUSTOMER_COPY.warranty[2]);
@@ -31,17 +34,17 @@ const seededPrivacyAddressExample = sqlLiteral("г. Москва, пример �
 const seededPrivacyEmail = sqlLiteral(SEEDED_COPY.privacySectionEmail);
 
 /**
- * Replaces legacy about/warranty story cards and 0017 shop delivery sections with customer-template prose.
+ * Replaces legacy about/warranty/supplier story cards and 0017 shop delivery sections with customer-template prose.
  * Hero leads and feature deletes run only while the row still matches migration 0022 seeds.
  */
 export const customerProseMigration: Migration = {
   version: "202610290024",
-  description: "Seed customer-template about and warranty prose into CMS editorial fields",
+  description: "Seed customer-template about, warranty, and supplier prose into CMS editorial fields",
   sql: `
     UPDATE pages
     SET editorial_sections_configured = true,
         updated_at = now()
-    WHERE key IN ('about', 'warranty');
+    WHERE key IN ('about', 'warranty', 'become-a-supplier');
 
     -- about prose
     UPDATE pages
@@ -118,6 +121,43 @@ export const customerProseMigration: Migration = {
       AND p.key = 'warranty'
       AND feature.id = 'warranty-feature-3'
       AND text = ${sqlLiteral(SEEDED_COPY.warrantyFeatureTexts["warranty-feature-3"])};
+
+    -- supplier prose
+    UPDATE pages
+    SET stub_hero_lead = ${supplierLead},
+        updated_at = now()
+    WHERE key = 'become-a-supplier'
+      AND ${heroLeadReplaceWhere(SEEDED_COPY.supplierHeroLead)};
+
+    INSERT INTO pages_editorial_sections (id, _parent_id, _order, heading, body)
+    SELECT seeded.id, p.id, seeded.position, seeded.heading, seeded.body
+    FROM pages AS p
+    JOIN (VALUES
+      ('become-a-supplier', 'supplier-cooperation', 0, '', ${supplierCooperationBody}),
+      ('become-a-supplier', 'supplier-terms', 1, '', ${supplierTermsBody})
+    ) AS seeded(page_key, id, position, heading, body) ON p.key::text = seeded.page_key
+    ON CONFLICT (_parent_id, id) DO NOTHING;
+
+    DELETE FROM pages_editorial_features AS feature
+    USING pages AS p
+    WHERE feature._parent_id = p.id
+      AND p.key = 'become-a-supplier'
+      AND feature.id = 'supplier-feature-1'
+      AND text = ${sqlLiteral(SEEDED_COPY.supplierFeatureTexts["supplier-feature-1"])};
+
+    DELETE FROM pages_editorial_features AS feature
+    USING pages AS p
+    WHERE feature._parent_id = p.id
+      AND p.key = 'become-a-supplier'
+      AND feature.id = 'supplier-feature-2'
+      AND text = ${sqlLiteral(SEEDED_COPY.supplierFeatureTexts["supplier-feature-2"])};
+
+    DELETE FROM pages_editorial_features AS feature
+    USING pages AS p
+    WHERE feature._parent_id = p.id
+      AND p.key = 'become-a-supplier'
+      AND feature.id = 'supplier-feature-3'
+      AND text = ${sqlLiteral(SEEDED_COPY.supplierFeatureTexts["supplier-feature-3"])};
 
     UPDATE pages
     SET editorial_sections_configured = true,
