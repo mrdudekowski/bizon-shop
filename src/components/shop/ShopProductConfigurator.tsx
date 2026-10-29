@@ -336,7 +336,6 @@ export function ShopProductConfigurator({ product: initialProduct }: { product: 
               {available ? "В наличии" : "Под заказ"}
             </span>
           </div>
-          <p className={styles.requestNote}>Добавление в корзину формирует заявку и не является оплатой.</p>
 
           {(product.brand || product.material || (product.specifications && product.specifications.length > 0)) ? (
             <dl className={styles.productSpecs}>
