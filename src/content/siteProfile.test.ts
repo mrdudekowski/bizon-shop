@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MIGRATIONS } from "../migrations";
 import { siteProfileMigration } from "../migrations/0023-site-profile";
 import { CUSTOMER_COPY } from "./customerTemplateCopy";
-import { contactHref, visibleChannels } from "./siteProfile";
+import { contactHref, siteChannelsAreValid, visibleChannels, writeSiteProfileContacts } from "./siteProfile";
 
 describe("site profile visibility", () => {
   it("hides a channel without a link or with enabled false", () => {
@@ -42,3 +42,37 @@ describe("site profile migration", () => {
   });
 });
 
+
+describe("site profile contact write", () => {
+  const contacts = {
+    phone: "+7 (421) 200-00-00",
+    email: "sales@bizon.ru",
+    address: "Хабаровск",
+    channels: [
+      { id: "telegram", label: "Telegram", href: "https://t.me/bizon", enabled: true },
+      { id: "channel-1", label: "Дзен", href: "", enabled: false },
+    ],
+  };
+
+  it("upserts the contacts and replaces the channel rows in draft order", async () => {
+    const calls: { sql: string; params: unknown[] }[] = [];
+    await writeSiteProfileContacts({ query: async (sql, params = []) => { calls.push({ sql, params }); return []; } }, contacts);
+
+    expect(calls[0].sql).toContain("INSERT INTO site_profile");
+    expect(calls[0].sql).toContain("ON CONFLICT (id) DO UPDATE");
+    expect(calls[0].params.slice(0, 3)).toEqual(["+7 (421) 200-00-00", "sales@bizon.ru", "Хабаровск"]);
+    expect(calls[1].sql).toContain("DELETE FROM site_profile_channels");
+    expect(calls.slice(2).map((call) => call.params)).toEqual([
+      ["telegram", 0, "Telegram", "https://t.me/bizon", true],
+      ["channel-1", 1, "Дзен", "", false],
+    ]);
+  });
+
+  it("rejects duplicate ids, blank labels and links that are not http(s)", () => {
+    const channel = contacts.channels[0];
+    expect(siteChannelsAreValid(contacts.channels)).toBe(true);
+    expect(siteChannelsAreValid([channel, { ...channel }])).toBe(false);
+    expect(siteChannelsAreValid([{ ...channel, label: " " }])).toBe(false);
+    expect(siteChannelsAreValid([{ ...channel, href: "javascript:alert(1)" }])).toBe(false);
+  });
+});

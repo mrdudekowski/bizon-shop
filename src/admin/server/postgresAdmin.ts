@@ -3,6 +3,7 @@ import { afterTransactionCommit, getTransactionClient, withTransaction } from ".
 
 import { AdminClientError, adminCodeFromDatabaseError } from "../client/errors";
 import { mergeLegacyPageOverlay } from "./pageOverlay";
+import { readSiteProfile, siteChannelsAreValid, writeSiteProfileContacts } from "../../content/siteProfile";
 import { mediaUsageSql, publicDocumentPageKeys, toMediaUsageRecord } from "./mediaUsage";
 import { detachStoredMediaReference } from "../../storage/mediaReferences";
 import type { AdminClient } from "../client/adminClient";
@@ -847,6 +848,8 @@ async function mapPage(row: Row): Promise<PageDraft> {
     ...(row.editorial_proof_configured ? { proof: row.editorial_proof_title || row.editorial_proof_text || row.editorial_proof_image_id ? { title: str(row.editorial_proof_title), text: str(row.editorial_proof_text), image: placement(row.editorial_proof_image_id, str(row.editorial_proof_image_alt)) } : null } : {}),
     ...(row.editorial_cta_configured ? { cta: row.editorial_cta_label && row.editorial_cta_href ? { label: str(row.editorial_cta_label), href: str(row.editorial_cta_href), secondaryLabel: str(row.editorial_secondary_label), secondaryHref: str(row.editorial_secondary_href) } : null } : {}),
   } : {};
+  const profile = key === "contact" ? await readSiteProfile({ query }) : null;
+  const contactProfile = profile && { phone: profile.phone, email: profile.email, address: profile.address, channels: profile.channels };
   return {
     ...editorial,
     id: key as Exclude<PageKey, "home" | "shop-home">,
@@ -856,20 +859,7 @@ async function mapPage(row: Row): Promise<PageDraft> {
       ...section(row.stub_hero_eyebrow, row.stub_hero_title, row.stub_hero_lead),
       image: placement(row.stub_hero_image_id, str(row.stub_hero_image_alt)),
     },
-    ...(key === "contact"
-      ? {
-          footerContact: {
-            phone: str(row.footer_phone),
-            email: str(row.footer_email),
-            address: str(row.footer_address),
-            telegram: str(row.footer_telegram),
-            whatsapp: str(row.footer_whatsapp),
-            max: str(row.footer_max),
-            vk: str(row.footer_vk),
-            instagram: str(row.footer_instagram),
-          },
-        }
-      : {}),
+    ...(contactProfile ? { siteProfile: contactProfile } : {}),
     documents: await readDocumentLinks("page", key),
   };
 }
@@ -2891,20 +2881,24 @@ async function writePage(draft: PageDraft) {
     await query("DELETE FROM pages_editorial_sections WHERE _parent_id=$1", [parent.id]);
     for (const [index, item] of (draft.sections ?? []).entries()) await query("INSERT INTO pages_editorial_sections (id, _parent_id, _order, heading, body) VALUES ($1,$2,$3,$4,$5)", [item.id, parent.id, index, item.heading, item.body]);
   }
-  if (draft.id === "contact") {
-    const fc = draft.footerContact;
+  if (draft.id === "contact" && draft.siteProfile) {
+    const profile = draft.siteProfile;
+    if (!siteChannelsAreValid(profile.channels)) throw new AdminClientError("publish_blocked");
+    await writeSiteProfileContacts({ query }, profile);
+    // The footer_* columns are no longer read; they keep the same values so an older reader does not drift.
+    const enabledHref = (id: string) => profile.channels.find((channel) => channel.id === id && channel.enabled)?.href ?? "";
     await query(
       `UPDATE pages SET footer_phone=$2, footer_email=$3, footer_address=$4, footer_telegram=$5, footer_whatsapp=$6, footer_max=$7, footer_vk=$8, footer_instagram=$9 WHERE key=$1`,
       [
         draft.id,
-        fc?.phone ?? "",
-        fc?.email ?? "",
-        fc?.address ?? "",
-        fc?.telegram ?? "",
-        fc?.whatsapp ?? "",
-        fc?.max ?? "",
-        fc?.vk ?? "",
-        fc?.instagram ?? "",
+        profile.phone,
+        profile.email,
+        profile.address,
+        enabledHref("telegram"),
+        enabledHref("whatsapp"),
+        enabledHref("max"),
+        enabledHref("vk"),
+        enabledHref("instagram"),
       ],
     );
   }

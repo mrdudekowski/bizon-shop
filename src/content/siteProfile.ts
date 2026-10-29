@@ -47,6 +47,44 @@ export function contactHref(kind: "phone" | "email", value: string): string | nu
   return /\d/.test(phone) ? `tel:${phone}` : null;
 }
 
+/** A channel link is rendered as an anchor on the public site, so only empty or http(s) links are stored. */
+export function siteChannelsAreValid(channels: SiteChannel[]): boolean {
+  const ids = channels.map((channel) => channel.id.trim());
+  return (
+    ids.every(Boolean) &&
+    new Set(ids).size === ids.length &&
+    channels.every((channel) => channel.label.trim() && (!channel.href.trim() || /^https?:\/\//i.test(channel.href.trim())))
+  );
+}
+
+/** Replaces phone, email, address and all channel rows; legal text and requisites are left untouched. */
+export async function writeSiteProfileContacts(
+  db: SiteProfileDatabase,
+  contacts: Pick<SiteProfile, "phone" | "email" | "address" | "channels">,
+): Promise<void> {
+  await db.query(
+    `INSERT INTO site_profile (id, phone, email, address, channels_note, legal_summary, price_notice, made_to_order_notice)
+     VALUES (1, $1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT (id) DO UPDATE SET phone = EXCLUDED.phone, email = EXCLUDED.email, address = EXCLUDED.address`,
+    [
+      contacts.phone,
+      contacts.email,
+      contacts.address,
+      SITE_PROFILE_DEFAULTS.channelsNote,
+      SITE_PROFILE_DEFAULTS.legalSummary,
+      SITE_PROFILE_DEFAULTS.priceNotice,
+      SITE_PROFILE_DEFAULTS.madeToOrderNotice,
+    ],
+  );
+  await db.query(`DELETE FROM site_profile_channels`);
+  for (const [index, channel] of contacts.channels.entries()) {
+    await db.query(
+      `INSERT INTO site_profile_channels (id, sort_order, label, href, enabled) VALUES ($1, $2, $3, $4, $5)`,
+      [channel.id.trim(), index, channel.label.trim(), channel.href.trim(), channel.enabled],
+    );
+  }
+}
+
 const asText = (value: unknown): string => (typeof value === "string" ? value : "");
 
 export async function readSiteProfile(db: SiteProfileDatabase): Promise<SiteProfile> {
