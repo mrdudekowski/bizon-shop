@@ -12,6 +12,7 @@ export const SOURCE_FORMS = [
   { label: "Запрос по спецификации", value: "procurement" },
   { label: "Брендирование", value: "branding" },
   { label: "Поставщик", value: "supplier" },
+  { label: "География поставок", value: "delivery_quote" },
   { label: "Гарантия", value: "warranty" },
   { label: "Подбор дисков", value: "wheel_selection" },
   { label: "Быстрый заказ товара", value: "product_quick_order" },

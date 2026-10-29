@@ -154,6 +154,7 @@ export type PageContentByKey = {
   warranty: StubMarketingPageContent;
   branding: StubMarketingPageContent;
   "become-a-supplier": StubMarketingPageContent;
+  "delivery-geography": StubMarketingPageContent;
   "privacy-policy": StubMarketingPageContent;
   "shop-delivery-returns": StubMarketingPageContent;
 };

@@ -10,6 +10,7 @@ export const ROUTES = {
   warranty: "/warranty",
   about: "/about",
   supplier: "/become-a-supplier",
+  deliveryGeography: "/delivery-geography",
   branding: "/branding",
   privacyPolicy: "/privacy-policy",
   cart: "/cart",

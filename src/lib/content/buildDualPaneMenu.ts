@@ -84,6 +84,7 @@ export function buildMainDualPaneMenuSections(input: {
         { id: "contact", title: "Контакты", href: ROUTES.contact },
         { id: "warranty", title: "Гарантия", href: ROUTES.warranty },
         { id: "supplier", title: "Стать поставщиком", href: ROUTES.supplier },
+        { id: "delivery-geography", title: "География поставок", href: ROUTES.deliveryGeography },
       ],
     },
   ];

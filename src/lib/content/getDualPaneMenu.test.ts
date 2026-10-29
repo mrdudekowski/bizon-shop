@@ -71,6 +71,7 @@ describe("buildMainDualPaneMenuSections", () => {
       "contact",
       "warranty",
       "supplier",
+      "delivery-geography",
     ]);
     expect(sections.find((section) => section.id === "shop")?.items.map((item) => item.id)).toEqual([
       "shop-home",

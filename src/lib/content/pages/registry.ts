@@ -19,6 +19,7 @@ export const PAGE_REGISTRY: readonly PageRegistryEntry[] = [
     title: "Стать поставщиком",
     path: "/become-a-supplier",
   },
+  { key: "delivery-geography", title: "География поставок", path: "/delivery-geography" },
   { key: "privacy-policy", title: "Политика конфиденциальности", path: "/privacy-policy" },
   {
     key: "shop-delivery-returns",

@@ -155,6 +155,7 @@ const PAGE_KEYS = new Set([
   "contact",
   "warranty",
   "become-a-supplier",
+  "delivery-geography",
   "privacy-policy",
   "shop-delivery-returns",
 ]);
