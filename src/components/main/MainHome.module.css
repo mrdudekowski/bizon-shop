@@ -1170,3 +1170,21 @@
   .assortmentCard:hover .assortmentArrow { transform: none; }
   .directionWatermark { animation: none; opacity: 0.22; }
 }
+:global(html[data-canvas-paint="static"]) .directionSection {
+  background: #ffffff;
+  color: #1c1c1c;
+}
+:global(html[data-canvas-paint="static"]) .branding {
+  width: 100%;
+  max-width: 100%;
+  margin-inline: 0;
+  border-radius: 0;
+  background: #0a0a0a;
+}
+:global(html[data-canvas-paint="static"]) .shopLead {
+  background: #0a0a0a;
+}
+:global(html[data-canvas-paint="static"]) .expertise {
+  background: #ffffff;
+  color: #1c1c1c;
+}
