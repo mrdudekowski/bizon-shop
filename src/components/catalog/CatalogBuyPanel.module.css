@@ -39,7 +39,7 @@
 }
 
 .select {
-  padding-right: calc(20px + 1.4rem);
+  padding-right: calc(20px + 16px + 0.6rem);
 }
 
 .metaRow {

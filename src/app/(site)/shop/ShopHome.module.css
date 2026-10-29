@@ -107,7 +107,7 @@
 }
 
 .modelsSection {
-  background: transparent;
+  background: var(--bizon-black);
   color: var(--bizon-white);
   padding: clamp(56px, 6vw, 88px) 0 clamp(64px, 8vw, 112px);
 }
@@ -309,7 +309,7 @@
 }
 
 .categoriesSection {
-  background: transparent;
+  background: var(--bizon-black);
   color: var(--bizon-white);
   padding: 0;
 }

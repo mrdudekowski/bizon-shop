@@ -117,6 +117,83 @@
   cursor: pointer;
 }
 
+.specToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--bizon-coral-500);
+  padding: 0;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.specToggle svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 160ms ease;
+}
+
+.specToggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.specToggle:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 3px;
+}
+
+.specRow td {
+  padding: 0;
+  background: var(--color-surface-muted);
+}
+
+.specPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.1rem 1.5rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 1.25rem 1.15rem 1.4rem;
+  box-sizing: border-box;
+}
+
+.specPanel div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.specPanel dt {
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: var(--tracking-body);
+  text-transform: uppercase;
+}
+
+.specPanel dd {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: var(--weight-display);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 640px) {
+  .specPanel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 1.4rem 1.5rem 1.6rem;
+  }
+}
+
 /* —— Desktop full-fit table (≥ 1024px, no horizontal scroll) —— */
 .scroll {
   display: none;
@@ -210,6 +287,10 @@
 
   .scroll {
     display: block;
+  }
+
+  .specPanel {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
