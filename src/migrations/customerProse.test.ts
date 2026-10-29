@@ -29,10 +29,15 @@ describe("customer prose migration", () => {
       expect(sql).toContain(`AND text = ${sqlLiteral(text)}`);
     }
     expect(sql).not.toMatch(/UPDATE pages SET stub_hero_lead/m);
-    const heroUpdates = sql.match(/UPDATE pages[\s\S]*?WHERE key = '(?:about|warranty)'[\s\S]*?;/g) ?? [];
+    expect(sql).toMatch(
+      /UPDATE pages[\s\S]*?editorial_sections_configured = true[\s\S]*?WHERE key IN \('about', 'warranty'\)/,
+    );
+    const heroUpdates = sql.match(/UPDATE pages\s+SET stub_hero_lead[\s\S]*?;/g) ?? [];
     expect(heroUpdates).toHaveLength(2);
     for (const block of heroUpdates) {
+      expect(block).toMatch(/WHERE key = '(?:about|warranty)'/);
       expect(block).toMatch(/btrim\(COALESCE\(stub_hero_lead, ''\)\) = '' OR stub_hero_lead =/);
+      expect(block).not.toContain("editorial_sections_configured");
     }
   });
 });

@@ -23,10 +23,14 @@ export const customerProseMigration: Migration = {
   version: "202610290024",
   description: "Seed customer-template about and warranty prose into CMS editorial fields",
   sql: `
+    UPDATE pages
+    SET editorial_sections_configured = true,
+        updated_at = now()
+    WHERE key IN ('about', 'warranty');
+
     -- about prose
     UPDATE pages
     SET stub_hero_lead = ${aboutLead},
-        editorial_sections_configured = true,
         updated_at = now()
     WHERE key = 'about'
       AND ${heroLeadReplaceWhere(SEEDED_COPY.aboutHeroLead)};
@@ -64,7 +68,6 @@ export const customerProseMigration: Migration = {
     -- warranty prose
     UPDATE pages
     SET stub_hero_lead = ${warrantyLead},
-        editorial_sections_configured = true,
         updated_at = now()
     WHERE key = 'warranty'
       AND ${heroLeadReplaceWhere(SEEDED_COPY.warrantyHeroLead)};
