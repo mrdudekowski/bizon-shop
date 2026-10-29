@@ -21,6 +21,7 @@ type CatalogBuyPanelProps = {
   available?: boolean;
   sizeLabel?: string;
   emptyVariantsMessage?: string;
+  priceNotice?: string;
   className?: string;
 };
 
@@ -36,6 +37,7 @@ export function CatalogBuyPanel({
   available,
   sizeLabel = "Размер",
   emptyVariantsMessage = "Размеры уточняются — можно добавить модель без размера или связаться со специалистом.",
+  priceNotice,
   className,
 }: CatalogBuyPanelProps) {
   const [variantId, setVariantId] = useState(
@@ -149,6 +151,9 @@ export function CatalogBuyPanel({
       {!canAdd && (
         <p className={styles.hint}>Сначала выберите размер</p>
       )}
+      {priceNotice?.trim() ? (
+        <p className={styles.notice} data-price-notice="">{priceNotice}</p>
+      ) : null}
     </div>
   );
 }

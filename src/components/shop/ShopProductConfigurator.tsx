@@ -38,7 +38,12 @@ function variantLabel(variant: CmsProductVariant): string {
     .join(" · ");
 }
 
-export function ShopProductConfigurator({ product: initialProduct }: { product: CmsProduct }) {
+type ShopProductConfiguratorProps = {
+  product: CmsProduct;
+  priceNotice?: string;
+};
+
+export function ShopProductConfigurator({ product: initialProduct, priceNotice }: ShopProductConfiguratorProps) {
   const [product, setProduct] = useState(initialProduct);
   const router = useRouter();
   const pathname = usePathname();
@@ -336,6 +341,10 @@ export function ShopProductConfigurator({ product: initialProduct }: { product: 
               {available ? "В наличии" : "Под заказ"}
             </span>
           </div>
+
+          {priceNotice?.trim() ? (
+            <p className={styles.priceNotice} data-price-notice="">{priceNotice}</p>
+          ) : null}
 
           {(product.brand || product.material || (product.specifications && product.specifications.length > 0)) ? (
             <dl className={styles.productSpecs}>

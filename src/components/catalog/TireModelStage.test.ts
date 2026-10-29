@@ -6,7 +6,51 @@ import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
 import type { CmsTireVariant } from "@/lib/content/types";
 import { TireModelStage } from "./TireModelStage";
 
+const emptyModel = {
+  id: "model-1",
+  name: "DSR188",
+  slug: "dsr188",
+  tireTypeSlug: "tbr",
+  tireTypeName: "Грузовые шины",
+  href: "/models/tbr/dsr188",
+  sizes: [],
+  brand: "BIZON",
+  descriptionShort: "",
+  descriptionLong: "",
+  imageUrl: "",
+  gallery: [],
+  documents: [],
+  advantages: [],
+  selectionAxles: [],
+  applicationTypes: [],
+  applicationCategory: "",
+  treadType: "",
+  axlePosition: "",
+  showInMenu: true,
+  menuOrder: 0,
+} as unknown as TireCatalogModel;
+
+const SPECIALIST_SENTENCE = "Финальную совместимость, наличие и предложение подтверждает специалист BIZON.";
+
 describe("TireModelStage", () => {
+  it("shows the profile price notice instead of the hardcoded specialist sentence", () => {
+    const notice = "Информация о ценах и наличии товаров на сайте носит информационный характер.";
+    const stage = (priceNotice: string) => renderToStaticMarkup(
+      createElement(TireModelStage, {
+        model: { ...emptyModel },
+        variants: [],
+        modelPath: "/models/tbr/dsr188",
+        breadcrumbs: [],
+        priceNotice,
+      }),
+    );
+
+    expect(stage(notice)).toContain(notice);
+    expect(stage(notice)).not.toContain(SPECIALIST_SENTENCE);
+    expect(stage("")).not.toContain(SPECIALIST_SENTENCE);
+    expect(stage("")).not.toContain("data-price-notice");
+  });
+
   it("disambiguates same-size choices by their load indexes and keeps variant IDs", () => {
     const model = {
       id: "model-1",

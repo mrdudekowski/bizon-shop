@@ -61,6 +61,7 @@ type TireModelStageProps = {
   variants: CmsTireVariant[];
   modelPath: string;
   breadcrumbs: Breadcrumb[];
+  priceNotice?: string;
 };
 
 export function TireModelStage({
@@ -68,6 +69,7 @@ export function TireModelStage({
   variants: initialVariants,
   modelPath,
   breadcrumbs,
+  priceNotice,
 }: TireModelStageProps) {
   const [model, setModel] = useState(initialModel);
   const [variants, setVariants] = useState(initialVariants);
@@ -179,10 +181,9 @@ export function TireModelStage({
               className={styles.productOrderPanel}
             />
 
-            <p className={styles.disclaimer}>
-              Таблица типоразмеров и документы помогают проверить конфигурацию. Финальную
-              совместимость, наличие и предложение подтверждает специалист BIZON.
-            </p>
+            {priceNotice?.trim() ? (
+              <p className={styles.disclaimer} data-price-notice="">{priceNotice}</p>
+            ) : null}
           </div>
         </section>
       </div>
