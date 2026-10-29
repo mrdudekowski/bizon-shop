@@ -36,7 +36,7 @@
 .expertise {
   padding-top: var(--home-section-gap);
   background: transparent;
-  color: #1c1c1c;
+  color: var(--page-ink, #1c1c1c);
 }
 .editorial { background: transparent; color: inherit; }
 .hero {
@@ -306,7 +306,7 @@
   padding: var(--home-section-lead) 0 var(--home-section-gap);
   scroll-margin-top: var(--header-height);
   background: transparent;
-  color: #1c1c1c;
+  color: var(--page-ink, #1c1c1c);
 }
 .darkHeading { display: grid; grid-template-columns: 1.25fr .75fr; gap: .75rem clamp(2rem, 7vw, 7rem); align-items: end; margin-bottom: clamp(3rem, 7vw, 6rem); }
 .darkHeading .eyebrow { grid-column: 1 / -1; }
@@ -1169,22 +1169,4 @@
   .assortmentCard:hover .assortmentMedia :global(img),
   .assortmentCard:hover .assortmentArrow { transform: none; }
   .directionWatermark { animation: none; opacity: 0.22; }
-}
-:global(html[data-canvas-paint="static"]) .directionSection {
-  background: #ffffff;
-  color: #1c1c1c;
-}
-:global(html[data-canvas-paint="static"]) .branding {
-  width: 100%;
-  max-width: 100%;
-  margin-inline: 0;
-  border-radius: 0;
-  background: #0a0a0a;
-}
-:global(html[data-canvas-paint="static"]) .shopLead {
-  background: #0a0a0a;
-}
-:global(html[data-canvas-paint="static"]) .expertise {
-  background: #ffffff;
-  color: #1c1c1c;
 }

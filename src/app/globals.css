@@ -280,13 +280,13 @@ section[id] {
 @property --page-canvas {
   syntax: "<color>";
   inherits: true;
-  initial-value: #0a0a0a;
+  initial-value: #ffffff;
 }
 
 @property --page-ink {
   syntax: "<color>";
   inherits: true;
-  initial-value: #ffffff;
+  initial-value: #1c1c1c;
 }
 
 /* Базовые стили body - используем CSS-переменные для единообразия темы */
@@ -294,17 +294,13 @@ body {
   margin: 0;
   font-family: var(--font-sans);
   color: var(--color-foreground);
-  background-color: var(--page-canvas, #0a0a0a);
+  background-color: var(--page-canvas, #ffffff);
   transition: --page-canvas 480ms linear, background-color 480ms linear;
   min-height: 100vh;
   /* Предотвращаем горизонтальный скролл при переполнении контента */
   overflow-x: hidden;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-}
-
-html[data-canvas-paint="static"] body {
-  transition: none;
 }
 
 h1,

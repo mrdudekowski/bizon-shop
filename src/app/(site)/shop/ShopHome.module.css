@@ -622,7 +622,3 @@
   }
 }
 
-:global(html[data-canvas-paint="static"]) .vehiclesSection {
-  background: #ffffff;
-  color: #1c1c1c;
-}
