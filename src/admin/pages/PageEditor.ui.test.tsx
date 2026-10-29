@@ -252,6 +252,45 @@ describe("PageEditor conflict recovery", () => {
     }));
   });
 
+  it("edits the price and made-to-order notices and defaults a draft without them to empty text", async () => {
+    const contactDraft = {
+      id: "contact",
+      seoTitle: "Контакты",
+      seoDescription: "",
+      hero: { eyebrow: "", title: "", lead: "" },
+      documents: [],
+      siteProfile: {
+        phone: "",
+        email: "",
+        address: "",
+        legalSummary: "",
+        requisites: [],
+        channels: [],
+      },
+    };
+    const record = { ...pageRecord, id: "contact", draft: contactDraft, savedDraft: contactDraft, publishedSnapshot: contactDraft };
+    const savePage = vi.fn().mockImplementation(async (_key: string, next: typeof contactDraft) => ({ ...record, draft: next, savedDraft: next }));
+    mockState.client.getPage = vi.fn().mockResolvedValue(record);
+    mockState.client.savePage = savePage;
+    const user = userEvent.setup();
+    render(createElement(PageEditor, { pageKey: "contact" }));
+
+    const priceNotice = await screen.findByLabelText("Цены и наличие");
+    expect(priceNotice).toHaveProperty("value", "");
+    expect(screen.getByLabelText("Товар под заказ")).toHaveProperty("value", "");
+    await user.type(priceNotice, "Цены ориентировочные.");
+    await user.type(screen.getByLabelText("Товар под заказ"), "Часть продукции — под заказ.");
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    expect((await screen.findByRole("status")).textContent).toBe("Черновик сохранён");
+    expect(savePage).toHaveBeenCalledWith("contact", expect.objectContaining({
+      siteProfile: expect.objectContaining({
+        priceNotice: "Цены ориентировочные.",
+        madeToOrderNotice: "Часть продукции — под заказ.",
+      }),
+    }));
+  });
+
   it("shows a PDF upload failure beside the document control", async () => {
     const legalDraft = { id: "privacy-policy", seoTitle: "Политика", seoDescription: "", hero: { eyebrow: "", title: "", lead: "" }, documents: [] };
     mockState.client.getPage = vi.fn().mockResolvedValue({ ...pageRecord, id: "privacy-policy", draft: legalDraft, savedDraft: legalDraft, publishedSnapshot: legalDraft });

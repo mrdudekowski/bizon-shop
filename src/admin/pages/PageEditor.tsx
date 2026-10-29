@@ -104,13 +104,24 @@ const FIELD_TYPE_LABELS: Record<PageFormDraft["fields"][number]["type"], string>
   file: "Файл",
 };
 
-const EMPTY_SITE_PROFILE: SiteProfileDraft = { phone: "", email: "", address: "", channels: [], legalSummary: "", requisites: [] };
+const EMPTY_SITE_PROFILE: SiteProfileDraft = {
+  phone: "",
+  email: "",
+  address: "",
+  channels: [],
+  legalSummary: "",
+  priceNotice: "",
+  madeToOrderNotice: "",
+  requisites: [],
+};
 
 function mergeSiteProfileDraft(raw: SiteProfileDraft | undefined): SiteProfileDraft {
   return {
     ...EMPTY_SITE_PROFILE,
     ...(raw ?? {}),
     legalSummary: raw?.legalSummary ?? "",
+    priceNotice: raw?.priceNotice ?? "",
+    madeToOrderNotice: raw?.madeToOrderNotice ?? "",
     requisites: raw?.requisites ?? [],
     channels: raw?.channels ?? [],
   };
@@ -188,6 +199,20 @@ function StubFields({
             <textarea
               value={siteProfile.legalSummary}
               onChange={(event) => patchSiteProfile({ legalSummary: event.target.value })}
+            />
+          </label>
+          <label className={styles.fullWidth}>
+            Цены и наличие
+            <textarea
+              value={siteProfile.priceNotice}
+              onChange={(event) => patchSiteProfile({ priceNotice: event.target.value })}
+            />
+          </label>
+          <label className={styles.fullWidth}>
+            Товар под заказ
+            <textarea
+              value={siteProfile.madeToOrderNotice}
+              onChange={(event) => patchSiteProfile({ madeToOrderNotice: event.target.value })}
             />
           </label>
           <h3>Юридические реквизиты</h3>

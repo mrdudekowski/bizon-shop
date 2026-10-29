@@ -294,6 +294,8 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
           email: { field: "Email" },
           address: { field: "Адрес" },
           legalSummary: { field: "Краткое описание реквизитов" },
+          priceNotice: { field: "Цены и наличие" },
+          madeToOrderNotice: { field: "Товар под заказ" },
           requisites: {
             itemLabelKey: "label",
             children: {
