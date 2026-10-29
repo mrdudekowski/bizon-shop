@@ -165,7 +165,12 @@ export async function putMedia(
     }
     mimeType = "image/webp";
   } else if (sourceMimeType === "image/webp") {
-    const meta = await sharp(file.body).metadata();
+    let meta;
+    try {
+      meta = await sharp(file.body).metadata();
+    } catch (error) {
+      throw new MediaRejected("publish_blocked", { cause: error });
+    }
     const tooWide = (meta.width ?? 0) > DISPLAY_MAX_EDGE || (meta.height ?? 0) > DISPLAY_MAX_EDGE;
     if (tooWide) {
       try {

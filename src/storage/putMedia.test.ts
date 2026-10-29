@@ -112,6 +112,24 @@ describe("putMedia", () => {
     expect((await sharp(store.objects.get(result.key)!).metadata()).format).toBe("webp");
   });
 
+  it("rejects a corrupt WebP with a WebP signature as publish_blocked", async () => {
+    setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
+    setEnv("S3_BUCKET", "bucket");
+    setEnv("S3_ACCESS_KEY_ID", "id");
+    setEnv("S3_SECRET_ACCESS_KEY", "secret");
+    const store = memoryStore();
+    const corruptWebp = Buffer.alloc(32);
+    corruptWebp.write("RIFF", 0, "ascii");
+    corruptWebp.writeUInt32LE(24, 4);
+    corruptWebp.write("WEBP", 8, "ascii");
+    corruptWebp.fill(0, 12);
+
+    await expect(
+      putMedia(store, { name: "broken.webp", mimeType: "image/webp", body: corruptWebp }),
+    ).rejects.toMatchObject({ code: "publish_blocked" });
+    expect(store.objects.size).toBe(0);
+  });
+
   it("keeps an already-WebP upload unchanged", async () => {
     setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
     setEnv("S3_BUCKET", "bucket");
