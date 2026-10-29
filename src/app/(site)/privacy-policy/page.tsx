@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
+import { LegalRequisites } from "@/components/content/LegalRequisites";
 import { ServicePage } from "@/components/content/ServicePage";
 import { ROUTES } from "@/constants/navigation";
 import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
+import { PLACEHOLDER_SITE_PROFILE } from "@/lib/content/siteProfile";
 import { createPageMetadata } from "@/lib/seo/metadata";
 
 export async function generateMetadata() {
@@ -14,8 +16,12 @@ export async function generateMetadata() {
 }
 
 export default async function PrivacyPolicyPage() {
-  const page = await getPublishedStubOverlay("privacy-policy");
+  const [page, contactPage] = await Promise.all([
+    getPublishedStubOverlay("privacy-policy"),
+    getPublishedStubOverlay("contact"),
+  ]);
   if (!page) notFound();
+  const siteProfile = contactPage?.siteProfile ?? PLACEHOLDER_SITE_PROFILE;
   return (
     <ServicePage
       runtimePageKey="privacy-policy"
@@ -31,6 +37,9 @@ export default async function PrivacyPolicyPage() {
       features={page?.features ?? []}
       editorial={page}
       notice={undefined}
-    />
+      renderChildrenWithEditorial
+    >
+      <LegalRequisites siteProfile={siteProfile} />
+    </ServicePage>
   );
 }
