@@ -11,6 +11,7 @@ import { syncTireWheelCharacteristicsMigration } from "./0019-sync-tire-wheel-ch
 import { productLevelAvailabilityMigration } from "./0020-product-level-availability";
 import { shopProductSpecsAndSortOrderMigration } from "./0021-shop-product-specs-and-sort-order";
 import { restoreServicePagesAndFooterContactsMigration } from "./0022-restore-service-pages-and-footer-contacts";
+import { siteProfileMigration } from "./0023-site-profile";
 import type { Migration } from "../migrationRunner";
 import { cmsEditorSchemaMigration } from "./0001-cms-editor-schema";
 import { shopCategoryCarouselMigration } from "./0002-shop-category-carousel";
@@ -45,6 +46,7 @@ export const MIGRATIONS: readonly Migration[] = [
   productLevelAvailabilityMigration,
   shopProductSpecsAndSortOrderMigration,
   restoreServicePagesAndFooterContactsMigration,
+  siteProfileMigration,
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.at(-1)?.version ?? "0";

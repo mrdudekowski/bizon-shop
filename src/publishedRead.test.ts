@@ -191,6 +191,24 @@ describe("published content readers", () => {
     expect(calls.find((call) => call.sql.includes("cms_document_links"))?.params).toEqual(["page", "privacy-policy"]);
   });
 
+  it("attaches the site profile to the contact page read only", async () => {
+    const { db } = createRecordingDb((sql) => {
+      if (sql.includes("FROM site_profile_channels")) return [{ id: "telegram", label: "Telegram", href: "", enabled: true }];
+      if (sql.includes("FROM site_profile_requisites")) return [{ id: "inn", label: "ИНН", value: "Информация будет предоставлена позже." }];
+      if (sql.includes("FROM site_profile")) return [{ phone: "+7 (421) 000-00-11", email: "", address: "", channels_note: "", legal_summary: "", price_notice: "", made_to_order_notice: "" }];
+      return [{ id: 41, seo_seo_title: "Контакты" }];
+    });
+
+    await expect(readStubPatch(db, "contact")).resolves.toMatchObject({
+      siteProfile: {
+        phone: "+7 (421) 000-00-11",
+        channels: [{ id: "telegram", href: "", enabled: true }],
+        requisites: [{ id: "inn" }],
+      },
+    });
+    await expect(readStubPatch(db, "about")).resolves.not.toHaveProperty("siteProfile");
+  });
+
   it("reads a published home patch and excludes drafts", async () => {
     const published = createRecordingDb(() => [
       {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CUSTOMER_COPY } from "./content/customerTemplateCopy";
 import { mapHomePatch, mapShopHomePatch, mapStubPatch, publishedShopCampaignFrames } from "./mapPage";
 
 describe("mapStubPatch", () => {
@@ -531,5 +532,39 @@ describe("published focal point mapping", () => {
     });
     expect(result.hero).toMatchObject({ imageFocalX: 0.2, imageFocalY: 0.8 });
     expect(result.proof).toMatchObject({ imageFocalX: 0.3, imageFocalY: 0.7 });
+  });
+});
+
+describe("mapStubPatch site profile", () => {
+  const baseRow = {
+    stub_hero_configured: false,
+    stub_hero_eyebrow: null,
+    stub_hero_title: null,
+    stub_hero_lead: null,
+    stub_hero_image_url: null,
+    stub_hero_image_alt: null,
+    seo_seo_title: null,
+    seo_seo_description: null,
+  };
+  const siteProfile = {
+    phone: CUSTOMER_COPY.phone,
+    email: CUSTOMER_COPY.email,
+    address: CUSTOMER_COPY.address,
+    channelsNote: CUSTOMER_COPY.channelsNote,
+    channels: [],
+    legalSummary: CUSTOMER_COPY.legalSummary,
+    requisites: [],
+    priceNotice: "",
+    madeToOrderNotice: "",
+  };
+
+  it("carries the profile placeholder while an empty footer phone stays out of footerContact", () => {
+    const patch = mapStubPatch({ ...baseRow, footer_phone: "", site_profile: siteProfile });
+    expect(patch.siteProfile?.phone).toBe(CUSTOMER_COPY.phone);
+    expect(patch).not.toHaveProperty("footerContact");
+  });
+
+  it("omits the profile when the page read did not load one", () => {
+    expect(mapStubPatch(baseRow)).not.toHaveProperty("siteProfile");
   });
 });

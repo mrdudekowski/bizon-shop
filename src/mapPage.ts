@@ -1,3 +1,4 @@
+import type { SiteProfile } from "./content/siteProfile";
 import { normalizeImageUrl } from "./mapTire";
 
 type HomeRow = {
@@ -266,6 +267,8 @@ export type StubPatch = {
     vk?: string;
     instagram?: string;
   };
+  /** Present on the contact page only; the footer and legal pages read contacts from here. */
+  siteProfile?: SiteProfile;
   seoTitle?: string;
   seoDescription?: string;
   hero: {
@@ -320,6 +323,7 @@ type StubRow = {
   footer_max?: string | null;
   footer_vk?: string | null;
   footer_instagram?: string | null;
+  site_profile?: SiteProfile;
 };
 
 export function mapStubPatch(row: StubRow): StubPatch {
@@ -355,6 +359,7 @@ export function mapStubPatch(row: StubRow): StubPatch {
   return {
     ...(row.documents !== undefined ? { documents: row.documents } : {}),
     ...(Object.keys(footerContact).length > 0 ? { footerContact } : {}),
+    ...(row.site_profile ? { siteProfile: row.site_profile } : {}),
     ...(row.editorial_configured ? {
       ...(row.editorial_heading_configured ? { featuresHeading: row.editorial_features_heading ?? "" } : {}),
       ...(row.editorial_features_configured ? { features: row.features ?? [] } : {}),

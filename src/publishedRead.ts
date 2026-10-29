@@ -1,3 +1,4 @@
+import { readSiteProfile } from "./content/siteProfile";
 import { mapArticle, type CmsArticle } from "./mapArticle";
 import { mapHomePatch, mapShopHomePatch, mapStubPatch, publishedShopCampaignFrames, type HomePatch, type ShopHomePatch, type StubPatch } from "./mapPage";
 import {
@@ -445,8 +446,10 @@ export async function readStubPatch(db: ReadDatabase, key: string): Promise<Stub
   const features = row.editorial_configured ? await db.query(`SELECT id, title, text FROM pages_editorial_features WHERE _parent_id = $1 ORDER BY _order, id`, [row.id]) : [];
   const sections = row.editorial_configured ? await db.query(`SELECT id, heading, body FROM pages_editorial_sections WHERE _parent_id = $1 ORDER BY _order, id`, [row.id]) : [];
   const documents = await readPublishedDocuments(db, "page", key);
+  const siteProfile = key === "contact" ? await readSiteProfile(db) : undefined;
   return mapStubPatch({
     ...row,
+    site_profile: siteProfile,
     stub_hero_image_focal_x: typeof heroFocal?.focal_x === "number" ? heroFocal.focal_x : null,
     stub_hero_image_focal_y: typeof heroFocal?.focal_y === "number" ? heroFocal.focal_y : null,
     editorial_proof_image_focal_x: typeof proofFocal?.focal_x === "number" ? proofFocal.focal_x : null,
