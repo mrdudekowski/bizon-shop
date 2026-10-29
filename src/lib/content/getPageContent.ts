@@ -3,6 +3,7 @@ import type { PageKey } from "./pages/keys";
 import { mergeHomeContent, mergeShopHomeContent } from "./pages/merge";
 import type { HomePageContent, PageContentByKey, ShopHomePageContent } from "./pages/types";
 import { fetchPublishedJson, isStaticBuild, PublishedApiError, publishedApiEnabled } from "./publishedClient";
+import type { PageForm } from "@/components/forms/ConfiguredForm";
 import type { SiteProfile } from "./siteProfile";
 
 export type PublishedStubOverlay = {
@@ -25,6 +26,8 @@ export type PublishedStubOverlay = {
   };
   /** Served with the contact page only. */
   siteProfile?: SiteProfile;
+  /** Served with the supplier and delivery-geography pages. */
+  form?: PageForm;
   seoTitle?: string;
   seoDescription?: string;
   hero: {

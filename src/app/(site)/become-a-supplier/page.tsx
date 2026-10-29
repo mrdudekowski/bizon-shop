@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ServicePage } from "@/components/content/ServicePage";
+import { ConfiguredForm } from "@/components/forms/ConfiguredForm";
 import { ROUTES } from "@/constants/navigation";
 import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { createPageMetadata } from "@/lib/seo/metadata";
@@ -30,6 +31,9 @@ export default async function BecomeASupplierPage() {
       editorial={page}
       featuresHeading={page?.featuresHeading ?? ""}
       features={page?.features ?? []}
-    />
+      renderChildrenWithEditorial
+    >
+      {page.form ? <ConfiguredForm form={page.form} sourceForm="supplier" /> : null}
+    </ServicePage>
   );
 }
