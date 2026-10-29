@@ -1,6 +1,5 @@
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { getPageContent, getShopCategories, getWheelModelsByTypeSlug } from "@/lib/content";
-import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { loadPublished } from "@/lib/content/loadPublished";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { ShopHomeClient } from "./ShopHomeClient";
@@ -19,17 +18,15 @@ export default async function ShopPage() {
     getPageContent("shop-home"),
     getWheelModelsByTypeSlug("forged"),
     getShopCategories(),
-    getPublishedStubOverlay("contact"),
   ]));
   if (loaded.kind === "unavailable") return <PublishedContentUnavailable />;
 
-  const [initialPage, initialModels, initialCategories, contactPage] = loaded.value;
+  const [initialPage, initialModels, initialCategories] = loaded.value;
   return (
     <ShopHomeClient
       initialPage={initialPage}
       initialModels={initialModels}
       initialCategories={initialCategories}
-      madeToOrderNotice={contactPage?.siteProfile?.madeToOrderNotice ?? ""}
     />
   );
 }

@@ -14,7 +14,6 @@ const SUPPLIER_FORM: PageForm = {
     { id: "companySite", label: "Сайт компании", type: "url", required: false },
     { id: "category", label: "Категория продукции", type: "text", required: true },
     { id: "offer", label: "Краткое описание предложения", type: "textarea", required: true },
-    { id: "catalogFile", label: "Файл или каталог", type: "file", required: false },
   ],
 };
 
@@ -26,7 +25,7 @@ describe("ConfiguredForm", () => {
     const positions = SUPPLIER_FORM.fields.map((field) => html.indexOf(field.label));
     expect(positions.every((position) => position >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
-    expect(html).toContain('type="file"');
+    expect(html).not.toContain('type="file"');
     expect(html).toContain('type="tel"');
     expect(html).toContain('type="url"');
     expect(html).toContain("<textarea");

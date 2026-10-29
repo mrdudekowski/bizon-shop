@@ -153,18 +153,6 @@
   color: var(--color-on-dark-muted);
 }
 
-.madeToOrderNotice {
-  width: 100%;
-  max-width: 720px;
-  min-width: 0;
-  margin: 24px 0 0;
-  color: var(--color-on-dark-muted);
-  font-size: 0.9375rem;
-  line-height: var(--leading-body);
-  white-space: pre-line;
-  overflow-wrap: anywhere;
-}
-
 .modelGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

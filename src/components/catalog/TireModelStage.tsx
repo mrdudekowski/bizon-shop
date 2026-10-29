@@ -180,10 +180,6 @@ export function TireModelStage({
               sizeLabel="Типоразмер"
               className={styles.productOrderPanel}
             />
-
-            {priceNotice?.trim() ? (
-              <p className={styles.disclaimer} data-price-notice="">{priceNotice}</p>
-            ) : null}
           </div>
         </section>
       </div>
@@ -220,6 +216,10 @@ export function TireModelStage({
             Запросить наличие и предложение
           </Link>
         </section>
+
+        {priceNotice?.trim() ? (
+          <p className={styles.pageDisclaimer} data-price-notice="">{priceNotice}</p>
+        ) : null}
       </div>
     </div>
   );

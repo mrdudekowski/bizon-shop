@@ -14,7 +14,6 @@ const SUPPLIER_FORM: PageForm = {
     { id: "companySite", label: "Сайт компании", type: "url", required: false },
     { id: "category", label: "Категория продукции", type: "text", required: true },
     { id: "offer", label: "Краткое описание предложения", type: "textarea", required: true },
-    { id: "catalogFile", label: "Файл или каталог", type: "file", required: false },
   ],
 };
 
@@ -37,7 +36,8 @@ describe("become-a-supplier page", () => {
   it("renders the published form after the editorial sections", async () => {
     const html = await renderPage(SUPPLIER_FORM);
     for (const field of SUPPLIER_FORM.fields) expect(html).toContain(field.label);
-    expect(html).toContain('type="file"');
+    expect(html).not.toContain('type="file"');
+    expect(html).not.toContain("Следующий шаг");
     expect(html.indexOf("Для рассмотрения предложения.")).toBeLessThan(html.indexOf("Название компании"));
     expect(html).not.toMatch(/<span>[^<]*website[^<]*<\/span>/i);
   });

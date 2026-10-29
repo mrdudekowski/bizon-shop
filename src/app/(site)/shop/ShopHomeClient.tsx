@@ -21,14 +21,13 @@ type Props = {
   initialPage: ShopHomePageContent;
   initialModels: CmsWheelModel[];
   initialCategories: CmsShopCategory[];
-  madeToOrderNotice?: string;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function ShopHomeClient({ initialPage, initialModels, initialCategories, madeToOrderNotice }: Props) {
+export function ShopHomeClient({ initialPage, initialModels, initialCategories }: Props) {
   const [page, setPage] = useState(initialPage);
   const [models, setModels] = useState(initialModels);
   const [categories, setCategories] = useState(initialCategories);
@@ -98,9 +97,6 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories, 
             <h2 id="shop-title">{page.wheelsIntro.title}</h2>
             <p>{page.wheelsIntro.lead}</p>
           </div>
-          {madeToOrderNotice?.trim() ? (
-            <p className={styles.madeToOrderNotice} data-made-to-order-notice="">{madeToOrderNotice}</p>
-          ) : null}
           <div ref={modelsTrackRef} className={styles.modelGrid}>
             {homeModels.map((model) => (
               <Link className={styles.modelCard} href={`/shop/wheels/forged/${model.slug}`} key={model.slug}>

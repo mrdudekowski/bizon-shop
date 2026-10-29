@@ -342,10 +342,6 @@ export function ShopProductConfigurator({ product: initialProduct, priceNotice }
             </span>
           </div>
 
-          {priceNotice?.trim() ? (
-            <p className={styles.priceNotice} data-price-notice="">{priceNotice}</p>
-          ) : null}
-
           {(product.brand || product.material || (product.specifications && product.specifications.length > 0)) ? (
             <dl className={styles.productSpecs}>
               {product.brand ? (
@@ -379,6 +375,10 @@ export function ShopProductConfigurator({ product: initialProduct, priceNotice }
           {product.material ? <p>Материал: {product.material}</p> : null}
         </section>
       </ResponsiveDisclosure>
+
+      {priceNotice?.trim() ? (
+        <p className={styles.priceNotice} data-price-notice="">{priceNotice}</p>
+      ) : null}
     </div>
   );
 }

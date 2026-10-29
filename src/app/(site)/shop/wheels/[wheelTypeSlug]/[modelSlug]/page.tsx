@@ -5,6 +5,7 @@ import {
   getWheelTypeBySlug,
   getWheelVariantsByModelId,
 } from "@/lib/content";
+import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { createProductStructuredData } from "@/lib/seo/structuredData";
 import { WheelModelStage } from "@/components/catalog/WheelModelStage";
@@ -34,9 +35,10 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function WheelModelPage({ params }: PageProps) {
   const { wheelTypeSlug, modelSlug } = await params;
-  const [wheelType, model] = await Promise.all([
+  const [wheelType, model, contactPage] = await Promise.all([
     getWheelTypeBySlug(wheelTypeSlug),
     getWheelModelByTypeAndSlug(wheelTypeSlug, modelSlug),
+    getPublishedStubOverlay("contact"),
   ]);
 
   if (!wheelType || !model) {
@@ -65,6 +67,7 @@ export default async function WheelModelPage({ params }: PageProps) {
         model={model}
         variants={variants}
         modelPath={modelPath}
+        orderNotice={contactPage?.siteProfile?.madeToOrderNotice ?? ""}
       />
     </>
   );

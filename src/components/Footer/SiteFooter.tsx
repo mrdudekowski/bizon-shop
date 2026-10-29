@@ -108,7 +108,7 @@ const FOOTER_CONFIG: Record<FooterSurface, FooterConfig> = {
         label: "Помощь",
         links: [
           { href: "/cart", label: "Корзина" },
-          { href: "/shop/delivery-and-returns", label: "Доставка и возврат" },
+          { href: "/shop/delivery-and-returns", label: "Оплата, доставка и возврат" },
           { href: "/", label: "BIZON Tires" },
         ],
       },

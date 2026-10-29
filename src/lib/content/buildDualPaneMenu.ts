@@ -135,7 +135,7 @@ export function buildShopDualPaneMenuSections(input: {
       label: "Покупателям",
       pane: "list",
       items: [
-        { id: "delivery", title: "Доставка и возврат", href: ROUTES.shopDeliveryAndReturns },
+        { id: "delivery", title: "Оплата, доставка и возврат", href: ROUTES.shopDeliveryAndReturns },
         { id: "contact", title: "Связаться с BIZON", href: ROUTES.contact },
       ],
     },

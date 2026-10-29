@@ -330,7 +330,7 @@ body {
 }
 
 @supports (animation-timeline: view()) {
-  body {
+  body:has(#home-shop) {
     timeline-scope: --home-shop-canvas;
     animation-name: home-shop-canvas-in, home-shop-canvas-out;
     animation-duration: auto, auto;

@@ -105,8 +105,7 @@
   cursor: not-allowed;
 }
 
-.hint,
-.notice {
+.hint {
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -114,11 +113,6 @@
   color: var(--color-muted);
   font-size: 0.8125rem;
   line-height: 1.45;
-}
-
-.notice {
-  white-space: pre-line;
-  overflow-wrap: anywhere;
 }
 
 @media (max-width: 639px) {

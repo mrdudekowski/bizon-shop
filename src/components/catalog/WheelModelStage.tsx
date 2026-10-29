@@ -19,6 +19,7 @@ type WheelModelStageProps = {
   model: CmsWheelModel;
   variants: CmsWheelVariant[];
   modelPath: string;
+  orderNotice?: string;
 };
 
 export function WheelModelStage({
@@ -26,6 +27,7 @@ export function WheelModelStage({
   model: initialModel,
   variants: initialVariants,
   modelPath,
+  orderNotice,
 }: WheelModelStageProps) {
   const [wheelType, setWheelType] = useState(initialWheelType);
   const [model, setModel] = useState(initialModel);
@@ -134,11 +136,6 @@ export function WheelModelStage({
               finish={model.series?.trim() || ""}
               className={styles.productOrderPanel}
             />
-
-            <p className={styles.disclaimer}>
-              {model.fitmentNotes ||
-                "Технические параметры и документы помогают проверить конфигурацию. Финальную совместимость подтверждает специалист BIZON."}
-            </p>
           </div>
         </section>
 
@@ -161,6 +158,15 @@ export function WheelModelStage({
             </div>
           </section>
         )}
+
+        <div className={styles.pageDisclaimer}>
+          <p>
+            {model.fitmentNotes?.trim() ||
+              "Технические параметры и документы помогают проверить конфигурацию. Финальную совместимость подтверждает специалист BIZON."}
+          </p>
+          {orderNotice?.trim() ? <p data-made-to-order-notice="">{orderNotice}</p> : null}
+          <p>Это запрос на подбор, а не покупка: цена и совместимость подтверждаются специалистом.</p>
+        </div>
       </div>
     </div>
   );

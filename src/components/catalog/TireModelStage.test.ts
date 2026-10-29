@@ -45,8 +45,10 @@ describe("TireModelStage", () => {
       }),
     );
 
-    expect(stage(notice)).toContain(notice);
-    expect(stage(notice)).not.toContain(SPECIALIST_SENTENCE);
+    const markup = stage(notice);
+    expect(markup).toContain(notice);
+    expect(markup.indexOf("Проверим модель под вашу технику и маршрут")).toBeLessThan(markup.indexOf(notice));
+    expect(markup).not.toContain(SPECIALIST_SENTENCE);
     expect(stage("")).not.toContain(SPECIALIST_SENTENCE);
     expect(stage("")).not.toContain("data-price-notice");
   });

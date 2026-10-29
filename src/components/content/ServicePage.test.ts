@@ -108,4 +108,53 @@ describe("ServicePage documents", () => {
     expect(html).not.toMatch(/<h2>\s*<\/h2>/);
     expect(html).not.toMatch(/<h3>\s*<\/h3>/);
   });
+
+  it("drops a process heading and the next-step panel when the page already has a request form", () => {
+    const html = renderToStaticMarkup(
+      createElement(ServicePage, {
+        title: "Стать поставщиком",
+        description: "Лид",
+        breadcrumbs: [],
+        features: [],
+        runtimePageKey: "become-a-supplier",
+        editorial: {
+          hero: { title: "Стать поставщиком", lead: "Лид" },
+          featuresHeading: "Как проходит первичное обращение",
+          features: [],
+          sections: [{ id: "cooperation", heading: "", body: "Условия сотрудничества." }],
+          notice: null,
+          proof: null,
+          cta: { label: "Оставить заявку", href: "/contact?subject=supplier" },
+        },
+      }),
+    );
+
+    expect(html).toContain("Условия сотрудничества.");
+    expect(html).not.toContain("Как проходит первичное обращение");
+    expect(html).not.toContain("Следующий шаг");
+    expect(html).not.toContain("Оставить заявку");
+  });
+
+  it("keeps warranty points and hides the process heading above them", () => {
+    const html = renderToStaticMarkup(
+      createElement(ServicePage, {
+        title: "Гарантия",
+        description: "Условия",
+        breadcrumbs: [],
+        features: [],
+        editorial: {
+          featuresHeading: "Три шага для первичной проверки",
+          features: [{ id: "step", title: "Зафиксируйте данные", text: "Подготовьте модель и размер." }],
+          sections: [],
+          notice: null,
+          proof: null,
+          cta: { label: "Задать вопрос по гарантии", href: "/contact?subject=warranty" },
+        },
+      }),
+    );
+
+    expect(html).toContain("Зафиксируйте данные");
+    expect(html).toContain("Следующий шаг");
+    expect(html).not.toContain("Три шага для первичной проверки");
+  });
 });

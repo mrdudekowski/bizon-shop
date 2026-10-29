@@ -21,7 +21,6 @@
 .heading h2,
 .heading p,
 .vehicleDetails p,
-.disclaimer,
 .hint {
   margin: 0;
 }
@@ -34,7 +33,6 @@
 
 .heading p,
 .vehicleDetails p,
-.disclaimer,
 .hint {
   color: var(--color-muted);
   font-size: 0.8125rem;

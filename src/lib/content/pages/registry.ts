@@ -23,7 +23,7 @@ export const PAGE_REGISTRY: readonly PageRegistryEntry[] = [
   { key: "privacy-policy", title: "Политика конфиденциальности", path: "/privacy-policy" },
   {
     key: "shop-delivery-returns",
-    title: "Доставка и возврат (Shop)",
+    title: "Оплата, доставка и возврат",
     path: "/shop/delivery-and-returns",
   },
 ] as const;

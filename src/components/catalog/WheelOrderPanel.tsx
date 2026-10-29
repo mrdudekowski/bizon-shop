@@ -210,9 +210,6 @@ export function WheelOrderPanel({ baseItem, variants, available = false, finish 
           {available ? "В наличии" : "Под заказ"}
         </span>
       </div>
-      <p className={styles.disclaimer}>
-        Это запрос на подбор, а не покупка: цена и совместимость подтверждаются специалистом.
-      </p>
     </form>
   );
 }

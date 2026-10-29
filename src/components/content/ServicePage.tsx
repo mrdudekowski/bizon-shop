@@ -11,6 +11,15 @@ import { PageHero, type PageHeroBreadcrumb, type PageHeroMedia } from "@/compone
 
 import styles from "./ServicePage.module.css";
 
+const REQUEST_FORM_PAGE_KEYS = new Set(["contact", "become-a-supplier", "delivery-geography"]);
+
+const OMITTED_FEATURE_HEADINGS = new Set([
+  "Как проходит первичное обращение",
+  "Три шага для первичной проверки",
+  "Как мы работаем",
+  "Кратко о обработке данных",
+]);
+
 export type ServiceFeature = {
   title: string;
   text: string;
@@ -84,7 +93,9 @@ export function ServicePage({
   const activeDocuments = runtimePageKey ? livePage?.documents ?? [] : documents;
   const resolvedNotice = activeEditorial?.notice !== undefined ? activeEditorial.notice?.body : notice;
   const resolvedFeaturesHeading = activeEditorial?.featuresHeading ?? featuresHeading;
-  const resolvedFeatures = activeEditorial?.features ?? features;
+  const resolvedFeatures = (activeEditorial?.features ?? features).filter((feature) => feature.title.trim() || feature.text.trim());
+  const featureHeading = OMITTED_FEATURE_HEADINGS.has((resolvedFeaturesHeading ?? "").trim()) ? "" : resolvedFeaturesHeading;
+  const pageHasRequestForm = REQUEST_FORM_PAGE_KEYS.has(runtimePageKey ?? "");
   const resolvedProof = resolveServicePageProof(activeEditorial, proof);
   const resolvedCta = resolveServicePageCta(activeEditorial, cta);
   return (
@@ -99,9 +110,9 @@ export function ServicePage({
       <div className={styles.body}>
         {resolvedNotice ? <div className={styles.notice}>{resolvedNotice}</div> : null}
 
-        {resolvedFeatures.length > 0 || resolvedFeaturesHeading ? <section className={styles.features} aria-labelledby="service-features-heading">
-          {resolvedFeaturesHeading ? (
-            <h2 id="service-features-heading">{resolvedFeaturesHeading}</h2>
+        {resolvedFeatures.length > 0 ? <section className={styles.features} aria-labelledby="service-features-heading">
+          {featureHeading ? (
+            <h2 id="service-features-heading">{featureHeading}</h2>
           ) : (
             <h2 id="service-features-heading" className={styles.visuallyHidden}>
               Ключевые пункты
@@ -165,7 +176,7 @@ export function ServicePage({
           </section>
         ) : null}
 
-        {resolvedCta ? (
+        {resolvedCta && !pageHasRequestForm ? (
           <section className={styles.cta} aria-labelledby="service-cta-heading">
             <h2 id="service-cta-heading">Следующий шаг</h2>
             <div className={`${styles.ctaActions} action-row`}>
