@@ -44,8 +44,7 @@
   box-sizing: border-box;
 }
 
-.contactGrid,
-.messengerGrid {
+.contactGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
@@ -58,32 +57,19 @@
   grid-column: 1 / -1;
 }
 
-.messengerField {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 6px;
-}
-
-.messengerLabel {
-  display: inline-flex;
+.row .checkboxField {
+  display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 600;
 }
 
-.messengerIcon {
-  display: inline-grid;
-  width: 28px;
-  height: 28px;
-  place-items: center;
-  border-radius: 8px;
-  background: var(--surface-muted, #f1f5f9);
-  color: var(--ink, #0f172a);
+.row .checkboxField input {
+  width: auto;
+  flex: none;
 }
 
 @media (min-width: 720px) {
-  .contactGrid,
-  .messengerGrid {
+  .contactGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

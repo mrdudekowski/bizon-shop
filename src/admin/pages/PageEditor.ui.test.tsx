@@ -203,6 +203,51 @@ describe("PageEditor conflict recovery", () => {
     expect(screen.queryByRole("heading", { name: "Карусель категорий на главной" })).toBeNull();
   });
 
+  it("edits the contact profile: address label, channel toggle, removal, and a custom channel", async () => {
+    const contactDraft = {
+      id: "contact",
+      seoTitle: "Контакты",
+      seoDescription: "",
+      hero: { eyebrow: "", title: "", lead: "" },
+      documents: [],
+      siteProfile: {
+        phone: "+7 (421) 200-00-00",
+        email: "sales@bizon.ru",
+        address: "Хабаровск",
+        channels: [
+          { id: "telegram", label: "Telegram", href: "https://t.me/bizon", enabled: true },
+          { id: "vk", label: "VK", href: "https://vk.com/bizon", enabled: true },
+        ],
+      },
+    };
+    const record = { ...pageRecord, id: "contact", draft: contactDraft, savedDraft: contactDraft, publishedSnapshot: contactDraft };
+    const savePage = vi.fn().mockImplementation(async (_key: string, next: typeof contactDraft) => ({ ...record, draft: next, savedDraft: next }));
+    mockState.client.getPage = vi.fn().mockResolvedValue(record);
+    mockState.client.savePage = savePage;
+    const user = userEvent.setup();
+    render(createElement(PageEditor, { pageKey: "contact" }));
+
+    expect(await screen.findByLabelText("Адрес")).toHaveProperty("value", "Хабаровск");
+    await user.click(within(screen.getByRole("group", { name: "Telegram" })).getByRole("button", { name: "Удалить канал" }));
+    await user.click(within(screen.getByRole("group", { name: "VK" })).getByRole("checkbox", { name: "Показывать" }));
+    await user.click(screen.getByRole("button", { name: "Добавить канал" }));
+    const created = screen.getByRole("group", { name: "Новый канал" });
+    await user.type(within(created).getByLabelText("Название"), "Дзен");
+    await user.type(within(created).getByLabelText("Ссылка"), "https://dzen.ru/bizon");
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    expect((await screen.findByRole("status")).textContent).toBe("Черновик сохранён");
+    expect(savePage).toHaveBeenCalledWith("contact", expect.objectContaining({
+      siteProfile: expect.objectContaining({
+        phone: "+7 (421) 200-00-00",
+        channels: [
+          { id: "vk", label: "VK", href: "https://vk.com/bizon", enabled: false },
+          { id: expect.stringMatching(/^channel-/), label: "Дзен", href: "https://dzen.ru/bizon", enabled: true },
+        ],
+      }),
+    }));
+  });
+
   it("shows a PDF upload failure beside the document control", async () => {
     const legalDraft = { id: "privacy-policy", seoTitle: "Политика", seoDescription: "", hero: { eyebrow: "", title: "", lead: "" }, documents: [] };
     mockState.client.getPage = vi.fn().mockResolvedValue({ ...pageRecord, id: "privacy-policy", draft: legalDraft, savedDraft: legalDraft, publishedSnapshot: legalDraft });

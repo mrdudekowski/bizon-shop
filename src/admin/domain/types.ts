@@ -358,15 +358,12 @@ export type PageSectionCopy = {
 
 export const LEGAL_PAGE_KEYS = ["privacy-policy", "warranty", "shop-delivery-returns"] as const;
 
-export type FooterContactDraft = {
+/** Contacts and messenger channels of the contact page; stored in site_profile and site_profile_channels. */
+export type SiteProfileDraft = {
   phone: string;
   email: string;
   address: string;
-  telegram: string;
-  whatsapp: string;
-  max: string;
-  vk: string;
-  instagram: string;
+  channels: { id: string; label: string; href: string; enabled: boolean }[];
 };
 
 export type StubPageDraft = {
@@ -381,7 +378,7 @@ export type StubPageDraft = {
   notice?: { body: string } | null;
   proof?: { image?: ImagePlacement | null; title: string; text: string } | null;
   cta?: (PageCta & { secondaryLabel?: string; secondaryHref?: string }) | null;
-  footerContact?: FooterContactDraft;
+  siteProfile?: SiteProfileDraft;
 };
 
 export type HomePageDraft = {

@@ -20,6 +20,7 @@ import {
   type PageKey,
   type PageSectionCopy,
   type ShopHomePageDraft,
+  type SiteProfileDraft,
   type StubPageDraft,
 } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
@@ -90,72 +91,7 @@ function isLegalPage(id: string): boolean {
   return (LEGAL_PAGE_KEYS as readonly string[]).includes(id);
 }
 
-const MESSENGER_FIELDS = [
-  {
-    key: "telegram",
-    label: "Telegram",
-    placeholder: "https://t.me/bizon_tires",
-    icon: (
-      <svg viewBox="0 0 24 24" width={18} height={18} fill="currentColor" aria-hidden="true">
-        <path d="M21.4 3.4 2.7 10.6c-.8.3-.8 1.4 0 1.7l4.7 1.6 1.8 5.6c.2.6 1 .8 1.4.3l2.6-2.7 4.9 3.6c.6.4 1.5.1 1.7-.7L22.9 4.7c.2-.9-.7-1.6-1.5-1.3ZM9.4 13.7l8.5-5.3c.2-.1.4.1.2.3l-7 6.5-.3 3.2-1.4-4.7Z" />
-      </svg>
-    ),
-  },
-  {
-    key: "whatsapp",
-    label: "WhatsApp",
-    placeholder: "https://wa.me/79000000000",
-    icon: (
-      <svg viewBox="0 0 24 24" width={18} height={18} fill="currentColor" aria-hidden="true">
-        <path d="M12 2a9.9 9.9 0 0 0-8.5 15l-1.3 4.8 4.9-1.3A9.9 9.9 0 1 0 12 2Zm5.6 14c-.2.7-1.3 1.3-1.8 1.4-.5.1-1.1.1-1.8-.1a16.4 16.4 0 0 1-5.6-3.7c-1.6-1.8-2.4-3.5-2.4-4.6 0-1.1.6-1.7 1.1-2 .3-.2.7-.2.9-.2h.6c.2 0 .5 0 .7.5.3.6.9 2.1 1 2.3.1.2.1.4 0 .6-.1.2-.2.3-.4.5l-.4.5c-.2.2-.3.4-.1.7.2.4.9 1.5 2 2.4 1.4 1.2 2.5 1.6 2.9 1.8.3.1.6.1.8-.1.2-.3.9-1.1 1.2-1.4.2-.3.5-.3.8-.2.3.1 2 .9 2.3 1.1.3.2.5.3.6.5.1.1.1.8-.1 1.5Z" />
-      </svg>
-    ),
-  },
-  {
-    key: "max",
-    label: "MAX",
-    placeholder: "https://max.ru/...",
-    icon: (
-      <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="2.5" y="4" width="19" height="16" rx="4.5" />
-        <path d="M6.8 15.5V8.5l5.2 4.4 5.2-4.4v7" />
-      </svg>
-    ),
-  },
-  {
-    key: "vk",
-    label: "VK (ВКонтакте)",
-    placeholder: "https://vk.com/bizon_tires",
-    icon: (
-      <svg viewBox="0 0 24 24" width={18} height={18} fill="currentColor" aria-hidden="true">
-        <path d="M13.2 17.5c-6.2 0-9.8-4.3-9.9-11.4h3.1c.1 5.2 2.4 7.4 4.2 7.9V6.1h2.9v4.5c1.8-.2 3.7-2.2 4.3-4.5h2.9c-.5 2.8-2.5 4.8-3.9 5.6 1.4.7 3.7 2.4 4.5 5.8h-3.2c-.7-2.2-2.4-3.9-4.7-4.1v4.1h-.2Z" />
-      </svg>
-    ),
-  },
-  {
-    key: "instagram",
-    label: "Instagram",
-    placeholder: "https://instagram.com/bizon_tires",
-    icon: (
-      <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="3" y="3" width="18" height="18" rx="5" />
-        <circle cx="12" cy="12" r="4" />
-        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
-      </svg>
-    ),
-  },
-] as const;
-
-const EMPTY_FOOTER_CONTACT = {
-  phone: "",
-  email: "",
-  address: "",
-  telegram: "",
-  whatsapp: "",
-  max: "",
-  vk: "",
-  instagram: "",
-};
+const EMPTY_SITE_PROFILE: SiteProfileDraft = { phone: "", email: "", address: "", channels: [] };
 
 function StubFields({
   draft,
@@ -164,11 +100,13 @@ function StubFields({
   draft: StubPageDraft;
   onChange: (next: StubPageDraft) => void;
 }) {
-  const footerContact = { ...EMPTY_FOOTER_CONTACT, ...(draft.footerContact ?? {}) };
-  const patchFooterContact = (patch: Partial<typeof EMPTY_FOOTER_CONTACT>) => {
-    onChange({ ...draft, footerContact: { ...footerContact, ...patch } });
+  const siteProfile = draft.siteProfile ?? EMPTY_SITE_PROFILE;
+  const patchSiteProfile = (patch: Partial<SiteProfileDraft>) => {
+    onChange({ ...draft, siteProfile: { ...siteProfile, ...patch } });
   };
-
+  const patchChannel = (index: number, patch: Partial<SiteProfileDraft["channels"][number]>) => {
+    patchSiteProfile({ channels: siteProfile.channels.map((channel, channelIndex) => (channelIndex === index ? { ...channel, ...patch } : channel)) });
+  };
   return (
     <>
       <SectionFields
@@ -185,54 +123,74 @@ function StubFields({
         <section className={styles.section}>
           <h2>Подвал сайта и мессенджеры</h2>
           <p className="subheading">
-            Контактные данные и ссылки на мессенджеры отображаются в подвале (футере) основного сайта и BIZON Shop, а также на странице контактов.
+            Контактные данные и ссылки на каналы связи отображаются в подвале (футере) основного сайта и BIZON Shop, а также на странице контактов. Канал без ссылки или с выключенным показом на сайте скрыт.
           </p>
           <div className={styles.contactGrid}>
             <label>
-              Телефон в подвале
+              Телефон
               <input
                 type="tel"
                 placeholder="+7 (800) 000-00-00"
-                value={footerContact.phone}
-                onChange={(event) => patchFooterContact({ phone: event.target.value })}
+                value={siteProfile.phone}
+                onChange={(event) => patchSiteProfile({ phone: event.target.value })}
               />
             </label>
             <label>
-              Email в подвале
+              Email
               <input
                 type="email"
                 placeholder="info@bizon-tires.ru"
-                value={footerContact.email}
-                onChange={(event) => patchFooterContact({ email: event.target.value })}
+                value={siteProfile.email}
+                onChange={(event) => patchSiteProfile({ email: event.target.value })}
               />
             </label>
             <label className={styles.fullWidth}>
-              Адрес / география поставок
+              Адрес
               <input
-                placeholder="Работаем по всей стране — поставки для автопарков."
-                value={footerContact.address}
-                onChange={(event) => patchFooterContact({ address: event.target.value })}
+                value={siteProfile.address}
+                onChange={(event) => patchSiteProfile({ address: event.target.value })}
               />
             </label>
           </div>
-          <h3>Мессенджеры и соцсети (иконки в подвале)</h3>
-          <div className={styles.messengerGrid}>
-            {MESSENGER_FIELDS.map((item) => (
-              <label key={item.key} className={styles.messengerField}>
-                <span className={styles.messengerLabel}>
-                  <span className={styles.messengerIcon}>{item.icon}</span>
-                  {item.label}
-                </span>
+          <h3>Каналы связи (мессенджеры и соцсети)</h3>
+          {siteProfile.channels.map((channel, index) => (
+            <fieldset className={styles.row} key={channel.id}>
+              <legend>{channel.label || "Новый канал"}</legend>
+              <label>
+                Название
+                <input value={channel.label} onChange={(event) => patchChannel(index, { label: event.target.value })} />
+              </label>
+              <label>
+                Ссылка
                 <input
                   type="url"
-                  placeholder={item.placeholder}
-                  value={footerContact[item.key]}
-                  onChange={(event) => patchFooterContact({ [item.key]: event.target.value })}
+                  placeholder="https://t.me/bizon_tires"
+                  value={channel.href}
+                  onChange={(event) => patchChannel(index, { href: event.target.value })}
                 />
               </label>
-            ))}
-          </div>
-        </section>
+              <label className={styles.checkboxField}>
+                <input
+                  type="checkbox"
+                  checked={channel.enabled}
+                  onChange={(event) => patchChannel(index, { enabled: event.target.checked })}
+                />
+                Показывать
+              </label>
+              <button
+                type="button"
+                onClick={() => patchSiteProfile({ channels: siteProfile.channels.filter((_, channelIndex) => channelIndex !== index) })}
+              >
+                Удалить канал
+              </button>
+            </fieldset>
+          ))}
+          <button
+            type="button"
+            onClick={() => patchSiteProfile({ channels: [...siteProfile.channels, { id: `channel-${crypto.randomUUID()}`, label: "", href: "", enabled: true }] })}
+          >
+            Добавить канал
+          </button>        </section>
       ) : null}
       {draft.id !== "contact" ? <section className={styles.section}>
         <h2>Дополнительный контент</h2>
