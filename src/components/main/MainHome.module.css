@@ -35,8 +35,8 @@
 }
 .expertise {
   padding-top: var(--home-section-gap);
-  background: #0a0a0a;
-  color: #ffffff;
+  background: transparent;
+  color: #1c1c1c;
 }
 .editorial { background: transparent; color: inherit; }
 .hero {
@@ -305,7 +305,7 @@
   --mark-band: var(--home-mark-band);
   padding: var(--home-section-lead) 0 var(--home-section-gap);
   scroll-margin-top: var(--header-height);
-  background: #ffffff;
+  background: transparent;
   color: #1c1c1c;
 }
 .darkHeading { display: grid; grid-template-columns: 1.25fr .75fr; gap: .75rem clamp(2rem, 7vw, 7rem); align-items: end; margin-bottom: clamp(3rem, 7vw, 6rem); }

@@ -349,7 +349,7 @@
 }
 
 .vehiclesSection {
-  background: #ffffff;
+  background: transparent;
   color: #1c1c1c;
   padding: clamp(88px, 10vw, 160px) var(--page-gutter);
 }
