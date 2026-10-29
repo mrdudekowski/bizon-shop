@@ -17,8 +17,8 @@ describe("site profile visibility", () => {
   it("links a real phone and email and does not link a placeholder sentence", () => {
     expect(contactHref("phone", "+7 (421) 000-00-11")).toBe("tel:+74210000011");
     expect(contactHref("email", "sales@bizon.ru")).toBe("mailto:sales@bizon.ru");
-    expect(contactHref("phone", "Контактный номер будет опубликован позже.")).toBeNull();
-    expect(contactHref("email", "Контактный email будет опубликован позже.")).toBeNull();
+    expect(contactHref("phone", CUSTOMER_COPY.phone)).toBeNull();
+    expect(contactHref("email", CUSTOMER_COPY.email)).toBeNull();
   });
 });
 

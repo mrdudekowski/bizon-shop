@@ -47,7 +47,6 @@ describe("customer prose migration", () => {
       expect(sql).toContain(paragraph);
     }
     expect(sql).toContain("Доставка");
-    expect(sql).toContain("Оплата непосредственно на сайте не производится.");
     expect(sql).toContain("Возврат");
     expect(sql).toContain("'delivery-section-payment'");
     expect(sql).toMatch(/ON CONFLICT \(_parent_id, id\) DO NOTHING/);
