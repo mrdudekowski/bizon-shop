@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
-import { canvasToneColor, inkForCanvas } from "./canvasColor";
+import { canvasToneColor, inkForCanvas, nextCanvasTone } from "./canvasColor";
 
 export function HomeShopZoneCanvas() {
   const pathname = usePathname();
@@ -12,9 +12,11 @@ export function HomeShopZoneCanvas() {
     const root = document.querySelector<HTMLElement>("[data-canvas-page]");
     if (!root) return undefined;
     const sections = [...root.querySelectorAll<HTMLElement>("[data-canvas-tone]")];
+    let held: "light" | "dark" = "dark";
     let painted = "";
-    const paint = (tone: string | null) => {
-      const canvas = canvasToneColor(tone);
+    const paint = (active: string | null) => {
+      held = nextCanvasTone(active, held);
+      const canvas = canvasToneColor(held);
       if (canvas === painted) return;
       painted = canvas;
       document.documentElement.style.setProperty("--page-canvas", canvas);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { inkForCanvas, mixHex, resolveCanvasColor } from "./canvasColor";
+import { inkForCanvas, mixHex, nextCanvasTone, resolveCanvasColor } from "./canvasColor";
 
 describe("resolveCanvasColor", () => {
   it("keeps the current color while the next stop is still below the screen", () => {
@@ -24,5 +24,21 @@ describe("inkForCanvas", () => {
   it("uses dark ink on a light canvas and light ink on a dark canvas", () => {
     expect(inkForCanvas("#ffffff")).toBe("#1c1c1c");
     expect(inkForCanvas("#0a0a0a")).toBe("#ffffff");
+  });
+});
+
+describe("nextCanvasTone", () => {
+  it("holds the last tone when the band has no section", () => {
+    expect(nextCanvasTone(null, "dark")).toBe("dark");
+    expect(nextCanvasTone(null, "light")).toBe("light");
+  });
+
+  it("follows a real section tone", () => {
+    expect(nextCanvasTone("light", "dark")).toBe("light");
+    expect(nextCanvasTone("dark", "light")).toBe("dark");
+  });
+
+  it("holds on an unknown tone instead of treating it as white", () => {
+    expect(nextCanvasTone("nope", "dark")).toBe("dark");
   });
 });

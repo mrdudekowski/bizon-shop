@@ -7,6 +7,11 @@ export function canvasToneColor(tone: string | null): string {
   return tone === "dark" ? CANVAS.dark : CANVAS.light;
 }
 
+export function nextCanvasTone(active: string | null, held: "light" | "dark"): "light" | "dark" {
+  if (active === "light" || active === "dark") return active;
+  return held;
+}
+
 function channel(hex: string, offset: number): number {
   return Number.parseInt(hex.slice(offset, offset + 2), 16);
 }
