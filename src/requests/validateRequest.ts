@@ -25,9 +25,12 @@ export function parseRequestBody(raw: unknown): ValidationResult {
   return { ok: true, body: raw as IncomingRequestBody };
 }
 
+export function isHoneypotFilled(body: IncomingRequestBody): boolean {
+  return Boolean(cleanString(body[HONEYPOT_FIELD], 200));
+}
+
 export function validateRequest(body: IncomingRequestBody): ValidationResult {
-  const honeypot = cleanString(body[HONEYPOT_FIELD], 200);
-  if (honeypot) {
+  if (isHoneypotFilled(body)) {
     return {
       ok: false,
       error: "honeypot_triggered",

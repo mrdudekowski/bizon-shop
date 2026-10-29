@@ -13,6 +13,7 @@ import { shopProductSpecsAndSortOrderMigration } from "./0021-shop-product-specs
 import { restoreServicePagesAndFooterContactsMigration } from "./0022-restore-service-pages-and-footer-contacts";
 import { siteProfileMigration } from "./0023-site-profile";
 import { customerProseMigration } from "./0024-customer-prose";
+import { pageFormsMigration } from "./0025-page-forms";
 import type { Migration } from "../migrationRunner";
 import { cmsEditorSchemaMigration } from "./0001-cms-editor-schema";
 import { shopCategoryCarouselMigration } from "./0002-shop-category-carousel";
@@ -49,6 +50,7 @@ export const MIGRATIONS: readonly Migration[] = [
   restoreServicePagesAndFooterContactsMigration,
   siteProfileMigration,
   customerProseMigration,
+  pageFormsMigration,
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.at(-1)?.version ?? "0";

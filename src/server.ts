@@ -24,8 +24,23 @@ import { LoginThrottle, type LoginAttemptTicket } from "./admin/server/loginThro
 import { createPostgresAdminClient, retryPendingMediaCleanup } from "./admin/server/postgresAdmin";
 import { readJsonRequestBody, readRequestBody, RequestBodyTooLarge } from "./readRequestBody";
 import { MediaCleanupRequired, MediaRejected, MAX_MEDIA_BYTES } from "./storage/putMedia";
-import { normalizeRequest } from "./requests/normalizeRequest";
-import { parseRequestBody, validateRequest } from "./requests/validateRequest";
+import { hashSourceIp, normalizeRequest } from "./requests/normalizeRequest";
+import { isHoneypotFilled, parseRequestBody, validateRequest } from "./requests/validateRequest";
+import {
+  PAGE_KEY_BY_SOURCE_FORM,
+  answersFromFields,
+  isConfiguredSourceForm,
+  loadPageForm,
+  requestFromAnswers,
+  stringValues,
+} from "./content/pageForm";
+import {
+  AttachmentRejected,
+  MAX_ATTACHMENT_BODY_BYTES,
+  parseSingleFilePart,
+  storeRequestAttachment,
+} from "./requestAttachment";
+import { getObjectStore } from "./storage/objectStore";
 import { checkRateLimit, trustedClientAddress } from "./security/rateLimit";
 import { getStaticSiteDeployStatus, isSiteAffectingPublicationMethod, triggerStaticSiteDeploy } from "./deploy/timewebApps";
 import { publishedContentFailureDetails, readPublishedContentRevision, readPublishedContentSnapshot } from "./contentRevision";
@@ -568,6 +583,30 @@ async function handleRequest(
     }
     return;
   }
+  if (method === "POST" && path === "/v1/request-attachments") {
+    try {
+      const rateLimit = checkRateLimit(`request-attachments:${trustedClientAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"]?.toString())}`);
+      if (!rateLimit.allowed) {
+        sendJson(res, 429, { ok: false, error: "rate_limit_exceeded", message: "Too many requests. Please try again later." }, {
+          "retry-after": String(rateLimit.retryAfterSeconds),
+        });
+        return;
+      }
+      const body = await readRequestBody(req, MAX_ATTACHMENT_BODY_BYTES);
+      const file = parseSingleFilePart(body, String(req.headers["content-type"] ?? ""));
+      sendJson(res, 201, { ok: true, ...(await storeRequestAttachment(getObjectStore(), file)) });
+    } catch (error) {
+      if (error instanceof AttachmentRejected) {
+        const status = error.code === "too_large" ? 413 : error.code === "storage_unavailable" ? 503 : 400;
+        sendJson(res, status, { ok: false, error: error.code, message: "Could not accept the file" });
+      } else if (error instanceof MediaRejected) {
+        sendJson(res, 413, { ok: false, error: "too_large", message: "Could not accept the file" });
+      } else {
+        sendJson(res, 500, { ok: false, error: "attachment_failed", message: "Could not accept the file" });
+      }
+    }
+    return;
+  }
   if (method === "POST" && path === "/v1/requests") {
     try {
       const rateLimit = checkRateLimit(`requests:${trustedClientAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"]?.toString())}`);
@@ -592,6 +631,37 @@ async function handleRequest(
       const parsed = parseRequestBody(rawBody);
       if (!parsed.ok) {
         sendJson(res, 400, { ok: false, error: parsed.error, message: parsed.message });
+        return;
+      }
+      const configuredSource = parsed.body.sourceForm;
+      if (isConfiguredSourceForm(configuredSource)) {
+        // Configured forms have no fixed `name` field, so they must not pass through validateRequest.
+        if (isHoneypotFilled(parsed.body)) {
+          sendJson(res, 400, { ok: false, error: "honeypot_triggered", message: "Request rejected" });
+          return;
+        }
+        const configuredDatabase = getDatabase();
+        const form = await loadPageForm(configuredDatabase, PAGE_KEY_BY_SOURCE_FORM[configuredSource]);
+        if (!form) {
+          sendJson(res, 400, { ok: false, error: "form_not_configured", message: "This form is not available" });
+          return;
+        }
+        const values = stringValues(parsed.body as Record<string, unknown>);
+        const { answers, missing } = answersFromFields(form.fields, values);
+        if (missing.length > 0) {
+          sendJson(res, 400, { ok: false, error: "missing_required_fields", message: "Please fill the required fields", missing });
+          return;
+        }
+        const configuredAddress = trustedClientAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"]?.toString());
+        const stored = requestFromAnswers(answers, {
+          sourceForm: configuredSource,
+          sourcePage: values.sourcePage?.trim().slice(0, 300) || undefined,
+          sourceIpHash: hashSourceIp(configuredAddress),
+          userAgent: req.headers["user-agent"]?.slice(0, 300),
+          attachmentUrl: values.attachmentUrl,
+        });
+        const configuredRequestId = await configuredDatabase.transaction((query) => insertRequest({ query }, stored));
+        sendJson(res, 201, { ok: true, requestId: configuredRequestId, message: form.successMessage });
         return;
       }
       const validated = validateRequest(parsed.body);

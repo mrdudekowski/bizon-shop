@@ -14,7 +14,7 @@ describe("customer prose migration", () => {
     for (const paragraph of CUSTOMER_COPY.warranty) {
       expect(customerProseMigration.sql).toContain(paragraph);
     }
-    expect(MIGRATIONS.at(-1)).toBe(customerProseMigration);
+    expect(MIGRATIONS).toContain(customerProseMigration);
   });
 
   it("only replaces hero leads and feature rows that still match the previous seed", () => {

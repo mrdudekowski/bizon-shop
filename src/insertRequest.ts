@@ -1,12 +1,15 @@
 import { randomUUID } from "node:crypto";
 
+import { trustedAttachmentUrl } from "./content/pageForm";
 import type { ReadDatabase } from "./publishedRead";
+import { buildPublicObjectUrl } from "./storage/publicObjectUrl";
 
 const SOURCE_FORMS = new Set([
   "contact",
   "tire_selection",
   "branding",
   "supplier",
+  "delivery_quote",
   "warranty",
   "wheel_selection",
   "product_quick_order",
@@ -56,6 +59,9 @@ export type StoredRequestInput = {
   utmTerm?: string;
   sourceIpHash?: string;
   userAgent?: string;
+  formAnswers?: Record<string, string>;
+  /** Untrusted until it passes `trustedAttachmentUrl`. */
+  attachmentUrl?: string;
 };
 
 const RELATION_COLUMN = {
@@ -110,9 +116,9 @@ export async function insertRequest(db: ReadDatabase, input: StoredRequestInput)
       client_type, name, phone, email, city, company_name, inn, position, purchase_volume,
       preferred_contact, message, selection_context, source_page, source_form,
       utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-      source_ip_hash, user_agent, status, notification_status, created_at, updated_at
+      source_ip_hash, user_agent, form_answers, attachment_url, status, notification_status, created_at, updated_at
     ) VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14,$15,$16,$17,$18,$19,$20,$21,
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22::jsonb,$23,
       'new','pending', now(), now()
     ) RETURNING id`,
     [
@@ -137,6 +143,8 @@ export async function insertRequest(db: ReadDatabase, input: StoredRequestInput)
       input.utmTerm ?? null,
       input.sourceIpHash ?? null,
       input.userAgent ?? null,
+      input.formAnswers == null ? null : JSON.stringify(input.formAnswers),
+      trustedAttachmentUrl(input.attachmentUrl, buildPublicObjectUrl("requests/")),
     ],
   );
   const requestId = Number(row?.id);
