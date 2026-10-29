@@ -295,12 +295,50 @@ body {
   font-family: var(--font-sans);
   color: var(--color-foreground);
   background-color: var(--page-canvas, #ffffff);
-  transition: --page-canvas 480ms linear, background-color 480ms linear;
   min-height: 100vh;
   /* Предотвращаем горизонтальный скролл при переполнении контента */
   overflow-x: hidden;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Scroll-driven: black while Shop crosses the viewport, white again shortly after it starts leaving. */
+@keyframes home-shop-canvas-in {
+  from {
+    background-color: #ffffff;
+    --page-canvas: #ffffff;
+    --page-ink: #1c1c1c;
+  }
+  to {
+    background-color: #0a0a0a;
+    --page-canvas: #0a0a0a;
+    --page-ink: #ffffff;
+  }
+}
+
+@keyframes home-shop-canvas-out {
+  from {
+    background-color: #0a0a0a;
+    --page-canvas: #0a0a0a;
+    --page-ink: #ffffff;
+  }
+  to {
+    background-color: #ffffff;
+    --page-canvas: #ffffff;
+    --page-ink: #1c1c1c;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  body {
+    timeline-scope: --home-shop-canvas;
+    animation-name: home-shop-canvas-in, home-shop-canvas-out;
+    animation-duration: auto, auto;
+    animation-timing-function: linear, linear;
+    animation-fill-mode: forwards, forwards;
+    animation-timeline: --home-shop-canvas, --home-shop-canvas;
+    animation-range: entry 0% entry 40%, exit 12% exit 42%;
+  }
 }
 
 h1,
@@ -2083,6 +2121,7 @@ textarea.field-input {
   }
 
   body {
+    animation: none;
     transition: none;
   }
 }

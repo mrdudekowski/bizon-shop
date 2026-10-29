@@ -1,6 +1,5 @@
 "use client";
 
-import { HomeShopZoneCanvas } from "@/components/main/HomeShopZoneCanvas";
 import { DualPaneMenu } from "@/components/DualPaneMenu/DualPaneMenu";
 import { BackToTop } from "@/components/BackToTop/BackToTop.jsx";
 import { CartDrawer } from "@/components/cart/CartDrawer";
@@ -101,7 +100,6 @@ export function SiteShell({ children, mainMenu, shopMenu, initialSiteProfile = n
 
   return (
     <>
-      <HomeShopZoneCanvas />
       <div
         className={`page page--with-mobile-nav ${menuOpen ? "page--blurred" : ""}`}
         inert={menuOpen || cart.open ? true : undefined}

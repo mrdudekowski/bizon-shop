@@ -881,6 +881,8 @@
 }
 .shopCampaign {
   position: relative;
+  view-timeline-name: --home-shop-canvas;
+  view-timeline-axis: block;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: center;
