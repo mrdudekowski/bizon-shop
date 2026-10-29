@@ -4,6 +4,7 @@ import { PUBLIC_STUB_PAGE_KEYS } from "../publishedRead";
 import { MIGRATIONS } from "./index";
 import { deliveryGeographyEnumValueMigration } from "./0026-delivery-geography-page";
 import { deliveryGeographyPageMigration } from "./0027-delivery-geography-page";
+import { requestSourceFormDeliveryQuoteMigration } from "./0028-request-source-form-delivery-quote";
 
 const quoted = (text: string): string => `'${text.replaceAll("'", "''")}'`;
 
@@ -16,7 +17,17 @@ describe("delivery geography page migrations", () => {
     expect(deliveryGeographyEnumValueMigration.sql.trim()).toBe(
       "ALTER TYPE enum_pages_key ADD VALUE IF NOT EXISTS 'delivery-geography';",
     );
-    expect(MIGRATIONS.slice(-2)).toEqual([deliveryGeographyEnumValueMigration, deliveryGeographyPageMigration]);
+    const enumMigration = MIGRATIONS.indexOf(deliveryGeographyEnumValueMigration);
+    const pageMigration = MIGRATIONS.indexOf(deliveryGeographyPageMigration);
+    expect(enumMigration).toBeGreaterThanOrEqual(0);
+    expect(pageMigration).toBe(enumMigration + 1);
+  });
+
+  it("adds delivery_quote to the request source enum before any insert uses it", () => {
+    expect(requestSourceFormDeliveryQuoteMigration.sql.trim()).toBe(
+      "ALTER TYPE enum_requests_source_form ADD VALUE IF NOT EXISTS 'delivery_quote';",
+    );
+    expect(MIGRATIONS.at(-1)).toBe(requestSourceFormDeliveryQuoteMigration);
   });
 
   it("seeds the page row, section, and form from shared copy", () => {
