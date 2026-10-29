@@ -398,7 +398,7 @@ export type HomePageDraft = {
     beforeImage?: ImagePlacement | null;
     afterImage?: ImagePlacement | null;
   };
-  shopCampaign: PageSectionCopy & { image?: ImagePlacement | null; cta: PageCta };
+  shopCampaign: PageSectionCopy & { image?: ImagePlacement | null; frames?: ImagePlacement[]; cta: PageCta };
 };
 
 export type ShopHomeCategorySlide = {

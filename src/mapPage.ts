@@ -83,6 +83,7 @@ export type HomePatch = {
     imageAlt?: string;
     imageFocalX?: number;
     imageFocalY?: number;
+    frames?: { imageUrl: string; imageAlt: string; imageFocalX?: number; imageFocalY?: number }[];
     cta?: HomeCta;
   };
   directions?: { eyebrow?: string; title?: string; lead?: string };
@@ -222,6 +223,29 @@ function mapHomeShopCampaign(row: HomeRow): HomePatch["shopCampaign"] | undefine
     ...(cta ? { cta } : {}),
   };
   return Object.keys(campaign).length > 0 ? campaign : undefined;
+}
+
+export function publishedShopCampaignFrames(
+  draft: unknown,
+  mediaById: ReadonlyMap<string, string>,
+): NonNullable<HomePatch["shopCampaign"]>["frames"] {
+  const frames = draft && typeof draft === "object"
+    ? (draft as { shopCampaign?: { frames?: unknown } }).shopCampaign?.frames
+    : undefined;
+  if (!Array.isArray(frames)) return [];
+  return frames.flatMap((frame) => {
+    if (!frame || typeof frame !== "object") return [];
+    const placement = frame as { assetId?: unknown; alt?: unknown; focalX?: unknown; focalY?: unknown };
+    const assetId = typeof placement.assetId === "string" ? placement.assetId : "";
+    const imageUrl = mediaById.get(assetId);
+    if (!imageUrl) return [];
+    return [{
+      imageUrl,
+      imageAlt: typeof placement.alt === "string" ? placement.alt : "",
+      ...(typeof placement.focalX === "number" ? { imageFocalX: placement.focalX } : {}),
+      ...(typeof placement.focalY === "number" ? { imageFocalY: placement.focalY } : {}),
+    }];
+  });
 }
 
 export type StubPatch = {

@@ -1,5 +1,5 @@
 import { mapArticle, type CmsArticle } from "./mapArticle";
-import { mapHomePatch, mapShopHomePatch, mapStubPatch, type HomePatch, type ShopHomePatch, type StubPatch } from "./mapPage";
+import { mapHomePatch, mapShopHomePatch, mapStubPatch, publishedShopCampaignFrames, type HomePatch, type ShopHomePatch, type StubPatch } from "./mapPage";
 import {
   mapShopCategory,
   mapShopProduct,
@@ -278,7 +278,7 @@ export async function readHomePatch(db: ReadDatabase): Promise<HomePatch | null>
     const focal = focals.get(key);
     return focal ? { [x]: focal.x, [y]: focal.y } : {};
   };
-  return mapHomePatch({
+  const home = mapHomePatch({
     ...homeRow,
     ...withFocal("hero.image", "home_hero_image_focal_x", "home_hero_image_focal_y"),
     ...withFocal("shopCampaign.image", "home_shop_campaign_image_focal_x", "home_shop_campaign_image_focal_y"),
@@ -286,6 +286,30 @@ export async function readHomePatch(db: ReadDatabase): Promise<HomePatch | null>
     ...withFocal("branding.beforeImage", "home_branding_before_image_focal_x", "home_branding_before_image_focal_y"),
     ...withFocal("branding.afterImage", "home_branding_after_image_focal_x", "home_branding_after_image_focal_y"),
   } as Parameters<typeof mapHomePatch>[0]);
+  const frames = (await readPublishedShopCampaignFrames(db)) ?? [];
+  if (frames.length > 0) home.shopCampaign = { ...home.shopCampaign, frames };
+  return home;
+}
+
+async function readPublishedShopCampaignFrames(db: ReadDatabase): Promise<NonNullable<HomePatch["shopCampaign"]>["frames"]> {
+  const [draftRow] = await db.query(
+    `SELECT draft FROM cms_drafts WHERE collection = 'pages' AND doc_id = 'home'`,
+  );
+  const frames = draftRow?.draft && typeof draftRow.draft === "object"
+    ? (draftRow.draft as { shopCampaign?: { frames?: { assetId?: string }[] } }).shopCampaign?.frames
+    : undefined;
+  const assetIds = Array.isArray(frames)
+    ? frames.flatMap((frame) => typeof frame?.assetId === "string" && frame.assetId ? [frame.assetId] : [])
+    : [];
+  if (assetIds.length === 0) return [];
+  const media = await db.query(
+    `SELECT id::text AS id, url FROM media WHERE id = ANY($1::int[])`,
+    [assetIds.map((id) => Number(id))],
+  );
+  const mediaById = new Map(media.flatMap((row) => (
+    typeof row.id === "string" && typeof row.url === "string" ? [[row.id, row.url] as const] : []
+  )));
+  return publishedShopCampaignFrames(draftRow?.draft, mediaById) ?? [];
 }
 
 export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch | null> {

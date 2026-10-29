@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapHomePatch, mapShopHomePatch, mapStubPatch } from "./mapPage";
+import { mapHomePatch, mapShopHomePatch, mapStubPatch, publishedShopCampaignFrames } from "./mapPage";
 
 describe("mapStubPatch", () => {
   it("keeps explicitly cleared hero fields empty after CMS takes ownership", () => {
@@ -269,6 +269,24 @@ describe("mapHomePatch", () => {
       imageUrl: "https://s3.twcstorage.ru/bucket/bizon/media/uuid.png",
       imageAlt: "Магазин",
     });
+  });
+
+  it("resolves campaign frames from the saved CMS placements", () => {
+    expect(publishedShopCampaignFrames({
+      shopCampaign: {
+        frames: [
+          { assetId: "12", alt: "Первый", focalX: 0.2, focalY: 0.8 },
+          { assetId: "missing", alt: "Нет файла" },
+          { assetId: "13", alt: "Второй" },
+        ],
+      },
+    }, new Map([
+      ["12", "/one.png"],
+      ["13", "/two.png"],
+    ]))).toEqual([
+      { imageUrl: "/one.png", imageAlt: "Первый", imageFocalX: 0.2, imageFocalY: 0.8 },
+      { imageUrl: "/two.png", imageAlt: "Второй" },
+    ]);
   });
 
   it("preserves empty Shop campaign fields and an explicitly cleared image", () => {
