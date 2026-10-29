@@ -339,6 +339,7 @@ export const PAGE_KEYS = [
   "warranty",
   "branding",
   "become-a-supplier",
+  "delivery-geography",
   "privacy-policy",
   "shop-delivery-returns",
 ] as const;
@@ -356,7 +357,7 @@ export type PageSectionCopy = {
   lead: string;
 };
 
-/** Pages whose request form is edited with the page. `delivery-geography` joins `PageKey` when its page exists. */
+/** Pages whose request form is edited with the page. */
 export const PAGE_FORM_KEYS = ["become-a-supplier", "delivery-geography"] as const;
 
 export const LEGAL_PAGE_KEYS = ["privacy-policy", "warranty", "shop-delivery-returns"] as const;

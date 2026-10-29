@@ -8,6 +8,7 @@ export const PAGE_LABELS: Record<PageKey, string> = {
   warranty: "Гарантия",
   branding: "Брендинг",
   "become-a-supplier": "Стать поставщиком",
+  "delivery-geography": "География поставок",
   "privacy-policy": "Политика конфиденциальности",
   "shop-delivery-returns": "Доставка и возврат",
 };
