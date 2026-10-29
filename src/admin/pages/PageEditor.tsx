@@ -93,6 +93,16 @@ function isLegalPage(id: string): boolean {
 
 const EMPTY_SITE_PROFILE: SiteProfileDraft = { phone: "", email: "", address: "", channels: [], legalSummary: "", requisites: [] };
 
+function mergeSiteProfileDraft(raw: SiteProfileDraft | undefined): SiteProfileDraft {
+  return {
+    ...EMPTY_SITE_PROFILE,
+    ...(raw ?? {}),
+    legalSummary: raw?.legalSummary ?? "",
+    requisites: raw?.requisites ?? [],
+    channels: raw?.channels ?? [],
+  };
+}
+
 function StubFields({
   draft,
   onChange,
@@ -100,7 +110,7 @@ function StubFields({
   draft: StubPageDraft;
   onChange: (next: StubPageDraft) => void;
 }) {
-  const siteProfile = draft.siteProfile ?? EMPTY_SITE_PROFILE;
+  const siteProfile = mergeSiteProfileDraft(draft.siteProfile);
   const patchSiteProfile = (patch: Partial<SiteProfileDraft>) => {
     onChange({ ...draft, siteProfile: { ...siteProfile, ...patch } });
   };
