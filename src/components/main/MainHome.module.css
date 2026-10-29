@@ -31,11 +31,11 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  background: var(--home-canvas);
+  background: transparent;
 }
 .expertise {
   padding-top: var(--home-section-gap);
-  background: var(--home-canvas);
+  background: transparent;
   color: var(--home-ink);
 }
 .editorial { background: var(--color-surface); color: var(--color-foreground); }
@@ -305,7 +305,7 @@
   --mark-band: var(--home-mark-band);
   padding: var(--home-section-lead) 0 var(--home-section-gap);
   scroll-margin-top: var(--header-height);
-  background: var(--home-canvas);
+  background: transparent;
   color: var(--home-ink);
 }
 .darkHeading { display: grid; grid-template-columns: 1.25fr .75fr; gap: .75rem clamp(2rem, 7vw, 7rem); align-items: end; margin-bottom: clamp(3rem, 7vw, 6rem); }
@@ -509,6 +509,14 @@
 .assortmentCard:hover .assortmentArrow {
   background: var(--bizon-coral-500);
   transform: translate(2px, -2px);
+}
+@media (hover: none), (pointer: coarse) {
+  .assortmentCard:hover { border-color: rgba(255, 255, 255, 0.12); }
+  .assortmentCard:hover .assortmentMedia :global(img) { transform: none; }
+  .assortmentCard:hover .assortmentArrow {
+    background: rgba(255, 255, 255, 0.12);
+    transform: none;
+  }
 }
 .assortmentCardBody {
   position: absolute;
@@ -947,6 +955,45 @@
 .shopMedia img {
   object-fit: var(--media-fit-cover);
   object-position: center;
+  opacity: 0;
+  transition: opacity 700ms ease;
+}
+.shopMedia img[data-active="true"] { opacity: 1; }
+.shopPager {
+  position: absolute;
+  z-index: 2;
+  bottom: clamp(1.25rem, 3vw, 2rem);
+  left: 50%;
+  display: flex;
+  gap: 8px;
+  width: min(16rem, calc(100% - (var(--page-gutter) * 2)));
+  max-width: 100%;
+  min-width: 0;
+  transform: translateX(-50%);
+}
+.shopPager span {
+  flex: 1;
+  height: 2px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.35);
+}
+.shopPager i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: #fff;
+}
+.shopPager span[data-active="true"] i {
+  width: 100%;
+  animation: shop-pager 6s linear;
+}
+@keyframes shop-pager {
+  from { width: 0; }
+  to { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shopMedia img { transition: none; }
+  .shopPager span[data-active="true"] i { animation: none; width: 100%; }
 }
 .shopOverlay {
   position: absolute;
@@ -996,6 +1043,7 @@
   .assortmentTrack {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+  .loopClone { display: none; }
 }
 @media (min-width: 1024px) {
   .assortmentContent {
@@ -1037,7 +1085,7 @@
     scroll-snap-type: x mandatory;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
-    touch-action: pan-x;
+    touch-action: pan-x pan-y;
     margin-right: calc(var(--page-gutter) * -1);
     padding-right: var(--page-gutter);
   }

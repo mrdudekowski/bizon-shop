@@ -246,13 +246,17 @@
   box-sizing: border-box;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-control);
-  background: var(--color-surface);
+  background-color: var(--color-surface);
   color: var(--color-foreground);
   font: inherit;
   font-size: 0.9375rem;
   font-weight: 500;
   letter-spacing: var(--tracking-body);
   text-transform: none;
+}
+
+.field select {
+  padding-right: calc(20px + 1.4rem);
 }
 
 .field select:focus-visible,
@@ -334,7 +338,7 @@
 .modelDescription { min-height: 3em; margin: 0; color: var(--color-muted); line-height: 1.5; }
 .modelFooter { display: flex; justify-content: space-between; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border); font-size: 0.8125rem; }
 .modelFooter > span { color: var(--color-muted); }
-.modelFooter a { display: inline-flex; align-items: center; gap: 0.35em; color: var(--color-link); font-weight: 650; }
+.modelFooter a { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 40px; height: 40px; border: 1px solid var(--color-border); border-radius: var(--radius-circle); color: var(--color-foreground); background: var(--color-surface); }
 
 .emptyState {
   display: grid;
@@ -483,7 +487,8 @@
 .documents a { display: flex; justify-content: space-between; gap: 1rem; min-height: 60px; align-items: center; border-bottom: 1px solid var(--color-border); }
 .documents a span:last-child { display: inline-flex; align-items: center; gap: 0.3em; color: var(--color-link); font-size: .75rem; font-weight: 700; }
 
-.finalCta { display: flex; justify-content: space-between; align-items: end; gap: 2rem; margin-top: var(--section-space); padding: clamp(2rem, 5vw, 4rem); border-radius: var(--radius-card); background: var(--color-surface-muted); }
+.finalCta { display: flex; justify-content: space-between; align-items: center; gap: 2rem; margin-top: var(--section-space); padding: clamp(2rem, 5vw, 4rem); border-radius: var(--radius-card); background: var(--color-surface-muted); }
+.finalCta a { min-height: 52px; padding: 0.9rem 1.4rem; font-size: 1rem; }
 .finalCta h2 { max-width: 17ch; }
 .finalCtaActions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
 
@@ -518,7 +523,7 @@
   .modelTitle { font-size: 1.125rem; line-height: 1.2; overflow-wrap: anywhere; }
   .modelDescription { display: none; }
   .modelFooter { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.45rem; padding-top: 0.55rem; font-size: 0.75rem; }
-  .modelFooter a { min-height: 44px; align-items: center; }
+  .modelFooter a { width: 44px; height: 44px; min-height: 44px; }
   .resultHeader, .finalCta { align-items: flex-start; flex-direction: column; }
   .resultHeader p:last-child { align-self: auto; }
   .applicationBadges { top: 10px; right: 10px; gap: 6px; }

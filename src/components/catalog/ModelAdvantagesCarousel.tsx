@@ -142,14 +142,6 @@ export function ModelAdvantagesCarousel({ advantages }: ModelAdvantagesCarouselP
           <div className={styles.arrows}>
             <button
               type="button"
-              className={styles.autoplay}
-              onClick={() => setAutoplay((current) => !current)}
-              aria-label={autoplay ? "Приостановить карусель" : "Запустить карусель"}
-            >
-              {autoplay ? "Пауза" : "Старт"}
-            </button>
-            <button
-              type="button"
               onClick={() => selectSlide(activeIndex - 1)}
               aria-label="Предыдущее преимущество"
             >

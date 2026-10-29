@@ -48,6 +48,7 @@ export const HOME_PAGE_DEFAULTS: HomePageContent = {
     lead: "Кованые диски и предметы для тех, кто воспринимает технику как часть собственного характера.",
     imageUrl: PREMIUM_MEDIA.shopHero,
     imageAlt: "Кованый диск BIZON",
+    frames: [],
     cta: { label: "Выбрать модель и проверить совместимость", href: "/shop" },
   },
 };

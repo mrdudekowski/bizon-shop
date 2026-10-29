@@ -55,7 +55,7 @@ export function ShopCategoriesIndex({
             <nav className={styles.breadcrumbs} aria-label="Хлебные крошки">
               <Link href="/shop">Shop</Link>
               <span aria-hidden="true">/</span>
-              <span>Категории</span>
+              <span aria-current="page">Категории</span>
             </nav>
             <p className={styles.kicker}>{catalog.copy.eyebrow}</p>
             <h1>{catalog.copy.title}</h1>

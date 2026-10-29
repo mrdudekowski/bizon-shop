@@ -58,7 +58,7 @@
   padding-top: 0.25rem;
   color: var(--color-kicker);
   font-family: var(--font-display);
-  font-size: 0.78rem;
+  font-size: var(--type-index);
   font-weight: 700;
   letter-spacing: var(--tracking-label);
 }

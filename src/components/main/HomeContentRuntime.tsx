@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { BrandingCampaign } from "@/components/main/BrandingCampaign";
 import { ExpertiseSupport } from "@/components/main/ExpertiseSupport";
-import { HomeShopZoneCanvas } from "@/components/main/HomeShopZoneCanvas";
 import { MainHero } from "@/components/main/MainHero";
 import { ShopCampaign } from "@/components/main/ShopCampaign";
 import { TireDirectionShowcase } from "@/components/main/TireDirectionShowcase";
@@ -41,8 +40,7 @@ export function HomeContentRuntime({
   }, []);
 
   return (
-    <div className={styles.homeShell} data-home-shell="">
-      <HomeShopZoneCanvas />
+    <div className={styles.homeShell} data-home-shell="" data-canvas-page="">
       <MainHero content={page.hero} />
       <TireDirectionShowcase catalog={catalog} content={page.directions} />
       <BrandingCampaign content={page.branding} />

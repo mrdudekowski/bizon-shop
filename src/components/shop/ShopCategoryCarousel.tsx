@@ -38,8 +38,7 @@ export function ShopCategoryCarousel({
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const mobileViewport = window.matchMedia("(max-width: 767px)");
-    if (reducedMotion.matches || mobileViewport.matches) {
+    if (reducedMotion.matches) {
       setAutoplay(false);
       return;
     }
@@ -64,15 +63,6 @@ export function ShopCategoryCarousel({
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [autoplay, hasMultipleSlides, count]);
-
-  useEffect(() => {
-    const mobileViewport = window.matchMedia("(max-width: 767px)");
-    const stopOnMobile = () => {
-      if (mobileViewport.matches) setAutoplay(false);
-    };
-    mobileViewport.addEventListener("change", stopOnMobile);
-    return () => mobileViewport.removeEventListener("change", stopOnMobile);
-  }, []);
 
   if (count === 0) {
     if (!children) return null;
@@ -158,14 +148,6 @@ export function ShopCategoryCarousel({
             ))}
           </div>
           <div className={styles.arrows}>
-            <button
-              type="button"
-              className={styles.autoplay}
-              onClick={() => setAutoplay((current) => !current)}
-              aria-label={autoplay ? "Приостановить карусель" : "Запустить карусель"}
-            >
-              {autoplay ? "Пауза" : "Старт"}
-            </button>
             <button type="button" onClick={() => selectSlide(activeIndex - 1)} aria-label="Предыдущий кадр">
               <SiteArrow direction="left" />
             </button>

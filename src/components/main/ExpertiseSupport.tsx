@@ -10,6 +10,7 @@ export function ExpertiseSupport({ content }: { content: HomeExpertiseContent })
       id={HOME_SHOP_ZONE_EXIT_ID}
       className={styles.expertise}
       data-main-chrome-tone="light"
+      data-canvas-tone="light"
       aria-labelledby="expertise-support-title"
     >
       <EditorialHighlights content={content} />

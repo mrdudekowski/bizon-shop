@@ -22,6 +22,7 @@ export function TireDirectionShowcase({
     <section
       className={styles.directionSection}
       data-main-chrome-tone="light"
+      data-canvas-tone="light"
       aria-labelledby="home-assortment-title"
     >
       <img

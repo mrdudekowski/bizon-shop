@@ -134,7 +134,7 @@
   justify-content: space-between;
   margin: 0 20px 12px;
   padding: 16px 18px;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-pill);
   background: var(--color-foreground);
   color: var(--color-surface);
   font-size: 17px;

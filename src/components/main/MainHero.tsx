@@ -18,7 +18,7 @@ export function MainHero({ content }: { content: HomeHeroContent }) {
     : null;
 
   return (
-    <section className={styles.hero} data-main-chrome-tone="dark">
+    <section className={styles.hero} data-main-chrome-tone="dark" data-canvas-tone="dark">
       <div className={styles.heroMedia}>
         {hero.imageUrl ? (
           <Image

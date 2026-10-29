@@ -11,6 +11,8 @@
   height: var(--chrome-bar-height, 84px);
   margin: var(--chrome-inset-top, 12px) auto 0;
   pointer-events: none;
+  backdrop-filter: blur(20px) saturate(135%);
+  transition: opacity 200ms ease;
 }
 
 .chrome[data-tone="dark"] {
@@ -40,7 +42,8 @@
   transition:
     background-color var(--transition-premium),
     border-color var(--transition-premium),
-    color var(--transition-premium);
+    color var(--transition-premium),
+    opacity 200ms ease;
 }
 
 .start,
@@ -105,6 +108,13 @@
 
 .chrome[data-tone="dark"] .wordmark img[data-on="dark"] {
   opacity: 1;
+}
+
+@media (max-width: 767px) {
+  .chrome[data-visibility="hidden"] {
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 .brand :global(a),

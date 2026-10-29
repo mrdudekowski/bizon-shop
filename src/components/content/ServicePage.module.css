@@ -75,7 +75,7 @@
 
 .featureList li {
   display: grid;
-  grid-template-columns: 4rem minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 1rem clamp(1.5rem, 4vw, 3rem);
   padding: clamp(1.25rem, 3vw, 2rem) 0;
   border-bottom: 1px solid var(--color-border);
@@ -83,7 +83,7 @@
 
 .featureIndex {
   color: var(--color-kicker);
-  font-size: 0.78rem;
+  font-size: var(--type-index);
   font-weight: var(--weight-kicker);
   letter-spacing: var(--tracking-label);
 }
@@ -169,7 +169,7 @@
   }
 
   .featureList li {
-    grid-template-columns: 3rem minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
   .features h2,

@@ -325,7 +325,7 @@ export function DualPaneMenu({
 
             <div className={styles.dualTrack}>
               <nav
-                className={styles.leftPane}
+                className={`${styles.leftPane} bizon-scroll`}
                 aria-label={title}
                 inert={leftPaneInert}
               >
@@ -385,7 +385,7 @@ export function DualPaneMenu({
                   </button>
                   <h2 className={styles.rightPaneTitle}>{activeSection?.label}</h2>
                 </div>
-                <div key={paneKey} className={styles.rightPaneContent}>
+                <div key={paneKey} className={`${styles.rightPaneContent} bizon-scroll`}>
                   {renderPane()}
                 </div>
               </div>

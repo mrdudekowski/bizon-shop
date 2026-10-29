@@ -12,8 +12,8 @@
   min-height: calc(62px + env(safe-area-inset-bottom, 0px));
   padding: 7px 10px calc(7px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid rgb(28 28 28 / 10%);
-  background: rgb(255 255 255 / 96%);
-  color: var(--bizon-neutral-700, #505050);
+  background: color-mix(in srgb, var(--page-canvas, #fff) 94%, transparent);
+  color: var(--page-ink, var(--bizon-neutral-700, #505050));
   box-shadow: 0 -8px 24px rgb(0 0 0 / 7%);
   backdrop-filter: blur(18px);
 }

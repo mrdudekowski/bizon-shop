@@ -1,39 +1,33 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
-import {
-  computeShopZoneBackdropProgress,
-  getShopZoneViewportHeightPx,
-  HOME_SHOP_ZONE_ENTER_ID,
-  HOME_SHOP_ZONE_EXIT_ID,
-  HOME_SHOP_ZONE_SHELL,
-  resolveShopZoneProgress,
-} from "./homeShopZone";
+import { canvasToneColor, inkForCanvas, resolveCanvasColor } from "./canvasColor";
 
 export function HomeShopZoneCanvas() {
+  const pathname = usePathname();
+
   useEffect(() => {
-    const shell = document.querySelector<HTMLElement>(HOME_SHOP_ZONE_SHELL);
-    if (!shell) return;
+    const root = document.querySelector<HTMLElement>("[data-canvas-page]");
+    if (!root) return undefined;
 
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let rafId = 0;
-
+    let frame = 0;
     const apply = () => {
-      const shop = document.getElementById(HOME_SHOP_ZONE_ENTER_ID);
-      const exit = document.getElementById(HOME_SHOP_ZONE_EXIT_ID);
-      const progress = resolveShopZoneProgress(
-        computeShopZoneBackdropProgress(shop, exit, getShopZoneViewportHeightPx()),
-        reducedMotion.matches
-      );
-      shell.style.setProperty("--home-shop-progress", String(progress));
-      shell.style.setProperty("--home-invert", String(progress));
+      const headerLine = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-height")) || 80;
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      const stops = [...root.querySelectorAll<HTMLElement>("[data-canvas-tone]")].map((element) => ({
+        top: element.getBoundingClientRect().top,
+        color: canvasToneColor(element.getAttribute("data-canvas-tone")),
+      }));
+      const canvas = resolveCanvasColor(stops, viewportHeight, headerLine);
+      document.documentElement.style.setProperty("--page-canvas", canvas);
+      document.documentElement.style.setProperty("--page-ink", inkForCanvas(canvas));
     };
-
     const schedule = () => {
-      if (rafId) return;
-      rafId = requestAnimationFrame(() => {
-        rafId = 0;
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
         apply();
       });
     };
@@ -41,21 +35,16 @@ export function HomeShopZoneCanvas() {
     apply();
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
-    reducedMotion.addEventListener("change", apply);
     window.visualViewport?.addEventListener("resize", schedule);
-    window.visualViewport?.addEventListener("scroll", schedule);
-
     return () => {
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
-      reducedMotion.removeEventListener("change", apply);
       window.visualViewport?.removeEventListener("resize", schedule);
-      window.visualViewport?.removeEventListener("scroll", schedule);
-      if (rafId) cancelAnimationFrame(rafId);
-      shell.style.removeProperty("--home-shop-progress");
-      shell.style.removeProperty("--home-invert");
+      if (frame) window.cancelAnimationFrame(frame);
+      document.documentElement.style.removeProperty("--page-canvas");
+      document.documentElement.style.removeProperty("--page-ink");
     };
-  }, []);
+  }, [pathname]);
 
   return null;
 }

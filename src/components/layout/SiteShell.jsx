@@ -1,5 +1,6 @@
 "use client";
 
+import { HomeShopZoneCanvas } from "@/components/main/HomeShopZoneCanvas";
 import { DualPaneMenu } from "@/components/DualPaneMenu/DualPaneMenu";
 import { BackToTop } from "@/components/BackToTop/BackToTop.jsx";
 import { CartDrawer } from "@/components/cart/CartDrawer";
@@ -46,6 +47,10 @@ export function SiteShell({ children, mainMenu, shopMenu, initialFooterContact =
     ...categoryItems.filter((item) => item.id !== "all-categories"),
     ...categoryItems.filter((item) => item.id === "all-categories"),
   ].map((item) => ({ href: item.href, label: item.title }));
+  const categoryMarks = categoryLinks.flatMap((link) => {
+    const slug = link.href.startsWith("/shop/") ? link.href.slice("/shop/".length) : "";
+    return slug && !slug.includes("/") ? [{ href: link.href, label: link.label, slug }] : [];
+  });
   useBodyScrollLock(cart.open, "cart-open");
 
   useEffect(() => {
@@ -90,6 +95,7 @@ export function SiteShell({ children, mainMenu, shopMenu, initialFooterContact =
 
   return (
     <>
+      <HomeShopZoneCanvas />
       <div
         className={`page page--with-mobile-nav ${menuOpen ? "page--blurred" : ""}`}
         inert={menuOpen || cart.open ? true : undefined}
@@ -105,6 +111,7 @@ export function SiteShell({ children, mainMenu, shopMenu, initialFooterContact =
             cartCount={cart.count}
             onCartOpen={() => cart.setOpen(true)}
             categoryLinks={categoryLinks}
+            categoryMarks={categoryMarks}
           />
         ) : (
           <MainChrome

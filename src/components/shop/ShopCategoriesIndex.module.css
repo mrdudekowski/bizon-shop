@@ -48,6 +48,11 @@
   color: var(--bizon-white);
 }
 
+.breadcrumbs [aria-current="page"] {
+  color: var(--bizon-coral-500);
+  font-weight: 650;
+}
+
 .kicker,
 .lightKicker {
   margin: 0;

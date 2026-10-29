@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useLenis } from 'lenis/react';
 
 /**
  * Хук для управления состоянием мобильного меню
@@ -16,21 +17,26 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 export const useMenuToggle = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const scrollPositionRef = useRef(0);
+  const lenis = useLenis();
   
   useEffect(() => {
     if (!menuOpen) return undefined;
 
-    scrollPositionRef.current = window.scrollY;
-    document.body.style.setProperty('--scroll-lock-top', `-${scrollPositionRef.current}px`);
+    const y = typeof lenis?.scroll === "number" ? lenis.scroll : window.scrollY;
+    scrollPositionRef.current = y;
+    lenis?.stop();
+    document.body.style.setProperty('--scroll-lock-top', `-${y}px`);
     document.body.classList.add('menu-open');
 
     return () => {
       document.body.classList.remove('menu-open');
       document.body.style.removeProperty('--scroll-lock-top');
       const scrollPosition = scrollPositionRef.current;
-      window.requestAnimationFrame(() => window.scrollTo(0, scrollPosition));
+      lenis?.start();
+      lenis?.scrollTo(scrollPosition, { immediate: true, force: true });
+      window.scrollTo(0, scrollPosition);
     };
-  }, [menuOpen]);
+  }, [menuOpen, lenis]);
   
   const openMenu = useCallback(() => {
     setMenuOpen(true);

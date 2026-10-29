@@ -1,9 +1,11 @@
 "use client";
 
 import type { MouseEventHandler, ReactNode, Ref } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import BurgerToggle from "@/components/BurgerToggle/BurgerToggle";
 
+import { nextChromeVisibility, type ChromeVisibility } from "./chromeVisibility";
 import styles from "./FloatingChrome.module.css";
 import { useAdaptiveChrome, type ChromeTone } from "./useAdaptiveChrome";
 
@@ -60,12 +62,31 @@ export function FloatingChrome({
   onMouseLeave,
 }: FloatingChromeProps) {
   const { tone } = useAdaptiveChrome(toneAttribute, fallbackTone);
+  const [visibility, setVisibility] = useState<ChromeVisibility>("shown");
+  const previousScroll = useRef(0);
+
+  useEffect(() => {
+    const mobile = window.matchMedia("(max-width: 767px)");
+    const onScroll = () => {
+      const scrollY = window.scrollY;
+      setVisibility((current) => nextChromeVisibility(current, scrollY, previousScroll.current, mobile.matches));
+      previousScroll.current = scrollY;
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    mobile.addEventListener("change", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      mobile.removeEventListener("change", onScroll);
+    };
+  }, []);
 
   return (
     <div
       ref={rootRef}
       className={styles.chrome}
       data-tone={tone}
+      data-visibility={visibility}
       data-main-chrome={surface === "main" ? "" : undefined}
       data-shop-chrome={surface === "shop" ? "" : undefined}
       onMouseLeave={onMouseLeave}

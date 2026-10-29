@@ -20,7 +20,7 @@
 .option { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 1rem; align-items: start; padding: 1.3rem 0; border-bottom: 1px solid var(--color-border); color: inherit; text-decoration: none; }
 .option:hover strong, .option:focus-visible strong { color: var(--color-link-hover); }
 .option:focus-visible { outline: 2px solid var(--color-link); outline-offset: 4px; }
-.number { padding-top: .15rem; color: var(--color-kicker); font-family: var(--font-display); font-size: .78rem; font-weight: 700; }
+.number { padding-top: .15rem; color: var(--color-kicker); font-family: var(--font-display); font-size: var(--type-index); font-weight: 700; }
 .content { display: grid; grid-template-columns: minmax(0, 1fr); gap: .35rem; }
 .content strong { font-family: var(--font-display); font-size: clamp(1.25rem, 2vw, 1.75rem); font-weight: 650; letter-spacing: var(--tracking-display); }
 .content span { max-width: 42ch; color: var(--color-muted); line-height: 1.5; }

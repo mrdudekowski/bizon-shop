@@ -85,7 +85,7 @@
   min-height: 48px;
   align-items: center;
   border: 1px solid var(--bizon-coral-500);
-  border-radius: 12px;
+  border-radius: var(--radius-pill);
   background: var(--bizon-coral-500);
   color: var(--bizon-white);
   padding: 12px 20px;
@@ -107,7 +107,7 @@
 }
 
 .modelsSection {
-  background: var(--bizon-black);
+  background: transparent;
   color: var(--bizon-white);
   padding: clamp(56px, 6vw, 88px) 0 clamp(64px, 8vw, 112px);
 }
@@ -168,7 +168,6 @@
   min-width: 0;
   min-height: clamp(400px, 34vw, 520px);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: var(--radius-panel);
   background: var(--color-surface-inverse-muted);
   color: var(--bizon-white);
@@ -177,9 +176,15 @@
 }
 
 .modelCard:hover {
-  border-color: color-mix(in srgb, var(--bizon-coral-500) 56%, var(--color-border));
   box-shadow: 0 24px 64px rgba(28, 28, 28, 0.12);
   transform: var(--transform-hover-lift);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .modelCard:hover {
+    box-shadow: var(--shadow-card);
+    transform: none;
+  }
 }
 
 .modelCard:focus-visible,
@@ -187,6 +192,8 @@
   outline: var(--focus-outline);
   outline-offset: 4px;
 }
+
+.loopClone { display: none; }
 
 .modelMedia {
   position: absolute;
@@ -289,7 +296,7 @@
 
 .orderSteps article > span {
   color: var(--bizon-coral-500);
-  font-size: 0.75rem;
+  font-size: var(--type-index);
   font-weight: 700;
   letter-spacing: var(--tracking-kicker);
 }
@@ -302,7 +309,7 @@
 }
 
 .categoriesSection {
-  background: var(--bizon-black);
+  background: transparent;
   color: var(--bizon-white);
   padding: 0;
 }
@@ -311,7 +318,7 @@
   padding: clamp(64px, 8vw, 112px) 0;
 }
 
-.categoriesEmpty a { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 12px; border-radius: var(--radius-control); background: var(--bizon-coral-500); color: var(--bizon-white); padding: 11px 18px; font-weight: 650; white-space: nowrap; }
+.categoriesEmpty a { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 12px; border-radius: var(--radius-pill); background: var(--bizon-coral-500); color: var(--bizon-white); padding: 11px 18px; font-weight: 650; white-space: nowrap; }
 .categoriesEmpty { display: flex; align-items: center; justify-content: space-between; gap: 24px; border: 1px solid rgba(255,255,255,.14); border-radius: var(--radius-panel); padding: 28px; }
 .categoriesEmpty p { margin: 0; color: var(--color-on-dark-muted); }
 
@@ -337,8 +344,8 @@
 }
 
 .vehiclesSection {
-  background: var(--bizon-white);
-  color: var(--color-foreground);
+  background: transparent;
+  color: var(--page-ink, var(--color-foreground));
   padding: clamp(88px, 10vw, 160px) var(--page-gutter);
 }
 
@@ -376,7 +383,7 @@
   display: inline-flex;
   min-height: 48px;
   align-items: center;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-pill);
   background: var(--bizon-coral-500);
   color: var(--bizon-white);
   padding: 13px 20px;
@@ -460,6 +467,7 @@
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
+    touch-action: pan-x pan-y;
     scrollbar-width: none;
     margin-right: calc(var(--page-gutter) * -1);
     padding-right: var(--page-gutter);
@@ -474,6 +482,8 @@
     scroll-snap-align: start;
     min-height: 360px;
   }
+
+  .loopClone { display: flex; }
 }
 
 @media (max-width: 900px) {
@@ -532,6 +542,7 @@
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
+    touch-action: pan-x pan-y;
     scrollbar-width: none;
     margin-right: -16px;
     padding-right: 16px;
@@ -571,6 +582,7 @@
     margin-right: -16px;
     padding-right: 16px;
     scroll-snap-type: x mandatory;
+    touch-action: pan-x pan-y;
     overscroll-behavior-inline: contain;
     scrollbar-width: none;
   }

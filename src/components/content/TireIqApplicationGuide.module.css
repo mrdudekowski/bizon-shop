@@ -72,7 +72,7 @@
 .groupHeader span {
   color: var(--color-kicker);
   font-family: var(--font-display);
-  font-size: 0.78rem;
+  font-size: var(--type-index);
   font-weight: 700;
 }
 

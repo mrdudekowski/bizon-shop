@@ -77,6 +77,19 @@ describe("mergeHomeContent", () => {
       },
     });
     expect(merged.shopCampaign.imageUrl).toBe("https://s3.twcstorage.ru/bucket/bizon/media/uuid.png");
+    expect(merged.shopCampaign.frames).toEqual([]);
+  });
+
+  it("uses the campaign frame list when CMS sends one", () => {
+    const merged = mergeHomeContent(HOME_PAGE_DEFAULTS, {
+      shopCampaign: {
+        frames: [
+          { imageUrl: "/one.png", imageAlt: "Один" },
+          { imageUrl: "/two.png", imageAlt: "Два" },
+        ],
+      },
+    });
+    expect(merged.shopCampaign.frames.map((frame) => frame.imageUrl)).toEqual(["/one.png", "/two.png"]);
   });
 
   it("overrides directions and expertise from CMS", () => {

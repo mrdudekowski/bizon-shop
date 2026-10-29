@@ -14,6 +14,7 @@ export function BrandingCampaign({ content }: { content: HomeBrandingContent }) 
       id={HOME_SHOP_ZONE_ENTER_ID}
       className={`section section--dark ${styles.branding}`}
       data-main-chrome-tone="dark"
+      data-canvas-tone="dark"
       aria-labelledby="branding-heading"
     >
       <BrandingCompare

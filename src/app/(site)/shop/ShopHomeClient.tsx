@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+import { useLoopingTrack } from "@/components/catalog/useLoopingTrack";
 import { HorizontalScrollCue } from "@/components/catalog/HorizontalScrollCue";
 import { ShopCategoryShowcase } from "@/components/shop/ShopCategoryShowcase";
 import { ShopOrderSteps } from "./ShopOrderSteps";
@@ -65,12 +66,13 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
     .filter((model) => model.showInMenu && model.imageUrl)
     .sort((a, b) => a.menuOrder - b.menuOrder)
     .slice(0, 3);
+  useLoopingTrack(modelsTrackRef, homeModels.length);
   const categorySlides = shopHomeCarouselSlides(categories, page.catalog.tiles);
   const categoryCards = shopHomeCategoryCards(categories, page.catalog.tiles);
 
   return (
-    <div className={styles.page}>
-      <section className={styles.hero} data-shop-chrome-tone="dark">
+    <div className={styles.page} data-canvas-page="">
+      <section className={styles.hero} data-shop-chrome-tone="dark" data-canvas-tone="dark">
         <div className={styles.heroMedia}>
           {page.hero.imageUrl ? <Image src={page.hero.imageUrl} alt={page.hero.imageAlt} fill priority sizes="100vw" /> : null}
         </div>
@@ -85,7 +87,7 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
         </div>
       </section>
 
-      <section className={styles.modelsSection} id="wheels" data-shop-chrome-tone="dark" aria-labelledby="shop-title">
+      <section className={styles.modelsSection} id="wheels" data-shop-chrome-tone="dark" data-canvas-tone="dark" aria-labelledby="shop-title">
         <div className={styles.content}>
           <div className={styles.modelsIntro}>
             <p className={styles.collectionKicker}>{page.wheelsIntro.kicker}</p>
@@ -104,13 +106,24 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
                 <span className={styles.modelArrow} aria-hidden="true"><SiteArrow direction="ne" /></span>
               </Link>
             ))}
+            {homeModels.map((model) => (
+              <Link className={`${styles.modelCard} ${styles.loopClone}`} href={`/shop/wheels/forged/${model.slug}`} key={`${model.slug}-loop`} aria-hidden="true" tabIndex={-1}>
+                <span className={styles.modelMedia}><Image src={model.imageUrl!} alt="" fill sizes="(max-width: 767px) 92vw, 33vw" /></span>
+                <span className={styles.modelContent}>
+                  <span className={styles.modelStatus}>Изготавливается под заказ</span>
+                  <strong>{model.name}</strong>
+                  <span>{[model.designStyle, model.series].filter(Boolean).join(" · ")}</span>
+                </span>
+                <span className={styles.modelArrow} aria-hidden="true"><SiteArrow direction="ne" /></span>
+              </Link>
+            ))}
           </div>
           {homeModels.length > 1 ? <HorizontalScrollCue trackRef={modelsTrackRef} tone="dark" /> : null}
           <ShopOrderSteps steps={page.orderSteps} />
         </div>
       </section>
 
-      <section className={styles.categoriesSection} id="categories" data-shop-chrome-tone="dark" aria-labelledby="categories-title">
+      <section className={styles.categoriesSection} id="categories" data-shop-chrome-tone="dark" data-canvas-tone="dark" aria-labelledby="categories-title">
         {categorySlides.length || categoryCards.length ? (
           <ShopCategoryShowcase slides={categorySlides} cards={categoryCards} />
         ) : (
@@ -121,7 +134,7 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
         )}
       </section>
 
-      <section className={styles.vehiclesSection} data-shop-section="vehicles" data-shop-chrome-tone="light" aria-labelledby="vehicles-title">
+      <section className={styles.vehiclesSection} data-shop-section="vehicles" data-shop-chrome-tone="light" data-canvas-tone="light" aria-labelledby="vehicles-title">
         <div className={styles.vehiclesInner}>
           <div className={styles.vehiclesHead}>
             <div>

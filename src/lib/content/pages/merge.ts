@@ -1,3 +1,4 @@
+import { shopCampaignFrames } from "./shopCampaignFrames";
 import type {
   HomePageContent,
   HomeExpertiseContent,
@@ -60,6 +61,10 @@ export function pickImageUrl(value: string | null | undefined, fallback: string)
   return value.trim() || null;
 }
 
+function focalField<Key extends string>(key: Key, value: number | undefined): Partial<Record<Key, number>> {
+  return typeof value === "number" ? { [key]: value } : {};
+}
+
 type CtaPatch = Partial<PageCta> | undefined;
 
 export function mergeHomeContent(
@@ -74,8 +79,9 @@ export function mergeHomeContent(
     directions?: Partial<PageShell>;
     expertise?: Partial<Omit<HomeExpertiseContent, "cta">> & { cta?: CtaPatch };
     branding?: Partial<Omit<HomeBrandingContent, "cta">> & { cta?: CtaPatch };
-    shopCampaign?: Partial<Omit<HomePageContent["shopCampaign"], "cta">> & {
+    shopCampaign?: Partial<Omit<HomePageContent["shopCampaign"], "cta" | "frames">> & {
       cta?: CtaPatch;
+      frames?: unknown;
     };
   },
 ): HomePageContent {
@@ -87,8 +93,8 @@ export function mergeHomeContent(
       ...pickShell(patch.hero, defaults.hero),
       imageUrl: pickImageUrl(patch.hero?.imageUrl, defaults.hero.imageUrl),
       imageAlt: pickText(patch.hero?.imageAlt, defaults.hero.imageAlt),
-      imageFocalX: patch.hero?.imageFocalX ?? defaults.hero.imageFocalX,
-      imageFocalY: patch.hero?.imageFocalY ?? defaults.hero.imageFocalY,
+      ...focalField("imageFocalX", patch.hero?.imageFocalX ?? defaults.hero.imageFocalX),
+      ...focalField("imageFocalY", patch.hero?.imageFocalY ?? defaults.hero.imageFocalY),
       primaryCta: pickCta(patch.hero?.primaryCta, defaults.hero.primaryCta),
       secondaryCta: pickCta(patch.hero?.secondaryCta, defaults.hero.secondaryCta),
       metricLabel: pickText(patch.hero?.metricLabel, defaults.hero.metricLabel),
@@ -99,8 +105,8 @@ export function mergeHomeContent(
       ...pickShell(patch.expertise, defaults.expertise),
       imageUrl: pickImageUrl(patch.expertise?.imageUrl, defaults.expertise.imageUrl),
       imageAlt: pickText(patch.expertise?.imageAlt, defaults.expertise.imageAlt),
-      imageFocalX: patch.expertise?.imageFocalX ?? defaults.expertise.imageFocalX,
-      imageFocalY: patch.expertise?.imageFocalY ?? defaults.expertise.imageFocalY,
+      ...focalField("imageFocalX", patch.expertise?.imageFocalX ?? defaults.expertise.imageFocalX),
+      ...focalField("imageFocalY", patch.expertise?.imageFocalY ?? defaults.expertise.imageFocalY),
       cta: pickCta(patch.expertise?.cta, defaults.expertise.cta),
     },
     branding: {
@@ -110,19 +116,20 @@ export function mergeHomeContent(
       afterCaption: pickText(patch.branding?.afterCaption, defaults.branding.afterCaption),
       beforeImageUrl: pickImageUrl(patch.branding?.beforeImageUrl, defaults.branding.beforeImageUrl),
       beforeImageAlt: pickText(patch.branding?.beforeImageAlt, defaults.branding.beforeImageAlt),
-      beforeImageFocalX: patch.branding?.beforeImageFocalX ?? defaults.branding.beforeImageFocalX,
-      beforeImageFocalY: patch.branding?.beforeImageFocalY ?? defaults.branding.beforeImageFocalY,
+      ...focalField("beforeImageFocalX", patch.branding?.beforeImageFocalX ?? defaults.branding.beforeImageFocalX),
+      ...focalField("beforeImageFocalY", patch.branding?.beforeImageFocalY ?? defaults.branding.beforeImageFocalY),
       afterImageUrl: pickImageUrl(patch.branding?.afterImageUrl, defaults.branding.afterImageUrl),
       afterImageAlt: pickText(patch.branding?.afterImageAlt, defaults.branding.afterImageAlt),
-      afterImageFocalX: patch.branding?.afterImageFocalX ?? defaults.branding.afterImageFocalX,
-      afterImageFocalY: patch.branding?.afterImageFocalY ?? defaults.branding.afterImageFocalY,
+      ...focalField("afterImageFocalX", patch.branding?.afterImageFocalX ?? defaults.branding.afterImageFocalX),
+      ...focalField("afterImageFocalY", patch.branding?.afterImageFocalY ?? defaults.branding.afterImageFocalY),
     },
     shopCampaign: {
       ...pickShell(patch.shopCampaign, defaults.shopCampaign),
       imageUrl: pickImageUrl(patch.shopCampaign?.imageUrl, defaults.shopCampaign.imageUrl),
       imageAlt: pickText(patch.shopCampaign?.imageAlt, defaults.shopCampaign.imageAlt),
-      imageFocalX: patch.shopCampaign?.imageFocalX ?? defaults.shopCampaign.imageFocalX,
-      imageFocalY: patch.shopCampaign?.imageFocalY ?? defaults.shopCampaign.imageFocalY,
+      ...focalField("imageFocalX", patch.shopCampaign?.imageFocalX ?? defaults.shopCampaign.imageFocalX),
+      ...focalField("imageFocalY", patch.shopCampaign?.imageFocalY ?? defaults.shopCampaign.imageFocalY),
+      frames: shopCampaignFrames({ frames: patch.shopCampaign?.frames ?? defaults.shopCampaign.frames }),
       cta: pickCta(patch.shopCampaign?.cta, defaults.shopCampaign.cta),
     },
   };

@@ -1,4 +1,5 @@
 import type { PageKey } from "./keys";
+import type { ShopCampaignFrame } from "./shopCampaignFrames";
 
 export type PageCta = {
   label: string;
@@ -27,6 +28,7 @@ export type HomeShopCampaignContent = PageShell & {
   imageAlt: string;
   imageFocalX?: number;
   imageFocalY?: number;
+  frames: ShopCampaignFrame[];
   cta: PageCta;
 };
 

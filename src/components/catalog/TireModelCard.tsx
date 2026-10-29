@@ -52,7 +52,7 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
               ? `${sizeSummary}${additionalSizes ? ` +${additionalSizes}` : ""}`
               : "Размер — по запросу"}
           </span>
-          <Link href={model.href}>Открыть параметры <SiteArrow direction="ne" /></Link>
+          <Link href={model.href} aria-label={`Открыть параметры ${model.name}`}><SiteArrow direction="ne" /></Link>
         </div>
       </div>
     </article>

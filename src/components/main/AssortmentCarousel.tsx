@@ -9,40 +9,49 @@ import { getModelApplicationCategories } from "@/lib/catalog/tireCategories";
 import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
 import Link from "next/link";
 
+import { useLoopingTrack } from "@/components/catalog/useLoopingTrack";
 import styles from "./MainHome.module.css";
 
 export function AssortmentCarousel({ models }: { models: TireCatalogModel[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
+  useLoopingTrack(trackRef, models.length);
 
   if (models.length === 0) return null;
 
   return (
     <div className={styles.assortmentCarouselWrap}>
       <div ref={trackRef} className={styles.assortmentTrack} aria-label="Ключевые модели шин">
-        {models.map((model) => {
+        {[0, 1].flatMap((copy) => models.map((model) => {
           const applications = getModelApplicationCategories(model);
           const subtitle = cardSubtitle(model);
           const remainingSubtitle = applications.length > 0 && model.selectionAxles.length !== 1
             ? ""
             : subtitle;
+          const clone = copy === 1;
 
           return (
-            <Link key={model.id} className={styles.assortmentCard} href={model.href}>
+            <Link
+              key={clone ? `${model.id}-loop` : model.id}
+              className={clone ? `${styles.assortmentCard} ${styles.loopClone}` : styles.assortmentCard}
+              href={model.href}
+              aria-hidden={clone || undefined}
+              tabIndex={clone ? -1 : undefined}
+            >
             <span className={styles.assortmentMedia}>
               <CatalogImage
                 src={model.imageUrl || model.gallery[0]}
-                alt={model.name}
+                alt={clone ? "" : model.name}
                 fill
                 sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 28vw"
                 fallbackKey={model.slug}
               />
               {applications.length > 0 ? (
-                <ul className={styles.assortmentApplicationBadges} aria-label="Применение">
+                <ul className={styles.assortmentApplicationBadges} aria-label={clone ? undefined : "Применение"}>
                   {applications.map((application) => (
                     <li key={application.icon}>
                       <img
                         src={application.icon}
-                        alt={application.name}
+                        alt={clone ? "" : application.name}
                         title={application.name}
                         width={40}
                         height={40}
@@ -73,7 +82,7 @@ export function AssortmentCarousel({ models }: { models: TireCatalogModel[] }) {
             </span>
             </Link>
           );
-        })}
+        }))}
       </div>
       {models.length > 1 ? <HorizontalScrollCue trackRef={trackRef} tone="light" /> : null}
     </div>
