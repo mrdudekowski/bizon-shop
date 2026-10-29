@@ -3,6 +3,7 @@ import type { PageKey } from "./pages/keys";
 import { mergeHomeContent, mergeShopHomeContent } from "./pages/merge";
 import type { HomePageContent, PageContentByKey, ShopHomePageContent } from "./pages/types";
 import { fetchPublishedJson, isStaticBuild, PublishedApiError, publishedApiEnabled } from "./publishedClient";
+import type { SiteProfile } from "./siteProfile";
 
 export type PublishedStubOverlay = {
   documents?: { url: string; title: string }[];
@@ -22,6 +23,8 @@ export type PublishedStubOverlay = {
     vk?: string;
     instagram?: string;
   };
+  /** Served with the contact page only. */
+  siteProfile?: SiteProfile;
   seoTitle?: string;
   seoDescription?: string;
   hero: {

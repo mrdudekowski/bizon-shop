@@ -26,13 +26,13 @@ import { readPublishedRevision } from "@/lib/content/readPublishedRevision";
  * Client shell: header, burger menu, footer, scroll helpers.
  * Wraps all public site pages.
  */
-export function SiteShell({ children, mainMenu, shopMenu, initialFooterContact = null }) {
+export function SiteShell({ children, mainMenu, shopMenu, initialSiteProfile = null }) {
   const { menuOpen, closeMenu, toggleMenu } = useMenuToggle();
   const [runtimeMainMenu, setRuntimeMainMenu] = useState(mainMenu);
   const [runtimeShopMenu, setRuntimeShopMenu] = useState(shopMenu);
   const [menuRefreshed, setMenuRefreshed] = useState(false);
   const [publishedCategories, setPublishedCategories] = useState(null);
-  const [footerContact, setFooterContact] = useState(initialFooterContact);
+  const [siteProfile, setSiteProfile] = useState(initialSiteProfile);
   const lenis = useLenis();
   const pathname = usePathname();
   const isShop = pathname === ROUTES.shop || pathname.startsWith(`${ROUTES.shop}/`);
@@ -67,7 +67,7 @@ export function SiteShell({ children, mainMenu, shopMenu, initialFooterContact =
         void fetchBrowserPublishedJson("/v1/pages/contact", controller.signal)
           .then((contactPatch) => {
             if (!controller.signal.aborted && contactPatch && typeof contactPatch === "object") {
-              setFooterContact(contactPatch.footerContact ?? null);
+              setSiteProfile(contactPatch.siteProfile ?? null);
             }
           })
           .catch(() => {});
@@ -130,7 +130,7 @@ export function SiteShell({ children, mainMenu, shopMenu, initialFooterContact =
 
         <main id="main" className={isShop ? "main--shop" : undefined}>{children}</main>
 
-        {isShop ? <ShopFooter catalogLinks={categoryLinks} footerContact={footerContact} /> : <Footer footerContact={footerContact} />}
+        {isShop ? <ShopFooter catalogLinks={categoryLinks} siteProfile={siteProfile} /> : <Footer siteProfile={siteProfile} />}
 
         <BackToTop onScrollToTop={() => scrollToTop(lenis)} />
         <MobileBottomNav context={isShop ? "shop" : "main"} cartCount={cart.count} />

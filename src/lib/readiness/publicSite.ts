@@ -19,17 +19,17 @@ export function findPublicSiteReadinessIssues(input: {
 }): PublicSiteReadinessIssue[] {
   const issues: PublicSiteReadinessIssue[] = [];
 
-  if (/\(000\)|000-00-00/.test(input.phone)) {
+  if (!/\d/.test(input.phone)) {
     issues.push({
       code: "placeholder_phone",
-      message: "Configure NEXT_PUBLIC_CONTACT_PHONE",
+      message: "Publish a phone number in the CMS site profile",
     });
   }
 
-  if (/\.example$/i.test(input.email)) {
+  if (!input.email.includes("@")) {
     issues.push({
       code: "placeholder_email",
-      message: "Configure NEXT_PUBLIC_CONTACT_EMAIL",
+      message: "Publish an email address in the CMS site profile",
     });
   }
 

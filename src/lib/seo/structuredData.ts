@@ -1,4 +1,4 @@
-import { SITE_CONTACT } from "@/constants/contact";
+import { contactHref, type SiteProfile } from "@/lib/content/siteProfile";
 import { PUBLIC_LOGO } from "@/lib/readiness/publicSite";
 import { getSiteUrl } from "./metadata";
 
@@ -28,8 +28,11 @@ export function createProductStructuredData(product: ProductStructuredDataInput)
   };
 }
 
-export function createOrganizationStructuredData() {
+/** Placeholder sentences are not contact data, so they never reach the contact point. */
+export function createOrganizationStructuredData(contacts: Pick<SiteProfile, "phone" | "email">) {
   const siteUrl = getSiteUrl();
+  const hasPhone = contactHref("phone", contacts.phone) !== null;
+  const hasEmail = contactHref("email", contacts.email) !== null;
 
   return {
     "@context": "https://schema.org",
@@ -37,12 +40,16 @@ export function createOrganizationStructuredData() {
     name: "Bizon Tires",
     url: siteUrl,
     logo: `${siteUrl}${PUBLIC_LOGO}`,
-    contactPoint: {
-      "@type": "ContactPoint",
-      contactType: "sales",
-      email: SITE_CONTACT.email,
-      telephone: SITE_CONTACT.phone,
-      availableLanguage: ["Russian"],
-    },
+    ...(hasPhone || hasEmail
+      ? {
+          contactPoint: {
+            "@type": "ContactPoint",
+            contactType: "sales",
+            ...(hasEmail ? { email: contacts.email.trim() } : {}),
+            ...(hasPhone ? { telephone: contacts.phone.trim() } : {}),
+            availableLanguage: ["Russian"],
+          },
+        }
+      : {}),
   };
 }

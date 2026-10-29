@@ -6,11 +6,11 @@ import {
 } from "./publicSite";
 
 describe("findPublicSiteReadinessIssues", () => {
-  it("rejects demo contacts, example host, and missing public assets", () => {
+  it("rejects placeholder contact sentences, example host, and missing public assets", () => {
     expect(
       findPublicSiteReadinessIssues({
-        phone: "+7 (000) 000-00-00",
-        email: "info@bizontires.example",
+        phone: "Контактный номер будет опубликован позже.",
+        email: "Контактный email будет опубликован позже.",
         siteUrl: "https://bizontires.example",
         publicAssets: new Set<string>(),
       }).map((issue) => issue.code),
@@ -39,9 +39,9 @@ describe("findPublicSiteReadinessIssues", () => {
       assertPublicSiteReadiness([
         {
           code: "placeholder_phone",
-          message: "Configure NEXT_PUBLIC_CONTACT_PHONE",
+          message: "Publish a phone number in the CMS site profile",
         },
       ]),
-    ).toThrow("[placeholder_phone] Configure NEXT_PUBLIC_CONTACT_PHONE");
+    ).toThrow("[placeholder_phone] Publish a phone number in the CMS site profile");
   });
 });

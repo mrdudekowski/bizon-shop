@@ -20,7 +20,7 @@ export default async function SiteLayout({
   return (
     <>
       <YandexMetrika />
-      <SiteShell mainMenu={mainMenu} shopMenu={shopMenu} initialFooterContact={contactPage?.footerContact ?? null}>
+      <SiteShell mainMenu={mainMenu} shopMenu={shopMenu} initialSiteProfile={contactPage?.siteProfile ?? null}>
         {children}
       </SiteShell>
     </>
