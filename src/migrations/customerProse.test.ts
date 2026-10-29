@@ -81,4 +81,42 @@ describe("customer prose migration", () => {
       /SELECT 'delivery-section-payment', p\.id, 2, 'Оплата'/,
     );
   });
+
+  it("seeds privacy operator, address, and contact placeholders from shared customer copy", () => {
+    const sql = customerProseMigration.sql;
+    for (const sentence of [
+      CUSTOMER_COPY.privacyOperator,
+      CUSTOMER_COPY.privacyAddress,
+      CUSTOMER_COPY.privacyEmail,
+    ]) {
+      expect(sql).toContain(sentence);
+    }
+  });
+
+  it("only replaces privacy editorial rows while content still matches the 0016 seed", () => {
+    const sql = customerProseMigration.sql;
+    expect(sql).toContain(`AND text = ${sqlLiteral(SEEDED_COPY.privacyFeatureOperator)}`);
+    expect(sql).toMatch(/privacy-feature-1[\s\S]*?AND text =/);
+    expect(sql).toContain(`'privacy-section-3'`);
+    expect(sql).toMatch(
+      new RegExp(
+        `privacy-section-3[\\s\\S]*${SEEDED_COPY.privacySectionEmail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
+      ),
+    );
+    const featureUpdate =
+      sql.match(
+        /UPDATE pages_editorial_features[\s\S]*?privacy-feature-1[\s\S]*?;/,
+      )?.[0] ?? "";
+    expect(featureUpdate).toContain("privacy-feature-1");
+    expect(featureUpdate).toContain(`AND text = ${sqlLiteral(SEEDED_COPY.privacyFeatureOperator)}`);
+    const sectionThreeUpdate =
+      sql.match(
+        /UPDATE pages_editorial_sections[\s\S]*?privacy-section-3[\s\S]*?;/,
+      )?.[0] ?? "";
+    expect(sectionThreeUpdate).toContain(SEEDED_COPY.privacySectionEmail);
+    expect(sectionThreeUpdate).toMatch(/body[\s\S]*privacy@example\.bizon\.ru/);
+    expect(sql).toContain("'privacy-section-1'");
+    expect(sql).toContain("пример юридического адреса");
+    expect(sql).toContain("ООО «БИЗОН ТАЙРС»");
+  });
 });

@@ -19,6 +19,16 @@ const warrantyTermsBody = sqlLiteral(CUSTOMER_COPY.warranty[4]);
 const deliveryShippingBody = sqlLiteral(joinParagraphs(CUSTOMER_COPY.delivery));
 const deliveryPaymentBody = sqlLiteral(joinParagraphs(CUSTOMER_COPY.payment));
 const deliveryReturnsBody = sqlLiteral(joinParagraphs(CUSTOMER_COPY.returns));
+const privacyFeatureText = sqlLiteral(
+  `${CUSTOMER_COPY.privacyOperator} Адрес: ${CUSTOMER_COPY.privacyAddress}`,
+);
+const privacyOperator = sqlLiteral(CUSTOMER_COPY.privacyOperator);
+const privacyAddress = sqlLiteral(CUSTOMER_COPY.privacyAddress);
+const privacyEmail = sqlLiteral(CUSTOMER_COPY.privacyEmail);
+const seededPrivacyOperator = sqlLiteral(SEEDED_COPY.privacyFeatureOperator);
+const seededPrivacyCompany = sqlLiteral("ООО «БИЗОН ТАЙРС»");
+const seededPrivacyAddressExample = sqlLiteral("г. Москва, пример юридического адреса, 1");
+const seededPrivacyEmail = sqlLiteral(SEEDED_COPY.privacySectionEmail);
 
 /**
  * Replaces legacy about/warranty story cards and 0017 shop delivery sections with customer-template prose.
@@ -145,5 +155,41 @@ export const customerProseMigration: Migration = {
       AND p.key = 'shop-delivery-returns'
       AND section.id = 'delivery-section-returns'
       AND section.body = ${sqlLiteral(SEEDED_COPY.deliverySectionReturns)};
+
+    -- privacy policy: replace demo operator, address, and email while 0016 seed markers remain
+    UPDATE pages_editorial_features AS feature
+    SET text = CASE
+      WHEN btrim(COALESCE(feature.text, '')) = ''
+        OR feature.text = ${seededPrivacyOperator}
+        OR feature.text = ${privacyFeatureText}
+      THEN ${privacyFeatureText}
+      ELSE feature.text
+    END
+    FROM pages AS p
+    WHERE feature._parent_id = p.id
+      AND p.key = 'privacy-policy'
+      AND feature.id = 'privacy-feature-1'
+      AND text = ${seededPrivacyOperator};
+
+    UPDATE pages_editorial_sections AS section
+    SET body = REPLACE(
+      REPLACE(section.body, ${seededPrivacyCompany}, ${privacyOperator}),
+      ${seededPrivacyAddressExample},
+      ${privacyAddress}
+    )
+    FROM pages AS p
+    WHERE section._parent_id = p.id
+      AND p.key = 'privacy-policy'
+      AND section.id = 'privacy-section-1'
+      AND section.body LIKE '%' || ${seededPrivacyCompany} || '%'
+      AND section.body LIKE '%пример юридического адреса%';
+
+    UPDATE pages_editorial_sections AS section
+    SET body = REPLACE(section.body, ${seededPrivacyEmail}, ${privacyEmail})
+    FROM pages AS p
+    WHERE section._parent_id = p.id
+      AND p.key = 'privacy-policy'
+      AND section.id = 'privacy-section-3'
+      AND section.body LIKE '%' || ${seededPrivacyEmail} || '%';
   `,
 };
