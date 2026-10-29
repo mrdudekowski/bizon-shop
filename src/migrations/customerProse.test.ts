@@ -104,10 +104,10 @@ describe("customer prose migration", () => {
       )?.[0] ?? "";
     expect(featureUpdate).toContain("privacy-feature-1");
     expect(featureUpdate).toContain(`AND text = ${sqlLiteral(SEEDED_COPY.privacyFeatureOperator)}`);
+    const sectionEditorialUpdates =
+      sql.match(/UPDATE pages_editorial_sections[\s\S]*?;/g) ?? [];
     const sectionThreeUpdate =
-      sql.match(
-        /UPDATE pages_editorial_sections[\s\S]*?'privacy-section-3'[\s\S]*?;/,
-      )?.[0] ?? "";
+      sectionEditorialUpdates.find((block) => block.includes("'privacy-section-3'")) ?? "";
     expect(sectionThreeUpdate.length).toBeGreaterThan(0);
     const sectionThreeWhere = sectionThreeUpdate.split(/\bWHERE\b/i).slice(1).join(" WHERE ");
     expect(sectionThreeWhere).toMatch(/section\.body LIKE/);
