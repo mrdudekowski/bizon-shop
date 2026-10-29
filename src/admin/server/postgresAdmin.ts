@@ -856,6 +856,8 @@ async function mapPage(row: Row): Promise<PageDraft> {
     address: profile.address,
     channels: profile.channels,
     legalSummary: profile.legalSummary,
+    priceNotice: profile.priceNotice,
+    madeToOrderNotice: profile.madeToOrderNotice,
     requisites: profile.requisites,
   };
   return {

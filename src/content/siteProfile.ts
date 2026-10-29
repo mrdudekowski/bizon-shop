@@ -57,23 +57,27 @@ export function siteChannelsAreValid(channels: SiteChannel[]): boolean {
   );
 }
 
-/** Replaces contact fields, messenger channels, legal summary, and all requisite rows in one write. */
+/** Replaces contact fields, messenger channels, legal summary, price and made-to-order notices, and all requisite rows in one write. */
 export async function writeSiteProfileContacts(
   db: SiteProfileDatabase,
-  contacts: Pick<SiteProfile, "phone" | "email" | "address" | "channels" | "legalSummary" | "requisites">,
+  contacts: Pick<
+    SiteProfile,
+    "phone" | "email" | "address" | "channels" | "legalSummary" | "priceNotice" | "madeToOrderNotice" | "requisites"
+  >,
 ): Promise<void> {
   await db.query(
     `INSERT INTO site_profile (id, phone, email, address, channels_note, legal_summary, price_notice, made_to_order_notice)
      VALUES (1, $1, $2, $3, $4, $5, $6, $7)
-     ON CONFLICT (id) DO UPDATE SET phone = EXCLUDED.phone, email = EXCLUDED.email, address = EXCLUDED.address, legal_summary = EXCLUDED.legal_summary`,
+     ON CONFLICT (id) DO UPDATE SET phone = EXCLUDED.phone, email = EXCLUDED.email, address = EXCLUDED.address, legal_summary = EXCLUDED.legal_summary, price_notice = EXCLUDED.price_notice, made_to_order_notice = EXCLUDED.made_to_order_notice`,
     [
       contacts.phone,
       contacts.email,
       contacts.address,
       SITE_PROFILE_DEFAULTS.channelsNote,
       contacts.legalSummary,
-      SITE_PROFILE_DEFAULTS.priceNotice,
-      SITE_PROFILE_DEFAULTS.madeToOrderNotice,
+      // ponytail: a stored draft saved before these fields existed has none; "" keeps the NOT NULL column valid and publishes no notice.
+      contacts.priceNotice ?? "",
+      contacts.madeToOrderNotice ?? "",
     ],
   );
   await db.query(`DELETE FROM site_profile_channels`);

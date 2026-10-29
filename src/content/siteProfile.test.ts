@@ -47,6 +47,8 @@ describe("site profile contact write", () => {
     email: "sales@bizon.ru",
     address: "Хабаровск",
     legalSummary: "Реквизиты оператора.",
+    priceNotice: "Цены на сайте ориентировочные.",
+    madeToOrderNotice: "",
     requisites: [
       { id: "inn", label: "ИНН", value: "000" },
       { id: "kpp", label: "КПП", value: "111" },
@@ -64,7 +66,17 @@ describe("site profile contact write", () => {
     expect(calls[0].sql).toContain("INSERT INTO site_profile");
     expect(calls[0].sql).toContain("ON CONFLICT (id) DO UPDATE");
     expect(calls[0].sql).toContain("legal_summary = EXCLUDED.legal_summary");
-    expect(calls[0].params.slice(0, 5)).toEqual(["+7 (421) 200-00-00", "sales@bizon.ru", "Хабаровск", CUSTOMER_COPY.channelsNote, "Реквизиты оператора."]);
+    expect(calls[0].sql).toContain("price_notice = EXCLUDED.price_notice");
+    expect(calls[0].sql).toContain("made_to_order_notice = EXCLUDED.made_to_order_notice");
+    expect(calls[0].params).toEqual([
+      "+7 (421) 200-00-00",
+      "sales@bizon.ru",
+      "Хабаровск",
+      CUSTOMER_COPY.channelsNote,
+      "Реквизиты оператора.",
+      "Цены на сайте ориентировочные.",
+      "",
+    ]);
     expect(calls[1].sql).toContain("DELETE FROM site_profile_channels");
     expect(calls.slice(2, 4).map((call) => call.params)).toEqual([
       ["telegram", 0, "Telegram", "https://t.me/bizon", true],

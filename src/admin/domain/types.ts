@@ -360,6 +360,8 @@ export type SiteProfileDraft = {
   address: string;
   channels: { id: string; label: string; href: string; enabled: boolean }[];
   legalSummary: string;
+  priceNotice: string;
+  madeToOrderNotice: string;
   requisites: { id: string; label: string; value: string }[];
 };
 
