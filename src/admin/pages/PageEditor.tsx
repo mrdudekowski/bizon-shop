@@ -390,6 +390,43 @@ function HomeFields({
         value={draft.shopCampaign.image}
         onChange={(image) => onChange({ ...draft, shopCampaign: { ...draft.shopCampaign, image: image ?? null } })}
       />
+      {(draft.shopCampaign.frames ?? []).map((frame, index) => (
+        <div key={`${frame.assetId}-${index}`}>
+          <PlacementFields
+            label={`Кадр ${index + 1}`}
+            value={frame}
+            onChange={(image) => {
+              const frames = (draft.shopCampaign.frames ?? []).slice();
+              if (!image) frames.splice(index, 1);
+              else frames[index] = image;
+              onChange({ ...draft, shopCampaign: { ...draft.shopCampaign, frames } });
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => onChange({
+              ...draft,
+              shopCampaign: {
+                ...draft.shopCampaign,
+                frames: (draft.shopCampaign.frames ?? []).filter((_, frameIndex) => frameIndex !== index),
+              },
+            })}
+          >
+            Убрать кадр
+          </button>
+        </div>
+      ))}
+      <PlacementFields
+        label="Следующий кадр"
+        value={null}
+        onChange={(image) => {
+          if (!image) return;
+          onChange({
+            ...draft,
+            shopCampaign: { ...draft.shopCampaign, frames: [...(draft.shopCampaign.frames ?? []), image] },
+          });
+        }}
+      />
       <CtaFields
         label="Кнопка кампании"
         value={draft.shopCampaign.cta}

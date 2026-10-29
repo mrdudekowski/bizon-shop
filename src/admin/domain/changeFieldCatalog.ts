@@ -254,7 +254,7 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
       branding: { tab: "Брендинг", children: { ...SECTION_COPY, cta: { field: "Кнопка брендирования", children: CTA }, beforeCaption: { field: "Подпись сравнения до" }, afterCaption: { field: "Подпись сравнения после" }, beforeImage: { field: "Фото до брендирования", children: IMAGE_CHILDREN }, afterImage: { field: "Фото после брендирования", children: IMAGE_CHILDREN } } },
       shopCampaign: {
         tab: "Кампания магазина",
-        children: { ...SECTION_COPY, image: { field: "Картинка кампании", children: IMAGE_CHILDREN }, cta: { field: "Кнопка кампании", children: CTA } },
+        children: { ...SECTION_COPY, image: { field: "Картинка кампании", children: IMAGE_CHILDREN }, frames: { field: "Кадры кампании", children: IMAGE_CHILDREN }, cta: { field: "Кнопка кампании", children: CTA } },
       },
       wheelsIntro: { tab: "Ввод дисков", children: { ...SECTION_COPY, kicker: { field: "Kicker" } } },
       orderSteps: {
