@@ -16,7 +16,7 @@ export function LegalRequisites({ siteProfile }: { siteProfile: SiteProfile }) {
       {siteProfile.requisites.length > 0 ? (
         <dl className={styles.list}>
           {siteProfile.requisites.map((requisite) => (
-            <div key={requisite.id}>
+            <div key={requisite.id} className={styles.pair}>
               <dt className={styles.term}>{requisite.label}</dt>
               <dd className={styles.value}>{requisite.value}</dd>
             </div>

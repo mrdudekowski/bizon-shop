@@ -33,6 +33,10 @@
   margin: 0;
 }
 
+.pair {
+  display: contents;
+}
+
 .term,
 .value {
   min-width: 0;
