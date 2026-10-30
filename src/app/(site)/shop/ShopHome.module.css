@@ -114,7 +114,10 @@
 
 .modelsIntro {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
   max-width: 900px;
+  min-width: 0;
   gap: 18px;
 }
 
@@ -140,17 +143,12 @@
 
 .modelsIntro h2 { max-width: 12ch; font-size: clamp(2.75rem, 5.2vw, 5.5rem); }
 
-.modelsIntro > p:last-child,
 .vehiclesHead > div > p:last-child {
   max-width: 720px;
   margin: 0;
   color: var(--color-text-subtle);
   font-size: clamp(1.05rem, 1.5vw, 1.35rem);
   line-height: var(--leading-body);
-}
-
-.modelsIntro > p:last-child {
-  color: var(--color-on-dark-muted);
 }
 
 .modelGrid {

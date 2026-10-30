@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { WheelOrderPanel } from "@/components/catalog/WheelOrderPanel";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
-import { LexicalContent } from "@/components/content/LexicalContent";
-import { ResponsiveDisclosure } from "@/components/content/ResponsiveDisclosure";
 import { CatalogProductGallery } from "@/components/catalog/CatalogProductGallery";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { WheelVariantsTable } from "@/components/catalog/WheelVariantsTable";
@@ -88,13 +86,6 @@ export function WheelModelStage({
 
           <div className={styles.productPanel}>
             <p className={styles.eyebrow}>{model.series || wheelType.name}</p>
-            <ResponsiveDisclosure summary="Подробнее о диске" className={styles.productNarrative}>
-              <LexicalContent data={model.descriptionLong || model.descriptionShort} />
-            </ResponsiveDisclosure>
-            <p className={styles.productDirections}>
-              Укажите параметры диска. Специалист проверит совместимость и сообщит стоимость
-              до оформления заявки.
-            </p>
             <dl className={styles.productFacts}>
               <div>
                 <dt>Конструкция</dt>

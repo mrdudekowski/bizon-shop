@@ -38,5 +38,24 @@ describe("ShopHomeClient wheels section", () => {
 
     expect(markup).not.toContain("data-made-to-order-notice");
     expect(occurrences(markup, MADE_TO_ORDER_CHIP)).toBe(2);
+    expect(markup).toContain("Выберите свой дизайн");
+    expect(markup).not.toContain("изготавливаются под заказ. Выберите модель");
+    expect(markup).toContain("Получите подтверждение");
+  });
+
+  it("leaves a stored wheels intro lead off the page", () => {
+    const defaults = getPageDefaults("shop-home");
+    const markup = renderToStaticMarkup(
+      createElement(ShopHomeClient, {
+        initialPage: {
+          ...defaults,
+          wheelsIntro: { ...defaults.wheelsIntro, lead: "Кованые диски BIZON изготавливаются под заказ." },
+        },
+        initialModels: [wheelModel],
+        initialCategories: [],
+      }),
+    );
+
+    expect(markup).not.toContain("изготавливаются под заказ");
   });
 });

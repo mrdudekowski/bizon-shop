@@ -95,7 +95,6 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
           <div className={styles.modelsIntro}>
             <p className={styles.collectionKicker}>{page.wheelsIntro.kicker}</p>
             <h2 id="shop-title">{page.wheelsIntro.title}</h2>
-            <p>{page.wheelsIntro.lead}</p>
           </div>
           <div ref={modelsTrackRef} className={styles.modelGrid}>
             {homeModels.map((model) => (

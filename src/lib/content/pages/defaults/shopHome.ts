@@ -21,7 +21,7 @@ export const SHOP_HOME_PAGE_DEFAULTS: ShopHomePageContent = {
     kicker: "BIZON Forged",
     eyebrow: "",
     title: "Выберите свой дизайн",
-    lead: "Кованые диски BIZON изготавливаются под заказ. Выберите модель — специалист проверит совместимость с вашим автомобилем.",
+    lead: "",
   },
   orderSteps: SHOP_ORDER_STEPS.map((step) => ({
     title: step.title,
