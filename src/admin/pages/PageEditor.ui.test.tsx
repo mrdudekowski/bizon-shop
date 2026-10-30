@@ -209,9 +209,13 @@ describe("PageEditor conflict recovery", () => {
   it("keeps the carousel editor out of the general Shop page editor", async () => {
     const shopRecord = { ...pageRecord, id: "shop-home", draft: shopHomeDraft, savedDraft: shopHomeDraft, publishedSnapshot: shopHomeDraft };
     mockState.client.getPage = vi.fn().mockResolvedValue(shopRecord);
+    const user = userEvent.setup();
     render(createElement(PageEditor, { pageKey: "shop-home" }));
 
     expect(await screen.findByRole("heading", { name: "Магазин" })).toBeTruthy();
+    await user.click(screen.getByRole("tab", { name: "Ввод дисков" }));
+    const wheelsIntro = screen.getByRole("heading", { name: "Ввод дисков" }).closest("section");
+    expect(wheelsIntro?.textContent).not.toContain("Лид");
     expect(screen.queryByRole("heading", { name: "Карусель главной" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Карусель категорий на главной" })).toBeNull();
   });

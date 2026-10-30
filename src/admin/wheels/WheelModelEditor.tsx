@@ -193,13 +193,6 @@ export function WheelModelEditor({ id }: { id: string }) {
             onChange={(event) => patch({ descriptionShort: event.target.value })}
           />
         </label>
-        <label className={styles.field}>
-          Полное описание
-          <textarea
-            value={draft.descriptionLong}
-            onChange={(event) => patch({ descriptionLong: event.target.value })}
-          />
-        </label>
         <label className={styles.check}>
           <input
             type="checkbox"

@@ -47,10 +47,12 @@ function SectionFields({
   value,
   onChange,
   title,
+  includeLead = true,
 }: {
   value: PageSectionCopy;
   onChange: (next: PageSectionCopy) => void;
   title: string;
+  includeLead?: boolean;
 }) {
   return (
     <section className={styles.section}>
@@ -66,10 +68,12 @@ function SectionFields({
         Заголовок
         <input value={value.title} onChange={(event) => onChange({ ...value, title: event.target.value })} />
       </label>
-      <label>
-        Лид
-        <textarea value={value.lead} onChange={(event) => onChange({ ...value, lead: event.target.value })} />
-      </label>
+      {includeLead ? (
+        <label>
+          Лид
+          <textarea value={value.lead} onChange={(event) => onChange({ ...value, lead: event.target.value })} />
+        </label>
+      ) : null}
     </section>
   );
 }
@@ -608,6 +612,7 @@ function ShopHomeFields({
       />
       <SectionFields
         title="Ввод дисков"
+        includeLead={false}
         value={draft.wheelsIntro}
         onChange={(wheelsIntro) => onChange({ ...draft, wheelsIntro: { ...draft.wheelsIntro, ...wheelsIntro } })}
       />
