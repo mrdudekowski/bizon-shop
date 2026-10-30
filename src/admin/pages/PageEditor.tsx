@@ -30,6 +30,9 @@ import { DocumentFields } from "@/admin/media/DocumentFields";
 
 import { editorialSaveBlockReason } from "./editorialSaveBlock";
 import { PAGE_LABELS } from "./pageLabels";
+import { TextPageCanvas } from "./TextPageCanvas";
+import { PAGE_IMAGE_FRAMES } from "./pageImageFrame";
+import { dropClearedCanvasBlocks, isTextCanvasPage } from "./textPageDraft";
 import styles from "./PageEditor.module.css";
 
 const PARAGRAPH_HINT = "Пустая строка начинает новый абзац.";
@@ -176,6 +179,7 @@ function StubFields({
       />
       <PlacementFields
         label="Картинка шапки"
+        frame={PAGE_IMAGE_FRAMES.pageHero}
         value={draft.hero.image}
         onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image: image ?? null } })}
       />
@@ -389,7 +393,7 @@ function StubFields({
             <fieldset className={styles.row}>
               <label>Заголовок<input value={draft.proof.title} onChange={(event) => onChange({ ...draft, proof: { ...draft.proof!, title: event.target.value } })} /></label>
               <label>Текст<textarea value={draft.proof.text} onChange={(event) => onChange({ ...draft, proof: { ...draft.proof!, text: event.target.value } })} /></label>
-              <PlacementFields label="Изображение подтверждения" value={draft.proof.image} onChange={(image) => onChange({ ...draft, proof: { ...draft.proof!, image: image ?? null } })} />
+              <PlacementFields label="Изображение подтверждения" frame={PAGE_IMAGE_FRAMES.proof} value={draft.proof.image} onChange={(image) => onChange({ ...draft, proof: { ...draft.proof!, image: image ?? null } })} />
               <button type="button" onClick={() => onChange({ ...draft, proof: null })}>Убрать подтверждение</button>
             </fieldset>
           ) : <button type="button" onClick={() => onChange({ ...draft, proof: { title: "", text: "", image: null } })}>Добавить подтверждение</button>}
@@ -454,6 +458,7 @@ function HomeFields({
       />
       <PlacementFields
         label="Фон hero"
+        frame={PAGE_IMAGE_FRAMES.homeHero}
         value={draft.hero.image}
         onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image: image ?? null } })}
       />
@@ -493,6 +498,7 @@ function HomeFields({
       />
       <PlacementFields
         label="Изображение экспертизы"
+        frame={PAGE_IMAGE_FRAMES.expertise}
         value={draft.expertise.image}
         onChange={(image) => onChange({ ...draft, expertise: { ...draft.expertise, image: image ?? null } })}
       />
@@ -521,11 +527,13 @@ function HomeFields({
       </label>
       <PlacementFields
         label="Фото до брендирования"
+        frame={PAGE_IMAGE_FRAMES.branding}
         value={draft.branding.beforeImage}
         onChange={(beforeImage) => onChange({ ...draft, branding: { ...draft.branding, beforeImage: beforeImage ?? null } })}
       />
       <PlacementFields
         label="Фото после брендирования"
+        frame={PAGE_IMAGE_FRAMES.branding}
         value={draft.branding.afterImage}
         onChange={(afterImage) => onChange({ ...draft, branding: { ...draft.branding, afterImage: afterImage ?? null } })}
       />
@@ -536,6 +544,7 @@ function HomeFields({
       />
       <PlacementFields
         label="Картинка кампании"
+        frame={PAGE_IMAGE_FRAMES.shopCampaign}
         value={draft.shopCampaign.image}
         onChange={(image) => onChange({ ...draft, shopCampaign: { ...draft.shopCampaign, image: image ?? null } })}
       />
@@ -543,6 +552,7 @@ function HomeFields({
         <div key={`${frame.assetId}-${index}`}>
           <PlacementFields
             label={`Кадр ${index + 1}`}
+            frame={PAGE_IMAGE_FRAMES.shopCampaign}
             value={frame}
             onChange={(image) => {
               const frames = (draft.shopCampaign.frames ?? []).slice();
@@ -567,6 +577,7 @@ function HomeFields({
       ))}
       <PlacementFields
         label="Следующий кадр"
+        frame={PAGE_IMAGE_FRAMES.shopCampaign}
         value={null}
         onChange={(image) => {
           if (!image) return;
@@ -602,6 +613,7 @@ function ShopHomeFields({
       />
       <PlacementFields
         label="Картинка hero"
+        frame={PAGE_IMAGE_FRAMES.shopHero}
         value={draft.hero.image}
         onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image: image ?? null } })}
       />
@@ -713,6 +725,7 @@ function ShopHomeFields({
             </label>
             <PlacementFields
               label="Картинка"
+              frame={PAGE_IMAGE_FRAMES.vehicle}
               value={slide.image}
               onChange={(image) => {
                 const slides = draft.vehicles.slides.slice();
@@ -786,14 +799,22 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
   }
 
   async function onSave() {
-    if (saveBlockReason) {
-      setMessage(saveBlockReason);
+    const payload = draft.id === "home" || draft.id === "shop-home" || !isTextCanvasPage(draft.id)
+      ? draft
+      : dropClearedCanvasBlocks(draft);
+    const reason = editorialSaveBlockReason(payload.id, {
+      features: "features" in payload ? payload.features : undefined,
+      sections: "sections" in payload ? payload.sections : undefined,
+    });
+    if (reason) {
+      if (payload !== draft) setDraft(payload);
+      setMessage(reason);
       return;
     }
     setSaving(true);
     setMessage("");
     try {
-      setRecord(await browserAdminClient().savePage(pageKey, draft));
+      setRecord(await browserAdminClient().savePage(pageKey, payload));
       setMessage(DOCUMENT_STATUS.saved);
     } catch (error) {
       setMessage(actionErrorText(error, "Не удалось сохранить"));
@@ -830,22 +851,38 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
       <Link className="backLink" href="/pages">← Назад к страницам</Link>
       <h1>{PAGE_LABELS[pageKey]}</h1>
       {draft.id === "home" || draft.id === "shop-home" ? <BlockNav /> : null}
-      <section className={styles.section}>
-        <h2>Для поиска</h2>
-        <label>
-          Заголовок страницы в поиске
-          <input value={draft.seoTitle} onChange={(event) => setDraft({ ...draft, seoTitle: event.target.value })} />
-        </label>
-        <label>
-          Описание страницы в поиске
-          <textarea value={draft.seoDescription} onChange={(event) => setDraft({ ...draft, seoDescription: event.target.value })} />
-        </label>
-      </section>
+      {isTextCanvasPage(draft.id) ? null : (
+        <section className={styles.section}>
+          <h2>Для поиска</h2>
+          <label>
+            Заголовок страницы в поиске
+            <input value={draft.seoTitle} onChange={(event) => setDraft({ ...draft, seoTitle: event.target.value })} />
+          </label>
+          <label>
+            Описание страницы в поиске
+            <textarea value={draft.seoDescription} onChange={(event) => setDraft({ ...draft, seoDescription: event.target.value })} />
+          </label>
+        </section>
+      )}
 
       {draft.id === "home" ? (
         <HomeFields draft={draft} onChange={setDraft} />
       ) : draft.id === "shop-home" ? (
         <ShopHomeFields draft={draft} onChange={setDraft} />
+      ) : isTextCanvasPage(draft.id) ? (
+        <>
+          <TextPageCanvas
+            draft={draft}
+            onChange={setDraft}
+            canPublish={session.role === "admin"}
+            publishing={publishing}
+            dirty={dirty}
+            onPublish={() => void onPublish()}
+          />
+          {isLegalPage(draft.id) ? (
+            <DocumentFields value={draft.documents} onChange={(documents) => setDraft({ ...draft, documents })} />
+          ) : null}
+        </>
       ) : (
         <StubFields draft={draft} onChange={setDraft} />
       )}
@@ -863,9 +900,11 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
         onSave={onSave}
         adminActions={
           <>
-            <button type="button" disabled={dirty || publishing} onClick={() => void onPublish()}>
-              {publishing ? "Публикуем…" : "Опубликовать"}
-            </button>
+            {isTextCanvasPage(draft.id) ? null : (
+              <button type="button" disabled={dirty || publishing} onClick={() => void onPublish()}>
+                {publishing ? "Публикуем…" : "Опубликовать"}
+              </button>
+            )}
             <button type="button" onClick={() => resetDialogRef.current?.showModal()}>
               Сбросить опубликованный текст
             </button>

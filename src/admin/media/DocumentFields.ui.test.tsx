@@ -18,7 +18,12 @@ describe("DocumentFields", () => {
     const user = userEvent.setup();
     render(<DocumentFields value={[]} onChange={onChange} />);
 
-    await user.upload(screen.getByLabelText("Загрузить PDF"), new File(["pdf"], "terms.pdf", { type: "application/pdf" }));
+    expect(screen.queryByLabelText("Загрузить PDF")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Выбрать PDF из галереи" }));
+    const input = await screen.findByLabelText("Файл для библиотеки") as HTMLInputElement;
+    expect(screen.getByRole("button", { name: "Загрузить" })).toBeTruthy();
+    expect(input.accept).toBe(".pdf,application/pdf");
+    await user.upload(input, new File(["pdf"], "terms.pdf", { type: "application/pdf" }));
 
     expect(onChange).toHaveBeenCalledWith([{ assetId: "pdf-1", title: "terms.pdf" }]);
   });

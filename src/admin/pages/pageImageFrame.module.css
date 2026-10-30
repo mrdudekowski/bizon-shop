@@ -1,0 +1,90 @@
+/* Ratios are the guest frame at this preview width, not a desktop pixel height.
+   The host is the container: a query on the shot itself cannot see its own size. */
+
+.host {
+  container-type: inline-size;
+  container-name: page-frame;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.shot {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  min-width: 0;
+  object-fit: cover;
+  object-position: var(--frame-position, center);
+}
+
+.shot .empty {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+/* MainHero: min-height min(100svh, 68rem), cover. Focal wins over CSS "center right". */
+.shot[data-page-frame="home-hero"] { aspect-ratio: 9 / 16; }
+
+/* EditorialHighlights: card clamp(30rem, 80svh, 36rem) below 1024px, else clamp(32rem, 42vw, 38rem). Focal wins. */
+.shot[data-page-frame="expertise"] { aspect-ratio: 4 / 3; }
+
+/* BrandingCompare: under 767px height min(68vw, 20rem); from 768px min(62vw, 24rem); from 1024px the feature card. Focal wins. */
+.shot[data-page-frame="branding"] { aspect-ratio: 4 / 3; }
+
+/* ShopCampaign: under 768px min(78svh, 40rem); wider min(88svh, 52rem). Focal wins over CSS center. */
+.shot[data-page-frame="shop-campaign"] { aspect-ratio: 2 / 3; }
+
+/* Shop home hero has no focal. Under 800px the site uses left center, otherwise center. */
+.shot[data-page-frame="shop-hero"] { aspect-ratio: 9 / 16; }
+.shot[data-page-frame="shop-hero"] .image { object-position: left center; }
+
+/* Vehicle cards: under 800px min(86vw, 390px) by clamp(300px, 72vw, 420px). Cover, no focal. */
+.shot[data-page-frame="vehicle"] { aspect-ratio: 13 / 14; }
+
+/* PageHero .media is full width under 900px (height at least 16rem) and the right column above that. Focal wins. */
+.shot[data-page-frame="page-hero"] { aspect-ratio: 5 / 2; }
+
+/* ServicePage .proofMedia is one column under 768px and half the row above it. Focal wins. */
+.shot[data-page-frame="proof"] { aspect-ratio: 5 / 4; }
+
+@container page-frame (min-width: 768px) {
+  .shot[data-page-frame="branding"] { aspect-ratio: 2 / 1; }
+  .shot[data-page-frame="shop-campaign"] { aspect-ratio: 16 / 9; }
+  .shot[data-page-frame="proof"] { aspect-ratio: 4 / 3; }
+}
+
+@container page-frame (min-width: 801px) {
+  .shot[data-page-frame="home-hero"] { aspect-ratio: 16 / 10; }
+  .shot[data-page-frame="shop-hero"] { aspect-ratio: 16 / 10; }
+  .shot[data-page-frame="shop-hero"] .image { object-position: center; }
+  .shot[data-page-frame="vehicle"] { aspect-ratio: 545 / 552; }
+}
+
+@container page-frame (min-width: 900px) {
+  .shot[data-page-frame="page-hero"] { aspect-ratio: 5 / 4; }
+}
+
+@container page-frame (min-width: 1024px) {
+  .shot[data-page-frame="expertise"] { aspect-ratio: 23 / 10; }
+  .shot[data-page-frame="branding"] { aspect-ratio: 23 / 10; }
+}

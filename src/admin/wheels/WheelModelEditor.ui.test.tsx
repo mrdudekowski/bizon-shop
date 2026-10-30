@@ -43,7 +43,8 @@ describe("wheel model variant specification fields", () => {
     render(createElement(WheelModelEditor, { id: "model-1" }));
     expect(await screen.findByLabelText("Короткое описание")).toBeTruthy();
     expect(screen.queryByLabelText("Полное описание")).toBeNull();
-    await user.upload(screen.getByLabelText("Загрузить PDF"), new File(["pdf"], "wheel-passport.pdf", { type: "application/pdf" }));
+    await user.click(screen.getByRole("button", { name: "Выбрать PDF из галереи" }));
+    await user.upload(await screen.findByLabelText("Файл для библиотеки"), new File(["pdf"], "wheel-passport.pdf", { type: "application/pdf" }));
     await user.click(screen.getByRole("button", { name: "Сохранить" }));
 
     expect(mocks.client.saveWheelModel).toHaveBeenCalledWith("model-1", expect.objectContaining({

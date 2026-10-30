@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createElement } from "react";
@@ -8,6 +9,7 @@ const mockState = vi.hoisted(() => ({ client: {} as Record<string, ReturnType<ty
 vi.mock("@/admin/client/localStore", () => ({ browserAdminClient: () => mockState.client }));
 
 import { PlacementFields, ProductPhotoFields } from "./PlacementFields";
+import { PAGE_IMAGE_FRAMES } from "@/admin/pages/pageImageFrame";
 
 const originalPlacement = {
   assetId: "asset-original",
@@ -34,11 +36,16 @@ afterEach(() => {
 });
 
 describe("PlacementFields upload flow", () => {
-  it("limits image file selection to formats supported by the backend", () => {
+  it("limits image file selection to formats supported by the backend", async () => {
     mockState.client = { listAssets: vi.fn().mockResolvedValue([]) };
+    const user = userEvent.setup();
     render(createElement(PlacementFields, { label: "Фото", value: undefined, onChange: vi.fn(), showFocus: false }));
-    const input = screen.getByLabelText("Фото: файл") as HTMLInputElement;
-    expect(input.accept).toBe(".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp");
+    expect(screen.queryByText("Загрузить фото")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Выбрать из галереи" }));
+    const input = await screen.findByLabelText("Файл для библиотеки") as HTMLInputElement;
+    expect(screen.getByRole("button", { name: "Загрузить" })).toBeTruthy();
+    expect(input.accept).toContain(".jpg,.jpeg,.png,.webp");
+    expect(input.accept).not.toContain("application/pdf");
   });
 
   it("selects an unused library image and preserves placement settings", async () => {
@@ -84,7 +91,8 @@ describe("PlacementFields upload flow", () => {
     const user = userEvent.setup();
     render(createElement(PlacementFields, { label: "Фото главной", value: undefined, onChange, showFocus: false }));
 
-    await user.upload(screen.getByLabelText("Фото главной: файл"), new File(["image"], "hero.png", { type: "image/png" }));
+    await user.click(screen.getByRole("button", { name: "Выбрать из галереи" }));
+    await user.upload(await screen.findByLabelText("Файл для библиотеки"), new File(["image"], "hero.png", { type: "image/png" }));
     expect(screen.getByText("Загружаем…")).toBeTruthy();
     expect(createAsset).toHaveBeenCalledWith(expect.objectContaining({ name: "hero.png", mimeType: "image/png" }));
 
@@ -102,9 +110,7 @@ describe("PlacementFields upload flow", () => {
     render(createElement(PlacementFields, { label: "Фото главной", value: originalPlacement, onChange, showFocus: false }));
 
     await screen.findByRole("img", { name: "Фото" });
-    const fileInput = await screen.findByLabelText("Фото главной: файл") as HTMLInputElement;
-    await user.upload(fileInput, new File(["image"], "new.png", { type: "image/png" }));
-    expect(fileInput.files?.length).toBe(0);
+    await user.upload(screen.getByLabelText("Фото главной: файл"), new File(["image"], "new.png", { type: "image/png" }));
     expect(replaceAsset).toHaveBeenCalledWith("asset-original", expect.objectContaining({ name: "new.png", mimeType: "image/png" }));
     expect(await screen.findByText("Новое фото появится на сайте после публикации.")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Отменить замену" }));
@@ -118,7 +124,8 @@ describe("PlacementFields upload flow", () => {
     const user = userEvent.setup();
     render(createElement(PlacementFields, { label: "Фото главной", value: undefined, onChange: vi.fn(), showFocus: false }));
 
-    await user.upload(screen.getByLabelText("Фото главной: файл"), new File(["image"], "broken.png", { type: "image/png" }));
+    await user.click(screen.getByRole("button", { name: "Выбрать из галереи" }));
+    await user.upload(await screen.findByLabelText("Файл для библиотеки"), new File(["image"], "broken.png", { type: "image/png" }));
 
     expect(await screen.findByRole("alert")).toBeTruthy();
   });
@@ -132,7 +139,9 @@ describe("PlacementFields upload flow", () => {
     const user = userEvent.setup();
     render(createElement(ProductPhotoFields, { cover: originalPlacement, gallery: [], onCoverChange: vi.fn(), onGalleryChange }));
 
-    const input = await screen.findByLabelText("Фотографии товара: файлы") as HTMLInputElement;
+    await screen.findByRole("img", { name: "Фото" });
+    await user.click(screen.getByRole("button", { name: "Выбрать фото из галереи" }));
+    const input = await screen.findByLabelText("Файл для библиотеки") as HTMLInputElement;
     expect(input.accept).toBe(".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp");
     await user.upload(input, new File(["image"], "gallery.png", { type: "image/png" }));
 
@@ -156,5 +165,39 @@ describe("PlacementFields upload flow", () => {
     expect(screen.queryByText("cover.png")).toBeNull();
     await user.click(screen.getByRole("button", { name: "Выбрать spare.png" }));
     expect(onGalleryChange).toHaveBeenCalledWith([expect.objectContaining({ assetId: "asset-spare" })]);
+  });
+
+  it("crops a page preview like the guest frame and leaves the product square alone", async () => {
+    const css = readFileSync("src/admin/pages/pageImageFrame.module.css", "utf8");
+    const productCss = readFileSync("src/admin/media/PlacementFields.module.css", "utf8");
+    expect(css).toMatch(/object-fit:\s*cover/);
+    expect(css).toMatch(/data-page-frame="page-hero"\]\s*\{\s*aspect-ratio:\s*5\s*\/\s*2/);
+    expect(css).not.toMatch(/data-page-frame="page-hero"\]\s*\{\s*aspect-ratio:\s*1\s*\/\s*1/);
+    expect(css).toMatch(/data-page-frame="shop-hero"\] \.image\s*\{\s*object-position:\s*left center/);
+    expect(productCss).toMatch(/\.previewShot\s*\{[^}]*aspect-ratio:\s*1\s*\/\s*1/);
+
+    mockState.client = {
+      listAssets: vi.fn().mockResolvedValue([
+        { id: "asset-original", name: "hero.png", mimeType: "image/png", dataUrl: "/media/hero.png", usedBy: [] },
+      ]),
+    };
+    const { rerender } = render(createElement(PlacementFields, {
+      label: "Картинка шапки",
+      frame: PAGE_IMAGE_FRAMES.pageHero,
+      value: { ...originalPlacement, focalX: 0.2, focalY: 0.8 },
+      onChange: vi.fn(),
+    }));
+    const pageShot = await screen.findByLabelText("Предпросмотр фото и точки фокуса");
+    expect(pageShot.getAttribute("data-page-frame")).toBe("page-hero");
+    expect(pageShot.querySelector("img")?.style.getPropertyValue("--frame-position")).toBe("20% 80%");
+    expect(screen.getByRole("button", { name: /Точка фокуса/ })).toBeTruthy();
+
+    rerender(createElement(PlacementFields, {
+      label: "Фото",
+      value: originalPlacement,
+      onChange: vi.fn(),
+    }));
+    const productShot = await screen.findByLabelText("Предпросмотр фото и точки фокуса");
+    expect(productShot.hasAttribute("data-page-frame")).toBe(false);
   });
 });

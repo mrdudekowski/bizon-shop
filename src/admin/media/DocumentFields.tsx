@@ -1,13 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import type { DocumentLink } from "@/admin/domain/types";
-import { browserAdminClient } from "@/admin/client/localStore";
 import { MediaPicker } from "./MediaPicker";
-import placementStyles from "./PlacementFields.module.css";
 import styles from "./DocumentFields.module.css";
-import { mediaMimeFromFile } from "./mediaMime";
-import { uploadErrorText } from "./uploadError";
 
 type Props = {
   value: DocumentLink[];
@@ -25,27 +20,6 @@ function moveDocument(documents: DocumentLink[], index: number, delta: number): 
 }
 
 export function DocumentFields({ value, onChange, label = "Документы" }: Props) {
-  const [error, setError] = useState("");
-  const [uploading, setUploading] = useState(false);
-
-  async function upload(file?: File) {
-    if (!file) return;
-    setError("");
-    setUploading(true);
-    try {
-      const asset = await browserAdminClient().createAsset({
-        name: file.name,
-        mimeType: mediaMimeFromFile(file),
-        body: file,
-      });
-      onChange([...value, { assetId: asset.id, title: file.name }]);
-    } catch (cause) {
-      setError(uploadErrorText(cause));
-    } finally {
-      setUploading(false);
-    }
-  }
-
   return (
     <section>
       <h2>{label}</h2>
@@ -68,19 +42,6 @@ export function DocumentFields({ value, onChange, label = "Документы" }
         </div>
       ))}
       <div className={styles.actions}>
-        <label className={placementStyles.filePick}>
-          {uploading ? "Загружаем PDF…" : "Загрузить PDF"}
-          <input
-            aria-label="Загрузить PDF"
-            type="file"
-            accept=".pdf,application/pdf"
-            disabled={uploading}
-            onChange={(event) => {
-              void upload(event.target.files?.[0]);
-              event.target.value = "";
-            }}
-          />
-        </label>
         <MediaPicker
           buttonLabel="Выбрать PDF из галереи"
           pickerTitle="Выбрать PDF-документ"
@@ -88,11 +49,9 @@ export function DocumentFields({ value, onChange, label = "Документы" }
           emptyMessage="Неиспользуемых PDF нет. Можно показать используемые или загрузить новый файл."
           filterMimeTypes={["application/pdf"]}
           excludeIds={value.map((document) => document.assetId)}
-          disabled={uploading}
           onSelect={(asset) => onChange([...value, { assetId: asset.id, title: asset.name }])}
         />
       </div>
-      {error ? <p role="alert">{error}</p> : null}
     </section>
   );
 }

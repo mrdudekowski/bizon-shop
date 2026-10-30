@@ -5,21 +5,23 @@ import { resolveMediaPreviewUrl } from "@/admin/domain/catalogPreviewUrl";
 import { browserAdminClient } from "@/admin/client/localStore";
 import { MediaPicker } from "./MediaPicker";
 import { uploadErrorText } from "./uploadError";
+import { AdminClientError } from "@/admin/client/errors";
 import { mediaMimeFromFile } from "./mediaMime";
+import { IMAGE_UPLOAD_TYPES, acceptAttribute, uploadLibraryFile } from "./uploadLibraryFile";
+import { focalObjectPosition, type PageImageFrame } from "@/admin/pages/pageImageFrame";
+import frameStyles from "@/admin/pages/pageImageFrame.module.css";
 import styles from "./PlacementFields.module.css";
 function emptyPlacement(assetId: string): ImagePlacement { return { assetId, alt: "", focalX: .5, focalY: .5, crop: { x: 0, y: 0, width: 1, height: 1 } }; }
 function clamp(value: number) { return Math.min(1, Math.max(0, value)); }
 async function uploadImageFile(file: File, current?: ImagePlacement): Promise<ImagePlacement> {
-  const upload = {
-    name: file.name,
-    mimeType: mediaMimeFromFile(file),
-    body: file,
-  };
+  const mimeType = mediaMimeFromFile(file);
+  if (!(IMAGE_UPLOAD_TYPES as readonly string[]).includes(mimeType)) throw new AdminClientError("publish_blocked");
+  const upload = { name: file.name, mimeType, body: file };
   if (current) {
     const replacement = await browserAdminClient().replaceAsset(current.assetId, upload);
     return { ...current, replacementAssetId: replacement.replacementAssetId };
   }
-  const asset = await browserAdminClient().createAsset(upload);
+  const asset = await uploadLibraryFile(file, IMAGE_UPLOAD_TYPES);
   return emptyPlacement(asset.id);
 }
 function fitCmsPreviewToViewport() {
@@ -40,13 +42,15 @@ type Props = {
   previewSurface?: "default" | "dark";
   uploadMode?: "replace" | "new-asset";
   showFocus?: boolean;
+  /** Guest crop. Absent on product, tire, wheel, and file editors, which stay square. */
+  frame?: PageImageFrame;
 };
-export function PlacementFields({ value, onChange, label = "Фото", thumbs, previewSrc, previewSurface = "default", uploadMode = "replace", showFocus = true }: Props) {
+export function PlacementFields({ value, onChange, label = "Фото", thumbs, previewSrc, previewSurface = "default", uploadMode = "replace", showFocus = true, frame }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [replacementPending, setReplacementPending] = useState(false);
-  const frame = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const assetId = value?.assetId;
   useEffect(() => {
     return () => {
@@ -66,7 +70,7 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
   }, [assetId]);
   useLayoutEffect(() => {
     if (!previewUrl) return;
-    const node = frame.current;
+    const node = previewRef.current;
     if (!node) return;
     const fit = () => fitCmsPreviewToViewport();
     fit();
@@ -128,8 +132,8 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
   }
   function patch(next: Partial<ImagePlacement>) { if (value) onChange({ ...value, ...next }); }
   function pointAt(event: ReactPointerEvent) {
-    if (!showFocus || !value || !frame.current) return;
-    const bounds = frame.current.getBoundingClientRect();
+    if (!focusEnabled || !value || !previewRef.current) return;
+    const bounds = previewRef.current.getBoundingClientRect();
     patch({ focalX: clamp((event.clientX - bounds.left) / bounds.width), focalY: clamp((event.clientY - bounds.top) / bounds.height) });
   }
   function dragFocus(event: ReactPointerEvent<HTMLButtonElement>) {
@@ -148,15 +152,19 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
     const delta = ({ ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] } as const)[event.key as "ArrowLeft" | "ArrowRight" | "ArrowUp" | "ArrowDown"];
     if (delta) { event.preventDefault(); patch({ focalX: clamp(value.focalX + delta[0]), focalY: clamp(value.focalY + delta[1]) }); }
   }
+  const focusEnabled = showFocus && frame?.usesFocal !== false;
   const placementStyle = value ? ({ "--focus-x": `${value.focalX * 100}%`, "--focus-y": `${value.focalY * 100}%` } as React.CSSProperties) : undefined;
+  const focalStyle = frame?.usesFocal
+    ? ({ "--frame-position": focalObjectPosition(value?.focalX, value?.focalY) } as React.CSSProperties)
+    : undefined;
   const displayUrl = previewSrc || previewUrl;
-  const replaceLabel = (
+  const replaceLabel = value ? (
     <label className={styles.filePick}>
-      {uploading ? "Загружаем…" : value ? "Заменить фото" : "Загрузить фото"}
+      {uploading ? "Загружаем…" : "Заменить фото"}
       <input
         aria-label={`${label}: файл`}
         type="file"
-        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+        accept={acceptAttribute(IMAGE_UPLOAD_TYPES)}
         disabled={uploading}
         onChange={(event) => {
           void onFile(event.target.files?.[0]);
@@ -164,7 +172,7 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
         }}
       />
     </label>
-  );
+  ) : null;
   const mediaActions = <div className={styles.mediaActions}>
     {replaceLabel}
     <MediaPicker disabled={uploading} excludeIds={assetId ? [assetId] : []} onSelect={chooseAsset} />
@@ -177,10 +185,10 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
         {thumbs}
         <div className={styles.stage}>
           <div className={styles.previewColumn}>
-            <div className={styles.previewFrame}>
-              <div ref={frame} className={`${styles.previewShot} ${previewSurface === "dark" ? styles.previewShotDark : ""}`} style={showFocus ? placementStyle : undefined} aria-label="Предпросмотр фото и точки фокуса">
-                <img className={styles.preview} src={displayUrl} alt={value?.alt || label} />
-                {showFocus && value ? <button className={styles.focusPoint} style={placementStyle} type="button" aria-label="Точка фокуса: перетащите кружок; стрелки на клавиатуре" onPointerDown={dragFocus} onPointerMove={moveDrag} onKeyDown={moveFocus} /> : null}
+            <div className={`${styles.previewFrame} ${frame ? frameStyles.host : ""}`}>
+              <div ref={previewRef} className={`${styles.previewShot} ${frame ? frameStyles.shot : ""} ${previewSurface === "dark" ? styles.previewShotDark : ""}`} data-page-frame={frame?.id} style={focusEnabled ? placementStyle : undefined} aria-label="Предпросмотр фото и точки фокуса">
+                <img className={frame ? `${styles.preview} ${frameStyles.image}` : styles.preview} style={focalStyle} src={displayUrl} alt={value?.alt || label} />
+                {focusEnabled && value ? <button className={styles.focusPoint} style={placementStyle} type="button" aria-label="Точка фокуса: перетащите кружок; стрелки на клавиатуре" onPointerDown={dragFocus} onPointerMove={moveDrag} onKeyDown={moveFocus} /> : null}
               </div>
             </div>
           </div>
@@ -193,7 +201,7 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
                   Отменить замену
                 </button>
               </> : null}
-              {showFocus ? <p className={styles.caption}>Перетащите кружок, чтобы сдвинуть кадр на карточке.</p> : null}
+              {focusEnabled ? <p className={styles.caption}>Перетащите кружок, чтобы сдвинуть кадр на карточке.</p> : null}
               <label>Подпись к фото<input value={value.alt} onChange={(event) => patch({ alt: event.target.value })} /></label>
               <button type="button" className="ghost" onClick={() => { onChange(undefined); setPreviewUrl(null); }}>Убрать фото</button>
             </div>
@@ -220,8 +228,6 @@ export function ProductPhotoFields({
   const [pinned, setPinned] = useState(0);
   const [hovered, setHovered] = useState<number | null>(null);
   const [urls, setUrls] = useState<Record<string, string>>({});
-  const [uploadError, setUploadError] = useState("");
-  const [uploading, setUploading] = useState(false);
   const assetKey = slots.map((slot) => slot?.assetId ?? "").join(",");
   useEffect(() => {
     let cancelled = false;
@@ -257,35 +263,6 @@ export function ProductPhotoFields({
       onGalleryChange(photos.map((photo, index) => (index === pinned - 1 ? next : photo)));
     }
   }
-  async function onFiles(files: FileList | null) {
-    if (!files?.length) return;
-    setUploadError("");
-    setUploading(true);
-    try {
-      const added: ImagePlacement[] = [];
-      for (const file of Array.from(files)) added.push(await uploadImageFile(file));
-      onGalleryChange([...photos, ...added]);
-    } catch (error) {
-      setUploadError(uploadErrorText(error));
-    } finally {
-      setUploading(false);
-    }
-  }
-  const addPhoto = (
-    <label className={styles.thumbAdd}>
-      {uploading ? "Загружаем…" : "Добавить фото"}
-      <input
-        aria-label="Фотографии товара: файлы"
-        type="file"
-        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-        multiple
-        onChange={(event) => {
-          void onFiles(event.target.files);
-          event.target.value = "";
-        }}
-      />
-    </label>
-  );
   return (
     <div className={styles.productPhotos}>
       <PlacementFields
@@ -309,17 +286,14 @@ export function ProductPhotoFields({
                 {slot && urls[slot.assetId] ? <img src={urls[slot.assetId]} alt="" /> : <span>{index === 0 ? "Главное" : index}</span>}
               </button>
             ))}
-            {addPhoto}
             <MediaPicker
               compact
-              disabled={uploading}
               excludeIds={slots.flatMap((slot) => slot ? [slot.assetId] : [])}
               onSelect={(asset) => onGalleryChange([...photos, emptyPlacement(asset.id)])}
             />
           </div>
         }
       />
-      {uploadError ? <p role="alert">{uploadError}</p> : null}
     </div>
   );
 }

@@ -342,9 +342,32 @@ export const PAGE_KEYS = [
   "delivery-geography",
   "privacy-policy",
   "shop-delivery-returns",
+  "delivery",
+  "payment",
+  "shop-delivery",
+  "shop-payment",
+  "shop-warranty",
+  "shop-become-a-supplier",
 ] as const;
 
 export type PageKey = (typeof PAGE_KEYS)[number];
+
+/** Pages an admin can accept or reject one entry at a time inside a pending pack. */
+export const PAGE_ENTRY_DECISION_KEYS = [
+  "delivery",
+  "payment",
+  "warranty",
+  "branding",
+  "become-a-supplier",
+  "shop-delivery",
+  "shop-payment",
+  "shop-warranty",
+  "shop-become-a-supplier",
+] as const satisfies readonly PageKey[];
+
+export function isPageEntryDecisionTarget(entityType: string, entityId: string): boolean {
+  return entityType === "page" && (PAGE_ENTRY_DECISION_KEYS as readonly string[]).includes(entityId);
+}
 
 export type PageCta = {
   label: string;
@@ -358,7 +381,7 @@ export type PageSectionCopy = {
 };
 
 /** Pages whose request form is edited with the page. */
-export const PAGE_FORM_KEYS = ["become-a-supplier", "delivery-geography"] as const;
+export const PAGE_FORM_KEYS = ["become-a-supplier", "delivery-geography", "branding", "warranty"] as const;
 
 export const LEGAL_PAGE_KEYS = ["privacy-policy", "warranty", "shop-delivery-returns"] as const;
 
@@ -374,9 +397,14 @@ export type SiteProfileDraft = {
   requisites: { id: string; label: string; value: string }[];
 };
 
-/** Request form of the supplier and delivery-geography pages; stored in page_forms and page_form_fields. */
+/** Request form edited on branding, warranty, supplier, and delivery-geography pages; stored in page_forms and page_form_fields. */
 export type PageFormDraft = {
   successMessage: string;
+  /**
+   * ponytail: button label is kept on the CMS draft only.
+   * page_forms stores successMessage; the public form still renders «Отправить» until that column exists.
+   */
+  submitLabel?: string;
   fields: { id: string; label: string; type: "text" | "tel" | "email" | "url" | "textarea"; required: boolean }[];
 };
 

@@ -1,0 +1,222 @@
+.canvas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid var(--line, #e4e4e4);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+}
+
+.frame,
+.hero,
+.chapter,
+.field,
+.form,
+.dialogFields,
+.imageDialog {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.toolbar > * {
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.frame {
+  gap: 28px;
+}
+
+.eyebrow {
+  color: var(--ink-muted, #5c6563);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.heroTitle {
+  font-size: 1.75rem;
+  font-weight: 650;
+  line-height: 1.15;
+}
+
+.lead,
+.chapterText,
+.notice {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.chapterTitle {
+  font-size: 1.25rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.textButton,
+.linkButton,
+.emptyRow,
+.imageButton,
+.submitButton {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+
+.textButton {
+  display: block;
+  width: fit-content;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: text;
+}
+
+.textButton:focus-visible,
+.linkButton:focus-visible,
+.emptyRow:focus-visible,
+.imageButton:focus-visible,
+.submitButton:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent, #0b6e4f) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.linkButton,
+.submitButton,
+.emptyRow {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--line, #e4e4e4);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.emptyRow {
+  color: var(--ink-muted, #5c6563);
+  border-style: dashed;
+}
+
+.imageButton {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 1px dashed #b7bdbb;
+  border-radius: 8px;
+  background: #f3f4f4;
+  cursor: pointer;
+}
+
+.imageFallback {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  min-height: 140px;
+  color: var(--ink-muted, #5c6563);
+}
+
+.canvas input,
+.canvas textarea,
+.dialogFields input,
+.dialogFields textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  font: inherit;
+}
+
+.required {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.field:focus-within .required {
+  display: flex;
+}
+
+.required input {
+  width: auto;
+  flex: none;
+}
+
+.dialog {
+  width: min(28rem, calc(100% - 2rem));
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  border: 1px solid var(--line, #e4e4e4);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+  color: inherit;
+}
+
+.dialogBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 20px;
+}
+
+.dialogBody h2,
+.dialogBody p {
+  margin: 0;
+}
+
+.lockedHref {
+  color: var(--ink-muted, #5c6563);
+}
+
+.copyNote {
+  margin: 0;
+  color: var(--ink-muted, #5c6563);
+}
+
+@media (min-width: 640px) {
+  .canvas {
+    padding: 24px;
+  }
+
+  .heroTitle {
+    font-size: 2rem;
+  }
+}

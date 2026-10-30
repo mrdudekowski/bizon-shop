@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import type { MediaListItem } from "@/admin/domain/types";
 import { resolveMediaPreviewUrl } from "@/admin/domain/catalogPreviewUrl";
 import { browserAdminClient } from "@/admin/client/localStore";
+import { mediaMimeFromFile } from "./mediaMime";
+import { uploadErrorText } from "./uploadError";
+import { IMAGE_UPLOAD_TYPES, acceptAttribute, uploadLibraryFile } from "./uploadLibraryFile";
 import styles from "./MediaPicker.module.css";
 
 type Props = {
@@ -26,7 +29,10 @@ export function MediaPicker({ excludeIds = [], disabled = false, compact = false
   const [showUsed, setShowUsed] = useState(false);
   const [search, setSearch] = useState("");
   const [selectingId, setSelectingId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const allowed = filterMimeTypes?.length ? filterMimeTypes : IMAGE_UPLOAD_TYPES;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -50,6 +56,34 @@ export function MediaPicker({ excludeIds = [], disabled = false, compact = false
       setError("Не удалось загрузить галерею. Попробуйте ещё раз.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function uploadChosen(file?: File) {
+    if (!file || uploading) return;
+    setError("");
+    setUploading(true);
+    try {
+      const created = await uploadLibraryFile(file, allowed);
+      let listed = assets;
+      try {
+        listed = await browserAdminClient().listAssets();
+      } catch {
+        listed = assets;
+      }
+      const uploaded = listed.find((item) => item.id === created.id) ?? {
+        id: created.id,
+        name: file.name,
+        mimeType: mediaMimeFromFile(file),
+        dataUrl: "",
+        usedBy: [],
+      };
+      setAssets(listed.some((item) => item.id === uploaded.id) ? listed : [uploaded, ...listed]);
+      await select(uploaded);
+    } catch (cause) {
+      setError(uploadErrorText(cause));
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -88,7 +122,26 @@ export function MediaPicker({ excludeIds = [], disabled = false, compact = false
     >
         <header className={styles.header}>
           <div><h2 id="media-picker-title">{pickerTitle}</h2><p>Сначала показаны файлы, которые нигде не используются.</p></div>
-          <button type="button" className={styles.close} aria-label="Закрыть галерею" onClick={() => setOpen(false)}>×</button>
+          <div className={styles.headerActions}>
+            <div className={styles.uploadWrap}>
+              <button type="button" className={styles.uploadButton} disabled={uploading || selectingId !== null} onClick={() => fileInputRef.current?.click()}>
+                {uploading ? "Загружаем…" : "Загрузить"}
+              </button>
+              <input
+                ref={fileInputRef}
+                className={styles.fileInput}
+                aria-label="Файл для библиотеки"
+                type="file"
+                accept={acceptAttribute(allowed)}
+                disabled={uploading || selectingId !== null}
+                onChange={(event) => {
+                  void uploadChosen(event.target.files?.[0]);
+                  event.target.value = "";
+                }}
+              />
+            </div>
+            <button type="button" className={styles.close} aria-label="Закрыть галерею" onClick={() => setOpen(false)}>×</button>
+          </div>
         </header>
         <div className={styles.filters}>
           <label className={styles.search}>Поиск по имени<input value={search} onChange={(event) => setSearch(event.target.value)} /></label>

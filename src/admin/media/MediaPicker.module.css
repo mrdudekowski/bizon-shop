@@ -5,6 +5,12 @@
 .dialog { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; width: min(880px, calc(100% - 24px)); max-width: 100%; max-height: min(86vh, 760px); max-height: min(86dvh, 760px); min-width: 0; margin: auto; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); box-shadow: 0 20px 70px rgb(16 24 40 / 24%); }
 .dialog::backdrop { background: rgb(20 27 38 / 54%); }
 .header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; min-width: 0; padding: 20px 22px 14px; }
+.header > div:first-child { min-width: 0; flex: 1 1 auto; }
+.headerActions { display: flex; align-items: flex-start; gap: 8px; flex: 0 0 auto; min-width: 0; }
+.uploadWrap { position: relative; width: fit-content; max-width: 100%; min-width: 0; }
+.uploadButton { width: fit-content; max-width: 100%; min-width: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; }
+.uploadButton:disabled { opacity: .6; cursor: not-allowed; }
+.fileInput { position: absolute; inset: 0; width: 100%; max-width: 100%; min-width: 0; height: 100%; margin: 0; padding: 0; opacity: 0; cursor: pointer; }
 .header h2 { margin: 0; font-size: 20px; line-height: 1.25; text-wrap: balance; }
 .header p { margin: 5px 0 0; color: var(--ink-muted); line-height: 1.4; text-wrap: pretty; }
 .close { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink-muted); font-size: 24px; line-height: 1; cursor: pointer; }
@@ -18,7 +24,7 @@
 .grid li { min-width: 0; }
 .asset { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 5px; width: 100%; max-width: 100%; min-width: 0; height: 100%; padding: 8px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); text-align: left; cursor: pointer; }
 .asset:hover:not(:disabled) { border-color: var(--accent-hover); background: #f8fffd; }
-.asset:focus-visible, .openButton:focus-visible, .close:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; }
+.asset:focus-visible, .openButton:focus-visible, .close:focus-visible, .uploadButton:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; }
 .asset:disabled { opacity: .6; cursor: wait; }
 .asset img { display: block; width: 100%; max-width: 100%; min-width: 0; aspect-ratio: 4 / 3; object-fit: contain; border-radius: 6px; background: var(--surface-muted); }
 .asset strong { display: -webkit-box; min-width: 0; overflow: hidden; overflow-wrap: anywhere; font-size: 13px; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }

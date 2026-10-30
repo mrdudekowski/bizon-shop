@@ -5,14 +5,16 @@ describe("PlacementFields upload", () => {
   it("does not read the file as a data URL", () => {
     const source = fs.readFileSync(new URL("./PlacementFields.tsx", import.meta.url), "utf8");
     expect(source).not.toContain("readAsDataURL");
-    expect(source).toContain("createAsset");
+    expect(source).toContain("uploadLibraryFile");
+    expect(source).not.toContain("createAsset");
     expect(source).toContain("replaceAsset(current.assetId, upload)");
     expect(source).toContain("replacementAssetId: replacement.replacementAssetId");
     expect(source).toContain("Новое фото появится на сайте после публикации.");
     expect(source).toContain("cancelAssetReplacement(assetId)");
     expect(source).toContain("Отменить замену");
     expect(source).toContain("export function ProductPhotoFields");
-    expect(source).toContain("multiple");
+    expect(source).not.toContain("Добавить фото");
+    expect(source).not.toContain("Загрузить фото");
     expect(source).not.toContain("width={960}");
   });
 
@@ -32,8 +34,7 @@ describe("PlacementFields upload", () => {
     expect(source).toContain("hovered ?? pinned");
     expect(source).toContain("onMouseLeave");
     expect(source).toContain("onCoverChange");
-    expect(source).toContain("thumbAdd");
-    expect(source).toContain("Добавить фото");
+    expect(source).toContain("compact");
   });
 
   it("fits a site-proportion card and drops crop numbers", () => {

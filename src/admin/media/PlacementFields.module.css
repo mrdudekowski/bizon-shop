@@ -65,7 +65,7 @@
   scrollbar-width: none;
 }
 .thumbs::-webkit-scrollbar { display: none; }
-.thumbs button, .thumbAdd {
+.thumbs button {
   position: relative;
   width: 100%;
   max-width: 100%;
@@ -85,30 +85,6 @@
   object-fit: cover;
 }
 .thumbActive { border-color: var(--ink); }
-.thumbAdd {
-  display: grid;
-  place-items: center;
-  padding: 6px;
-  border-style: dashed;
-  background: #fafbfc;
-  color: var(--ink-muted);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.2;
-  text-align: center;
-}
-.thumbAdd input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  opacity: 0;
-  cursor: pointer;
-}
 .previewFrame {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -166,5 +142,9 @@
 .focusPoint::after { content: ''; display: block; width: 12px; height: 12px; margin: auto; border: 2px solid white; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px #17212e; }
 .caption { color: var(--ink-muted); font-size: 12px; font-weight: 400; }
 @media (min-width: 800px) {
-  .stage { grid-template-columns: minmax(0, min(100%, var(--cms-preview-max, 22rem))) minmax(16rem, 1fr); }
+  .stage:not(:has([data-page-frame])) { grid-template-columns: minmax(0, min(100%, var(--cms-preview-max, 22rem))) minmax(16rem, 1fr); }
+}
+.previewShot[data-page-frame] {
+  width: 100%;
+  max-width: 100%;
 }
