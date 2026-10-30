@@ -11,5 +11,5 @@ export function mediaMimeFromFile(file: { name: string; type: string }): string 
   if (name.endsWith(".webp")) return "image/webp";
   if (name.endsWith(".pdf")) return "application/pdf";
   if (name.endsWith(".mp4")) return "video/mp4";
-  return declared || "image/png";
+  return declared;
 }
