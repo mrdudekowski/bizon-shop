@@ -272,6 +272,8 @@ export type StubPatch = {
   siteProfile?: SiteProfile;
   /** Present on pages whose request form is stored with the page (supplier, delivery geography). */
   form?: PageForm;
+  /** Payment pages only. Chosen by the public reader from the page key, not stored on the page row. */
+  cartPath?: string;
   seoTitle?: string;
   seoDescription?: string;
   hero: {

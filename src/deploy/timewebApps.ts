@@ -65,6 +65,7 @@ const PUBLIC_SITE_DEPLOY_METHODS = new Set([
   "publishPage",
   "publishMaterial",
   "publishChangeSet",
+  "decidePageEntry",
   "unpublishDocument",
   "resetPage",
   "hideTireDirection",

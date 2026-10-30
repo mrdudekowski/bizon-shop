@@ -11,13 +11,49 @@ export type PageFormField = {
   required: boolean;
 };
 
-export const PAGE_FORM_KEYS = ["become-a-supplier", "delivery-geography"] as const;
+export const PAGE_FORM_KEYS = [
+  "become-a-supplier",
+  "delivery-geography",
+  "branding",
+  "warranty",
+  "delivery",
+  "shop-delivery",
+  "shop-warranty",
+  "shop-become-a-supplier",
+] as const;
 export type PageFormKey = (typeof PAGE_FORM_KEYS)[number];
 
 export type PageForm = {
   pageKey: PageFormKey;
   successMessage: string;
+  /** Set only when a manager saved a label. Blank keeps the public button as «Отправить». */
+  submitLabel?: string;
   fields: PageFormField[];
+};
+
+/** The editable part of a page form, as the admin draft carries it (same shape as `PageFormDraft` in admin types). */
+type PageFormDraft = Pick<PageForm, "successMessage" | "submitLabel" | "fields">;
+
+/** Public pages show these before a manager saves a row. A stored row replaces the whole form. */
+const DEFAULT_PAGE_FORM: Partial<Record<PageFormKey, PageFormDraft>> = {
+  branding: {
+    successMessage: "Спасибо! Заявка получена. Мы свяжемся с вами, чтобы обсудить брендирование.",
+    fields: [
+      { id: "name", label: "Имя", type: "text", required: true },
+      { id: "phone", label: "Телефон", type: "tel", required: true },
+      { id: "email", label: "Email", type: "email", required: false },
+      { id: "comment", label: "Комментарий", type: "textarea", required: true },
+    ],
+  },
+  warranty: {
+    successMessage: "Спасибо! Обращение получено. Мы свяжемся с вами по гарантии и возврату.",
+    fields: [
+      { id: "name", label: "Имя", type: "text", required: true },
+      { id: "phone", label: "Телефон", type: "tel", required: true },
+      { id: "email", label: "Email", type: "email", required: false },
+      { id: "problem", label: "Опишите проблему", type: "textarea", required: true },
+    ],
+  },
 };
 
 export const isPageFormKey = (key: string): key is PageFormKey => (PAGE_FORM_KEYS as readonly string[]).includes(key);
@@ -27,9 +63,15 @@ const HONEYPOT_KEY = "website";
 
 const MAX_ANSWER_LENGTH = 4000;
 
+/** `delivery_quote` is the public delivery page. `/delivery-geography` redirects there. */
 export const PAGE_KEY_BY_SOURCE_FORM = {
   supplier: "become-a-supplier",
-  delivery_quote: "delivery-geography",
+  delivery_quote: "delivery",
+  shop_delivery: "shop-delivery",
+  shop_warranty: "shop-warranty",
+  shop_supplier: "shop-become-a-supplier",
+  branding: "branding",
+  warranty: "warranty",
 } as const satisfies Record<string, PageForm["pageKey"]>;
 
 export type ConfiguredSourceForm = keyof typeof PAGE_KEY_BY_SOURCE_FORM;
@@ -84,15 +126,20 @@ export function requestFromAnswers(
 }
 
 export async function loadPageForm(db: ReadDatabase, pageKey: PageFormKey): Promise<PageForm | null> {
-  const [form] = await db.query("SELECT success_message FROM page_forms WHERE page_key = $1", [pageKey]);
-  if (!form) return null;
+  const [form] = await db.query("SELECT success_message, submit_label FROM page_forms WHERE page_key = $1", [pageKey]);
+  if (!form) {
+    const fallback = DEFAULT_PAGE_FORM[pageKey];
+    return fallback ? { pageKey, ...fallback } : null;
+  }
   const rows = await db.query(
     "SELECT id, label, field_type, required FROM page_form_fields WHERE page_key = $1 ORDER BY sort_order",
     [pageKey],
   );
+  const submitLabel = typeof form.submit_label === "string" ? form.submit_label.trim() : "";
   return {
     pageKey,
     successMessage: String(form.success_message),
+    ...(submitLabel ? { submitLabel } : {}),
     fields: rows.flatMap((row) => {
       const type = String(row.field_type);
       if (!(FORM_FIELD_TYPES as readonly string[]).includes(type)) return [];
@@ -101,13 +148,14 @@ export async function loadPageForm(db: ReadDatabase, pageKey: PageFormKey): Prom
   };
 }
 
-/** The editable part of a page form, as the admin draft carries it (same shape as `PageFormDraft` in admin types). */
-type PageFormDraft = Pick<PageForm, "successMessage" | "fields">;
-
-/** A page without a stored form edits as an empty one, so an older draft never lacks `form`. */
+/** Branding and warranty edit as the public default. Any other form page edits empty until a row is stored. */
 export async function readPageFormDraft(db: ReadDatabase, pageKey: PageFormKey): Promise<PageFormDraft> {
   const form = await loadPageForm(db, pageKey);
-  return { successMessage: form?.successMessage ?? "", fields: form?.fields ?? [] };
+  return {
+    successMessage: form?.successMessage ?? "",
+    ...(form?.submitLabel ? { submitLabel: form.submitLabel } : {}),
+    fields: form?.fields ?? [],
+  };
 }
 
 /** Field ids are the keys of the stored answers, so they must be unique and must not collide with the honeypot. */
@@ -122,10 +170,11 @@ export function pageFormFieldsAreValid(fields: PageFormField[]): boolean {
 
 /** Upserts the form and replaces its fields in draft order. Run inside the page-save transaction. */
 export async function writePageForm(db: ReadDatabase, pageKey: PageFormKey, form: PageFormDraft): Promise<void> {
+  const submitLabel = form.submitLabel?.trim() || null;
   await db.query(
-    `INSERT INTO page_forms (page_key, success_message) VALUES ($1, $2)
-     ON CONFLICT (page_key) DO UPDATE SET success_message = EXCLUDED.success_message`,
-    [pageKey, form.successMessage],
+    `INSERT INTO page_forms (page_key, success_message, submit_label) VALUES ($1, $2, $3)
+     ON CONFLICT (page_key) DO UPDATE SET success_message = EXCLUDED.success_message, submit_label = EXCLUDED.submit_label`,
+    [pageKey, form.successMessage, submitLabel],
   );
   await db.query("DELETE FROM page_form_fields WHERE page_key = $1", [pageKey]);
   for (const [index, field] of form.fields.entries()) {

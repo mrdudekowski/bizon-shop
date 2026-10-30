@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { insertRequest } from "../insertRequest";
-import { answersFromFields, pageFormFieldsAreValid, readPageFormDraft, requestFromAnswers, trustedAttachmentUrl, writePageForm } from "./pageForm";
+import { answersFromFields, loadPageForm, pageFormFieldsAreValid, readPageFormDraft, requestFromAnswers, trustedAttachmentUrl, writePageForm } from "./pageForm";
 
 const fields = [
   { id: "companyName", label: "Название компании", type: "text" as const, required: true },
@@ -111,7 +111,7 @@ describe("writePageForm", () => {
     const calls: { sql: string; params?: unknown[] }[] = [];
     await writePageForm({ query: async (sql, params) => (calls.push({ sql, params }), []) }, "become-a-supplier", form);
     expect(calls[0].sql).toContain("INSERT INTO page_forms");
-    expect(calls[0].params).toEqual(["become-a-supplier", "Спасибо"]);
+    expect(calls[0].params).toEqual(["become-a-supplier", "Спасибо", null]);
     expect(calls[1].sql).toContain("DELETE FROM page_form_fields");
     expect(calls.slice(2).map((call) => call.params)).toEqual([
       ["become-a-supplier", "companyName", 0, "Название компании", "text", true],
@@ -131,5 +131,43 @@ describe("writePageForm", () => {
 describe("readPageFormDraft", () => {
   it("returns an empty form when the page has no stored form", async () => {
     await expect(readPageFormDraft({ query: async () => [] }, "become-a-supplier")).resolves.toEqual({ successMessage: "", fields: [] });
+  });
+});
+
+describe("submit label", () => {
+  const formRow = (submitLabel: string | null) => ({
+    query: async () => [{ success_message: "Спасибо", submit_label: submitLabel, field_type: "ignored" }],
+  });
+
+  it("stores a label and round-trips it to the draft and the public form", async () => {
+    const calls: { params?: unknown[] }[] = [];
+    await writePageForm(
+      { query: async (_sql, params) => (calls.push({ params }), []) },
+      "delivery",
+      { successMessage: "Спасибо", submitLabel: " Оставить заявку ", fields: [] },
+    );
+    expect(calls[0].params?.[2]).toBe("Оставить заявку");
+
+    await expect(readPageFormDraft(formRow("Оставить заявку"), "delivery")).resolves.toMatchObject({
+      submitLabel: "Оставить заявку",
+    });
+    await expect(loadPageForm(formRow("Оставить заявку"), "delivery")).resolves.toMatchObject({
+      submitLabel: "Оставить заявку",
+    });
+  });
+
+  it("stores null for a blank label and leaves the public button as the default", async () => {
+    const calls: { params?: unknown[] }[] = [];
+    await writePageForm(
+      { query: async (_sql, params) => (calls.push({ params }), []) },
+      "delivery",
+      { successMessage: "Спасибо", submitLabel: "   ", fields: [] },
+    );
+    expect(calls[0].params?.[2]).toBeNull();
+
+    const draft = await readPageFormDraft(formRow("  "), "delivery");
+    const published = await loadPageForm(formRow(null), "delivery");
+    expect(draft).not.toHaveProperty("submitLabel");
+    expect(published).not.toHaveProperty("submitLabel");
   });
 });

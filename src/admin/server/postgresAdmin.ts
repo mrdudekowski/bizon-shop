@@ -76,6 +76,36 @@ import { retryQueuedMediaCleanup } from "../../storage/mediaCleanup";
 import { collectPendingMediaReplacements } from "../domain/mediaReplacement";
 import { shopHomeChildRows, shopHomeParentValues } from "../shopHomeWrite";
 
+/** Page keys a reviewer may accept or reject one pack entry at a time. */
+const DECIDABLE_PAGE_KEYS = new Set<string>([
+  "delivery",
+  "payment",
+  "warranty",
+  "branding",
+  "become-a-supplier",
+  "shop-delivery",
+  "shop-payment",
+  "shop-warranty",
+  "shop-become-a-supplier",
+]);
+
+/** Stub pages whose editorial blocks are saved on the page row and read back the same way. */
+const EDITORIAL_STUB_PAGE_KEYS = new Set([
+  "about",
+  "warranty",
+  "branding",
+  "become-a-supplier",
+  "delivery-geography",
+  "shop-delivery-returns",
+  "privacy-policy",
+  "delivery",
+  "payment",
+  "shop-delivery",
+  "shop-payment",
+  "shop-warranty",
+  "shop-become-a-supplier",
+]);
+
 function databaseUri(): string {
   const connectionString = process.env.DATABASE_URI;
   if (!connectionString) throw new Error("DATABASE_URI is required");
@@ -841,7 +871,7 @@ async function mapPage(row: Row): Promise<PageDraft> {
       },
     };
   }
-  const editorial = row.editorial_configured && ["about", "warranty", "branding", "become-a-supplier", "delivery-geography", "shop-delivery-returns", "privacy-policy"].includes(key) ? {
+  const editorial = row.editorial_configured && EDITORIAL_STUB_PAGE_KEYS.has(key) ? {
     ...(row.editorial_heading_configured ? { featuresHeading: str(row.editorial_features_heading) } : {}),
     ...(row.editorial_features_configured ? { features: (await query("SELECT id, title, text FROM pages_editorial_features WHERE _parent_id=$1 ORDER BY _order, id", [row.id])).map((item) => ({ id: str(item.id), title: str(item.title), text: str(item.text) })) } : {}),
     ...(row.editorial_sections_configured ? { sections: (await query("SELECT id, heading, body FROM pages_editorial_sections WHERE _parent_id=$1 ORDER BY _order, id", [row.id])).map((item) => ({ id: str(item.id), heading: str(item.heading), body: str(item.body) })) } : {}),
@@ -2588,6 +2618,43 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       );
       return published;
     },
+    async decidePageEntry(changeSetId, entryId, decision) {
+      requirePermission("review_queue");
+      await lockChangeSets();
+      const rows = await query("SELECT pack FROM cms_change_sets WHERE id = $1 FOR UPDATE", [changeSetId]);
+      const pack = rows[0]?.pack as ChangeSet | undefined;
+      if (pack == null) throw new AdminClientError("publish_blocked");
+      assertCanPublishChangeSet(pack);
+      const entry = pack.entries.find((item) => item.id === entryId);
+      const pageKey = entry != null && entry.entityType === "page" && DECIDABLE_PAGE_KEYS.has(entry.entityId)
+        ? entry.entityId as PageKey
+        : null;
+      if (entry == null || pageKey == null || (decision !== "accept" && decision !== "reject")) {
+        throw new AdminClientError("publish_blocked");
+      }
+      if (decision === "accept") {
+        await this.publishPage(pageKey);
+      } else {
+        await clearOverlay("pages", pageKey);
+      }
+      // publishPage cancels a pack that still lists this page, so the trimmed pack is written after the decision.
+      const entries = pack.entries.filter((item) => item.id !== entry.id);
+      const finished = entries.length === 0;
+      const next: ChangeSet = {
+        ...pack,
+        entries,
+        updatedAt: new Date().toISOString(),
+        ...(finished
+          ? {
+              status: decision === "accept" ? "published" as const : "cancelled" as const,
+              reviewedAt: new Date().toISOString(),
+              reviewedByLogin: session.login,
+            }
+          : {}),
+      };
+      await upsertPack(next);
+      return next;
+    },
     async returnChangeSet(id, comment) {
       requirePermission("review_queue");
       await lockChangeSets();
@@ -2754,7 +2821,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         typeof value !== "function" ||
         property === "createAsset" ||
         property === "replaceAsset" ||
-        !/^(create|save|publish|unpublish|hide|delete|reset|submit|return|cancel|update|assign|set)/.test(property)
+        !/^(create|save|publish|unpublish|hide|delete|reset|submit|return|cancel|update|assign|set|decide)/.test(property)
       ) {
         return value;
       }
@@ -2883,7 +2950,7 @@ async function writePage(draft: PageDraft) {
     }
     return;
   }
-  if (["about", "warranty", "branding", "become-a-supplier", "delivery-geography", "shop-delivery-returns", "privacy-policy"].includes(draft.id)) {
+  if (EDITORIAL_STUB_PAGE_KEYS.has(draft.id)) {
     const [parent] = await query("SELECT id FROM pages WHERE key=$1", [draft.id]);
     if (!parent) throw new AdminClientError("publish_blocked");
     await query(`UPDATE pages SET editorial_configured=$18, editorial_features_heading=$2, editorial_notice=$3, editorial_proof_title=$4, editorial_proof_text=$5, editorial_proof_image_id=$6, editorial_proof_image_alt=$7, editorial_cta_label=$8, editorial_cta_href=$9, editorial_secondary_label=$10, editorial_secondary_href=$11, editorial_heading_configured=$12, editorial_features_configured=$13, editorial_sections_configured=$14, editorial_notice_configured=$15, editorial_proof_configured=$16, editorial_cta_configured=$17 WHERE key=$1`, [draft.id, draft.featuresHeading ?? "", draft.notice?.body ?? "", draft.proof?.title ?? "", draft.proof?.text ?? "", draft.proof?.image ? Number(draft.proof.image.assetId) : null, draft.proof?.image?.alt ?? "", draft.cta?.label ?? "", draft.cta?.href ?? "", draft.cta?.secondaryLabel ?? "", draft.cta?.secondaryHref ?? "", draft.featuresHeading !== undefined, draft.features !== undefined, draft.sections !== undefined, draft.notice !== undefined, draft.proof !== undefined, draft.cta !== undefined, [draft.featuresHeading, draft.features, draft.sections, draft.notice, draft.proof, draft.cta].some((value) => value !== undefined)]);

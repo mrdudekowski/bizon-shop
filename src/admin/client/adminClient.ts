@@ -123,6 +123,7 @@ export type AdminClient = {
   getChangeSet(id: string): Promise<ChangeSet>;
   submitChangeSet(id: string): Promise<ChangeSet>;
   publishChangeSet(id: string): Promise<ChangeSet>;
+  decidePageEntry(changeSetId: string, entryId: string, decision: "accept" | "reject"): Promise<ChangeSet>;
   returnChangeSet(id: string, comment: string): Promise<ChangeSet>;
   cancelChangeSet(id: string): Promise<ChangeSet>;
   listRequests(): Promise<LeadRequestRecord[]>;

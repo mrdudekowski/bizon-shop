@@ -18,6 +18,13 @@ import { deliveryGeographyEnumValueMigration } from "./0026-delivery-geography-p
 import { deliveryGeographyPageMigration } from "./0027-delivery-geography-page";
 import { requestSourceFormDeliveryQuoteMigration } from "./0028-request-source-form-delivery-quote";
 import { dropFormFilesAndProcessHeadingsMigration } from "./0029-drop-form-files-and-process-headings";
+import { pageTwinEnumValueMigration } from "./0030-page-twin-keys";
+import { pageTwinPagesMigration } from "./0031-page-twin-pages";
+import { pageFormSubmitLabelMigration } from "./0032-page-form-submit-label";
+import { requestSourceFormShopMigration } from "./0033-request-source-form-shop";
+import { copyPageFormsMigration } from "./0034-copy-page-forms";
+import { publishedPageCopyMigration } from "./0035-published-page-copy";
+import { pageSeoTitlesMigration } from "./0036-page-seo-titles";
 import type { Migration } from "../migrationRunner";
 import { cmsEditorSchemaMigration } from "./0001-cms-editor-schema";
 import { shopCategoryCarouselMigration } from "./0002-shop-category-carousel";
@@ -59,6 +66,13 @@ export const MIGRATIONS: readonly Migration[] = [
   deliveryGeographyPageMigration,
   requestSourceFormDeliveryQuoteMigration,
   dropFormFilesAndProcessHeadingsMigration,
+  pageTwinEnumValueMigration,
+  pageTwinPagesMigration,
+  pageFormSubmitLabelMigration,
+  requestSourceFormShopMigration,
+  copyPageFormsMigration,
+  publishedPageCopyMigration,
+  pageSeoTitlesMigration,
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.at(-1)?.version ?? "0";

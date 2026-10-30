@@ -535,4 +535,38 @@ describe("readStubPatch page form", () => {
     });
     await expect(readStubPatch(db, "about")).resolves.not.toHaveProperty("form");
   });
+
+  it("returns branding and warranty defaults when no form row is stored", async () => {
+    const { db } = createRecordingDb((sql) => {
+      if (sql.includes("FROM page_forms")) return [];
+      return [{ id: 41, seo_seo_title: "Страница" }];
+    });
+
+    await expect(readStubPatch(db, "about")).resolves.not.toHaveProperty("form");
+    await expect(readStubPatch(db, "become-a-supplier")).resolves.not.toHaveProperty("form");
+    await expect(readStubPatch(db, "delivery-geography")).resolves.not.toHaveProperty("form");
+
+    const branding = await readStubPatch(db, "branding");
+    const warranty = await readStubPatch(db, "warranty");
+    expect(branding?.form).toEqual({
+      pageKey: "branding",
+      successMessage: "Спасибо! Заявка получена. Мы свяжемся с вами, чтобы обсудить брендирование.",
+      fields: [
+        { id: "name", label: "Имя", type: "text", required: true },
+        { id: "phone", label: "Телефон", type: "tel", required: true },
+        { id: "email", label: "Email", type: "email", required: false },
+        { id: "comment", label: "Комментарий", type: "textarea", required: true },
+      ],
+    });
+    expect(warranty?.form).toEqual({
+      pageKey: "warranty",
+      successMessage: "Спасибо! Обращение получено. Мы свяжемся с вами по гарантии и возврату.",
+      fields: [
+        { id: "name", label: "Имя", type: "text", required: true },
+        { id: "phone", label: "Телефон", type: "tel", required: true },
+        { id: "email", label: "Email", type: "email", required: false },
+        { id: "problem", label: "Опишите проблему", type: "textarea", required: true },
+      ],
+    });
+  });
 });

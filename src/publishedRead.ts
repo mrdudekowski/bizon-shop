@@ -57,6 +57,12 @@ export const PUBLIC_STUB_PAGE_KEYS = [
   "delivery-geography",
   "privacy-policy",
   "shop-delivery-returns",
+  "delivery",
+  "payment",
+  "shop-delivery",
+  "shop-payment",
+  "shop-warranty",
+  "shop-become-a-supplier",
 ] as const;
 
 function readStringColumn(rows: Record<string, unknown>[], column: string): string[] {
@@ -450,7 +456,7 @@ export async function readStubPatch(db: ReadDatabase, key: string): Promise<Stub
   const documents = await readPublishedDocuments(db, "page", key);
   const siteProfile = key === "contact" ? await readSiteProfile(db) : undefined;
   const pageForm = isPageFormKey(key) ? await loadPageForm(db, key) : undefined;
-  return mapStubPatch({
+  const patch = mapStubPatch({
     ...row,
     site_profile: siteProfile,
     page_form: pageForm ?? undefined,
@@ -462,6 +468,9 @@ export async function readStubPatch(db: ReadDatabase, key: string): Promise<Stub
     sections,
     documents,
   } as unknown as Parameters<typeof mapStubPatch>[0]);
+  if (key === "payment") return { ...patch, cartPath: "/cart" };
+  if (key === "shop-payment") return { ...patch, cartPath: "/shop/cart" };
+  return patch;
 }
 
 async function readWheelGallery(db: ReadDatabase, parentId: unknown) {

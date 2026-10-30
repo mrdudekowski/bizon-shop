@@ -336,6 +336,12 @@ export const PAGE_KEYS = [
   "delivery-geography",
   "privacy-policy",
   "shop-delivery-returns",
+  "delivery",
+  "payment",
+  "shop-delivery",
+  "shop-payment",
+  "shop-warranty",
+  "shop-become-a-supplier",
 ] as const;
 
 export type PageKey = (typeof PAGE_KEYS)[number];
@@ -365,9 +371,10 @@ export type SiteProfileDraft = {
   requisites: { id: string; label: string; value: string }[];
 };
 
-/** Request form of the supplier and delivery-geography pages; stored in page_forms and page_form_fields. */
+/** Request form stored in page_forms. A blank submitLabel keeps the public button as «Отправить». */
 export type PageFormDraft = {
   successMessage: string;
+  submitLabel?: string;
   fields: { id: string; label: string; type: "text" | "tel" | "email" | "url" | "textarea"; required: boolean }[];
 };
 

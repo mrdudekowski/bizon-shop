@@ -50,6 +50,12 @@ describe("readPublishedContentSnapshot", () => {
       "delivery-geography",
       "privacy-policy",
       "shop-delivery-returns",
+      "delivery",
+      "payment",
+      "shop-delivery",
+      "shop-payment",
+      "shop-warranty",
+      "shop-become-a-supplier",
     ]);
   });
 

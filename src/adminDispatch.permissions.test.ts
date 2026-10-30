@@ -77,6 +77,7 @@ describe("admin operation permissions", () => {
     ["createMaterial", [{ title: "Denied test", kind: "article" }]],
     ["saveMaterial", ["article-1", {}]],
     ["publishChangeSet", ["test-pack"]],
+    ["decidePageEntry", ["test-pack", "entry-1", "accept"]],
     ["returnChangeSet", ["test-pack", "Not allowed"]],
     ["cancelChangeSet", ["test-pack"]],
     ["listUsers", []],
