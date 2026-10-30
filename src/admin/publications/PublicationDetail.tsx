@@ -57,12 +57,13 @@ export function PublicationDetail({ id }: { id: string }) {
     );
   }
   if (pack == null) return <main className={styles.screen}><AdminLoading label="Загружаем пакет…" /></main>;
+  const currentPack = pack;
 
   async function decideEntry(entryId: string, decision: "accept" | "reject") {
     setPendingEntryId(entryId);
     setMessage("");
     try {
-      const next = await browserAdminClient().decidePageEntry(pack.id, entryId, decision);
+      const next = await browserAdminClient().decidePageEntry(currentPack.id, entryId, decision);
       setPack(next);
       setMessage(decision === "accept" ? "Страница принята." : "Страница отклонена.");
     } catch {
