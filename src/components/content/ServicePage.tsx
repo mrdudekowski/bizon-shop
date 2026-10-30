@@ -23,7 +23,6 @@ const OMITTED_FEATURE_HEADINGS = new Set([
 export type ServiceFeature = {
   title: string;
   text: string;
-  index?: string;
 };
 
 export type ServiceCta = {
@@ -54,6 +53,7 @@ type ServicePageProps = {
   cta?: ServiceCta;
   children?: ReactNode;
   editorial?: {
+    hero?: PublishedStubOverlay["hero"];
     featuresHeading?: string;
     features?: { id: string; title: string; text: string }[];
     sections?: { id: string; heading: string; body: string }[];
@@ -122,7 +122,7 @@ export function ServicePage({
             {resolvedFeatures.map((feature, index) => (
               <li key={(feature as { id?: string }).id ?? feature.title}>
                 <span className={styles.featureIndex}>
-                  {feature.index ?? String(index + 1).padStart(2, "0")}
+                  {String(index + 1).padStart(2, "0")}
                 </span>
                 <div>
                   {feature.title.trim() ? <h3>{feature.title}</h3> : null}

@@ -67,6 +67,7 @@ describe("ServicePage documents", () => {
     );
 
     expect(html).toContain("Заголовок из CMS");
+    expect(html).toContain("01");
     expect(html).toContain("Факт из CMS");
     expect(html).toContain("Описание из CMS");
     expect(html).toContain("Раздел из CMS");
