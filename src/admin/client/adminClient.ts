@@ -127,6 +127,7 @@ export type AdminClient = {
   publishChangeSet(id: string): Promise<ChangeSet>;
   returnChangeSet(id: string, comment: string): Promise<ChangeSet>;
   cancelChangeSet(id: string): Promise<ChangeSet>;
+  decidePageEntry(changeSetId: string, entryId: string, decision: "accept" | "reject"): Promise<ChangeSet>;
   listRequests(): Promise<LeadRequestRecord[]>;
   updateRequestStatus(id: string, status: LeadRequestStatus): Promise<LeadRequestRecord>;
   updateCatalogOrder(entity: OrderableCatalogEntity, orderedIds: string[]): Promise<void>;

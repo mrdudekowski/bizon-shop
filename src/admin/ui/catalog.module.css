@@ -1,4 +1,11 @@
 .pageHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; min-width: 0; }
+.pageTabs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; width: 100%; max-width: 1120px; min-width: 0; margin-top: 16px; }
+.pageTab { width: 100%; max-width: 100%; min-width: 0; min-height: 44px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink-muted); font: inherit; font-weight: 650; cursor: pointer; }
+.pageTab[aria-selected="true"] { border-color: var(--ink); background: var(--ink); color: var(--surface); }
+.pageTab:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; }
+@media (min-width: 640px) {
+  .pageTabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 .pageHead button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; min-width: 0; }
 .filters label { flex: 1 1 150px; }

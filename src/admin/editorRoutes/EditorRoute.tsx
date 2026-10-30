@@ -1,6 +1,7 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { MaterialEditor } from "@/admin/materials/MaterialEditor";
 import { PageEditor } from "@/admin/pages/PageEditor";
@@ -12,6 +13,15 @@ import { TireModelEditor } from "@/admin/tires/TireModelEditor";
 import { WheelModelEditor } from "@/admin/wheels/WheelModelEditor";
 import { WheelTypeEditor } from "@/admin/wheels/WheelTypeEditor";
 import { PAGE_KEYS, type PageKey } from "@/admin/domain/types";
+import { retiredPageReplacement } from "@/admin/pages/textPageDraft";
+
+function RetiredPageRedirect({ to }: { to: PageKey }) {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace(`/pages/editor?key=${encodeURIComponent(to)}`);
+  }, [router, to]);
+  return <p>Открываем страницу, которая заменила эту.</p>;
+}
 
 export type EditorRouteKind =
   | "material"
@@ -30,9 +40,10 @@ export function EditorRoute({ kind }: { kind: EditorRouteKind }) {
   const pageKey = params.get("key") ?? "";
 
   if (kind === "page") {
-    return PAGE_KEYS.includes(pageKey as PageKey)
-      ? <PageEditor pageKey={pageKey as PageKey} />
-      : <p>Не выбрана страница для редактирования.</p>;
+    if (!PAGE_KEYS.includes(pageKey as PageKey)) return <p>Не выбрана страница для редактирования.</p>;
+    const replacement = retiredPageReplacement(pageKey as PageKey);
+    if (replacement) return <RetiredPageRedirect to={replacement} />;
+    return <PageEditor pageKey={pageKey as PageKey} />;
   }
   if (!id) return <p>Не выбран материал для редактирования.</p>;
 

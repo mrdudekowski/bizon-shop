@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
-import type { ChangeSet, FieldValue } from "@/admin/domain/types";
+import { isPageEntryDecisionTarget, type ChangeSet, type FieldValue } from "@/admin/domain/types";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 import { useAdminSession } from "@/admin/ui/DocumentUI";
 import { SectionAccessNotice } from "@/admin/ui/SectionAccessNotice";
@@ -36,6 +36,7 @@ export function PublicationDetail({ id }: { id: string }) {
   const [pack, setPack] = useState<ChangeSet | null>(null);
   const [missing, setMissing] = useState(false);
   const [message, setMessage] = useState("");
+  const [pendingEntryId, setPendingEntryId] = useState<string | null>(null);
 
   useEffect(() => {
     if (session?.role !== "admin") return;
@@ -56,6 +57,20 @@ export function PublicationDetail({ id }: { id: string }) {
     );
   }
   if (pack == null) return <main className={styles.screen}><AdminLoading label="Загружаем пакет…" /></main>;
+
+  async function decideEntry(entryId: string, decision: "accept" | "reject") {
+    setPendingEntryId(entryId);
+    setMessage("");
+    try {
+      const next = await browserAdminClient().decidePageEntry(pack.id, entryId, decision);
+      setPack(next);
+      setMessage(decision === "accept" ? "Страница принята." : "Страница отклонена.");
+    } catch {
+      setMessage("Не удалось обновить страницу в пакете");
+    } finally {
+      setPendingEntryId(null);
+    }
+  }
 
   return (
     <main className={styles.screen}>
@@ -87,7 +102,19 @@ export function PublicationDetail({ id }: { id: string }) {
         <section key={entry.id} className={styles.entry}>
           <div className={styles.entryHead}>
             <strong>{entry.entityTitle}</strong>
-            <Link href={editorHref(entry.entityType, entry.entityId)}>Открыть карточку</Link>
+            <div className={styles.entryActions}>
+              {pack.status === "pending_review" && isPageEntryDecisionTarget(entry.entityType, entry.entityId) ? (
+                <>
+                  <button type="button" className="primary" disabled={pendingEntryId != null} onClick={() => { void decideEntry(entry.id, "accept"); }}>
+                    Принять
+                  </button>
+                  <button type="button" disabled={pendingEntryId != null} onClick={() => { void decideEntry(entry.id, "reject"); }}>
+                    Отклонить
+                  </button>
+                </>
+              ) : null}
+              <Link href={editorHref(entry.entityType, entry.entityId)}>Открыть карточку</Link>
+            </div>
           </div>
           {entry.fieldChanges.map((change) => (
             <article key={change.path} className={styles.change}>

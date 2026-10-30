@@ -7,7 +7,7 @@ import {
   wheelTypePublishBlockers,
 } from "@/admin/domain/publishRules";
 import { isValidSlug, slugifyTitle } from "@/admin/domain/slug";
-import { PAGE_KEYS } from "@/admin/domain/types";
+import { isPageEntryDecisionTarget, PAGE_KEYS } from "@/admin/domain/types";
 import type {
   AdminSession,
   AdminUser,
@@ -1679,6 +1679,36 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       pack.status = "cancelled";
       pack.reviewedAt = new Date().toISOString();
       pack.reviewedByLogin = state.session.login;
+      save(state);
+      return pack;
+    },
+
+    async decidePageEntry(changeSetId, entryId, decision) {
+      const state = load();
+      requirePermission(state, "review_queue");
+      const pack = state.changeSets.find((item) => item.id === changeSetId);
+      if (pack == null) throw new Error("not_found");
+      if (pack.status !== "pending_review") throw new AdminClientError("changeset_not_pending");
+      const entry = pack.entries.find((item) => item.id === entryId);
+      if (entry == null) throw new Error("not_found");
+      if (!isPageEntryDecisionTarget(entry.entityType, entry.entityId)) throw new AdminClientError("forbidden");
+      if (decision === "accept") {
+        publishRecord(state, entry.entityType, entry.entityId);
+      } else {
+        const record = requireNamed(state.pages, entry.entityId);
+        // ponytail: no published snapshot means there is no overlay to restore; the editor returns to the empty page draft.
+        const restored = record.publishedSnapshot == null
+          ? emptyPageDraft(entry.entityId as PageKey)
+          : clampDeep(record.publishedSnapshot);
+        record.draft = restored;
+        record.savedDraft = restored;
+      }
+      pack.entries = pack.entries.filter((item) => item.id !== entry.id);
+      if (pack.entries.length === 0) {
+        pack.status = decision === "accept" ? "published" : "cancelled";
+        pack.reviewedAt = new Date().toISOString();
+        pack.reviewedByLogin = state.session.login;
+      }
       save(state);
       return pack;
     },

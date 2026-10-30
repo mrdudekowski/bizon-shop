@@ -553,4 +553,68 @@ describe("createLocalAdminClient", () => {
     expect(restored.savedDraft?.descriptionShort).toBe("");
     expect(restored.publishedSnapshot?.name).toBe("LH01");
   });
+
+  it("accepts one page entry and rejects the other back to its published snapshot", async () => {
+    const storage = memory();
+    const admin = createLocalAdminClient(storage);
+    const delivery = await admin.getPage("delivery");
+    await admin.savePage("delivery", { ...delivery.draft, seoTitle: "Доставка на сайте" });
+    await admin.publishPage("delivery");
+    const payment = await admin.getPage("payment");
+    await admin.savePage("payment", { ...payment.draft, seoTitle: "Оплата на сайте" });
+    await admin.publishPage("payment");
+
+    await admin.createUser({
+      login: "editor",
+      role: "editor",
+      password: "secret-password",
+      capabilities: ["edit_site_pages"],
+    });
+    const editor = switchSession(storage, "editor", "editor", ["edit_site_pages"]);
+    const deliveryDraft = await editor.getPage("delivery");
+    await editor.savePage("delivery", { ...deliveryDraft.draft, seoTitle: "Новая доставка" });
+    const paymentDraft = await editor.getPage("payment");
+    await editor.savePage("payment", { ...paymentDraft.draft, seoTitle: "Новая оплата" });
+    const pack = (await editor.listChangeSets())[0];
+    const submitted = await editor.submitChangeSet(pack.id);
+    const deliveryEntry = submitted.entries.find((entry) => entry.entityId === "delivery");
+    const paymentEntry = submitted.entries.find((entry) => entry.entityId === "payment");
+    expect(deliveryEntry).toBeTruthy();
+    expect(paymentEntry).toBeTruthy();
+
+    const asAdmin = switchSession(storage, "admin", "admin");
+    const afterAccept = await asAdmin.decidePageEntry(submitted.id, deliveryEntry!.id, "accept");
+    expect(afterAccept.status).toBe("pending_review");
+    expect(afterAccept.entries.map((entry) => entry.entityId)).toEqual(["payment"]);
+
+    const afterReject = await asAdmin.decidePageEntry(submitted.id, paymentEntry!.id, "reject");
+    expect(afterReject.status).toBe("cancelled");
+    expect(afterReject.entries).toEqual([]);
+
+    const accepted = await asAdmin.getPage("delivery");
+    expect(accepted.publishedSnapshot?.seoTitle).toBe("Новая доставка");
+    expect(accepted.draft.seoTitle).toBe("Новая доставка");
+
+    const rejected = await asAdmin.getPage("payment");
+    expect(rejected.draft).toEqual(rejected.publishedSnapshot);
+    expect(rejected.savedDraft).toEqual(rejected.publishedSnapshot);
+    expect(rejected.publishedSnapshot?.seoTitle).toBe("Оплата на сайте");
+
+    const warranty = await asAdmin.getPage("warranty");
+    await asAdmin.savePage("warranty", { ...warranty.draft, seoTitle: "Гарантия на сайте" });
+    await asAdmin.publishPage("warranty");
+    const editorAgain = switchSession(storage, "editor", "editor", ["edit_site_pages"]);
+    const warrantyDraft = await editorAgain.getPage("warranty");
+    await editorAgain.savePage("warranty", { ...warrantyDraft.draft, seoTitle: "Новая гарантия" });
+    const warrantySubmitted = await editorAgain.submitChangeSet((await editorAgain.listChangeSets())[0].id);
+    const adminAgain = switchSession(storage, "admin", "admin");
+    const publishedPack = await adminAgain.decidePageEntry(
+      warrantySubmitted.id,
+      warrantySubmitted.entries[0].id,
+      "accept",
+    );
+    expect(publishedPack.status).toBe("published");
+    expect(publishedPack.entries).toEqual([]);
+    expect((await adminAgain.getPage("warranty")).publishedSnapshot?.seoTitle).toBe("Новая гарантия");
+  });
 });

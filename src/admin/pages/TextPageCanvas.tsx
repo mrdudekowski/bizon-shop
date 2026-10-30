@@ -220,28 +220,35 @@ function ChapterBlock({
   return (
     <article
       ref={rowRef}
-      className={styles.chapter}
+      className={styles.chapterRow}
       onBlur={(event) => {
         if (staysInside(event, rowRef.current)) return;
         if (!title.trim() && !text.trim()) onRemove();
       }}
     >
-      <div className={styles.chapterTitle}>
-        <EditableText
-          label="Заголовок главы"
-          value={title}
-          startEditing={startEditing}
-          onChange={(nextTitle) => onChange({ title: nextTitle, text })}
-        />
+      <div className={styles.chapterCopy}>
+        <div className={styles.chapterTitle}>
+          <EditableText
+            label="Заголовок главы"
+            value={title}
+            startEditing={startEditing}
+            onChange={(nextTitle) => onChange({ title: nextTitle, text })}
+          />
+        </div>
+        <div className={styles.chapterText}>
+          <EditableText
+            label="Текст главы"
+            value={text}
+            multiline
+            onChange={(nextText) => onChange({ title, text: nextText })}
+          />
+        </div>
       </div>
-      <div className={styles.chapterText}>
-        <EditableText
-          label="Текст главы"
-          value={text}
-          multiline
-          onChange={(nextText) => onChange({ title, text: nextText })}
-        />
-      </div>
+      <button type="button" className={styles.removeChapter} aria-label="Удалить главу" onClick={onRemove}>
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="currentColor" d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v10h-2V9zm4 0h2v10h-2V9zM6 9h2v10H6V9zm1 12h10a1 1 0 0 0 1-1V8H6v12a1 1 0 0 0 1 1z" />
+        </svg>
+      </button>
     </article>
   );
 }

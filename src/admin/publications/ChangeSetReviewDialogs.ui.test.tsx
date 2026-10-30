@@ -119,4 +119,46 @@ describe("publication review actions", () => {
     expect(screen.queryByRole("button", { name: "Опубликовать" })).toBeNull();
     expect(getChangeSet).not.toHaveBeenCalled();
   });
+
+  it("accepts a delivery page entry and shows no accept button on a tire entry", async () => {
+    const pack = pendingPack();
+    pack.entries = [
+      {
+        ...pack.entries[0],
+        id: "entry-delivery",
+        entityId: "delivery",
+        entityTitle: "Доставка",
+      },
+      {
+        id: "entry-tire",
+        entityType: "tire-model",
+        entityId: "tire-1",
+        entityTitle: "Модель шины",
+        operation: "update",
+        fieldChanges: pack.entries[0].fieldChanges,
+        rollbackDraft: {},
+      },
+    ];
+    const remaining = { ...pack, entries: pack.entries.filter((entry) => entry.id !== "entry-delivery") };
+    const decidePageEntry = vi.fn().mockResolvedValue(remaining);
+    mockState.client = {
+      getSession: vi.fn().mockResolvedValue({ login: "admin", role: "admin", capabilities: [] }),
+      getChangeSet: vi.fn().mockResolvedValue(pack),
+      decidePageEntry,
+    };
+    const user = userEvent.setup();
+    render(createElement(PublicationDetail, { id: pack.id }));
+
+    const accept = await screen.findByRole("button", { name: "Принять" });
+    expect(screen.getAllByRole("button", { name: "Принять" })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Опубликовать" })).toBeTruthy();
+    const tireSection = screen.getByText("Модель шины").closest("section");
+    expect(tireSection?.querySelector("button")).toBeNull();
+
+    await user.click(accept);
+    expect(decidePageEntry).toHaveBeenCalledWith(pack.id, "entry-delivery", "accept");
+    expect(await screen.findByText("Страница принята.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Принять" })).toBeNull();
+    expect(screen.getByText("Модель шины")).toBeTruthy();
+  });
 });

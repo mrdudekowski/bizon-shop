@@ -15,6 +15,7 @@ import { useAdminRole, useAdminSession } from "@/admin/ui/DocumentUI";
 import { canEditorPerform } from "@/admin/domain/editorPermissions";
 import { SectionAccessNotice } from "@/admin/ui/SectionAccessNotice";
 import { previewAssetId } from "./pagePreview";
+import { pageListSurface, type PageListSurface } from "./textPageDraft";
 
 function statusOf(record: EntityRecord<PageDraft>): DocumentStatus {
   if (record.hidden) return "hidden";
@@ -37,6 +38,7 @@ export function PageList() {
   const [assets, setAssets] = useState<MediaListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { view, setView } = useCatalogView("pages", pages.length);
+  const [surface, setSurface] = useState<PageListSurface>("tires");
 
   async function reload() {
     const client = browserAdminClient();
@@ -58,20 +60,27 @@ export function PageList() {
   if (session == null) return <main><AdminLoading label="Проверяем доступ…" /></main>;
   if (!canEditorPerform(session, "edit_site_pages")) return <SectionAccessNotice title="Страницы" icon="pages" />;
 
+  const listed = pages.filter((page) => pageListSurface(page.draft.id) != null);
+
   return (
     <main>
       <div className={styles.pageHead}>
-        <div><h1>Страницы</h1><p className="subheading">Девять страниц сайта. Откройте страницу, чтобы изменить её содержимое.</p></div>
+        <div><h1>Страницы</h1><p className="subheading">Откройте страницу, чтобы изменить её содержимое.</p></div>
         <CatalogViewToggle view={view} onChange={setView} />
       </div>
+      <div className={styles.pageTabs} role="tablist" aria-label="Разделы страниц">
+        <button type="button" className={styles.pageTab} role="tab" aria-selected={surface === "shared"} onClick={() => setSurface("shared")}>Общие</button>
+        <button type="button" className={styles.pageTab} role="tab" aria-selected={surface === "tires"} onClick={() => setSurface("tires")}>BIZON TIRES</button>
+        <button type="button" className={styles.pageTab} role="tab" aria-selected={surface === "shop"} onClick={() => setSurface("shop")}>BIZON SHOP</button>
+      </div>
       {loading ? <AdminLoading label="Загружаем страницы…" /> : <ul className={view === "tiles" ? styles.catalogTiles : styles.catalogList}>
-        {pages.map((page) => (
+        {listed.filter((page) => pageListSurface(page.draft.id) === surface).map((page) => (
           <li key={page.id}>
             <CatalogRow view={view} href={`/pages/editor?key=${encodeURIComponent(page.draft.id)}`} title={PAGE_LABELS[page.draft.id]} icon="pages" imageUrl={assets.find((asset) => asset.id === previewAssetId(page.draft))?.dataUrl} status={statusOf(page)} hasUnpublishedDraft={hasDraft(page)} onStatusChange={role === "admin" ? (status) => changeStatus(page.draft.id, status) : undefined} />
           </li>
         ))}
       </ul>}
-      <div className={styles.listFoot}>{pages.length} страниц · состав раздела фиксирован</div>
+      <div className={styles.listFoot}>{listed.length} страниц · состав раздела фиксирован</div>
     </main>
   );
 }

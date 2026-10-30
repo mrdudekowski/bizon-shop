@@ -95,17 +95,20 @@ describe("PageEditor conflict recovery", () => {
     }));
   });
 
-  it("refuses to save a section that has no heading", async () => {
-    const savePage = vi.fn();
+  it("saves a section that has no heading", async () => {
+    const savePage = vi.fn().mockImplementation(async (_key: string, next: typeof draft) => ({ ...pageRecord, draft: next, savedDraft: next }));
     mockState.client.savePage = savePage;
     const user = userEvent.setup();
     render(createElement(PageEditor, { pageKey: "about" }));
 
     await user.click(await screen.findByRole("button", { name: "Добавить раздел" }));
+    await user.type(screen.getByLabelText("Текст раздела"), "Абзац без заголовка");
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
 
-    expect(screen.getByRole("button", { name: "Без заголовка" }).getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByRole("button", { name: "Сохранить" })).toHaveProperty("disabled", true);
-    expect(savePage).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Сохранить" })).toHaveProperty("disabled", false);
+    expect(savePage).toHaveBeenCalledWith("about", expect.objectContaining({
+      sections: [expect.objectContaining({ heading: "", body: "Абзац без заголовка" })],
+    }));
   });
 
   it("exposes and saves the existing Expertise media and CTA placements", async () => {
@@ -519,6 +522,37 @@ describe("PageEditor conflict recovery", () => {
     await user.click(screen.getByRole("button", { name: "Доставка" }));
     expect(screen.queryByRole("textbox", { name: "Заголовок главы" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Маршрут" })).toBeNull();
+  });
+
+  it("saves a chapter without a heading and deletes a chapter from the trash button", async () => {
+    const warrantyDraft = {
+      id: "warranty",
+      seoTitle: "Гарантия",
+      seoDescription: "",
+      hero: { eyebrow: "", title: "Гарантия", lead: "" },
+      documents: [],
+      sections: [
+        { id: "section-1", heading: "", body: "Текст без заголовка" },
+        { id: "section-2", heading: "Исключения", body: "Не покрывается" },
+      ],
+    };
+    const record = { ...pageRecord, id: "warranty", draft: warrantyDraft, savedDraft: warrantyDraft, publishedSnapshot: warrantyDraft };
+    const savePage = vi.fn().mockImplementation(async (_key: string, next: typeof warrantyDraft) => ({ ...record, draft: next, savedDraft: next }));
+    mockState.client.getPage = vi.fn().mockResolvedValue(record);
+    mockState.client.savePage = savePage;
+    const user = userEvent.setup();
+    render(createElement(PageEditor, { pageKey: "warranty" }));
+
+    expect(await screen.findAllByRole("button", { name: "Удалить главу" })).toHaveLength(2);
+    await user.click(screen.getAllByRole("button", { name: "Удалить главу" })[0]);
+    expect(screen.queryByRole("button", { name: "Текст без заголовка" })).toBeNull();
+    expect(screen.queryByText(/заголовок или удалите/i)).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    expect((await screen.findByRole("status")).textContent).toBe("Черновик сохранён");
+    expect(savePage).toHaveBeenCalledWith("warranty", expect.objectContaining({
+      sections: [{ id: "section-2", heading: "Исключения", body: "Не покрывается" }],
+    }));
   });
 
   it("does not offer an empty chapter or a twin on branding", async () => {
