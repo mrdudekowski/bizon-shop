@@ -63,7 +63,9 @@ export function HorizontalScrollCue({
     const { scrollLeft, scrollWidth, clientWidth } = track;
     const maxScroll = scrollWidth - clientWidth;
     if (maxScroll <= 4) return;
-    const nextLeft = scrollLeft >= maxScroll - 16 ? 0 : scrollLeft + Math.round(clientWidth * 0.82);
+    // Let the looping track handle its own boundary correction. Sending the cue
+    // back to zero here creates a visible return-to-first-card jump.
+    const nextLeft = scrollLeft + Math.round(clientWidth * 0.82);
     const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
     track.scrollTo({ left: nextLeft, behavior });
   };

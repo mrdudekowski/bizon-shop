@@ -59,12 +59,12 @@ describe("HorizontalScrollCue", () => {
     });
   }
 
-  function track() {
+  function track(scrollLeft = 0) {
     const element = host.querySelector("[data-track]");
     if (!(element instanceof HTMLElement)) throw new Error("track missing");
     Object.defineProperty(element, "scrollWidth", { configurable: true, value: 900 });
     Object.defineProperty(element, "clientWidth", { configurable: true, value: 300 });
-    Object.defineProperty(element, "scrollLeft", { configurable: true, value: 0 });
+    Object.defineProperty(element, "scrollLeft", { configurable: true, value: scrollLeft });
     const scrollTo = vi.fn();
     element.scrollTo = scrollTo;
     return { element, scrollTo };
@@ -90,6 +90,19 @@ describe("HorizontalScrollCue", () => {
       button.click();
     });
     expect(scrollTo).toHaveBeenCalledWith({ left: 246, behavior: "smooth" });
+  });
+
+  it("continues forward at the physical end so the looping track can recenter seamlessly", async () => {
+    await renderCue(2, false);
+    const { scrollTo } = track(590);
+    const button = host.querySelector("button");
+    if (!button) throw new Error("cue missing");
+
+    await act(async () => {
+      button.click();
+    });
+
+    expect(scrollTo).toHaveBeenCalledWith({ left: 836, behavior: "smooth" });
   });
 
   it("moves the active mark when a resize reflows which card is nearest", async () => {
