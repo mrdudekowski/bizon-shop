@@ -58,6 +58,27 @@ describe("ConfiguredForm", () => {
     expect(html).not.toContain("Спасибо");
   });
 
+  it("uses a non-empty submitLabel and otherwise says Отправить", () => {
+    const labeled = renderToStaticMarkup(
+      createElement(ConfiguredForm, {
+        form: { ...SUPPLIER_FORM, submitLabel: "Отправить заявку" },
+        sourceForm: "supplier",
+      }),
+    );
+    expect(labeled).toContain(">Отправить заявку<");
+    expect(labeled).not.toContain(">Отправить<");
+
+    expect(render()).toContain(">Отправить<");
+
+    const blank = renderToStaticMarkup(
+      createElement(ConfiguredForm, {
+        form: { ...SUPPLIER_FORM, submitLabel: "   " },
+        sourceForm: "supplier",
+      }),
+    );
+    expect(blank).toContain(">Отправить<");
+  });
+
   it("keeps required validation on the control inside its label", () => {
     const html = render();
     for (const field of SUPPLIER_FORM.fields.filter((item) => item.required)) {

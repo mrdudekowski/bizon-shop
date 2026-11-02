@@ -10,12 +10,17 @@ export const ROUTES = {
   warranty: "/warranty",
   about: "/about",
   supplier: "/become-a-supplier",
-  deliveryGeography: "/delivery-geography",
+  delivery: "/delivery",
+  payment: "/payment",
   branding: "/branding",
   privacyPolicy: "/privacy-policy",
   cart: "/cart",
   shopCart: "/shop/cart",
   shopCategories: "/shop/categories",
+  shopDelivery: "/shop/delivery",
+  shopPayment: "/shop/payment",
+  shopWarranty: "/shop/warranty",
+  shopSupplier: "/shop/become-a-supplier",
   shopDeliveryAndReturns: "/shop/delivery-and-returns",
 };
 
@@ -35,12 +40,17 @@ export const SITEMAP_STATIC_ROUTES = [
   ROUTES.warranty,
   ROUTES.about,
   ROUTES.supplier,
+  ROUTES.delivery,
+  ROUTES.payment,
   ROUTES.branding,
   ROUTES.privacyPolicy,
   ROUTES.cart,
   ROUTES.shopCart,
   ROUTES.shopCategories,
-  ROUTES.shopDeliveryAndReturns,
+  ROUTES.shopDelivery,
+  ROUTES.shopPayment,
+  ROUTES.shopWarranty,
+  ROUTES.shopSupplier,
 ];
 
 /** Content list routes — add to sitemap only when published items exist. */

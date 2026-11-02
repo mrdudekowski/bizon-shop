@@ -35,10 +35,14 @@ const OPTIONAL_CMS_PAGE_ROUTES = [
   { path: ROUTES.warranty, key: "warranty" },
   { path: ROUTES.about, key: "about" },
   { path: ROUTES.supplier, key: "become-a-supplier" },
-  { path: ROUTES.deliveryGeography, key: "delivery-geography" },
+  { path: ROUTES.delivery, key: "delivery" },
+  { path: ROUTES.payment, key: "payment" },
   { path: ROUTES.branding, key: "branding" },
   { path: ROUTES.privacyPolicy, key: "privacy-policy" },
-  { path: ROUTES.shopDeliveryAndReturns, key: "shop-delivery-returns" },
+  { path: ROUTES.shopDelivery, key: "shop-delivery" },
+  { path: ROUTES.shopPayment, key: "shop-payment" },
+  { path: ROUTES.shopWarranty, key: "shop-warranty" },
+  { path: ROUTES.shopSupplier, key: "shop-become-a-supplier" },
 ] as const;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

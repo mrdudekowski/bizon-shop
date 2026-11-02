@@ -25,7 +25,7 @@ export default async function WarrantyPage() {
       documents={page?.documents}
       breadcrumbs={[
         { href: ROUTES.home, label: "Главная" },
-        { href: ROUTES.warranty, label: "Гарантия" },
+        { href: ROUTES.warranty, label: "Гарантия и возврат" },
       ]}
       media={page?.hero.imageUrl ? { src: page.hero.imageUrl, alt: page.hero.imageAlt ?? "" } : undefined}
       editorial={page}

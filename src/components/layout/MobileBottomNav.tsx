@@ -3,7 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ClipboardList, Compass, Grid2X2, House, ShoppingBag, Store, Wrench } from "lucide-react";
+import { ROUTES } from "@/constants/navigation";
 import styles from "./MobileBottomNav.module.css";
+
+const SHOP_CATEGORY_EXCLUDED_PATHS = new Set<string>([
+  ROUTES.shopCart,
+  ROUTES.shopDeliveryAndReturns,
+  ROUTES.shopDelivery,
+  ROUTES.shopPayment,
+  ROUTES.shopWarranty,
+  ROUTES.shopSupplier,
+]);
 
 type NavItem = {
   href: string;
@@ -21,7 +31,10 @@ const MAIN_ITEMS: NavItem[] = [
 
 const SHOP_ITEMS: NavItem[] = [
   { href: "/shop", label: "Shop", icon: Store, matches: (path) => path === "/shop" },
-  { href: "/shop/categories", label: "Категории", icon: Grid2X2, matches: (path) => path === "/shop/categories" || (path.startsWith("/shop/") && !path.startsWith("/shop/wheels") && !path.startsWith("/shop/product") && path !== "/shop/cart" && path !== "/shop/delivery-and-returns") },
+  { href: "/shop/categories", label: "Категории", icon: Grid2X2, matches: (path) => {
+    const normalized = path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
+    return normalized === "/shop/categories" || (normalized.startsWith("/shop/") && !normalized.startsWith("/shop/wheels") && !normalized.startsWith("/shop/product") && !SHOP_CATEGORY_EXCLUDED_PATHS.has(normalized));
+  } },
   { href: "/shop/wheels/forged", label: "Подбор", icon: Wrench, matches: (path) => path.startsWith("/shop/wheels") },
   { href: "/shop/cart", label: "Корзина", icon: ShoppingBag, matches: (path) => path === "/shop/cart" },
 ];

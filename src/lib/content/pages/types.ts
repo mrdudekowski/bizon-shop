@@ -157,6 +157,12 @@ export type PageContentByKey = {
   "delivery-geography": StubMarketingPageContent;
   "privacy-policy": StubMarketingPageContent;
   "shop-delivery-returns": StubMarketingPageContent;
+  delivery: StubMarketingPageContent;
+  payment: StubMarketingPageContent;
+  "shop-delivery": StubMarketingPageContent;
+  "shop-payment": StubMarketingPageContent;
+  "shop-warranty": StubMarketingPageContent;
+  "shop-become-a-supplier": StubMarketingPageContent;
 };
 
 export type AnyPageContent = PageContentByKey[PageKey];

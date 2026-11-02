@@ -12,7 +12,7 @@ export const PAGE_REGISTRY: readonly PageRegistryEntry[] = [
   { key: "shop-home", title: "Главная Shop", path: "/shop" },
   { key: "about", title: "О компании", path: "/about" },
   { key: "contact", title: "Контакты", path: "/contact" },
-  { key: "warranty", title: "Гарантия", path: "/warranty" },
+  { key: "warranty", title: "Гарантия и возврат", path: "/warranty" },
   { key: "branding", title: "Брендирование", path: "/branding" },
   {
     key: "become-a-supplier",
@@ -26,6 +26,12 @@ export const PAGE_REGISTRY: readonly PageRegistryEntry[] = [
     title: "Оплата, доставка и возврат",
     path: "/shop/delivery-and-returns",
   },
+  { key: "delivery", title: "Доставка", path: "/delivery" },
+  { key: "payment", title: "Оплата", path: "/payment" },
+  { key: "shop-delivery", title: "Доставка", path: "/shop/delivery" },
+  { key: "shop-payment", title: "Оплата", path: "/shop/payment" },
+  { key: "shop-warranty", title: "Гарантия и возврат", path: "/shop/warranty" },
+  { key: "shop-become-a-supplier", title: "Стать поставщиком", path: "/shop/become-a-supplier" },
 ] as const;
 
 export const PAGE_KEY_OPTIONS = PAGE_REGISTRY.map((entry) => ({

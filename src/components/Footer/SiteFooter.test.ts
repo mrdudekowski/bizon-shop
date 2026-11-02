@@ -8,6 +8,28 @@ import { SiteFooter } from "./SiteFooter";
 const renderFooter = (siteProfile: SiteProfile) =>
   renderToStaticMarkup(createElement(SiteFooter, { surface: "main", siteProfile }));
 
+describe("SiteFooter navigation", () => {
+  it("points company links at delivery and payment, and keeps the shop cart on /cart", () => {
+    const main = renderToStaticMarkup(createElement(SiteFooter, { surface: "main", siteProfile: PLACEHOLDER_SITE_PROFILE }));
+    const shop = renderToStaticMarkup(createElement(SiteFooter, { surface: "shop", siteProfile: PLACEHOLDER_SITE_PROFILE }));
+
+    expect(main).toContain('href="/delivery"');
+    expect(main).toContain("Доставка");
+    expect(main).toContain('href="/payment"');
+    expect(main).toContain("Оплата");
+    expect(main).toContain('href="/warranty"');
+    expect(main).toContain("Гарантия и возврат");
+    expect(main).not.toContain("География поставок");
+
+    expect(shop).toContain('href="/shop/cart"');
+    expect(shop).toContain('href="/shop/delivery"');
+    expect(shop).toContain('href="/shop/payment"');
+    expect(shop).toContain('href="/shop/warranty"');
+    expect(shop).toContain("Гарантия и возврат");
+    expect(shop).not.toContain("Оплата, доставка и возврат");
+  });
+});
+
 describe("SiteFooter contacts", () => {
   it("labels the three rows and shows the placeholder sentences without links", () => {
     const html = renderFooter(PLACEHOLDER_SITE_PROFILE);

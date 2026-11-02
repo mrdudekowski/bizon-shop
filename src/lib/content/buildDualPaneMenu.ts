@@ -82,9 +82,10 @@ export function buildMainDualPaneMenuSections(input: {
       items: [
         { id: "about-page", title: "О компании", href: ROUTES.about },
         { id: "contact", title: "Контакты", href: ROUTES.contact },
-        { id: "warranty", title: "Гарантия", href: ROUTES.warranty },
+        { id: "warranty", title: "Гарантия и возврат", href: ROUTES.warranty },
         { id: "supplier", title: "Стать поставщиком", href: ROUTES.supplier },
-        { id: "delivery-geography", title: "География поставок", href: ROUTES.deliveryGeography },
+        { id: "delivery", title: "Доставка", href: ROUTES.delivery },
+        { id: "payment", title: "Оплата", href: ROUTES.payment },
       ],
     },
   ];
@@ -135,7 +136,10 @@ export function buildShopDualPaneMenuSections(input: {
       label: "Покупателям",
       pane: "list",
       items: [
-        { id: "delivery", title: "Оплата, доставка и возврат", href: ROUTES.shopDeliveryAndReturns },
+        { id: "shop-delivery", title: "Доставка", href: ROUTES.shopDelivery },
+        { id: "shop-payment", title: "Оплата", href: ROUTES.shopPayment },
+        { id: "shop-warranty", title: "Гарантия и возврат", href: ROUTES.shopWarranty },
+        { id: "shop-supplier", title: "Стать поставщиком", href: ROUTES.shopSupplier },
         { id: "contact", title: "Связаться с BIZON", href: ROUTES.contact },
       ],
     },

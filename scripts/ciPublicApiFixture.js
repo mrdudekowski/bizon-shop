@@ -158,6 +158,12 @@ const PAGE_KEYS = new Set([
   "delivery-geography",
   "privacy-policy",
   "shop-delivery-returns",
+  "delivery",
+  "payment",
+  "shop-delivery",
+  "shop-payment",
+  "shop-warranty",
+  "shop-become-a-supplier",
 ]);
 const MISSING_OPTIONAL_PAGE_KEYS = new Set(["branding"]);
 

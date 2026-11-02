@@ -19,9 +19,27 @@ export type PageFormField = {
   required: boolean;
 };
 
+export type ConfiguredSourceForm =
+  | "supplier"
+  | "shop_supplier"
+  | "delivery_quote"
+  | "shop_delivery"
+  | "branding"
+  | "warranty"
+  | "shop_warranty";
+
 export type PageForm = {
-  pageKey: "become-a-supplier" | "delivery-geography";
+  pageKey:
+    | "become-a-supplier"
+    | "shop-become-a-supplier"
+    | "delivery"
+    | "delivery-geography"
+    | "shop-delivery"
+    | "branding"
+    | "warranty"
+    | "shop-warranty";
   successMessage: string;
+  submitLabel?: string;
   fields: PageFormField[];
 };
 
@@ -49,7 +67,7 @@ export function ConfiguredForm({
   sourceForm,
 }: {
   form: PageForm;
-  sourceForm: "supplier" | "delivery_quote";
+  sourceForm: ConfiguredSourceForm;
 }) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "success">("idle");
@@ -116,7 +134,7 @@ export function ConfiguredForm({
         </p>
       )}
       <button className="btn-accent" type="submit" disabled={status === "loading"}>
-        {status === "loading" ? "Отправка…" : "Отправить"}
+        {status === "loading" ? "Отправка…" : form.submitLabel?.trim() || "Отправить"}
       </button>
     </form>
   );

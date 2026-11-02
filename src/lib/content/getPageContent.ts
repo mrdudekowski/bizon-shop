@@ -26,7 +26,7 @@ export type PublishedStubOverlay = {
   };
   /** Served with the contact page only. */
   siteProfile?: SiteProfile;
-  /** Served with the supplier and delivery-geography pages. */
+  /** Served on text pages that render ConfiguredForm. */
   form?: PageForm;
   seoTitle?: string;
   seoDescription?: string;
@@ -50,6 +50,12 @@ const STUB_KEYS = new Set([
   "delivery-geography",
   "privacy-policy",
   "shop-delivery-returns",
+  "delivery",
+  "payment",
+  "shop-delivery",
+  "shop-payment",
+  "shop-warranty",
+  "shop-become-a-supplier",
 ]);
 
 export async function getPublishedStubOverlay(key: string): Promise<PublishedStubOverlay | null> {

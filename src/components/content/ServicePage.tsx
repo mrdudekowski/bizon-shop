@@ -8,10 +8,30 @@ import type { PublishedStubOverlay } from "@/lib/content/getPageContent";
 import { resolveServicePageCta, resolveServicePageProof } from "./servicePageEditorial";
 
 import { PageHero, type PageHeroBreadcrumb, type PageHeroMedia } from "@/components/content/PageHero";
+import { ConfiguredForm, type ConfiguredSourceForm, type PageForm } from "@/components/forms/ConfiguredForm";
+import { ROUTES } from "@/constants/navigation";
 
 import styles from "./ServicePage.module.css";
 
-const REQUEST_FORM_PAGE_KEYS = new Set(["contact", "become-a-supplier", "delivery-geography"]);
+export const FORM_SOURCE_BY_PAGE: Record<string, ConfiguredSourceForm | undefined> = {
+  "become-a-supplier": "supplier",
+  "shop-become-a-supplier": "shop_supplier",
+  delivery: "delivery_quote",
+  "delivery-geography": "delivery_quote",
+  "shop-delivery": "shop_delivery",
+  branding: "branding",
+  warranty: "warranty",
+  "shop-warranty": "shop_warranty",
+};
+
+const REQUEST_FORM_PAGE_KEYS = new Set(["contact", ...Object.keys(FORM_SOURCE_BY_PAGE)]);
+
+const LOCKED_CTA_HREF_BY_PAGE: Record<string, string> = {
+  payment: ROUTES.cart,
+  "shop-payment": ROUTES.shopCart,
+};
+
+const DEFAULT_PAYMENT_CTA_LABEL = "Перейти к заявке";
 
 const OMITTED_FEATURE_HEADINGS = new Set([
   "Как проходит первичное обращение",
@@ -60,6 +80,7 @@ type ServicePageProps = {
     notice?: { body: string } | null;
     proof?: { imageUrl?: string | null; imageAlt?: string; imageFocalX?: number; imageFocalY?: number; title: string; text: string } | null;
     cta?: { label: string; href: string; secondaryLabel?: string; secondaryHref?: string } | null;
+    form?: PageForm;
   };
   runtimePageKey?: string;
   renderChildrenWithEditorial?: boolean;
@@ -96,8 +117,13 @@ export function ServicePage({
   const resolvedFeatures = (activeEditorial?.features ?? features).filter((feature) => feature.title.trim() || feature.text.trim());
   const featureHeading = OMITTED_FEATURE_HEADINGS.has((resolvedFeaturesHeading ?? "").trim()) ? "" : resolvedFeaturesHeading;
   const pageHasRequestForm = REQUEST_FORM_PAGE_KEYS.has(runtimePageKey ?? "");
+  const formSource = FORM_SOURCE_BY_PAGE[runtimePageKey ?? ""];
+  const liveForm = formSource && activeEditorial?.form ? activeEditorial.form : null;
   const resolvedProof = resolveServicePageProof(activeEditorial, proof);
-  const resolvedCta = resolveServicePageCta(activeEditorial, cta);
+  const lockedCtaHref = LOCKED_CTA_HREF_BY_PAGE[runtimePageKey ?? ""];
+  const resolvedCta: ServiceCta | undefined = lockedCtaHref
+    ? { href: lockedCtaHref, label: activeEditorial?.cta?.label?.trim() || DEFAULT_PAYMENT_CTA_LABEL }
+    : resolveServicePageCta(activeEditorial, cta);
   return (
     <div data-main-chrome-tone="light">
       <PageHero
@@ -162,6 +188,8 @@ export function ServicePage({
             {renderChildrenWithEditorial ? children : null}
           </>
         ) : children}
+
+        {liveForm && formSource ? <ConfiguredForm form={liveForm} sourceForm={formSource} /> : null}
 
         {activeDocuments.length > 0 ? (
           <section className={styles.documents} aria-labelledby="service-documents-heading">

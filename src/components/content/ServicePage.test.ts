@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ServicePage } from "./ServicePage";
+import { FORM_SOURCE_BY_PAGE, ServicePage } from "./ServicePage";
 
 describe("ServicePage documents", () => {
   it("hides empty CMS hero and editorial fields instead of rendering fallback copy", () => {
@@ -157,5 +157,63 @@ describe("ServicePage documents", () => {
     expect(html).toContain("Зафиксируйте данные");
     expect(html).toContain("Следующий шаг");
     expect(html).not.toContain("Три шага для первичной проверки");
+  });
+
+  it("binds delivery to delivery_quote, renders a shop form, and keeps shop payment on the shop cart", () => {
+    expect(FORM_SOURCE_BY_PAGE).toMatchObject({
+      delivery: "delivery_quote",
+      "shop-delivery": "shop_delivery",
+      warranty: "warranty",
+      "shop-warranty": "shop_warranty",
+      "become-a-supplier": "supplier",
+      "shop-become-a-supplier": "shop_supplier",
+      branding: "branding",
+    });
+    expect(FORM_SOURCE_BY_PAGE.payment).toBeUndefined();
+    expect(FORM_SOURCE_BY_PAGE["shop-payment"]).toBeUndefined();
+
+    const shopDelivery = renderToStaticMarkup(
+      createElement(ServicePage, {
+        title: "Доставка",
+        description: "Лид",
+        breadcrumbs: [],
+        features: [],
+        runtimePageKey: "shop-delivery",
+        editorial: {
+          hero: { title: "Доставка", lead: "Лид" },
+          cta: { label: "Уточнить", href: "/contact" },
+          form: {
+            pageKey: "shop-delivery",
+            successMessage: "Спасибо",
+            fields: [{ id: "name", label: "Имя получателя", type: "text", required: true }],
+          },
+        },
+      }),
+    );
+    expect(shopDelivery).toContain("Имя получателя");
+    expect(shopDelivery).not.toContain("Следующий шаг");
+
+    const shopPayment = renderToStaticMarkup(
+      createElement(ServicePage, {
+        title: "Оплата",
+        description: "",
+        breadcrumbs: [],
+        features: [],
+        runtimePageKey: "shop-payment",
+        editorial: {
+          hero: { title: "Оплата", lead: "" },
+          cta: { label: "К корзине", href: "/cart" },
+          form: {
+            pageKey: "shop-delivery",
+            successMessage: "Спасибо",
+            fields: [{ id: "name", label: "Имя получателя", type: "text", required: true }],
+          },
+        },
+      }),
+    );
+    expect(shopPayment).toContain('href="/shop/cart"');
+    expect(shopPayment).not.toContain('href="/cart"');
+    expect(shopPayment).not.toContain("<form");
+    expect(shopPayment).not.toContain("Имя получателя");
   });
 });

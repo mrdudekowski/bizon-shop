@@ -66,12 +66,22 @@ describe("buildMainDualPaneMenuSections", () => {
       pills: ["TBR"],
       advantages: [{ key: "economy", title: "Economy" }],
     });
-    expect(sections.find((section) => section.id === "about")?.items.map((item) => item.id)).toEqual([
+    const about = sections.find((section) => section.id === "about");
+    expect(about?.items.map((item) => item.id)).toEqual([
       "about-page",
       "contact",
       "warranty",
       "supplier",
-      "delivery-geography",
+      "delivery",
+      "payment",
+    ]);
+    expect(about?.items.map((item) => ({ title: item.title, href: item.href }))).toEqual([
+      { title: "О компании", href: "/about" },
+      { title: "Контакты", href: "/contact" },
+      { title: "Гарантия и возврат", href: "/warranty" },
+      { title: "Стать поставщиком", href: "/become-a-supplier" },
+      { title: "Доставка", href: "/delivery" },
+      { title: "Оплата", href: "/payment" },
     ]);
     expect(sections.find((section) => section.id === "shop")?.items.map((item) => item.id)).toEqual([
       "shop-home",
@@ -162,5 +172,15 @@ describe("buildShopDualPaneMenuSections", () => {
     ]);
     expect(sections[0]?.footerLink?.href).toBe("/shop/wheels/forged");
     expect(sections[0]?.items[0]?.href).toBe("/shop/wheels/forged/atlas");
+    expect(sections.find((section) => section.id === "buyers")?.items.map((item) => ({
+      title: item.title,
+      href: item.href,
+    }))).toEqual([
+      { title: "Доставка", href: "/shop/delivery" },
+      { title: "Оплата", href: "/shop/payment" },
+      { title: "Гарантия и возврат", href: "/shop/warranty" },
+      { title: "Стать поставщиком", href: "/shop/become-a-supplier" },
+      { title: "Связаться с BIZON", href: "/contact" },
+    ]);
   });
 });

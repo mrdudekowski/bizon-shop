@@ -9,6 +9,12 @@ export const PAGE_KEYS = [
   "delivery-geography",
   "privacy-policy",
   "shop-delivery-returns",
+  "delivery",
+  "payment",
+  "shop-delivery",
+  "shop-payment",
+  "shop-warranty",
+  "shop-become-a-supplier",
 ] as const;
 
 export type PageKey = (typeof PAGE_KEYS)[number];

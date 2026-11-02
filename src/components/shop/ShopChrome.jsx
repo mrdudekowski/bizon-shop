@@ -7,6 +7,7 @@ import { CartHeaderButton } from "@/components/cart/CartHeaderButton";
 import { ChromeWordmark, FloatingChrome } from "@/components/chrome/FloatingChrome";
 import { useAdaptiveChrome } from "@/components/chrome/useAdaptiveChrome";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+import { ROUTES } from "@/constants/navigation";
 import { shopCategoryCarouselIconUrl, shopCategoryIconUrl } from "@/lib/content/shopCategoryPresentation";
 
 import styles from "./ShopChrome.module.css";
@@ -76,7 +77,7 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
       navigation={
         <>
           <Link href="/contact?subject=wheel-selection">Заявка</Link>
-          <Link href="/shop/delivery-and-returns">Возврат</Link>
+          <Link href={ROUTES.shopDelivery}>Доставка</Link>
         </>
       }
       utility={<Link href="/">BIZON <SiteArrow direction="ne" /></Link>}
