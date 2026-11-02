@@ -5,6 +5,7 @@ import {
   fetchPreviousContentSnapshot,
   fetchPublishedSnapshot,
   fetchRevision,
+  resolvePublishedBuildSnapshot,
   runStableRevisionBuild,
 } from "../../../scripts/buildWithContentRevision.js";
 
@@ -92,6 +93,63 @@ describe("static build revision guard", () => {
       writeMarker: vi.fn(),
     })).rejects.toThrow("Published content changed during the static build");
     expect(runBuild).toHaveBeenCalledOnce();
+  });
+
+  function emptyProxyResponse() {
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      text: async () => "",
+    };
+  }
+
+  it("retries an empty proxy body because the API process did not answer", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(emptyProxyResponse());
+    const wait = vi.fn().mockResolvedValue(undefined);
+
+    await expect(fetchPublishedSnapshot({ baseUrl: "https://backend.example", fetchImpl, wait }))
+      .rejects.toThrow("API process did not answer");
+
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(wait.mock.calls.map(([milliseconds]) => milliseconds)).toEqual([500, 1000]);
+  });
+
+  it("reuses the previous public snapshot only after the API process stays silent", async () => {
+    const archived = { ...before, content: snapshotContent };
+    const fetchSnapshot = vi.fn().mockRejectedValue(Object.assign(
+      new Error("Published content snapshot API /v1/content/snapshot returned an empty HTTP 200 body. The API process did not answer."),
+      { retryable: true },
+    ));
+    const fetchArchivedSnapshot = vi.fn().mockResolvedValue(archived);
+
+    await expect(resolvePublishedBuildSnapshot({ fetchSnapshot, fetchArchivedSnapshot }))
+      .resolves.toEqual({ snapshot: archived, confirmedByApi: false });
+
+    const invalid = new Error("Published content snapshot API returned invalid data at content");
+    const fetchArchivedAfterInvalid = vi.fn();
+    await expect(resolvePublishedBuildSnapshot({
+      fetchSnapshot: vi.fn().mockRejectedValue(invalid),
+      fetchArchivedSnapshot: fetchArchivedAfterInvalid,
+    })).rejects.toBe(invalid);
+    expect(fetchArchivedAfterInvalid).not.toHaveBeenCalled();
+  });
+
+  it("does not ask the live API to confirm a snapshot reused from the previous release", async () => {
+    const archived = { ...before, content: snapshotContent };
+    const fetchRevision = vi.fn();
+    const writeMarker = vi.fn().mockResolvedValue(undefined);
+
+    await runStableRevisionBuild({
+      fetchRevision,
+      fetchSnapshot: vi.fn().mockResolvedValue(archived),
+      skipLiveRevisionCheck: true,
+      runBuild: vi.fn().mockResolvedValue(undefined),
+      writeMarker,
+    });
+
+    expect(fetchRevision).not.toHaveBeenCalled();
+    expect(writeMarker).toHaveBeenCalledWith(before, undefined, archived);
   });
 
   it("downloads a complete revisioned snapshot from the one-shot endpoint", async () => {

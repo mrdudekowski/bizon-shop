@@ -58,13 +58,17 @@ async function readApiJson(response, endpoint) {
     }
   }
   const body = await response.text();
+  if (body.length === 0) {
+    const error = new Error(`${endpoint} returned an empty HTTP ${response.status} body. The API process did not answer.`);
+    error.retryable = true;
+    throw error;
+  }
   try {
     return JSON.parse(body);
   } catch (error) {
     const contentType = response.headers?.get?.("content-type") ?? "unknown";
-    const reason = body.length === 0 ? "empty response body" : "invalid JSON response body";
     throw new Error(
-      `${endpoint} returned ${reason} (HTTP ${response.status}, content-type ${contentType}, ${Buffer.byteLength(body, "utf8")} bytes)`,
+      `${endpoint} returned invalid JSON (HTTP ${response.status}, content-type ${contentType}, ${Buffer.byteLength(body, "utf8")} bytes)`,
       { cause: error },
     );
   }
@@ -233,9 +237,31 @@ export async function fetchPreviousMediaFile(pathname, siteUrl, fetchImpl = fetc
   return Buffer.from(await response.arrayBuffer());
 }
 
+export function apiProcessDidNotAnswer(error) {
+  return error?.retryable === true && String(error?.message ?? "").includes("API process did not answer");
+}
+
+/** A live snapshot stays confirmed by the API. An empty proxy answer may reuse the previous public release. */
+export async function resolvePublishedBuildSnapshot({
+  fetchSnapshot,
+  fetchArchivedSnapshot,
+  warn = () => {},
+}) {
+  try {
+    return { snapshot: await fetchSnapshot(), confirmedByApi: true };
+  } catch (error) {
+    if (!apiProcessDidNotAnswer(error)) throw error;
+    const archived = await fetchArchivedSnapshot();
+    if (!validSnapshot(archived)) throw error;
+    warn("Content API process did not answer. Building from the previous public content snapshot.");
+    return { snapshot: archived, confirmedByApi: false };
+  }
+}
+
 export async function runStableRevisionBuild({
   fetchRevision,
   fetchSnapshot = undefined,
+  skipLiveRevisionCheck = false,
   runBuild,
   runSnapshot = undefined,
   validateExport = undefined,
@@ -249,7 +275,7 @@ export async function runStableRevisionBuild({
   await runBuild(snapshot);
   const mediaSnapshot = runSnapshot ? await runSnapshot(before, { previousOutputDir }) : undefined;
   if (validateExport) await validateExport(before);
-  const after = await fetchRevision();
+  const after = skipLiveRevisionCheck ? before : await fetchRevision();
   if (before.revision !== after.revision) {
     throw new Error("Published content changed during the static build; refusing to mark this export as current");
   }
@@ -376,12 +402,20 @@ async function main() {
   loadEnvConfig(root);
   try {
     const previousRelease = await fetchPreviousMediaManifest();
+    const resolved = await resolvePublishedBuildSnapshot({
+      fetchSnapshot: () => fetchPublishedSnapshot(),
+      fetchArchivedSnapshot: () => fetchPreviousContentSnapshot({
+        publicSiteUrl: process.env.PUBLIC_SITE_URL?.trim() || process.env.NEXT_PUBLIC_SITE_URL?.trim(),
+      }),
+      warn: (message) => console.warn(message),
+    });
     await runAtomicStaticBuild({
       outDir,
       previousDir: previousSnapshotPath,
       runBuild: ({ previousOutputDir } = {}) => runStableRevisionBuild({
         fetchRevision,
-        fetchSnapshot: fetchPublishedSnapshot,
+        fetchSnapshot: async () => resolved.snapshot,
+        skipLiveRevisionCheck: !resolved.confirmedByApi,
         runBuild: runNextBuild,
         previousOutputDir,
         runSnapshot: (revision, { previousOutputDir: previousReleaseDirectory } = {}) => createMediaSnapshot({
