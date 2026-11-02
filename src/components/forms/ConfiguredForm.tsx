@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { submitRequest } from "@/lib/requests/submitRequest";
 import { HONEYPOT_FIELD } from "@/lib/requests/validateRequest";
@@ -26,7 +26,22 @@ export type PageForm = {
 };
 
 export function ConfiguredFormSuccess({ message }: { message: string }) {
-  return <p className={styles.success}>{message}</p>;
+  const statusRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    statusRef.current?.focus();
+  }, []);
+  return (
+    <p
+      ref={statusRef}
+      id="configured-form-success"
+      className={styles.success}
+      role="status"
+      aria-live="polite"
+      tabIndex={-1}
+    >
+      {message}
+    </p>
+  );
 }
 
 export function ConfiguredForm({

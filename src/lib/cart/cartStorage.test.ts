@@ -293,3 +293,63 @@ describe("pending migration follows typed cart mutations", () => {
     expect(readCart("bizon")).toEqual([{ ...tire, quantity: 7 }, added]);
   });
 });
+
+describe("cart display price", () => {
+  it("keeps priced and price-on-request lines through write, reload, and remove-last in both carts", () => {
+    installBrowser();
+    expect(readCart("bizon")).toEqual([]);
+    expect(readCart("shop")).toEqual([]);
+
+    const pricedTire: RequestItemInput = {
+      itemType: "tire", itemId: "tire-priced", name: "Priced tire", quantity: 2, price: 18500, priceOnRequest: false,
+    };
+    const requestTire: RequestItemInput = {
+      itemType: "tire", itemId: "tire-request", name: "Request tire", quantity: 1, price: null, priceOnRequest: true,
+    };
+    const freeTire: RequestItemInput = {
+      itemType: "tire", itemId: "tire-zero", name: "Zero price tire", quantity: 1, price: 0, priceOnRequest: false,
+    };
+    const pricedWheel: RequestItemInput = {
+      itemType: "wheel", itemId: "wheel-priced", name: "Priced wheel", quantity: 1, price: 42000, priceOnRequest: false,
+    };
+    const requestProduct: RequestItemInput = {
+      itemType: "shopProduct", itemId: "product-request", name: "Request product", quantity: 1, priceOnRequest: true,
+    };
+
+    addCartItem("bizon", pricedTire);
+    addCartItem("bizon", requestTire);
+    addCartItem("bizon", freeTire);
+    addCartItem("shop", pricedWheel);
+    addCartItem("shop", requestProduct);
+    expect(addCartItem("bizon", pricedWheel)).toHaveLength(3);
+    expect(addCartItem("shop", pricedTire)).toHaveLength(2);
+
+    const storedBizon = JSON.parse(memory.get("bizon-cart:bizon") ?? "[]") as RequestItemInput[];
+    const storedShop = JSON.parse(memory.get("bizon-cart:shop") ?? "[]") as RequestItemInput[];
+    expect(storedBizon.map((item) => item.price)).toEqual([18500, undefined, 0]);
+    expect(storedBizon.map((item) => item.priceOnRequest)).toEqual([false, true, false]);
+    expect(storedShop.map((item) => item.price)).toEqual([42000, undefined]);
+    expect(storedShop.map((item) => item.priceOnRequest)).toEqual([false, true]);
+
+    updateCartItemQuantity("bizon", cartItemKey(pricedTire), 4);
+    expect(readCart("bizon").map((item) => [item.itemId, item.price, item.priceOnRequest, item.quantity])).toEqual([
+      ["tire-priced", 18500, false, 4],
+      ["tire-request", undefined, true, 1],
+      ["tire-zero", 0, false, 1],
+    ]);
+    expect(readCart("shop").map((item) => [item.itemId, item.price, item.priceOnRequest])).toEqual([
+      ["wheel-priced", 42000, false],
+      ["product-request", undefined, true],
+    ]);
+
+    removeCartItem("bizon", cartItemKey(pricedTire));
+    removeCartItem("bizon", cartItemKey(requestTire));
+    removeCartItem("bizon", cartItemKey(freeTire));
+    expect(readCart("bizon")).toEqual([]);
+    expect(readCart("shop")[0]?.price).toBe(42000);
+    removeCartItem("shop", cartItemKey(pricedWheel));
+    removeCartItem("shop", cartItemKey(requestProduct));
+    expect(readCart("shop")).toEqual([]);
+    expect(vi.mocked(fetch)).not.toHaveBeenCalled();
+  });
+});

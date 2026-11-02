@@ -69,6 +69,7 @@ function compactCart(items: RequestItemInput[]): RequestItemInput[] {
   return items.slice(0, MAX_CART_LINES).map((item) => ({
     itemType: item.itemType, itemId: item.itemId, variantId: item.variantId, name: item.name,
     slug: item.slug, parentSlug: item.parentSlug, quantity: item.quantity,
+    ...(typeof item.price === "number" ? { price: item.price } : {}),
     priceOnRequest: item.priceOnRequest, url: item.url, variantLabel: item.variantLabel,
     notes: item.notes, meta: item.meta,
   }));

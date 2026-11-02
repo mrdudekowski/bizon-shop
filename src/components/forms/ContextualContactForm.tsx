@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { ContactIntent } from "@/lib/requests/contactIntent";
 import { submitRequest } from "@/lib/requests/submitRequest";
@@ -55,10 +55,15 @@ export function ContextualContactForm({
   const [optionalExpanded, setOptionalExpanded] = useState(false);
   const [error, setError] = useState("");
   const [requestId, setRequestId] = useState<string | number>();
+  const confirmationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setOptionalExpanded(window.matchMedia("(min-width: 768px)").matches);
   }, []);
+
+  useEffect(() => {
+    if (status === "success" && requestId != null) confirmationRef.current?.focus();
+  }, [status, requestId]);
 
   const setValue = (key: keyof FormValues, value: string) =>
     setValues((current) => ({ ...current, [key]: value }));
@@ -103,7 +108,14 @@ export function ContextualContactForm({
 
   if (status === "success" && requestId != null) {
     return (
-      <div className={styles.confirmation}>
+      <div
+        ref={confirmationRef}
+        id="contextual-contact-success"
+        className={styles.confirmation}
+        role="status"
+        aria-live="polite"
+        tabIndex={-1}
+      >
         <p className={styles.eyebrow}>Запрос зарегистрирован</p>
         <h2>Заявка {requestId} принята</h2>
         <p>
