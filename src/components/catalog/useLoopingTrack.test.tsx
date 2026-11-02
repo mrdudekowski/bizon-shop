@@ -7,19 +7,38 @@ import { useLoopingTrack } from "./useLoopingTrack";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
+let mobileViewport = true;
+let breakpointListeners = new Set<(event: MediaQueryListEvent) => void>();
+
 function installViewport(isMobile: boolean) {
+  mobileViewport = isMobile;
+  breakpointListeners = new Set();
   window.matchMedia = ((query: string) => ({
-    matches: query === "(max-width: 1023px)" && isMobile,
+    get matches() {
+      return query === "(max-width: 1023px)" && mobileViewport;
+    },
     media: query,
     onchange: null,
-    addEventListener() {},
-    removeEventListener() {},
+    addEventListener(_type: string, listener: EventListenerOrEventListenerObject) {
+      if (query === "(max-width: 1023px)") {
+        breakpointListeners.add(listener as (event: MediaQueryListEvent) => void);
+      }
+    },
+    removeEventListener(_type: string, listener: EventListenerOrEventListenerObject) {
+      breakpointListeners.delete(listener as (event: MediaQueryListEvent) => void);
+    },
     addListener() {},
     removeListener() {},
     dispatchEvent() {
       return false;
     },
   })) as typeof window.matchMedia;
+}
+
+function crossBreakpoint(isMobile: boolean) {
+  mobileViewport = isMobile;
+  const event = { matches: isMobile } as MediaQueryListEvent;
+  for (const listener of breakpointListeners) listener(event);
 }
 
 function TrackHarness({ count }: { count: number }) {
@@ -87,6 +106,55 @@ describe("useLoopingTrack", () => {
       track.dispatchEvent(new Event("scrollend"));
     });
     expect(track.scrollLeft).toBe(180);
+  });
+
+  it("wraps a two-item track without exposing a finite end", async () => {
+    await renderTrack(2);
+    const track = host.querySelector("[data-track]") as HTMLDivElement;
+    expect(track.scrollLeft).toBe(360);
+
+    await act(async () => {
+      track.scrollLeft = 0;
+      track.dispatchEvent(new Event("scrollend"));
+    });
+    expect(track.scrollLeft).toBe(360);
+
+    await act(async () => {
+      track.scrollLeft = 500;
+      track.dispatchEvent(new Event("scrollend"));
+    });
+    expect(track.scrollLeft).toBe(140);
+  });
+
+  it("repositions the active cycle when crossing mobile to desktop and back", async () => {
+    await renderTrack(3);
+    const track = host.querySelector("[data-track]") as HTMLDivElement;
+    expect(track.scrollLeft).toBe(540);
+
+    await act(async () => {
+      crossBreakpoint(false);
+    });
+    expect(track.scrollLeft).toBe(0);
+
+    await act(async () => {
+      crossBreakpoint(true);
+    });
+    expect(track.scrollLeft).toBe(540);
+  });
+
+  it("recenters after an interrupted scroll once the final position settles", async () => {
+    await renderTrack(3);
+    const track = host.querySelector("[data-track]") as HTMLDivElement;
+
+    await act(async () => {
+      track.scrollLeft = 700;
+      track.dispatchEvent(new Event("scroll"));
+      track.scrollLeft = 620;
+      track.dispatchEvent(new Event("scroll"));
+      track.dispatchEvent(new Event("scrollend"));
+    });
+
+    expect(track.scrollLeft).toBe(80);
   });
 
   it("does not initialize a loop for zero, one, or desktop-grid content", async () => {
