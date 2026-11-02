@@ -39,7 +39,7 @@
   border: 0;
   border-radius: var(--radius-panel);
   background: var(--bizon-neutral-100);
-  cursor: zoom-in;
+  cursor: pointer; /* pins the current photo; there is no zoom viewer */
 }
 
 .mainImage:disabled { cursor: default; }
