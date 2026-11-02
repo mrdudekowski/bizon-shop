@@ -113,24 +113,23 @@
 .messengers {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 2px;
   margin-top: 4px;
 }
 
-.messengerLink {
+.contact .messengerLink {
   display: inline-grid;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: var(--radius-circle);
-  background: rgba(255, 255, 255, 0.06);
+  border: 0;
+  background: transparent;
   color: var(--bizon-white);
-  transition:
-    background-color var(--transition-fast),
-    border-color var(--transition-fast),
-    color var(--transition-fast),
-    transform var(--transition-fast);
+}
+
+.contact .messengerLink svg {
+  width: 22px;
+  height: 22px;
 }
 
 .contact .messengerTextLink {
@@ -147,7 +146,6 @@
   overflow-wrap: anywhere;
 }
 
-.messengerLink:hover,
 .contact .messengerTextLink:hover {
   border-color: var(--bizon-coral-500);
   background: var(--bizon-coral-500);

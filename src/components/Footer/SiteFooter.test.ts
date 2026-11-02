@@ -43,6 +43,8 @@ describe("SiteFooter contacts", () => {
     expect(html).toContain('href="tel:+74212000000"');
     expect(html).toContain('href="mailto:sales@bizon.ru"');
     expect(html).toContain('href="https://t.me/bizon"');
+    expect(html).toContain("<svg");
+    expect(html).toContain('aria-label="Telegram"');
     expect(html.match(/target="_blank"/g)).toHaveLength(1);
     expect(html).not.toContain("vk.com");
     expect(html).not.toContain("Актуальные ссылки на каналы связи");

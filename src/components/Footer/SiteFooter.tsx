@@ -14,35 +14,62 @@ import {
 import styles from "./Footer.module.css";
 
 type FooterSurface = "main" | "shop";
-/** Channel ids that keep a brand icon; every other id renders as a text link with its label. */
+
+function BrandIcon({ children }: { children: ReactNode }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={22}
+      height={22}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {children}
+    </svg>
+  );
+}
+
+/**
+ * Stroke marks from Hugeicons (MIT), one weight on a 24 grid.
+ * MAX is absent from that set: the path is the official symbol from the MAX
+ * brandbook, scaled into the same grid. vectorEffect keeps the 1.5 stroke
+ * after the scale.
+ */
 const MESSENGER_ICONS: Record<string, ReactNode> = {
   telegram: (
-      <svg viewBox="0 0 24 24" width={18} height={18} fill="currentColor" aria-hidden="true">
-        <path d="M21.4 3.4 2.7 10.6c-.8.3-.8 1.4 0 1.7l4.7 1.6 1.8 5.6c.2.6 1 .8 1.4.3l2.6-2.7 4.9 3.6c.6.4 1.5.1 1.7-.7L22.9 4.7c.2-.9-.7-1.6-1.5-1.3ZM9.4 13.7l8.5-5.3c.2-.1.4.1.2.3l-7 6.5-.3 3.2-1.4-4.7Z" />
-      </svg>
+    <BrandIcon>
+      <path d="m11.985 15.408l3.242 3.686c1.2 1.365 1.801 2.048 2.43 1.881c.628-.166.844-1.064 1.275-2.861l2.39-9.968c.665-2.768.997-4.151.259-4.834s-2.017-.175-4.575.84L5.14 8.865c-2.046.813-3.069 1.219-3.134 1.917a1 1 0 0 0 0 .214c.063.699 1.084 1.108 3.128 1.927c.925.371 1.388.557 1.72.912q.056.06.108.124c.306.38.436.88.697 1.876l.489 1.867c.253.97.38 1.456.713 1.522s.622-.336 1.201-1.141zm0 0l-.317-.33c-.362-.378-.543-.566-.543-.8s.18-.423.543-.8l3.573-3.724" />
+    </BrandIcon>
   ),
   whatsapp: (
-      <svg viewBox="0 0 24 24" width={18} height={18} fill="currentColor" aria-hidden="true">
-        <path d="M12 2a9.9 9.9 0 0 0-8.5 15l-1.3 4.8 4.9-1.3A9.9 9.9 0 1 0 12 2Zm5.6 14c-.2.7-1.3 1.3-1.8 1.4-.5.1-1.1.1-1.8-.1a16.4 16.4 0 0 1-5.6-3.7c-1.6-1.8-2.4-3.5-2.4-4.6 0-1.1.6-1.7 1.1-2 .3-.2.7-.2.9-.2h.6c.2 0 .5 0 .7.5.3.6.9 2.1 1 2.3.1.2.1.4 0 .6-.1.2-.2.3-.4.5l-.4.5c-.2.2-.3.4-.1.7.2.4.9 1.5 2 2.4 1.4 1.2 2.5 1.6 2.9 1.8.3.1.6.1.8-.1.2-.3.9-1.1 1.2-1.4.2-.3.5-.3.8-.2.3.1 2 .9 2.3 1.1.3.2.5.3.6.5.1.1.1.8-.1 1.5Z" />
-      </svg>
+    <BrandIcon>
+      <path strokeLinejoin="round" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2S2 6.477 2 12c0 1.379.28 2.693.784 3.888c.279.66.418.99.436 1.24c.017.25-.057.524-.204 1.073L2 22l3.799-1.016c.549-.147.823-.22 1.073-.204c.25.018.58.157 1.24.436A10 10 0 0 0 12 22Z" />
+      <path d="m8.588 12.377l.871-1.081c.367-.456.82-.88.857-1.488c.008-.153-.1-.841-.315-2.218C9.916 7.049 9.41 7 8.973 7c-.57 0-.855 0-1.138.13c-.358.163-.725.622-.806 1.007c-.064.305-.016.515.079.935c.402 1.783 1.347 3.544 2.811 5.009c1.465 1.464 3.226 2.409 5.01 2.811c.42.095.629.143.934.079c.385-.08.844-.448 1.008-.806c.129-.283.129-.568.129-1.138c0-.438-.049-.943-.59-1.028c-1.377-.216-2.065-.323-2.218-.315c-.607.036-1.032.49-1.488.857l-1.081.87" />
+    </BrandIcon>
   ),
   max: (
-      <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="2.5" y="4" width="19" height="16" rx="4.5" />
-        <path d="M6.8 15.5V8.5l5.2 4.4 5.2-4.4v7" />
-      </svg>
+    <BrandIcon>
+      <path
+        transform="translate(1.6 0.8) scale(0.205)"
+        vectorEffect="non-scaling-stroke"
+        d="M50.76 0c27.53 0 49.12 22.34 49.12 49.89S77.61 99.23 51.02 99.23c-9.43 0-14.01-1.33-21.37-6.54-.5-.36-1.2-.26-1.63.19-5.66 6.04-20.17 10.28-20.83 2.03C7.19 80.53 0 71.18 0 49.61 0 21.3 23.22 0 50.76 0Z"
+      />
+    </BrandIcon>
   ),
   vk: (
-      <svg viewBox="0 0 24 24" width={18} height={18} fill="currentColor" aria-hidden="true">
-        <path d="M13.2 17.5c-6.2 0-9.8-4.3-9.9-11.4h3.1c.1 5.2 2.4 7.4 4.2 7.9V6.1h2.9v4.5c1.8-.2 3.7-2.2 4.3-4.5h2.9c-.5 2.8-2.5 4.8-3.9 5.6 1.4.7 3.7 2.4 4.5 5.8h-3.2c-.7-2.2-2.4-3.9-4.7-4.1v4.1h-.2Z" />
-      </svg>
+    <BrandIcon>
+      <path d="M2 5.5h3.5c0 8 4.5 9 4.5 9l.002-9h3.5l-.003 5c4.5-2 5-5 5-5H22s-1 4.5-4.906 6.653C19.11 13.351 21.268 15.331 22 18.5h-3.5s-1-3-5-4.5l.002 4.5C1.887 18.5 2.002 7.5 2 5.5" />
+    </BrandIcon>
   ),
   instagram: (
-      <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="3" y="3" width="18" height="18" rx="5" />
-        <circle cx="12" cy="12" r="4" />
-        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
-      </svg>
+    <BrandIcon>
+      <path d="M3 12c0-4.243 0-6.364 1.318-7.682S7.758 3 12 3s6.364 0 7.682 1.318S21 7.758 21 12s0 6.364-1.318 7.682S16.242 21 12 21s-6.364 0-7.682-1.318S3 16.242 3 12" />
+      <path d="M16 12a4 4 0 1 1-8 0a4 4 0 0 1 8 0m1.375-5.25h-.125m.25 0a.25.25 0 1 1-.5 0a.25.25 0 0 1 .5 0" />
+    </BrandIcon>
   ),
 };
 
