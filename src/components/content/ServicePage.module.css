@@ -30,7 +30,7 @@
   font-size: clamp(1.25rem, 2vw, 1.5rem);
   font-weight: 600;
   line-height: 1.3;
-  letter-spacing: normal;
+  letter-spacing: var(--tracking-normal);
 }
 
 .editorialSection p {
@@ -64,7 +64,7 @@
   font-size: clamp(1.25rem, 2vw, 1.5rem);
   font-weight: 600;
   line-height: 1.3;
-  letter-spacing: normal;
+  letter-spacing: var(--tracking-normal);
 }
 
 .featureList {
@@ -97,7 +97,7 @@
   font-size: 1.25rem;
   font-weight: 600;
   line-height: 1.3;
-  letter-spacing: normal;
+  letter-spacing: var(--tracking-normal);
 }
 
 .featureList p {

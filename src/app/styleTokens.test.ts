@@ -13,6 +13,7 @@ const REQUIRED_TOKENS = [
   "--tracking-kicker",
   "--tracking-label",
   "--tracking-brand",
+  "--tracking-normal",
   "--type-hero",
   "--type-display",
   "--type-title",
