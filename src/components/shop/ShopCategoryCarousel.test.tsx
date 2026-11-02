@@ -213,4 +213,40 @@ describe("ShopCategoryCarousel", () => {
     });
     expect(activeArticle(host).querySelector("a")?.textContent).toBe("Масла");
   });
+
+  it("keeps a clicked slide when an autoplay tick is still pending", async () => {
+    vi.useFakeTimers();
+    await renderCarousel(slides);
+    await act(async () => {
+      vi.advanceTimersByTime(6999);
+    });
+    expect(activeArticle(host).querySelector("a")?.textContent).toBe("Масла");
+
+    await clickControl("Показать Комфорт");
+    expect(activeArticle(host).querySelector("a")?.textContent).toBe("Комфорт");
+
+    await act(async () => {
+      vi.advanceTimersByTime(7000);
+    });
+    expect(activeArticle(host).querySelector("a")?.textContent).toBe("Комфорт");
+  });
+
+  it("keeps the visible slide when focus arrives before a pending autoplay tick", async () => {
+    vi.useFakeTimers();
+    await renderCarousel(slides.slice(0, 2));
+    await act(async () => {
+      vi.advanceTimersByTime(6999);
+    });
+    expect(activeArticle(host).querySelector("a")?.textContent).toBe("Масла");
+
+    const control = host.querySelector("button");
+    if (!control) throw new Error("control missing");
+    await act(async () => {
+      control.focus();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(7000);
+    });
+    expect(activeArticle(host).querySelector("a")?.textContent).toBe("Масла");
+  });
 });

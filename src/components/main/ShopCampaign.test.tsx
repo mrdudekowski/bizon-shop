@@ -113,6 +113,30 @@ describe("ShopCampaign", () => {
     expect(host.querySelector("button")).toBeNull();
   });
 
+  it("keeps the visible frame when the call to action is used before a pending tick", async () => {
+    vi.useFakeTimers();
+    await renderCampaign(campaign([
+      { imageUrl: "/one.jpg", imageAlt: "Первый" },
+      { imageUrl: "/two.jpg", imageAlt: "Второй" },
+    ]));
+    await act(async () => {
+      vi.advanceTimersByTime(FRAME_MS - 1);
+    });
+    expect(activeAlt(host)).toBe("Первый");
+
+    const cta = host.querySelector("a");
+    if (!cta) throw new Error("cta missing");
+    await act(async () => {
+      cta.focus();
+      cta.click();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(FRAME_MS);
+    });
+    expect(activeAlt(host)).toBe("Первый");
+    expect(host.querySelector("button")).toBeNull();
+  });
+
   it("does not autoplay one frame or when the user prefers reduced motion", async () => {
     vi.useFakeTimers();
     await renderCampaign(campaign([{ imageUrl: "/one.jpg", imageAlt: "Первый" }]));

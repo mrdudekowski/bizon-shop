@@ -161,4 +161,40 @@ describe("ModelAdvantagesCarousel", () => {
     });
     expect(activeTitle(host)).toBe("Порез");
   });
+
+  it("keeps a clicked advantage when an autoplay tick is still pending", async () => {
+    vi.useFakeTimers();
+    await renderCarousel(advantages);
+    await act(async () => {
+      vi.advanceTimersByTime(6999);
+    });
+    expect(activeTitle(host)).toBe("Порез");
+
+    await clickControl("Показать преимущество Нагрузка");
+    expect(activeTitle(host)).toBe("Нагрузка");
+
+    await act(async () => {
+      vi.advanceTimersByTime(7000);
+    });
+    expect(activeTitle(host)).toBe("Нагрузка");
+  });
+
+  it("keeps the visible advantage when focus arrives before a pending autoplay tick", async () => {
+    vi.useFakeTimers();
+    await renderCarousel(advantages.slice(0, 2));
+    await act(async () => {
+      vi.advanceTimersByTime(6999);
+    });
+    expect(activeTitle(host)).toBe("Порез");
+
+    const control = host.querySelector("button");
+    if (!control) throw new Error("control missing");
+    await act(async () => {
+      control.focus();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(7000);
+    });
+    expect(activeTitle(host)).toBe("Порез");
+  });
 });

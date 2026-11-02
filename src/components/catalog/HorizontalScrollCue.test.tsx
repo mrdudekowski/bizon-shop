@@ -91,4 +91,52 @@ describe("HorizontalScrollCue", () => {
     });
     expect(scrollTo).toHaveBeenCalledWith({ left: 246, behavior: "smooth" });
   });
+
+  it("moves the active mark when a resize reflows which card is nearest", async () => {
+    await renderCue(3, false);
+    const element = host.querySelector("[data-track]");
+    if (!(element instanceof HTMLElement)) throw new Error("track missing");
+
+    layoutTrack(element, 0, [0, 300, 600]);
+    await act(async () => {
+      window.dispatchEvent(new Event("resize"));
+    });
+    expect(activeMarks(host)).toEqual(["true", "false", "false"]);
+
+    layoutTrack(element, 300, [-300, 0, 300]);
+    expect(activeMarks(host)).toEqual(["true", "false", "false"]);
+
+    await act(async () => {
+      window.dispatchEvent(new Event("resize"));
+    });
+    expect(activeMarks(host)).toEqual(["false", "true", "false"]);
+  });
 });
+
+function activeMarks(host: ParentNode) {
+  return [...host.querySelectorAll("[data-active]")].map((node) => node.getAttribute("data-active"));
+}
+
+function layoutTrack(track: HTMLElement, scrollLeft: number, cardLefts: number[]) {
+  Object.defineProperty(track, "scrollLeft", { configurable: true, get: () => scrollLeft });
+  track.getBoundingClientRect = () => rect(0);
+  [...track.children].forEach((card, index) => {
+    (card as HTMLElement).getBoundingClientRect = () => rect(cardLefts[index] ?? 0);
+  });
+}
+
+function rect(left: number): DOMRect {
+  return {
+    x: left,
+    y: 0,
+    left,
+    top: 0,
+    right: left,
+    bottom: 0,
+    width: 0,
+    height: 0,
+    toJSON() {
+      return {};
+    },
+  } as DOMRect;
+}
