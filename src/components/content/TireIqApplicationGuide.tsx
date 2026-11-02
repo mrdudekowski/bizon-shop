@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
-import { TIRE_IQ_AXLES_KNOWLEDGE_HREF } from "@/lib/content/tireIqTaxonomy";
+import { getTireIqAxisKnowledgeHref } from "@/lib/content/tireIqTaxonomy";
 
 import styles from "./TireIqApplicationGuide.module.css";
 
@@ -25,9 +25,9 @@ const GUIDE_GROUPS = [
   {
     title: "Ось",
     options: [
-      { label: "Рулевая", href: TIRE_IQ_AXLES_KNOWLEDGE_HREF },
-      { label: "Ведущая", href: TIRE_IQ_AXLES_KNOWLEDGE_HREF },
-      { label: "Прицепная", href: TIRE_IQ_AXLES_KNOWLEDGE_HREF },
+      { label: "Рулевая", href: getTireIqAxisKnowledgeHref("steer") },
+      { label: "Ведущая", href: getTireIqAxisKnowledgeHref("drive") },
+      { label: "Прицепная", href: getTireIqAxisKnowledgeHref("trailer") },
     ],
   },
   {

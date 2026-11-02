@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { ResponsiveDisclosure } from "@/components/content/ResponsiveDisclosure";
-import { TIRE_IQ_AXLES_KNOWLEDGE_HREF } from "@/lib/content/tireIqTaxonomy";
+import { getTireIqAxisKnowledgeHref } from "@/lib/content/tireIqTaxonomy";
 
 import styles from "./TireIqBusSelector.module.css";
 
@@ -33,7 +33,7 @@ export function TireIqBusSelector({ hasKnowledge = true }: { hasKnowledge?: bool
       <ResponsiveDisclosure summary="Выбрать ось">
       <div className={styles.options}>
         {AXLES.map((axle) => (
-          <Link className={styles.option} href={hasKnowledge ? TIRE_IQ_AXLES_KNOWLEDGE_HREF : "/contact"} key={axle.key}
+          <Link className={styles.option} href={hasKnowledge ? getTireIqAxisKnowledgeHref(axle.key) : "/contact"} key={axle.key}
             onMouseEnter={() => setActiveAxle(axle.key)} onMouseLeave={() => setActiveAxle(null)}
             onFocus={() => setActiveAxle(axle.key)} onBlur={() => setActiveAxle(null)}>
             <span className={styles.number}>{axle.number}</span>

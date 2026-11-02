@@ -16,25 +16,25 @@ function hrefFor(html: string, label: string) {
 }
 
 describe("Tire IQ axle selectors", () => {
-  it("keeps topic=axles on axle, dump, and bus selector links", () => {
+  it("preserves each axle separately while retaining the axles topic", () => {
     const truck = renderToStaticMarkup(createElement(TireIqAxleSelector));
     const dump = renderToStaticMarkup(createElement(TireIqDumpTruckSelector));
     const bus = renderToStaticMarkup(createElement(TireIqBusSelector));
     const guide = renderToStaticMarkup(createElement(TireIqApplicationGuide));
 
-    for (const label of ["Рулевая ось", "Ведущая ось", "Прицепная ось"]) {
+    for (const [label, axis] of [["Рулевая ось", "steer"], ["Ведущая ось", "drive"], ["Прицепная ось", "trailer"]]) {
       const href = hrefFor(truck, label);
       expect(href, label).toContain("topic=axles");
+      expect(href, label).toContain(`axis=${axis}`);
       expect(href, label).toContain("#knowledge");
+
+      const guideHref = hrefFor(guide, label.replace(" ось", ""));
+      expect(guideHref, label).toContain("topic=axles");
+      expect(guideHref, label).toContain(`axis=${axis}`);
     }
-    for (const label of ["Рулевая ось", "Ведущая ось"]) {
-      expect(hrefFor(dump, label)).toContain("topic=axles");
-      expect(hrefFor(bus, label)).toContain("topic=axles");
-    }
-    for (const label of ["Рулевая", "Ведущая", "Прицепная"]) {
-      const href = hrefFor(guide, label);
-      expect(href, label).toContain("topic=axles");
-      expect(href, label).toContain("#knowledge");
+    for (const [label, axis] of [["Рулевая ось", "steer"], ["Ведущая ось", "drive"]]) {
+      expect(hrefFor(dump, label), label).toContain(`topic=axles&amp;axis=${axis}`);
+      expect(hrefFor(bus, label), label).toContain(`topic=axles&amp;axis=${axis}`);
     }
   });
 
