@@ -24,7 +24,7 @@ function installMotion(reduced: boolean) {
   })) as typeof window.matchMedia;
 }
 
-function CueHarness({ count }: { count: number }) {
+function CueHarness({ count, copies = 1 }: { count: number; copies?: number }) {
   const trackRef = useRef<HTMLDivElement>(null);
   return createElement(
     "div",
@@ -32,7 +32,7 @@ function CueHarness({ count }: { count: number }) {
     createElement(
       "div",
       { ref: trackRef, "data-track": "true" },
-      Array.from({ length: count }, (_, index) => createElement("div", { key: index }, `card ${index}`)),
+      Array.from({ length: count * copies }, (_, index) => createElement("div", { key: index }, `card ${index % count}`)),
     ),
     createElement(HorizontalScrollCue, { trackRef, count }),
   );
@@ -49,13 +49,13 @@ describe("HorizontalScrollCue", () => {
     host?.remove();
   });
 
-  async function renderCue(count: number, reduced: boolean) {
+  async function renderCue(count: number, reduced: boolean, copies = 1) {
     installMotion(reduced);
     host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
     await act(async () => {
-      root.render(createElement(CueHarness, { count }));
+      root.render(createElement(CueHarness, { count, copies }));
     });
   }
 
@@ -92,7 +92,7 @@ describe("HorizontalScrollCue", () => {
     expect(scrollTo).toHaveBeenCalledWith({ left: 246, behavior: "smooth" });
   });
 
-  it("continues forward at the physical end so the looping track can recenter seamlessly", async () => {
+  it("returns an ordinary track to the start within 16px of the end", async () => {
     await renderCue(2, false);
     const { scrollTo } = track(590);
     const button = host.querySelector("button");
@@ -102,7 +102,23 @@ describe("HorizontalScrollCue", () => {
       button.click();
     });
 
-    expect(scrollTo).toHaveBeenCalledWith({ left: 836, behavior: "smooth" });
+    expect(scrollTo).toHaveBeenCalledWith({ left: 0, behavior: "smooth" });
+  });
+
+  it("advances a looping clone strip by one period instead of jumping to the start", async () => {
+    await renderCue(2, false, 2);
+    const { element, scrollTo } = track(590);
+    [...element.children].forEach((card, index) => {
+      Object.defineProperty(card, "offsetLeft", { configurable: true, value: index * 300 });
+    });
+    const button = host.querySelector("button");
+    if (!button) throw new Error("cue missing");
+
+    await act(async () => {
+      button.click();
+    });
+
+    expect(scrollTo).toHaveBeenCalledWith({ left: 1190, behavior: "smooth" });
   });
 
   it("moves the active mark when a resize reflows which card is nearest", async () => {

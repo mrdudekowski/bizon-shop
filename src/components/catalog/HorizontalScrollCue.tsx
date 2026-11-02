@@ -4,7 +4,7 @@ import { useEffect, useState, type RefObject } from "react";
 
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 
-import { activeLoopIndex } from "./loopScroll";
+import { activeLoopIndex, loopPeriod } from "./loopScroll";
 import styles from "./HorizontalScrollCue.module.css";
 
 type HorizontalScrollCueProps = {
@@ -63,9 +63,11 @@ export function HorizontalScrollCue({
     const { scrollLeft, scrollWidth, clientWidth } = track;
     const maxScroll = scrollWidth - clientWidth;
     if (maxScroll <= 4) return;
-    // Let the looping track handle its own boundary correction. Sending the cue
-    // back to zero here creates a visible return-to-first-card jump.
-    const nextLeft = scrollLeft + Math.round(clientWidth * 0.82);
+    const step = Math.round(clientWidth * 0.82);
+    const period = loopPeriod(Array.from(track.children, (card) => (card as HTMLElement).offsetLeft), count);
+    const nextLeft = scrollLeft >= maxScroll - 16
+      ? (period > 0 ? scrollLeft + period : 0)
+      : scrollLeft + step;
     const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
     track.scrollTo({ left: nextLeft, behavior });
   };
