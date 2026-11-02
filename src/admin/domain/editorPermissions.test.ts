@@ -16,7 +16,7 @@ const ALL_ACTIONS: EditorAction[] = [
 ];
 
 function session(role: AdminSession["role"], capabilities: AdminSession["capabilities"] = []): AdminSession {
-  return { login: role === "admin" ? "admin" : "editor", role, capabilities };
+  return { login: role === "admin" ? "admin" : role, role, capabilities };
 }
 
 describe("canEditorPerform", () => {
@@ -24,6 +24,20 @@ describe("canEditorPerform", () => {
     for (const action of ALL_ACTIONS) {
       expect(canEditorPerform(session("admin"), action)).toBe(true);
     }
+  });
+
+  it("lets sales managers handle requests but denies viewers and content edits", () => {
+    const sales = session("sales_manager", ["create_catalog_items", "edit_site_pages"]);
+    expect(canEditorPerform(sales, "view_requests")).toBe(true);
+    expect(canEditorPerform(sales, "manage_requests")).toBe(true);
+    expect(canEditorPerform(sales, "edit_catalog")).toBe(false);
+    expect(canEditorPerform(sales, "manage_users")).toBe(false);
+    expect(canEditorPerform(session("viewer"), "view_requests")).toBe(false);
+    expect(canEditorPerform(session("viewer"), "manage_requests")).toBe(false);
+  });
+  it("denies catalog access to sales managers and viewers", () => {
+    expect(canEditorPerform(session("sales_manager"), "edit_catalog")).toBe(false);
+    expect(canEditorPerform(session("viewer"), "edit_catalog")).toBe(false);
   });
 
   it("lets a basic editor edit the catalog and nothing else", () => {

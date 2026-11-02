@@ -98,7 +98,7 @@ export type PublishBlocker =
 export type DocumentStatus = "draft" | "on_site" | "hidden";
 export type StatusEntity = "tire-direction" | "tire-model" | "wheel-type" | "wheel-model" | "shop-category" | "shop-product" | "page" | "material";
 
-export type AdminRole = "admin" | "editor";
+export type AdminRole = "admin" | "editor" | "sales_manager" | "viewer";
 export type EditorCapability = "create_catalog_items" | "edit_site_pages";
 
 export type AdminSession = {

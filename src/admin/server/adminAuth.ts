@@ -106,11 +106,13 @@ export function sessionRole(storedValue: unknown): AdminSession["role"] | null {
   const value = String(storedValue);
   if (value === "admin") return "admin";
   if (value === "content_manager" || value === "editor") return "editor";
+  if (value === "sales_manager") return "sales_manager";
+  if (value === "viewer") return "viewer";
   return null;
 }
 
-export function storedRole(role: AdminSession["role"]): "admin" | "content_manager" {
-  return role === "admin" ? "admin" : "content_manager";
+export function storedRole(role: AdminSession["role"]): "admin" | "content_manager" | "sales_manager" | "viewer" {
+  return role === "editor" ? "content_manager" : role;
 }
 
 export type BootstrapEnv = Record<string, string | undefined>;

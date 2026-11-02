@@ -127,13 +127,17 @@ describe("session cookie", () => {
 });
 
 describe("roles", () => {
-  it("maps stored roles onto the two roles the CMS knows", () => {
+  it("preserves canonical roles at the authenticated session boundary", () => {
     expect(sessionRole("admin")).toBe("admin");
     expect(sessionRole("content_manager")).toBe("editor");
+    expect(sessionRole("sales_manager")).toBe("sales_manager");
+    expect(sessionRole("viewer")).toBe("viewer");
     expect(sessionRole("editor")).toBe("editor");
-    expect(sessionRole("viewer")).toBeNull();
+    expect(sessionRole("unexpected")).toBeNull();
     expect(storedRole("admin")).toBe("admin");
     expect(storedRole("editor")).toBe("content_manager");
+    expect(storedRole("sales_manager")).toBe("sales_manager");
+    expect(storedRole("viewer")).toBe("viewer");
   });
 });
 
@@ -224,7 +228,7 @@ describe("authenticate", () => {
         {
           id: 8,
           email: "writer",
-          role: "content_manager",
+          role: "editor",
           status: "active",
           hash: encoded,
           cms_capabilities: ["create_catalog_items", "edit_site_pages"],
@@ -254,7 +258,7 @@ describe("authenticate", () => {
     });
     const unsupportedRole = recordingQuery({
       "FROM users WHERE email": [
-        { id: 9, email: "viewer", role: "viewer", status: "active", hash: encoded },
+        { id: 9, email: "viewer", role: "unknown_role", status: "active", hash: encoded },
       ],
     });
 
@@ -288,7 +292,7 @@ describe("readSession", () => {
         {
           id: 7,
           email: "writer",
-          role: "content_manager",
+          role: "editor",
           status: "active",
           cms_capabilities: ["edit_site_pages"],
         },
@@ -316,7 +320,7 @@ describe("readSession", () => {
     });
     const unsupportedRole = recordingQuery({
       "FROM cms_auth_sessions": [
-        { id: 7, email: "writer", role: "viewer", status: "active" },
+        { id: 7, email: "writer", role: "unknown_role", status: "active" },
       ],
     });
     const expired = recordingQuery({});

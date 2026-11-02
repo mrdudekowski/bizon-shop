@@ -8,7 +8,7 @@ import { readSiteProfile, siteChannelsAreValid, writeSiteProfileContacts } from 
 import { mediaUsageSql, publicDocumentPageKeys, toMediaUsageRecord } from "./mediaUsage";
 import { detachStoredMediaReference } from "../../storage/mediaReferences";
 import type { AdminClient } from "../client/adminClient";
-import { hashPassword, parseCapabilities, resetUserPassword as resetAccountPassword, storedRole, type AuthenticatedAccount } from "./adminAuth";
+import { hashPassword, parseCapabilities, resetUserPassword as resetAccountPassword, sessionRole, storedRole, type AuthenticatedAccount } from "./adminAuth";
 import {
   articlePublishBlockers,
   shopProductPublishBlockers,
@@ -966,7 +966,7 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
   const modelAvailable = draft.available !== false;
   await client.query(
     `UPDATE tire_models SET name=$2, slug=$3, tire_type_id=$4, short_description=$5, full_description=$6::jsonb,
-      model_code=$7, show_in_menu=$8, menu_order=$9, status=$10, main_image_id=$11,
+      model_code=$7, show_in_menu=$8, menu_order=$9, status=$10, published_at=CASE WHEN $10='published' THEN COALESCE(published_at, now()) ELSE published_at END, main_image_id=$11,
       tread_type=$12, series=COALESCE(NULLIF($13, ''), series), available=$14,
       seo_seo_title=$15, seo_seo_description=$16, updated_at=now()
      WHERE id=$1`,
@@ -1032,9 +1032,9 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
           rim_diameter, rim_diameter_in, load_index, load_index_single, load_index_dual,
           speed_index, ply_rating, ply_rating_pr, overall_diameter, overall_diameter_mm,
           section_width, section_width_mm, tread_depth_mm, pressure_single_kpa, pressure_dual_kpa,
-          max_load_single_kg, max_load_dual_kg, recommended_rim, standard_rim_in, sort_order, status
+          max_load_single_kg, max_load_dual_kg, recommended_rim, standard_rim_in, sort_order, status, published_at
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28, CASE WHEN $28='published' THEN now() ELSE NULL END)
         RETURNING id`,
         [id, ...fields],
       );
@@ -1046,7 +1046,7 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
           rim_diameter=$8, rim_diameter_in=$9, load_index=$10, load_index_single=$11, load_index_dual=$12,
           speed_index=$13, ply_rating=$14, ply_rating_pr=$15, overall_diameter=$16, overall_diameter_mm=$17,
           section_width=$18, section_width_mm=$19, tread_depth_mm=$20, pressure_single_kpa=$21, pressure_dual_kpa=$22,
-          max_load_single_kg=$23, max_load_dual_kg=$24, recommended_rim=$25, standard_rim_in=$26, sort_order=$27, status=$28,
+          max_load_single_kg=$23, max_load_dual_kg=$24, recommended_rim=$25, standard_rim_in=$26, sort_order=$27, status=$28, published_at=CASE WHEN $28='published' THEN COALESCE(published_at, now()) ELSE published_at END,
           updated_at=now()
          WHERE id=$1`,
         [sizeId, ...fields],
@@ -1112,7 +1112,7 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
 }
 
 async function publishStatus(table: string, id: string, status: "published" | "archived" | "draft") {
-  await query(`UPDATE ${table} SET status=$2, updated_at=now() WHERE id=$1`, [Number(id), status]);
+  await query(`UPDATE ${table} SET status=$2, published_at=CASE WHEN $2='published' THEN COALESCE(published_at, now()) ELSE published_at END, updated_at=now() WHERE id=$1`, [Number(id), status]);
 }
 
 export function createPostgresAdminClient(account: AuthenticatedAccount): AdminClient {
@@ -1253,7 +1253,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       try {
         if (!transactionClient) await client.query("BEGIN");
         await client.query(
-          "UPDATE tire_types SET name=$2, slug=$3, description=$4, short_description=$5, sort_order=$6, show_in_menu=$7, cover_image_id=$8, seo_seo_title=$9, seo_seo_description=$10, status='published', updated_at=now() WHERE id=$1",
+          "UPDATE tire_types SET name=$2, slug=$3, description=$4, short_description=$5, sort_order=$6, show_in_menu=$7, cover_image_id=$8, seo_seo_title=$9, seo_seo_description=$10, status='published', published_at=COALESCE(published_at, now()), updated_at=now() WHERE id=$1",
           [
             Number(id),
             draft.name,
@@ -1763,7 +1763,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       if (wheelTypePublishBlockers(draft).length > 0) throw new AdminClientError("publish_blocked");
       await applyPendingMediaReplacements(draft);
       await query(
-        "UPDATE wheel_types SET name=$2, slug=$3, description=$4, short_description=$5, sort_order=$6, cover_image_id=$7, seo_seo_title=$8, seo_seo_description=$9, status='published', updated_at=now() WHERE id=$1",
+        "UPDATE wheel_types SET name=$2, slug=$3, description=$4, short_description=$5, sort_order=$6, cover_image_id=$7, seo_seo_title=$8, seo_seo_description=$9, status='published', published_at=COALESCE(published_at, now()), updated_at=now() WHERE id=$1",
         [Number(id), draft.name, draft.slug, draft.description, draft.shortDescription ?? "", draft.sortOrder, draft.mainImage ? Number(draft.mainImage.assetId) : null, draft.seoTitle ?? "", draft.seoDescription ?? ""],
       );
       await clearOverlay("wheel-types", id, true);
@@ -1855,7 +1855,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       try {
         if (!transactionClient) await client.query("BEGIN");
         await client.query(
-          `UPDATE wheel_models SET name=$2, slug=$3, wheel_type_id=$4, series=$5, design_style=$6, material=$7, construction_method=$8, fitment_notes=$9, short_description=$10, full_description=$11::jsonb, main_image_id=$12, show_in_menu=$13, menu_order=$14, available=$15, seo_seo_title=$16, seo_seo_description=$17, status='published', updated_at=now() WHERE id=$1`,
+          `UPDATE wheel_models SET name=$2, slug=$3, wheel_type_id=$4, series=$5, design_style=$6, material=$7, construction_method=$8, fitment_notes=$9, short_description=$10, full_description=$11::jsonb, main_image_id=$12, show_in_menu=$13, menu_order=$14, available=$15, seo_seo_title=$16, seo_seo_description=$17, status='published', published_at=COALESCE(published_at, now()), updated_at=now() WHERE id=$1`,
           [
             Number(id),
             draft.name,
@@ -1904,14 +1904,14 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           const columns = `size_label, sku, diameter, width, bolt_holes, pcd, pcd_mm, offset_e_t, center_bore, load_rating, weight, color, finish, fastener_type, fastener_material, source_specification, compatible_tire_sizes, price, price_on_request, available`;
           if (variantId == null) {
             const inserted = await client.query(
-              `INSERT INTO wheel_variants (wheel_model_id, sort_order, ${columns}, status)
-               VALUES (${Array.from({ length: 22 }, (_, index) => `$${index + 1}`).join(",")}, 'published') RETURNING id`,
+              `INSERT INTO wheel_variants (wheel_model_id, sort_order, ${columns}, status, published_at)
+               VALUES (${Array.from({ length: 22 }, (_, index) => `$${index + 1}`).join(",")}, 'published', now()) RETURNING id`,
               [Number(id), keptVariantIds.length, ...values],
             );
             keptVariantIds.push(Number(inserted.rows[0].id));
           } else {
             await client.query(
-              `UPDATE wheel_variants SET sort_order=$2, size_label=$3, sku=$4, diameter=$5, width=$6, bolt_holes=$7, pcd=$8, pcd_mm=$9, offset_e_t=$10, center_bore=$11, load_rating=$12, weight=$13, color=$14, finish=$15, fastener_type=$16, fastener_material=$17, source_specification=$18, compatible_tire_sizes=$19, price=$20, price_on_request=$21, available=$22, status='published', updated_at=now() WHERE id=$1`,
+              `UPDATE wheel_variants SET sort_order=$2, size_label=$3, sku=$4, diameter=$5, width=$6, bolt_holes=$7, pcd=$8, pcd_mm=$9, offset_e_t=$10, center_bore=$11, load_rating=$12, weight=$13, color=$14, finish=$15, fastener_type=$16, fastener_material=$17, source_specification=$18, compatible_tire_sizes=$19, price=$20, price_on_request=$21, available=$22, status='published', published_at=COALESCE(published_at, now()), updated_at=now() WHERE id=$1`,
               [variantId, keptVariantIds.length, ...values],
             );
             keptVariantIds.push(variantId);
@@ -2008,7 +2008,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       if (wheelTypePublishBlockers(draft).length > 0) throw new AdminClientError("publish_blocked");
       await applyPendingMediaReplacements(draft);
       await query(
-        "UPDATE shop_categories SET name=$2, slug=$3, description=$4, sort_order=$5, show_in_menu=$6, cover_image_id=$7, seo_seo_title=$8, seo_seo_description=$9, status='published', updated_at=now() WHERE id=$1",
+        "UPDATE shop_categories SET name=$2, slug=$3, description=$4, sort_order=$5, show_in_menu=$6, cover_image_id=$7, seo_seo_title=$8, seo_seo_description=$9, status='published', published_at=COALESCE(published_at, now()), updated_at=now() WHERE id=$1",
         [Number(id), draft.name, draft.slug, draft.description, draft.sortOrder, draft.showInMenu, draft.mainImage ? Number(draft.mainImage.assetId) : null, draft.seoTitle ?? "", draft.seoDescription ?? ""],
       );
       await query("DELETE FROM shop_category_carousel WHERE shop_category_id = $1", [Number(id)]);
@@ -2209,7 +2209,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         (spec) => spec.label.trim().length > 0 && spec.value.trim().length > 0,
       );
       await query(
-        "UPDATE products SET name=$2, slug=$3, shop_category_id=$4, subcategory_id=$5, short_description=$6, full_description=$7::jsonb, price=$8, old_price=$9, price_on_request=$10, main_image_id=$11, available=$12, sku=$13, brand=$14, material=$15, sort_order=$16, specifications=$17::jsonb, seo_seo_title=$18, seo_seo_description=$19, status='published', updated_at=now() WHERE id=$1",
+        "UPDATE products SET name=$2, slug=$3, shop_category_id=$4, subcategory_id=$5, short_description=$6, full_description=$7::jsonb, price=$8, old_price=$9, price_on_request=$10, main_image_id=$11, available=$12, sku=$13, brand=$14, material=$15, sort_order=$16, specifications=$17::jsonb, seo_seo_title=$18, seo_seo_description=$19, status='published', published_at=COALESCE(published_at, now()), updated_at=now() WHERE id=$1",
         [
           Number(id),
           draft.name,
@@ -2429,7 +2429,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       await applyPendingMediaReplacements(draft);
       const rawId = id.slice("article-".length);
       await query(
-        "UPDATE tire_iq_articles SET title=$2, slug=$3, excerpt=$4, content=$5::jsonb, featured_image_id=$6, featured_image_configured=$7, show_in_menu=$8, menu_order=$9, status='published', updated_at=now() WHERE id=$1",
+        "UPDATE tire_iq_articles SET title=$2, slug=$3, excerpt=$4, content=$5::jsonb, featured_image_id=$6, featured_image_configured=$7, show_in_menu=$8, menu_order=$9, status='published', published_at=COALESCE(published_at, now()), updated_at=now() WHERE id=$1",
         [Number(rawId), draft.title, draft.slug, draft.excerpt, JSON.stringify(lexical(draft.body)), draft.image ? Number(draft.image.assetId) : null, draft.imageConfigured, draft.showInMenu, draft.menuOrder],
       );
       const allowedTaxonomy = new Set(["selection", "wear", "pressure", "load", "axles", "quarry", "construction", "tco", "diagnostics"]);
@@ -2489,7 +2489,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         (row): AdminUser => ({
           id: str(row.id),
           login: str(row.email || row.name),
-          role: str(row.role) === "admin" ? "admin" : "editor",
+          role: sessionRole(row.role) ?? "viewer",
           disabled: str(row.status) !== "active",
           capabilities: parseCapabilities(row.cms_capabilities),
         }),
@@ -2497,7 +2497,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
     },
     async createUser(input) {
       requirePermission("manage_users");
-      const capabilities = input.role === "admin" ? [] : parseCapabilities(input.capabilities ?? []);
+      const capabilities = input.role === "editor" ? parseCapabilities(input.capabilities ?? []) : [];
       const rows = await query(
         `INSERT INTO users (name, email, role, status, hash, cms_capabilities, created_at, updated_at)
          VALUES ($1, $1, $2, 'active', $3, $4::jsonb, now(), now())
@@ -2530,7 +2530,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       if (user == null) throw new AdminClientError("publish_blocked");
       const admins = users.filter((item) => item.role === "admin" && !item.disabled);
       if (user.role === "admin" && role !== "admin" && admins.length <= 1) throw new AdminClientError("last_admin");
-      const capabilities = role === "admin" ? [] : user.capabilities;
+      const capabilities = role === "editor" ? user.capabilities : [];
       await query("UPDATE users SET role = $2, cms_capabilities = $3::jsonb, updated_at = now() WHERE id = $1", [
         Number(id),
         storedRole(role),
@@ -2543,7 +2543,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const users = await this.listUsers();
       const user = users.find((item) => item.id === userId);
       if (user == null) throw new AdminClientError("publish_blocked");
-      const next = user.role === "admin" ? [] : parseCapabilities(capabilities);
+      const next = user.role === "editor" ? parseCapabilities(capabilities) : [];
       await query("UPDATE users SET cms_capabilities = $2::jsonb, updated_at = now() WHERE id = $1", [
         Number(userId),
         JSON.stringify(next),
@@ -2688,6 +2688,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return next;
     },
     async listRequests(): Promise<LeadRequestRecord[]> {
+      requirePermission("view_requests");
       const rows = await query(
         "SELECT * FROM requests ORDER BY created_at DESC, id DESC LIMIT 200",
       );
@@ -2743,6 +2744,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       });
     },
     async updateRequestStatus(id: string, status: LeadRequestStatus): Promise<LeadRequestRecord> {
+      requirePermission("manage_requests");
       const requestId = numericId(id);
       if (requestId == null) throw new AdminClientError("not_found");
       const validStatuses = new Set<LeadRequestStatus>([
@@ -2821,6 +2823,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         typeof value !== "function" ||
         property === "createAsset" ||
         property === "replaceAsset" ||
+        property === "updateRequestStatus" ||
         !/^(create|save|publish|unpublish|hide|delete|reset|submit|return|cancel|update|assign|set|decide)/.test(property)
       ) {
         return value;
@@ -2851,7 +2854,7 @@ async function writePage(draft: PageDraft) {
         home_branding_before_caption=$37, home_branding_after_caption=$38,
         home_branding_before_image_id=$39, home_branding_before_image_alt=$40,
         home_branding_after_image_id=$41, home_branding_after_image_alt=$42,
-        status='published', updated_at=now()
+        status='published', published_at=COALESCE(published_at, now()), updated_at=now()
        WHERE key='home'`,
       [
         draft.hero.title || "Главная Bizon",
@@ -2905,7 +2908,7 @@ async function writePage(draft: PageDraft) {
     if (page == null) return;
     const parentId = Number(page.id);
     await query(
-      `UPDATE pages SET seo_seo_title=$1, seo_seo_description=$2, shop_hero_eyebrow=$3, shop_hero_title=$4, shop_hero_lead=$5, shop_hero_cta_label=$6, shop_hero_cta_href=$7, shop_hero_image_id=$8, shop_hero_image_alt=$9, shop_wheels_intro_eyebrow=$10, shop_wheels_intro_title=$11, shop_wheels_intro_lead=$12, shop_wheels_intro_kicker=$13, shop_vehicles_eyebrow=$14, shop_vehicles_title=$15, shop_vehicles_lead=$16, shop_vehicles_cta_label=$17, shop_vehicles_cta_href=$18, shop_catalog_eyebrow=$19, shop_catalog_title=$20, shop_catalog_lead=$21, shop_catalog_section_title=$22, status='published', updated_at=now() WHERE key='shop-home'`,
+      `UPDATE pages SET seo_seo_title=$1, seo_seo_description=$2, shop_hero_eyebrow=$3, shop_hero_title=$4, shop_hero_lead=$5, shop_hero_cta_label=$6, shop_hero_cta_href=$7, shop_hero_image_id=$8, shop_hero_image_alt=$9, shop_wheels_intro_eyebrow=$10, shop_wheels_intro_title=$11, shop_wheels_intro_lead=$12, shop_wheels_intro_kicker=$13, shop_vehicles_eyebrow=$14, shop_vehicles_title=$15, shop_vehicles_lead=$16, shop_vehicles_cta_label=$17, shop_vehicles_cta_href=$18, shop_catalog_eyebrow=$19, shop_catalog_title=$20, shop_catalog_lead=$21, shop_catalog_section_title=$22, status='published', published_at=COALESCE(published_at, now()), updated_at=now() WHERE key='shop-home'`,
       shopHomeParentValues(draft),
     );
     const children = shopHomeChildRows(parentId, draft);
@@ -2986,7 +2989,7 @@ async function writePage(draft: PageDraft) {
     await writePageForm({ query }, draft.id, { ...draft.form, fields });
   }
   await query(
-    `UPDATE pages SET seo_seo_title=$2, seo_seo_description=$3, stub_hero_eyebrow=$4, stub_hero_title=$5, stub_hero_lead=$6, stub_hero_image_id=$7, stub_hero_image_alt=$8, stub_hero_configured=true, status='published', updated_at=now() WHERE key=$1`,
+    `UPDATE pages SET seo_seo_title=$2, seo_seo_description=$3, stub_hero_eyebrow=$4, stub_hero_title=$5, stub_hero_lead=$6, stub_hero_image_id=$7, stub_hero_image_alt=$8, stub_hero_configured=true, status='published', published_at=COALESCE(published_at, now()), updated_at=now() WHERE key=$1`,
     [
       draft.id,
       draft.seoTitle,
