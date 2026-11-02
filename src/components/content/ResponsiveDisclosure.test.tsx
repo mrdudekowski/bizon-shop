@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement, type ReactNode } from "react";
+import { act, createElement, type ComponentProps, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -53,7 +53,9 @@ describe("ResponsiveDisclosure", () => {
     document.body.appendChild(host);
     root = createRoot(host);
     await act(async () => {
-      root.render(createElement(ResponsiveDisclosure, { summary: "Компания" }, children));
+      root.render(
+        createElement(ResponsiveDisclosure, { summary: "Компания" } as ComponentProps<typeof ResponsiveDisclosure>, children),
+      );
     });
     const details = host.querySelector("details");
     if (!details) throw new Error("details missing");
