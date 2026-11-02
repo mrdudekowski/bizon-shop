@@ -377,7 +377,7 @@
   border: 0;
   border-radius: var(--radius-card);
   background: var(--color-surface-muted);
-  cursor: zoom-in;
+  cursor: pointer; /* pins the current photo; there is no zoom viewer */
   touch-action: pan-y;
 }
 .productMedia:disabled { cursor: default; }
