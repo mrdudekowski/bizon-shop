@@ -21,7 +21,7 @@ const MAIN_ITEMS: NavItem[] = [
 
 const SHOP_ITEMS: NavItem[] = [
   { href: "/shop", label: "Shop", icon: Store, matches: (path) => path === "/shop" },
-  { href: "/shop/categories", label: "Категории", icon: Grid2X2, matches: (path) => path === "/shop/categories" || (path.startsWith("/shop/") && !path.startsWith("/shop/wheels") && path !== "/shop/cart" && path !== "/shop/delivery-and-returns") },
+  { href: "/shop/categories", label: "Категории", icon: Grid2X2, matches: (path) => path === "/shop/categories" || (path.startsWith("/shop/") && !path.startsWith("/shop/wheels") && !path.startsWith("/shop/product") && path !== "/shop/cart" && path !== "/shop/delivery-and-returns") },
   { href: "/shop/wheels/forged", label: "Подбор", icon: Wrench, matches: (path) => path.startsWith("/shop/wheels") },
   { href: "/shop/cart", label: "Корзина", icon: ShoppingBag, matches: (path) => path === "/shop/cart" },
 ];
