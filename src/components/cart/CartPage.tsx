@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useCart } from "@/hooks/useCart";
 import { cartItemKey, isCartItemAllowed } from "@/lib/cart/cartStorage";
@@ -101,6 +101,36 @@ function CartItemsGroup({ title, items, onRemove, onQuantityChange }: CartItemsG
   );
 }
 
+function CartCheckoutSuccess({
+  message,
+  successHref,
+  successLabel,
+}: {
+  message: string;
+  successHref: string;
+  successLabel: string;
+}) {
+  const statusRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    statusRef.current?.focus();
+  }, []);
+
+  return (
+    <section
+      ref={statusRef}
+      id="cart-checkout-success"
+      className="card-base info-card max-w-3xl"
+      role="status"
+      aria-live="polite"
+      tabIndex={-1}
+    >
+      <h2 className="info-card-title">Спасибо</h2>
+      <p className="info-card-text">{message}</p>
+      <p className="mt-6"><Link href={successHref} className="btn-accent inline-flex">{successLabel}</Link></p>
+    </section>
+  );
+}
+
 type CartPageProps = {
   kind: CartKind;
   sourceForm: SourceForm;
@@ -189,11 +219,7 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
   return (
     <div className={styles.groups}>
       {status === "success" ? (
-        <section className="card-base info-card max-w-3xl">
-          <h2 className="info-card-title">Спасибо</h2>
-          <p className="info-card-text">{message}</p>
-          <p className="mt-6"><Link href={successHref} className="btn-accent inline-flex">{successLabel}</Link></p>
-        </section>
+        <CartCheckoutSuccess message={message} successHref={successHref} successLabel={successLabel} />
       ) : (
         <>
           {tireItems.length > 0 && <CartItemsGroup title="Шины" items={tireItems} onRemove={cart.removeItem} onQuantityChange={cart.setQuantity} />}
