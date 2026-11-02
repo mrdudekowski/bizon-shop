@@ -35,7 +35,7 @@ describe("uploadLibraryFile", () => {
   it("keeps the first file whose type is allowed", () => {
     const pdf = new File(["pdf"], "policy.pdf", { type: "application/pdf" });
     const png = new File(["image"], "hero.png", { type: "image/png" });
-    const files = { 0: pdf, 1: png, length: 2, *[Symbol.iterator]() { yield pdf; yield png; } } as FileList;
+    const files = { 0: pdf, 1: png, length: 2, item: (index: number) => [pdf, png][index] ?? null, *[Symbol.iterator]() { yield pdf; yield png; } } as FileList;
     expect(firstAllowedFile(files, ["image/jpeg", "image/png", "image/webp"])).toBe(png);
     expect(firstAllowedFile(files, ["application/pdf"])).toBe(pdf);
   });

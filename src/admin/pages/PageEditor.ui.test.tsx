@@ -349,7 +349,7 @@ describe("PageEditor conflict recovery", () => {
     expect(screen.queryByRole("option", { name: "Файл" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Кнопки" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Новая глава" })).toBeNull();
-    await user.click(screen.getByRole("button", { name: "Отправить", exact: true }));
+    await user.click(screen.getByRole("button", { name: "Отправить" }));
     expect(screen.getByLabelText("Текст после отправки")).toHaveProperty("value", "Спасибо за предложение.");
     expect(screen.getByLabelText("Текст кнопки")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Закрыть" }));
@@ -411,7 +411,7 @@ describe("PageEditor conflict recovery", () => {
     const nameField = screen.getByRole("textbox", { name: "Название поля" });
     await user.clear(nameField);
     await user.type(nameField, "Контакт");
-    await user.click(screen.getByRole("button", { name: "Отправить", exact: true }));
+    await user.click(screen.getByRole("button", { name: "Отправить" }));
     const success = screen.getByLabelText("Текст после отправки");
     expect(success).toHaveProperty("value", "");
     await user.type(success, "Заявка принята.");
@@ -579,7 +579,7 @@ describe("PageEditor conflict recovery", () => {
     const user = userEvent.setup();
     render(createElement(PageEditor, { pageKey: "become-a-supplier" }));
 
-    await user.click(await screen.findByRole("button", { name: "Отправить", exact: true }));
+    await user.click(await screen.findByRole("button", { name: "Отправить" }));
     expect(screen.getByLabelText("Текст после отправки")).toHaveProperty("value", "");
   });
 });

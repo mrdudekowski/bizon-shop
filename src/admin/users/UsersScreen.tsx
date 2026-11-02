@@ -60,7 +60,7 @@ export function UsersScreen() {
   }, []);
 
   if (session == null) return <main className={styles.screen}><AdminLoading /></main>;
-  if (session.role === "editor") {
+  if (session.role !== "admin") {
     return (
       <main className={styles.screen}>
         <h1>Управление пользователями</h1>
@@ -121,7 +121,9 @@ export function UsersScreen() {
       >
         <label>Логин<input autoComplete="off" placeholder="Имя для входа" aria-label="Логин" value={login} onChange={(event) => setLogin(event.target.value)} required /></label>
         <label>Роль<select aria-label="Роль" value={role} onChange={(event) => setRole(event.target.value as AdminRole)}>
-          <option value="editor">Редактор</option>
+          <option value="editor">Контент-менеджер</option>
+          <option value="sales_manager">Менеджер продаж</option>
+          <option value="viewer">Наблюдатель</option>
           <option value="admin">Администратор</option>
         </select></label>
         {role === "editor" ? (
@@ -138,7 +140,7 @@ export function UsersScreen() {
               </label>
             ))}
           </fieldset>
-        ) : <p className={styles.hint}>Полный доступ</p>}
+        ) : <p className={styles.hint}>{role === "admin" ? "Полный доступ" : role === "sales_manager" ? "Доступ к заявкам клиентов" : "Доступ к разделам контента пока не предоставлен; заявки и пользователи скрыты"}</p>}
         <label>Пароль при создании<input
           aria-label="Пароль"
           type="password"
@@ -221,11 +223,13 @@ export function UsersScreen() {
                   });
               }}
             >
-              <option value="editor">Редактор</option>
+              <option value="editor">Контент-менеджер</option>
+              <option value="sales_manager">Менеджер продаж</option>
+              <option value="viewer">Наблюдатель</option>
               <option value="admin">Администратор</option>
             </select>
             </label>
-            {user.role === "admin" ? <p className={styles.fullAccess}>Полный доступ</p> : (
+            {user.role === "admin" ? <p className={styles.fullAccess}>Полный доступ</p> : user.role === "editor" ? (
               <fieldset className={styles.capabilitySet} disabled={user.disabled}>
                 <legend>Права</legend>
                 {(Object.keys(CAPABILITY_LABEL) as EditorCapability[]).map((capability) => (
@@ -239,7 +243,7 @@ export function UsersScreen() {
                   </label>
                 ))}
               </fieldset>
-            )}
+            ) : <p className={styles.hint}>{user.role === "sales_manager" ? "Доступ к заявкам клиентов" : "Доступ к разделам контента пока не предоставлен; заявки и пользователи скрыты"}</p>}
             <span className={user.disabled ? styles.badge : styles.badgeOnSite}>{user.disabled ? "Отключён" : "Активен"}</span>
             <div className={styles.userActions}>
               {user.login !== session.login ? <button type="button" className="ghost" onClick={() => openPasswordReset(user)}>Сбросить пароль</button> : <span className={styles.hint}>Сбросить пароль может другой администратор</span>}
@@ -257,7 +261,6 @@ export function UsersScreen() {
               </button>
               )}
             </div>
-            {user.role === "editor" ? <p className={styles.crmNote}>Скоро: работа с лидами и CRM. Эти права появятся вместе с модулем.</p> : null}
           </li>
         ))}
       </ul>

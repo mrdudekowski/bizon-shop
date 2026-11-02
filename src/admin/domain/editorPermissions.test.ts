@@ -13,6 +13,8 @@ const ALL_ACTIONS: EditorAction[] = [
   "delete",
   "manage_users",
   "review_queue",
+  "view_requests",
+  "manage_requests",
 ];
 
 function session(role: AdminSession["role"], capabilities: AdminSession["capabilities"] = []): AdminSession {
@@ -26,6 +28,14 @@ describe("canEditorPerform", () => {
     }
   });
 
+  it("allows request access to sales managers but not viewers", () => {
+    const sales = session("sales_manager");
+    const viewer = session("viewer");
+    expect(canEditorPerform(sales, "view_requests")).toBe(true);
+    expect(canEditorPerform(sales, "manage_requests")).toBe(true);
+    expect(canEditorPerform(viewer, "view_requests")).toBe(false);
+    expect(canEditorPerform(viewer, "manage_requests")).toBe(false);
+  });
   it("lets a basic editor edit the catalog and nothing else", () => {
     const editor = session("editor");
     expect(canEditorPerform(editor, "edit_catalog")).toBe(true);

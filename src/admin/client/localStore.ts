@@ -1584,7 +1584,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         throw new AdminClientError("last_admin");
       }
       user.role = role;
-      if (role === "admin") user.capabilities = [];
+      if (role !== "editor") user.capabilities = [];
       save(state);
       return user;
     },
@@ -1594,7 +1594,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       requirePermission(state, "manage_users");
       const user = state.users.find((item) => item.id === userId);
       if (user == null) throw new Error("not_found");
-      user.capabilities = user.role === "admin" ? [] : [...new Set(capabilities)];
+      user.capabilities = user.role === "editor" ? [...new Set(capabilities)] : [];
       save(state);
       return user;
     },
@@ -1714,10 +1714,12 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
     },
 
     async listRequests() {
+      requirePermission(load(), "view_requests");
       return [];
     },
 
     async updateRequestStatus() {
+      requirePermission(load(), "manage_requests");
       throw new Error("not_found");
     },
 

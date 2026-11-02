@@ -8,6 +8,7 @@ import Image from "next/image";
 import { browserAdminClient } from "@/admin/client/localStore";
 import { AdminClientError } from "@/admin/client/errors";
 import type { AdminSession } from "@/admin/domain/types";
+import { canEditorPerform } from "@/admin/domain/editorPermissions";
 import { Icon, type IconName } from "@/admin/ui/Icon";
 import { isMoreCurrent, isNavCurrent, profileInitials, splitNav } from "./mobileNav";
 
@@ -24,6 +25,13 @@ const CONTENT_NAV = [
   { href: "/pages", label: "Страницы", icon: "pages" },
   { href: "/materials/", label: "Материалы", icon: "materials" },
 ] as const satisfies readonly { href: string; label: string; icon: IconName }[];
+
+function roleLabel(role: AdminSession["role"]): string {
+  if (role === "admin") return "Администратор";
+  if (role === "editor") return "Контент-менеджер";
+  if (role === "sales_manager") return "Менеджер продаж";
+  return "Наблюдатель";
+}
 
 // One request per screen module so the first development open is already warm.
 const ADMIN_SCREEN_ROUTES = [
@@ -352,11 +360,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   const role = session.role;
   const capabilities = session.capabilities ?? [];
-  const canEditPages = role === "admin" || capabilities.includes("edit_site_pages");
+  const canEditPages = role === "admin" || (role === "editor" && capabilities.includes("edit_site_pages"));
+  const canViewRequests = canEditorPerform(session, "view_requests");
   const items = [
     ...CATALOG_NAV,
     ...(canEditPages ? CONTENT_NAV : []),
-    { href: "/requests", label: "Заявки", icon: "requests" as const },
+    ...(canViewRequests ? [{ href: "/requests", label: "Заявки", icon: "requests" as const }] : []),
     ...(role === "admin"
       ? [
           { href: "/media", label: "Файлы", icon: "image" as const },
@@ -393,7 +402,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <div className={styles.sidebarBottom}>
             <div className={styles.roles}>
               <span className={styles.avatar}><Icon name="users" size={18} /></span>
-              <span className={styles.account}><strong>{session.login}</strong><small>{role === "admin" ? "Администратор" : "Редактор"}</small></span>
+              <span className={styles.account}><strong>{session.login}</strong><small>{roleLabel(role)}</small></span>
               <button className={styles.logout} type="button" onClick={() => void logOut()} aria-label="Выйти" title="Выйти">Выйти</button>
             </div>
           </div>
@@ -467,7 +476,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         >
           <div>
             <strong>{session.login}</strong>
-            <small>{role === "admin" ? "Администратор" : "Редактор"}</small>
+            <small>{roleLabel(role)}</small>
           </div>
           <button
             type="button"

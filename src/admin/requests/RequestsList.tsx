@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { browserAdminClient } from "@/admin/client/localStore";
 import type { LeadRequestRecord, LeadRequestStatus } from "@/admin/domain/types";
+import { canEditorPerform } from "@/admin/domain/editorPermissions";
+import { useAdminSession } from "@/admin/ui/DocumentUI";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 import styles from "./RequestsList.module.css";
 
@@ -53,6 +55,8 @@ function formatSource(sourceForm: string): string {
 }
 
 export function RequestsList() {
+  const session = useAdminSession();
+  const canViewRequests = session != null && canEditorPerform(session, "view_requests");
   const [requests, setRequests] = useState<LeadRequestRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -67,10 +71,11 @@ export function RequestsList() {
   }, []);
 
   useEffect(() => {
+    if (!canViewRequests) return;
     void reload()
       .catch(() => setError("Не удалось загрузить список заявок."))
       .finally(() => setLoading(false));
-  }, [reload]);
+  }, [reload, canViewRequests]);
 
   async function onStatusChange(id: string, nextStatus: LeadRequestStatus) {
     setBusyId(id);
@@ -114,6 +119,9 @@ export function RequestsList() {
     const inProgressCount = requests.filter((r) => r.status === "in_progress" || r.status === "contacted" || r.status === "qualified").length;
     return { total: requests.length, newCount, inProgressCount };
   }, [requests]);
+
+  if (session == null) return <main className={styles.page}><AdminLoading /></main>;
+  if (!canViewRequests) return <main className={styles.page}><h1>Заявки</h1><p>Раздел доступен администраторам и менеджерам продаж.</p></main>;
 
   return (
     <main className={styles.page}>
