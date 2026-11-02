@@ -97,7 +97,8 @@
 @media (max-width: 767px) {
   .nav { padding-bottom: clamp(2.5rem, 10vw, 4rem); }
   .label { margin-bottom: .6rem; }
-  .link { grid-template-columns: 2rem minmax(0, 1fr) auto; gap: .65rem; padding: .9rem 0; align-items: center; }
+  .link { grid-template-columns: auto minmax(0, 1fr) auto; gap: .85rem; padding: .9rem 0; align-items: center; }
+  .index { padding-top: 0; font-size: 1.5rem; line-height: 1; }
   .title { font-size: 1.05rem; line-height: 1.2; }
   .outcome { display: none; }
   .arrow { font-size: 1.1rem; }
