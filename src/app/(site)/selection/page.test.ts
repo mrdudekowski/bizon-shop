@@ -9,5 +9,6 @@ describe("selection page", () => {
     const html = renderToStaticMarkup(createElement(SelectionPage));
     expect(html).toContain('href="/models"');
     expect(html).not.toContain("NEXT_REDIRECT");
+    expect(html).not.toMatch(/<meta\b/i);
   });
 });
