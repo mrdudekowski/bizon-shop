@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+import { TIRE_IQ_AXLES_KNOWLEDGE_HREF } from "@/lib/content/tireIqTaxonomy";
 
 import styles from "./TireIqApplicationGuide.module.css";
 
@@ -24,9 +25,9 @@ const GUIDE_GROUPS = [
   {
     title: "Ось",
     options: [
-      { label: "Рулевая", href: "/tire-iq#knowledge" },
-      { label: "Ведущая", href: "/tire-iq#knowledge" },
-      { label: "Прицепная", href: "/tire-iq#knowledge" },
+      { label: "Рулевая", href: TIRE_IQ_AXLES_KNOWLEDGE_HREF },
+      { label: "Ведущая", href: TIRE_IQ_AXLES_KNOWLEDGE_HREF },
+      { label: "Прицепная", href: TIRE_IQ_AXLES_KNOWLEDGE_HREF },
     ],
   },
   {
@@ -60,7 +61,7 @@ export function TireIqApplicationGuide({ hasKnowledge = true }: { hasKnowledge?:
             <ul>
               {group.options.map((option) => (
                 <li key={option.label}>
-                  <Link href={option.href === "/tire-iq#knowledge" && !hasKnowledge ? "/contact" : option.href}>
+                  <Link href={option.href.startsWith("/tire-iq") && !hasKnowledge ? "/contact" : option.href}>
                     {option.label}
                     <SiteArrow direction="ne" />
                   </Link>

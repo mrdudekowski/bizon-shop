@@ -44,6 +44,7 @@ export function EditorialListing({
   activeTopic,
 }: EditorialListingProps) {
   const taxonomy = Array.from(new Set(items.flatMap((item) => item.taxonomy ?? [])));
+  const selectedTopic = activeTopic ?? "";
 
   return (
     <div data-main-chrome-tone="light" data-editorial-listing>
@@ -61,9 +62,9 @@ export function EditorialListing({
             <span className={styles.taxonomyLabel}>Темы</span>
             <Link
               data-topic-filter=""
-              className={!activeTopic ? styles.taxonomyLinkActive : styles.taxonomyLink}
+              className={!selectedTopic ? styles.taxonomyLinkActive : styles.taxonomyLink}
               href="/tire-iq#knowledge"
-              aria-current={!activeTopic ? "page" : undefined}
+              aria-current={!selectedTopic ? "page" : undefined}
             >
               Все темы
             </Link>
@@ -71,9 +72,9 @@ export function EditorialListing({
               <Link
                 key={topic}
                 data-topic-filter={topic}
-                className={topic === activeTopic ? styles.taxonomyLinkActive : styles.taxonomyLink}
+                className={topic === selectedTopic ? styles.taxonomyLinkActive : styles.taxonomyLink}
                 href={`/tire-iq?topic=${encodeURIComponent(topic)}#knowledge`}
-                aria-current={topic === activeTopic ? "page" : undefined}
+                aria-current={topic === selectedTopic ? "page" : undefined}
               >
                 {getTireIqTaxonomyLabel(topic)}
               </Link>
@@ -89,7 +90,11 @@ export function EditorialListing({
             {items.map((item, index) => (
               <article
                 key={item.key}
-                className={index === 0 ? styles.featured : styles.card}
+                className={[
+                  index === 0 ? styles.featured : styles.card,
+                  item.showImage === false ? styles.coverless : "",
+                ].filter(Boolean).join(" ")}
+                hidden={selectedTopic !== "" && !(item.taxonomy ?? []).includes(selectedTopic)}
                 data-editorial-card
                 data-taxonomy={JSON.stringify(item.taxonomy ?? [])}
               >
@@ -131,7 +136,14 @@ export function EditorialListing({
             </Link>
           </div>
         )}
-        {items.length > 0 ? <p hidden data-editorial-no-results>По выбранной теме материалов пока нет.</p> : null}
+        {items.length > 0 ? (
+          <p
+            hidden={items.some((item) => selectedTopic === "" || (item.taxonomy ?? []).includes(selectedTopic))}
+            data-editorial-no-results
+          >
+            По выбранной теме материалов пока нет.
+          </p>
+        ) : null}
         </section>
       </div>
     </div>

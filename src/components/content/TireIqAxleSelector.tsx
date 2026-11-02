@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { ResponsiveDisclosure } from "@/components/content/ResponsiveDisclosure";
+import { TIRE_IQ_AXLES_KNOWLEDGE_HREF } from "@/lib/content/tireIqTaxonomy";
 
 import styles from "./TireIqAxleSelector.module.css";
 
@@ -58,7 +59,7 @@ export function TireIqAxleSelector({ hasKnowledge = true }: { hasKnowledge?: boo
         {AXLES.map((axle) => (
           <Link
             className={styles.option}
-            href={hasKnowledge ? "/tire-iq#knowledge" : "/contact"}
+            href={hasKnowledge ? TIRE_IQ_AXLES_KNOWLEDGE_HREF : "/contact"}
             key={axle.key}
             data-tire-iq-axle={axle.key}
             onMouseEnter={() => setActiveAxle(axle.key)}

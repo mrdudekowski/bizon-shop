@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
+import styles from "./EditorialListing.module.css";
+
 export function EditorialListingFilterController({ activeTopic }: { activeTopic?: string }) {
   const searchParams = useSearchParams();
   const queryTopic = searchParams.get("topic") ?? "";
@@ -11,10 +13,7 @@ export function EditorialListingFilterController({ activeTopic }: { activeTopic?
     const root = document.querySelector<HTMLElement>("[data-editorial-listing]");
     if (!root) return;
     const cards = [...root.querySelectorAll<HTMLElement>("[data-editorial-card]")];
-    const taxonomy = new Set(cards.flatMap((card) => {
-      try { return JSON.parse(card.dataset.taxonomy ?? "[]") as string[]; } catch { return []; }
-    }));
-    const selected = taxonomy.has(queryTopic) ? queryTopic : activeTopic ?? "";
+    const selected = queryTopic || activeTopic || "";
     let visible = 0;
 
     for (const card of cards) {
@@ -30,6 +29,8 @@ export function EditorialListingFilterController({ activeTopic }: { activeTopic?
     for (const link of root.querySelectorAll<HTMLAnchorElement>("[data-topic-filter]")) {
       const selectedLink = (link.dataset.topicFilter ?? "") === selected;
       link.setAttribute("aria-current", selectedLink ? "page" : "false");
+      link.classList.toggle(styles.taxonomyLinkActive, selectedLink);
+      link.classList.toggle(styles.taxonomyLink, !selectedLink);
     }
   }, [activeTopic, queryTopic]);
 
