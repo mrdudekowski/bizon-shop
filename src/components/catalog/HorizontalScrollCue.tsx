@@ -64,7 +64,8 @@ export function HorizontalScrollCue({
     const maxScroll = scrollWidth - clientWidth;
     if (maxScroll <= 4) return;
     const nextLeft = scrollLeft >= maxScroll - 16 ? 0 : scrollLeft + Math.round(clientWidth * 0.82);
-    track.scrollTo({ left: nextLeft, behavior: "smooth" });
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    track.scrollTo({ left: nextLeft, behavior });
   };
 
   return (

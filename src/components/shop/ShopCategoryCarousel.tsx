@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+import { carouselSwipeStep } from "@/components/catalog/carouselSwipe";
 import styles from "@/components/catalog/ModelAdvantagesCarousel.module.css";
 import mobileStyles from "./ShopCategoryCarousel.module.css";
 import type { ShopHomeCarouselSlide } from "@/lib/content/shopCategoryPresentation";
@@ -21,7 +22,7 @@ export function ShopCategoryCarousel({
   const [activeIndex, setActiveIndex] = useState(0);
   const [autoplay, setAutoplay] = useState(true);
   const [pageVisible, setPageVisible] = useState(true);
-  const touchStartX = useRef<number | null>(null);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
   const count = slides.length;
   const hasMultipleSlides = count >= 2;
 
@@ -75,21 +76,29 @@ export function ShopCategoryCarousel({
     );
   }
 
-  function selectSlide(index: number) {
+  function pauseAutoplay() {
     setAutoplay(false);
+  }
+
+  function selectSlide(index: number) {
+    pauseAutoplay();
     setActiveIndex((index + count) % count);
   }
 
   function onTouchStart(event: React.TouchEvent<HTMLElement>) {
-    touchStartX.current = event.touches[0]?.clientX ?? null;
+    const touch = event.touches[0];
+    touchStart.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
   }
 
   function onTouchEnd(event: React.TouchEvent<HTMLElement>) {
-    if (touchStartX.current == null) return;
-    const delta = (event.changedTouches[0]?.clientX ?? touchStartX.current) - touchStartX.current;
-    touchStartX.current = null;
-    if (Math.abs(delta) < 48 || !hasMultipleSlides) return;
-    selectSlide(activeIndex + (delta < 0 ? 1 : -1));
+    const start = touchStart.current;
+    if (!start) return;
+    const end = event.changedTouches[0];
+    touchStart.current = null;
+    if (!end || !hasMultipleSlides) return;
+    const step = carouselSwipeStep(end.clientX - start.x, end.clientY - start.y);
+    if (step === 0) return;
+    selectSlide(activeIndex + step);
   }
 
   return (
@@ -98,32 +107,36 @@ export function ShopCategoryCarousel({
       role="region"
       aria-roledescription="carousel"
       aria-label="Категории BIZON Shop"
+      onFocus={pauseAutoplay}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      {slides.map((slide, index) => (
-        <article
-          key={slide.id}
-          className={`${styles.slide} ${index === activeIndex ? styles.slideActive : ""}`}
-          aria-hidden={index !== activeIndex}
-        >
-          {slide.imageUrl ? (
-            <div className={styles.media}>
-              <Image src={slide.imageUrl} alt="" fill sizes="100vw" priority={index === 0} />
-            </div>
-          ) : (
-            <div className={styles.mediaFallback} aria-hidden="true" />
-          )}
-          <div className={styles.overlay} aria-hidden="true" />
-          {showSlideTitle ? (
-            <div className={styles.content}>
-              <h3 className={styles.title}>
-                <Link href={slide.href}>{slide.title}</Link>
-              </h3>
-            </div>
-          ) : null}
-        </article>
-      ))}
+      {slides.map((slide, index) => {
+        const slideHidden = index !== activeIndex;
+        return (
+          <article
+            key={slide.id}
+            className={`${styles.slide} ${slideHidden ? "" : styles.slideActive}`}
+            aria-hidden={slideHidden}
+          >
+            {slide.imageUrl ? (
+              <div className={styles.media}>
+                <Image src={slide.imageUrl} alt="" fill sizes="100vw" priority={index === 0} />
+              </div>
+            ) : (
+              <div className={styles.mediaFallback} aria-hidden="true" />
+            )}
+            <div className={styles.overlay} aria-hidden="true" />
+            {showSlideTitle ? (
+              <div className={styles.content}>
+                <h3 className={styles.title}>
+                  <Link href={slide.href} tabIndex={slideHidden ? -1 : undefined}>{slide.title}</Link>
+                </h3>
+              </div>
+            ) : null}
+          </article>
+        );
+      })}
 
       {children ? <div className={`${styles.content} ${styles.contentWithChildren}`}>{children}</div> : null}
 

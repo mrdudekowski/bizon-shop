@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { shopCampaignFrames, type ShopCampaignFrame } from "@/lib/content/pages/shopCampaignFrames";
@@ -15,6 +15,8 @@ const FRAME_MS = 6000;
 
 function ShopCampaignStage({ frames }: { frames: ShopCampaignFrame[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [autoplayPaused, setAutoplayPaused] = useState(false);
+  const mediaRef = useRef<HTMLDivElement>(null);
   const count = frames.length;
 
   useEffect(() => {
@@ -22,17 +24,26 @@ function ShopCampaignStage({ frames }: { frames: ShopCampaignFrame[] }) {
   }, [count]);
 
   useEffect(() => {
+    // The CTA sits on the parent section, and ShopCampaign itself stays free of hooks.
+    const section = mediaRef.current?.closest("section");
+    if (!section) return undefined;
+    const pause = () => setAutoplayPaused(true);
+    section.addEventListener("focusin", pause);
+    return () => section.removeEventListener("focusin", pause);
+  }, []);
+
+  useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (reducedMotion.matches || count < 2) return undefined;
+    if (reducedMotion.matches || count < 2 || autoplayPaused) return undefined;
     const timer = window.setInterval(() => {
       setActiveIndex((current) => (current + 1) % count);
     }, FRAME_MS);
     return () => window.clearInterval(timer);
-  }, [count]);
+  }, [count, autoplayPaused]);
 
   return (
     <>
-      <div className={styles.shopMedia}>
+      <div className={styles.shopMedia} ref={mediaRef}>
         {frames.map((frame, index) => (
           <Image
             key={`${frame.imageUrl}-${index}`}

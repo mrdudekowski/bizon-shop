@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { getFeatureImage } from "@/lib/catalog/featureImages";
+import { carouselSwipeStep } from "./carouselSwipe";
 import type { CmsTireAdvantage } from "@/lib/content/types";
 import styles from "./ModelAdvantagesCarousel.module.css";
 
@@ -16,7 +17,7 @@ export function ModelAdvantagesCarousel({ advantages }: ModelAdvantagesCarouselP
   const [activeIndex, setActiveIndex] = useState(0);
   const [autoplay, setAutoplay] = useState(true);
   const [pageVisible, setPageVisible] = useState(true);
-  const touchStartX = useRef<number | null>(null);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
   const hasMultipleSlides = slides.length >= 2;
 
   useEffect(() => {
@@ -54,22 +55,29 @@ export function ModelAdvantagesCarousel({ advantages }: ModelAdvantagesCarouselP
     };
   }, [autoplay, hasMultipleSlides, slides.length]);
 
-  const selectSlide = (index: number) => {
+  const pauseAutoplay = () => {
     setAutoplay(false);
+  };
+
+  const selectSlide = (index: number) => {
+    pauseAutoplay();
     setActiveIndex((index + slides.length) % slides.length);
   };
 
   const onTouchStart = (event: React.TouchEvent<HTMLElement>) => {
-    touchStartX.current = event.touches[0]?.clientX ?? null;
+    const touch = event.touches[0];
+    touchStart.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
   };
 
   const onTouchEnd = (event: React.TouchEvent<HTMLElement>) => {
-    if (touchStartX.current === null) return;
-    const delta =
-      (event.changedTouches[0]?.clientX ?? touchStartX.current) - touchStartX.current;
-    touchStartX.current = null;
-    if (Math.abs(delta) < 48 || !hasMultipleSlides) return;
-    selectSlide(activeIndex + (delta < 0 ? 1 : -1));
+    const start = touchStart.current;
+    if (!start) return;
+    const end = event.changedTouches[0];
+    touchStart.current = null;
+    if (!end || !hasMultipleSlides) return;
+    const step = carouselSwipeStep(end.clientX - start.x, end.clientY - start.y);
+    if (step === 0) return;
+    selectSlide(activeIndex + step);
   };
 
   return (
@@ -78,6 +86,7 @@ export function ModelAdvantagesCarousel({ advantages }: ModelAdvantagesCarouselP
       aria-roledescription="carousel"
       aria-labelledby="advantages-title"
       data-main-chrome-tone="dark"
+      onFocus={pauseAutoplay}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
