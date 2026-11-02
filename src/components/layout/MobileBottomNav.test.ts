@@ -19,6 +19,10 @@ function renderShopNav() {
   return renderToStaticMarkup(createElement(MobileBottomNav, { context: "shop", cartCount: 0 }));
 }
 
+function renderMainNav() {
+  return renderToStaticMarkup(createElement(MobileBottomNav, { context: "main", cartCount: 0 }));
+}
+
 function linkHtml(html: string, label: string) {
   const link = html
     .split("<a ")
@@ -43,5 +47,16 @@ describe("MobileBottomNav shop current item", () => {
     pathname.current = "/shop/pritsepy";
     const html = renderShopNav();
     expect(linkHtml(html, "Категории")).toContain('aria-current="page"');
+  });
+});
+
+describe("MobileBottomNav cart context", () => {
+  it("keeps the Tires request link separate from the Shop cart", () => {
+    pathname.current = "/";
+    const main = renderMainNav();
+    const shop = renderShopNav();
+
+    expect(linkHtml(main, "Заявка")).toContain('href="/cart"');
+    expect(linkHtml(shop, "Корзина")).toContain('href="/shop/cart"');
   });
 });
