@@ -312,6 +312,10 @@
   transition: transform var(--transition-premium), box-shadow var(--transition-premium), border-color var(--transition-premium);
 }
 
+.modelCard[hidden] {
+  display: none;
+}
+
 .modelCard:hover {
   border-color: var(--color-border-strong);
   box-shadow: var(--shadow-card);
