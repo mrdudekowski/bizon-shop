@@ -53,7 +53,7 @@ describe("ResponsiveDisclosure", () => {
     document.body.appendChild(host);
     root = createRoot(host);
     await act(async () => {
-      root.render(createElement(ResponsiveDisclosure, { summary: "Компания" }, children));
+      root.render(createElement(ResponsiveDisclosure, { summary: "Компания", children }));
     });
     const details = host.querySelector("details");
     if (!details) throw new Error("details missing");

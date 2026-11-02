@@ -97,7 +97,7 @@ describe("ShopCategoryCarousel", () => {
   it("keeps links in inactive slides out of tab order", async () => {
     await renderCarousel(slides);
 
-    const hiddenLinks = [...host.querySelectorAll("article[aria-hidden='true'] a")];
+    const hiddenLinks = [...host.querySelectorAll<HTMLAnchorElement>("article[aria-hidden='true'] a")];
     expect(hiddenLinks.map((link) => link.textContent)).toEqual(["Прицепы", "Комфорт"]);
     for (const link of hiddenLinks) {
       expect(link.tabIndex).toBe(-1);
@@ -111,7 +111,7 @@ describe("ShopCategoryCarousel", () => {
     await clickControl("Следующий кадр");
     expect(activeArticle(host).querySelector("a")?.textContent).toBe("Прицепы");
     expect(activeArticle(host).querySelector("a")?.tabIndex).toBe(0);
-    expect([...host.querySelectorAll("article[aria-hidden='true'] a")].map((link) => link.tabIndex)).toEqual([-1, -1]);
+    expect([...host.querySelectorAll<HTMLAnchorElement>("article[aria-hidden='true'] a")].map((link) => link.tabIndex)).toEqual([-1, -1]);
   });
 
   it("stops autoplay when a control inside the carousel receives focus", async () => {
