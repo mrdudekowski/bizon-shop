@@ -16,7 +16,11 @@ export function ResponsiveDisclosure({
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
-    setOpen(!window.matchMedia("(max-width: 767px)").matches);
+    const media = window.matchMedia("(max-width: 767px)");
+    const sync = () => setOpen(!media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
   }, []);
 
   function syncToggle(event: SyntheticEvent<HTMLDetailsElement>) {

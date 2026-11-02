@@ -87,6 +87,7 @@ export function FloatingChrome({
       className={styles.chrome}
       data-tone={tone}
       data-visibility={visibility}
+      inert={visibility === "hidden" || undefined}
       data-main-chrome={surface === "main" ? "" : undefined}
       data-shop-chrome={surface === "shop" ? "" : undefined}
       onMouseLeave={onMouseLeave}

@@ -127,6 +127,10 @@
     opacity: 0;
     pointer-events: none;
   }
+
+  .chrome[data-visibility="hidden"] .bar {
+    pointer-events: none;
+  }
 }
 
 .brand :global(a),

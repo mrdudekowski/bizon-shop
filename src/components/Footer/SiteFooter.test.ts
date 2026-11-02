@@ -65,3 +65,25 @@ describe("SiteFooter contacts", () => {
     expect(html).toMatch(/<a [^>]*href="https:\/\/dzen\.ru\/bizon"[^>]*>Дзен<\/a>/);
   });
 });
+
+function hrefForAnchorText(html: string, text: string) {
+  const anchors = html.match(/<a\b[^>]*>[\s\S]*?<\/a>/g) ?? [];
+  for (const anchor of anchors) {
+    const label = anchor.replace(/<[^>]+>/g, "").trim();
+    if (label !== text) continue;
+    return anchor.match(/href="([^"]*)"/)?.[1];
+  }
+  return undefined;
+}
+
+describe("SiteFooter cart context", () => {
+  it("resolves the shop help cart to /shop/cart and keeps the tires cart on /cart", () => {
+    const tires = renderToStaticMarkup(createElement(SiteFooter, { surface: "main", siteProfile: PLACEHOLDER_SITE_PROFILE }));
+    const shop = renderToStaticMarkup(createElement(SiteFooter, { surface: "shop", siteProfile: PLACEHOLDER_SITE_PROFILE }));
+
+    expect(hrefForAnchorText(shop, "Корзина")).toBe("/shop/cart");
+    const tiresCart = hrefForAnchorText(tires, "Заявка") ?? hrefForAnchorText(tires, "Корзина");
+    expect(tiresCart ?? "/cart").toBe("/cart");
+    expect(tires).not.toContain('href="/shop/cart"');
+  });
+});
