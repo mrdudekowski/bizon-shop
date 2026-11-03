@@ -22,6 +22,8 @@ type PageHeroProps = {
   description?: string;
   breadcrumbs?: PageHeroBreadcrumb[];
   media?: PageHeroMedia;
+  /** Full-viewport-width image header. Side column stays the default. */
+  mediaLayout?: "aside" | "banner";
   actions?: ReactNode;
 };
 
@@ -31,10 +33,29 @@ export function PageHero({
   description,
   breadcrumbs = [],
   media,
+  mediaLayout = "aside",
   actions,
 }: PageHeroProps) {
+  const banner = mediaLayout === "banner" && media;
+  const image = media ? (
+    <Image
+      src={media.src}
+      alt={media.alt}
+      fill
+      sizes={banner ? "100vw" : "(max-width: 767px) 100vw, 42vw"}
+      priority={Boolean(banner)}
+      style={{ objectPosition: `${(media.focalX ?? 0.5) * 100}% ${(media.focalY ?? 0.5) * 100}%` }}
+    />
+  ) : null;
+
   return (
-    <header className={styles.hero} data-main-chrome-tone="light" data-shop-chrome-tone="light">
+    <header
+      className={styles.hero}
+      data-layout={banner ? "banner" : undefined}
+      data-main-chrome-tone="light"
+      data-shop-chrome-tone="light"
+    >
+      {banner ? <div className={styles.banner}>{image}</div> : null}
       <div className={styles.inner}>
         <div className={styles.copy}>
           {breadcrumbs.length > 0 && (
@@ -56,22 +77,11 @@ export function PageHero({
             </nav>
           )}
           {kicker ? <p className={styles.kicker}>{kicker}</p> : null}
-          {title.trim() ? <h1 data-title-long={title.length > 24 ? "true" : undefined}>{title}</h1> : null}
+          {title.trim() ? <h1>{title}</h1> : null}
           {description ? <p className={styles.description}>{description}</p> : null}
           {actions ? <div className={`${styles.actions} action-row`}>{actions}</div> : null}
         </div>
-        {media ? (
-          <div className={styles.media}>
-            <Image
-              src={media.src}
-              alt={media.alt}
-              fill
-              sizes="(max-width: 767px) 100vw, 42vw"
-              priority={false}
-              style={{ objectPosition: `${(media.focalX ?? 0.5) * 100}% ${(media.focalY ?? 0.5) * 100}%` }}
-            />
-          </div>
-        ) : null}
+        {!banner && media ? <div className={styles.media}>{image}</div> : null}
       </div>
     </header>
   );

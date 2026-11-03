@@ -353,6 +353,12 @@ h4,
   line-height: var(--leading-title);
 }
 
+h1 {
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
 .type-kicker,
 .section-kicker {
   margin: 0;
@@ -371,7 +377,9 @@ h4,
   line-height: var(--leading-display);
   letter-spacing: var(--tracking-display);
   text-wrap: balance;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 
 .type-display {
@@ -381,7 +389,9 @@ h4,
   line-height: var(--leading-display);
   letter-spacing: var(--tracking-display);
   text-wrap: balance;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 
 .type-title {
@@ -895,12 +905,17 @@ main {
 
 .hero h1 {
   margin: 0;
-  max-width: 15ch;
+  width: 100%;
+  max-width: min(100%, 40rem);
+  min-width: 0;
   font-size: var(--type-display);
   font-weight: var(--weight-display);
   line-height: var(--leading-display);
   letter-spacing: var(--tracking-display);
   text-wrap: balance;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 
 .hero-text {
@@ -1014,6 +1029,15 @@ main {
   letter-spacing: var(--tracking-display);
   margin: 0;
   text-wrap: balance;
+}
+
+h1.section-title {
+  width: 100%;
+  max-width: min(100%, 40rem);
+  min-width: 0;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 
 .section-description {

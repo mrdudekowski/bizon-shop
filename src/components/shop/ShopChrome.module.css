@@ -16,8 +16,33 @@
   fill: currentColor;
 }
 
+.brandSlot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  justify-items: center;
+  align-items: center;
+}
+
+.wordmarkLink {
+  grid-area: 1 / 1;
+  opacity: 1;
+  transition: opacity 260ms ease;
+  transition-delay: calc((var(--mark-count) - 1) * 55ms);
+}
+
+.brandSlot[data-icons="true"] .wordmarkLink {
+  opacity: 0;
+  pointer-events: none;
+  transition-delay: 0s;
+}
+
 .categoryMarks {
   display: flex;
+  grid-area: 1 / 1;
+  justify-self: stretch;
   align-items: center;
   justify-content: space-evenly;
   gap: 2px;
@@ -25,6 +50,11 @@
   max-width: 100%;
   min-width: 0;
   overflow: hidden;
+  pointer-events: none;
+}
+
+.brandSlot[data-icons="true"] .categoryMarks {
+  pointer-events: auto;
 }
 
 .categoryMarks a {
@@ -35,6 +65,16 @@
   min-width: 0;
   height: 32px;
   place-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+  transition-delay: calc((var(--mark-count) - var(--mark-index) - 1) * 55ms);
+}
+
+.brandSlot[data-icons="true"] .categoryMarks a {
+  opacity: 1;
+  pointer-events: auto;
+  transition-delay: calc(80ms + var(--mark-index) * 55ms);
 }
 
 .categoryMarks img {
@@ -52,4 +92,11 @@
 
 @media (min-width: 768px) {
   .categoryMarks { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wordmarkLink,
+  .categoryMarks a {
+    transition: none;
+  }
 }

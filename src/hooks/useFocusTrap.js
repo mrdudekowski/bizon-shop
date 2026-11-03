@@ -65,7 +65,7 @@ export const useFocusTrap = (isActive) => {
       }
       const fresh = items.find((element) => !seen.includes(element));
       const fallback = shiftKey ? items[items.length - 1] : items[0];
-      (fresh ?? fallback)?.focus();
+      (fresh ?? fallback)?.focus({ preventScroll: true });
       seen = items;
       return items;
     };
@@ -85,7 +85,7 @@ export const useFocusTrap = (isActive) => {
       const nextIndex = event.shiftKey
         ? (index - 1 + items.length) % items.length
         : (index + 1) % items.length;
-      items[nextIndex].focus();
+      items[nextIndex].focus({ preventScroll: true });
       seen = items;
     };
 

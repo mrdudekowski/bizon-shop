@@ -52,21 +52,38 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
       menuOpen={menuOpen}
       onMenuToggle={onMenuToggle}
       rootRef={rootRef}
-      brand={showMarks ? (
-        <span className={styles.categoryMarks}>
-          {marks.map((mark) => {
-            const icon = tone === "dark" ? shopCategoryCarouselIconUrl(mark.slug) : shopCategoryIconUrl(mark.slug);
-            return (
-              <Link key={mark.href} href={mark.href} aria-label={mark.label}>
-                {icon ? <img src={icon} alt="" /> : mark.label}
-              </Link>
-            );
-          })}
+      brand={(
+        <span
+          className={styles.brandSlot}
+          data-icons={showMarks ? "true" : "false"}
+          style={{ "--mark-count": marks.length }}
+        >
+          <Link
+            className={styles.wordmarkLink}
+            href="/shop"
+            aria-label="BIZON Shop — на главную"
+            aria-hidden={showMarks || undefined}
+            tabIndex={showMarks ? -1 : undefined}
+          >
+            <ChromeWordmark />
+          </Link>
+          <span className={styles.categoryMarks} aria-hidden={showMarks ? undefined : true}>
+            {marks.map((mark, index) => {
+              const icon = tone === "dark" ? shopCategoryCarouselIconUrl(mark.slug) : shopCategoryIconUrl(mark.slug);
+              return (
+                <Link
+                  key={mark.href}
+                  href={mark.href}
+                  aria-label={mark.label}
+                  tabIndex={showMarks ? undefined : -1}
+                  style={{ "--mark-index": index }}
+                >
+                  {icon ? <img src={icon} alt="" /> : mark.label}
+                </Link>
+              );
+            })}
+          </span>
         </span>
-      ) : (
-        <Link href="/shop" aria-label="BIZON Shop — на главную">
-          <ChromeWordmark />
-        </Link>
       )}
       startNavigation={
         <>

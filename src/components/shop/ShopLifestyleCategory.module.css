@@ -92,6 +92,9 @@
 .hero h1 {
   max-width: 9ch;
   font-size: clamp(3.7rem, 8.5vw, 8.5rem);
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 
 .lead {
@@ -373,7 +376,7 @@
   .collectionHead > div > * { max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
   .sectionHead > *,
   .collectionHead > * { max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
-  .hero h1 { width: 100%; max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+  .hero h1 { width: 100%; max-width: 100%; min-width: 0; overflow-wrap: normal; word-break: normal; hyphens: none; }
   .nextContent h2 { max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
   .principles,
   .productGrid { grid-template-columns: minmax(0, 1fr); width: 100%; max-width: 100%; min-width: 0; }

@@ -123,6 +123,7 @@ const FOOTER_CONFIG: Record<FooterSurface, FooterConfig> = {
           { href: ROUTES.shopDelivery, label: "Доставка" },
           { href: ROUTES.shopPayment, label: "Оплата" },
           { href: ROUTES.shopWarranty, label: "Гарантия и возврат" },
+          { href: ROUTES.shopSupplier, label: "Стать поставщиком" },
           { href: "/", label: "BIZON Tires" },
         ],
       },

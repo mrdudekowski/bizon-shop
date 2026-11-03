@@ -99,7 +99,13 @@
 }
 
 .details h1 {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   font-size: clamp(2.8rem, 5.5vw, 5.5rem);
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 
 .description,

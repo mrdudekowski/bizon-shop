@@ -58,6 +58,9 @@
   letter-spacing: var(--tracking-display);
   line-height: var(--leading-display);
   text-wrap: balance;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 
 .heroLead {

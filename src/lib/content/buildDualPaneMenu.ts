@@ -146,11 +146,9 @@ export function buildShopDualPaneMenuSections(input: {
     {
       id: "bizon-tires",
       label: "BIZON Tires",
+      href: ROUTES.home,
       pane: "list",
-      items: [
-        { id: "tires", title: "Шины для коммерческого транспорта", href: ROUTES.models },
-        { id: "home", title: "Вернуться на основной сайт", href: ROUTES.home },
-      ],
+      items: [],
     },
   ];
 }

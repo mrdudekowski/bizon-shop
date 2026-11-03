@@ -26,6 +26,18 @@ export const FORM_SOURCE_BY_PAGE: Record<string, ConfiguredSourceForm | undefine
 
 const REQUEST_FORM_PAGE_KEYS = new Set(["contact", ...Object.keys(FORM_SOURCE_BY_PAGE)]);
 
+const BANNER_MEDIA_PAGE_KEYS = new Set([
+  "branding",
+  "become-a-supplier",
+  "shop-become-a-supplier",
+  "delivery",
+  "shop-delivery",
+  "payment",
+  "shop-payment",
+  "warranty",
+  "shop-warranty",
+]);
+
 const LOCKED_CTA_HREF_BY_PAGE: Record<string, string> = {
   payment: ROUTES.cart,
   "shop-payment": ROUTES.shopCart,
@@ -132,6 +144,7 @@ export function ServicePage({
         description={activeDescription}
         breadcrumbs={breadcrumbs}
         media={activeMedia}
+        mediaLayout={BANNER_MEDIA_PAGE_KEYS.has(runtimePageKey ?? "") ? "banner" : "aside"}
       />
       <div className={styles.body}>
         {resolvedNotice ? <div className={styles.notice}>{resolvedNotice}</div> : null}

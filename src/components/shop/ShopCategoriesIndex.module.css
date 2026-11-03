@@ -73,9 +73,13 @@
 }
 
 .hero h1 {
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
   font-size: clamp(3.5rem, 8vw, 8rem);
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 
 .lead {

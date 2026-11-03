@@ -172,6 +172,10 @@ describe("buildShopDualPaneMenuSections", () => {
     ]);
     expect(sections[0]?.footerLink?.href).toBe("/shop/wheels/forged");
     expect(sections[0]?.items[0]?.href).toBe("/shop/wheels/forged/atlas");
+    expect(sections.find((section) => section.id === "bizon-tires")).toMatchObject({
+      href: "/",
+      items: [],
+    });
     expect(sections.find((section) => section.id === "buyers")?.items.map((item) => ({
       title: item.title,
       href: item.href,

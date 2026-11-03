@@ -551,7 +551,14 @@
   .menuOverlay {
     width: 100vw;
     max-width: 100vw;
-    overflow: hidden;
+    overflow-x: clip;
+    overflow-y: hidden;
+  }
+
+  /* overflow:hidden still scrolls when focus lands in the off-screen pane.
+     That scroll stacks on translateX(-50%) and leaves the section half off-screen. */
+  .menuBody {
+    overflow-x: clip;
   }
   .menuShell {
     width: 100%;

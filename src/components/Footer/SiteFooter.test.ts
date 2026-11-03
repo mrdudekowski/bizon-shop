@@ -25,6 +25,8 @@ describe("SiteFooter navigation", () => {
     expect(shop).toContain('href="/shop/delivery"');
     expect(shop).toContain('href="/shop/payment"');
     expect(shop).toContain('href="/shop/warranty"');
+    expect(shop).toContain('href="/shop/become-a-supplier"');
+    expect(shop).toContain("Стать поставщиком");
     expect(shop).toContain("Гарантия и возврат");
     expect(shop).not.toContain("Оплата, доставка и возврат");
   });
