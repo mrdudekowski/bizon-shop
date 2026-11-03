@@ -1,42 +1,11 @@
 // @vitest-environment happy-dom
-import { act, createElement, useRef } from "react";
+import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { HorizontalScrollCue } from "./HorizontalScrollCue";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
-const REDUCE_MOTION = "(prefers-reduced-motion: reduce)";
-
-function installMotion(reduced: boolean) {
-  window.matchMedia = ((query: string) => ({
-    matches: query === REDUCE_MOTION ? reduced : false,
-    media: query,
-    onchange: null,
-    addEventListener() {},
-    removeEventListener() {},
-    addListener() {},
-    removeListener() {},
-    dispatchEvent() {
-      return false;
-    },
-  })) as typeof window.matchMedia;
-}
-
-function CueHarness({ count, copies = 1 }: { count: number; copies?: number }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  return createElement(
-    "div",
-    null,
-    createElement(
-      "div",
-      { ref: trackRef, "data-track": "true" },
-      Array.from({ length: count * copies }, (_, index) => createElement("div", { key: index }, `card ${index % count}`)),
-    ),
-    createElement(HorizontalScrollCue, { trackRef, count }),
-  );
-}
 
 describe("HorizontalScrollCue", () => {
   let host: HTMLDivElement;
@@ -49,123 +18,36 @@ describe("HorizontalScrollCue", () => {
     host?.remove();
   });
 
-  async function renderCue(count: number, reduced: boolean, copies = 1) {
-    installMotion(reduced);
+  async function renderCue(activeIndex = 0) {
+    const onStep = vi.fn();
     host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
     await act(async () => {
-      root.render(createElement(CueHarness, { count, copies }));
+      root.render(createElement(HorizontalScrollCue, { count: 3, activeIndex, onStep }));
     });
+    return onStep;
   }
 
-  function track(scrollLeft = 0) {
-    const element = host.querySelector("[data-track]");
-    if (!(element instanceof HTMLElement)) throw new Error("track missing");
-    Object.defineProperty(element, "scrollWidth", { configurable: true, value: 900 });
-    Object.defineProperty(element, "clientWidth", { configurable: true, value: 300 });
-    Object.defineProperty(element, "scrollLeft", { configurable: true, value: scrollLeft });
-    const scrollTo = vi.fn();
-    element.scrollTo = scrollTo;
-    return { element, scrollTo };
-  }
-
-  it("scrolls without smooth behavior when the user prefers reduced motion", async () => {
-    await renderCue(2, true);
-    const { scrollTo } = track();
-    const button = host.querySelector("button");
-    if (!button) throw new Error("cue missing");
-    await act(async () => {
-      button.click();
-    });
-    expect(scrollTo).toHaveBeenCalledWith({ left: 246, behavior: "auto" });
+  it("marks the real card count and the active card", async () => {
+    await renderCue(1);
+    expect([...host.querySelectorAll("[data-active]")].map((node) => node.getAttribute("data-active"))).toEqual([
+      "false",
+      "true",
+      "false",
+    ]);
   });
 
-  it("keeps smooth scrolling when the user has not requested reduced motion", async () => {
-    await renderCue(2, false);
-    const { scrollTo } = track();
-    const button = host.querySelector("button");
-    if (!button) throw new Error("cue missing");
-    await act(async () => {
-      button.click();
-    });
-    expect(scrollTo).toHaveBeenCalledWith({ left: 246, behavior: "smooth" });
-  });
-
-  it("returns an ordinary track to the start within 16px of the end", async () => {
-    await renderCue(2, false);
-    const { scrollTo } = track(590);
-    const button = host.querySelector("button");
-    if (!button) throw new Error("cue missing");
+  it("steps forward and has no back button", async () => {
+    const onStep = await renderCue(0);
+    expect(host.querySelector("[aria-label='Предыдущая карточка']")).toBeNull();
+    const next = host.querySelector<HTMLButtonElement>("[aria-label='Следующая карточка']");
+    if (!next) throw new Error("cue button missing");
+    expect(next.disabled).toBe(false);
 
     await act(async () => {
-      button.click();
+      next.click();
     });
-
-    expect(scrollTo).toHaveBeenCalledWith({ left: 0, behavior: "smooth" });
-  });
-
-  it("advances a looping clone strip by one period instead of jumping to the start", async () => {
-    await renderCue(2, false, 2);
-    const { element, scrollTo } = track(590);
-    [...element.children].forEach((card, index) => {
-      Object.defineProperty(card, "offsetLeft", { configurable: true, value: index * 300 });
-    });
-    const button = host.querySelector("button");
-    if (!button) throw new Error("cue missing");
-
-    await act(async () => {
-      button.click();
-    });
-
-    expect(scrollTo).toHaveBeenCalledWith({ left: 1190, behavior: "smooth" });
-  });
-
-  it("moves the active mark when a resize reflows which card is nearest", async () => {
-    await renderCue(3, false);
-    const element = host.querySelector("[data-track]");
-    if (!(element instanceof HTMLElement)) throw new Error("track missing");
-
-    layoutTrack(element, 0, [0, 300, 600]);
-    await act(async () => {
-      window.dispatchEvent(new Event("resize"));
-    });
-    expect(activeMarks(host)).toEqual(["true", "false", "false"]);
-
-    layoutTrack(element, 300, [-300, 0, 300]);
-    expect(activeMarks(host)).toEqual(["true", "false", "false"]);
-
-    await act(async () => {
-      window.dispatchEvent(new Event("resize"));
-    });
-    expect(activeMarks(host)).toEqual(["false", "true", "false"]);
+    expect(onStep).toHaveBeenCalledWith(1);
   });
 });
-
-function activeMarks(host: ParentNode) {
-  return [...host.querySelectorAll("[data-active]")].map((node) => node.getAttribute("data-active"));
-}
-
-function layoutTrack(track: HTMLElement, scrollLeft: number, cardLefts: number[]) {
-  Object.defineProperty(track, "scrollLeft", { configurable: true, get: () => scrollLeft });
-  track.getBoundingClientRect = () => rect(0);
-  [...track.children].forEach((card, index) => {
-    (card as HTMLElement).getBoundingClientRect = () => rect(cardLefts[index] ?? 0);
-  });
-}
-
-function rect(left: number): DOMRect {
-  return {
-    x: left,
-    y: 0,
-    left,
-    top: 0,
-    right: left,
-    bottom: 0,
-    width: 0,
-    height: 0,
-    toJSON() {
-      return {};
-    },
-  } as DOMRect;
-}

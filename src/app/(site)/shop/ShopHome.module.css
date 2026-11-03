@@ -154,10 +154,7 @@
   line-height: var(--leading-body);
 }
 
-.modelGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+.modelStrip {
   margin-top: clamp(32px, 4vw, 52px);
 }
 
@@ -191,8 +188,6 @@
   outline: var(--focus-outline);
   outline-offset: 4px;
 }
-
-.loopClone { display: none; }
 
 .modelMedia {
   position: absolute;
@@ -469,27 +464,7 @@
 }
 
 @media (max-width: 1023px) {
-  .modelGrid {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    touch-action: pan-x pan-y;
-    scrollbar-width: none;
-    margin-right: calc(var(--page-gutter) * -1);
-    padding-right: var(--page-gutter);
-    grid-template-columns: none;
-    min-width: 0;
-  }
-
-  .modelGrid::-webkit-scrollbar { display: none; }
-
-  .modelCard {
-    flex: 0 0 min(86vw, 380px);
-    scroll-snap-align: start;
-    min-height: 360px;
-  }
-
-  .loopClone { display: block; }
+  .modelCard { min-height: 360px; }
 }
 
 @media (max-width: 900px) {
@@ -542,26 +517,6 @@
   .modelsIntro h2,
   .vehiclesHead h2 {
     font-size: clamp(2rem, 9.5vw, 3.25rem);
-  }
-
-  .modelGrid {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    touch-action: pan-x pan-y;
-    scrollbar-width: none;
-    margin-right: -16px;
-    padding-right: 16px;
-    grid-template-columns: none;
-    min-width: 0;
-  }
-
-  .modelGrid::-webkit-scrollbar { display: none; }
-
-  .modelCard {
-    flex: 0 0 min(86vw, 360px);
-    scroll-snap-align: start;
-    min-height: 360px;
   }
 
   .categoriesEmpty { align-items: flex-start; flex-direction: column; }

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement, useLayoutEffect } from "react";
+import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -29,71 +29,55 @@ const models = ["one", "two", "three"].map((slug) => ({
   sizes: [],
 })) as TireCatalogModel[];
 
-function LayoutHarness() {
-  useLayoutEffect(() => {
-    const track = document.querySelector<HTMLElement>("[aria-label='Ключевые модели шин']");
-    if (!track) return;
-    [...track.children].forEach((card, index) => {
-      Object.defineProperty(card, "offsetLeft", { configurable: true, value: index * 180 });
-    });
-  }, []);
-
-  return createElement(AssortmentCarousel, { models });
+function activeHref(host: ParentNode) {
+  return host.querySelector("[data-slot='0'] a")?.getAttribute("href");
 }
 
-describe("AssortmentCarousel loop integration", () => {
+describe("AssortmentCarousel loop", () => {
   let host: HTMLDivElement;
   let root: Root;
-  let originalOnScrollEnd: PropertyDescriptor | undefined;
 
   afterEach(async () => {
     await act(async () => {
       root?.unmount();
     });
     host?.remove();
-    if (originalOnScrollEnd) Object.defineProperty(window, "onscrollend", originalOnScrollEnd);
-    else Reflect.deleteProperty(window, "onscrollend");
   });
 
-  it("keeps the three-card Home strip cyclic without putting clone cards in tab order", async () => {
-    window.matchMedia = ((query: string) => ({
-      matches: query === "(max-width: 1023px)",
-      media: query,
-      onchange: null,
-      addEventListener() {},
-      removeEventListener() {},
-      addListener() {},
-      removeListener() {},
-      dispatchEvent() {
-        return false;
-      },
-    })) as typeof window.matchMedia;
-    originalOnScrollEnd = Object.getOwnPropertyDescriptor(window, "onscrollend");
-    Object.defineProperty(window, "onscrollend", { configurable: true, value: null });
+  it("pages the real cards forever in either direction", async () => {
     host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
-
     await act(async () => {
-      root.render(createElement(LayoutHarness));
+      root.render(createElement(AssortmentCarousel, { models }));
     });
 
-    const track = host.querySelector<HTMLElement>("[aria-label='Ключевые модели шин']");
-    if (!track) throw new Error("assortment track missing");
-    expect(track.children).toHaveLength(6);
-    expect(track.scrollLeft).toBe(540);
-    expect([...track.children].slice(3).every((card) => card.getAttribute("aria-hidden") === "true" && (card as HTMLElement).tabIndex === -1)).toBe(true);
+    const links = [...host.querySelectorAll("a")].map((link) => link.getAttribute("href"));
+    expect(links).toEqual(["/models/tbr/one", "/models/tbr/two", "/models/tbr/three"]);
+    expect(host.querySelectorAll("[data-active]")).toHaveLength(3);
+    expect(activeHref(host)).toBe("/models/tbr/one");
+    expect(host.querySelectorAll("[data-slot][aria-hidden='true']")).toHaveLength(2);
+
+    const next = host.querySelector<HTMLButtonElement>("[aria-label='Следующая карточка']");
+    if (!next) throw new Error("cue missing");
+    expect(host.querySelector("[aria-label='Предыдущая карточка']")).toBeNull();
 
     await act(async () => {
-      track.scrollLeft = 0;
-      track.dispatchEvent(new Event("scrollend"));
+      next.click();
     });
-    expect(track.scrollLeft).toBe(540);
+    expect(activeHref(host)).toBe("/models/tbr/two");
 
     await act(async () => {
-      track.scrollLeft = 720;
-      track.dispatchEvent(new Event("scrollend"));
+      next.click();
+      next.click();
     });
-    expect(track.scrollLeft).toBe(180);
+    expect(activeHref(host)).toBe("/models/tbr/one");
+
+    const region = host.querySelector("[aria-roledescription='carousel']");
+    if (!region) throw new Error("carousel missing");
+    await act(async () => {
+      region.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+    });
+    expect(activeHref(host)).toBe("/models/tbr/three");
   });
 });

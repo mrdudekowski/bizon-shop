@@ -2,10 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
-import { useLoopingTrack } from "@/components/catalog/useLoopingTrack";
-import { HorizontalScrollCue } from "@/components/catalog/HorizontalScrollCue";
+import { LoopedStrip } from "@/components/catalog/LoopedStrip";
 import { ShopCategoryShowcase } from "@/components/shop/ShopCategoryShowcase";
 import { ShopOrderSteps } from "./ShopOrderSteps";
 import type { CmsShopCategory, CmsWheelModel } from "@/lib/content/types";
@@ -31,7 +30,6 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
   const [page, setPage] = useState(initialPage);
   const [models, setModels] = useState(initialModels);
   const [categories, setCategories] = useState(initialCategories);
-  const modelsTrackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -69,7 +67,6 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
     .filter((model) => model.showInMenu && model.imageUrl)
     .sort((a, b) => a.menuOrder - b.menuOrder)
     .slice(0, 3);
-  useLoopingTrack(modelsTrackRef, homeModels.length);
   const categorySlides = shopHomeCarouselSlides(categories, page.catalog.tiles);
   const categoryCards = shopHomeCategoryCards(categories, page.catalog.tiles);
 
@@ -96,31 +93,24 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
             <p className={styles.collectionKicker}>{page.wheelsIntro.kicker}</p>
             <h2 id="shop-title">{page.wheelsIntro.title}</h2>
           </div>
-          <div ref={modelsTrackRef} className={styles.modelGrid}>
-            {homeModels.map((model) => (
-              <Link className={styles.modelCard} href={`/shop/wheels/forged/${model.slug}`} key={model.slug}>
-                <span className={styles.modelMedia}><Image src={model.imageUrl!} alt={model.name} fill sizes="(max-width: 767px) 92vw, 33vw" /></span>
-                <span className={styles.modelContent}>
-                  <span className={styles.modelStatus}>Изготавливается под заказ</span>
-                  <strong>{model.name}</strong>
-                  <span>{[model.designStyle, model.series].filter(Boolean).join(" · ")}</span>
-                </span>
-                <span className={styles.modelArrow} aria-hidden="true"><SiteArrow direction="ne" /></span>
-              </Link>
-            ))}
-            {homeModels.map((model) => (
-              <Link className={`${styles.modelCard} ${styles.loopClone}`} href={`/shop/wheels/forged/${model.slug}`} key={`${model.slug}-loop`} aria-hidden="true" tabIndex={-1}>
-                <span className={styles.modelMedia}><Image src={model.imageUrl!} alt="" fill sizes="(max-width: 767px) 92vw, 33vw" /></span>
-                <span className={styles.modelContent}>
-                  <span className={styles.modelStatus}>Изготавливается под заказ</span>
-                  <strong>{model.name}</strong>
-                  <span>{[model.designStyle, model.series].filter(Boolean).join(" · ")}</span>
-                </span>
-                <span className={styles.modelArrow} aria-hidden="true"><SiteArrow direction="ne" /></span>
-              </Link>
-            ))}
-          </div>
-          {homeModels.length > 1 ? <HorizontalScrollCue trackRef={modelsTrackRef} count={homeModels.length} tone="dark" /> : null}
+          {homeModels.length > 0 ? (
+            <LoopedStrip count={homeModels.length} label="Кованые диски" tone="dark" className={styles.modelStrip}>
+              {(index) => {
+                const model = homeModels[index];
+                return (
+                  <Link className={styles.modelCard} href={`/shop/wheels/forged/${model.slug}`}>
+                    <span className={styles.modelMedia}><Image src={model.imageUrl!} alt={model.name} fill sizes="(max-width: 767px) 100vw, 28rem" /></span>
+                    <span className={styles.modelContent}>
+                      <span className={styles.modelStatus}>Изготавливается под заказ</span>
+                      <strong>{model.name}</strong>
+                      <span>{[model.designStyle, model.series].filter(Boolean).join(" · ")}</span>
+                    </span>
+                    <span className={styles.modelArrow} aria-hidden="true"><SiteArrow direction="ne" /></span>
+                  </Link>
+                );
+              }}
+            </LoopedStrip>
+          ) : null}
           <ShopOrderSteps steps={page.orderSteps} />
         </div>
       </section>

@@ -384,19 +384,6 @@
   margin: 0;
   color: var(--color-muted);
 }
-.assortmentCarouselWrap {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-.assortmentTrack {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
 .assortmentCard {
   position: relative;
   display: block;
@@ -1033,12 +1020,6 @@
   }
 }
 @media (min-width: 1024px) {
-  .assortmentTrack {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .loopClone { display: none; }
-}
-@media (min-width: 1024px) {
   .assortmentContent {
     grid-template-columns: minmax(16rem, 24rem) minmax(0, 1fr);
     align-items: start;
@@ -1070,24 +1051,7 @@
   }
   .assortmentIntro,
   .assortmentIntro h2 { width: 100%; max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
-  .assortmentTrack {
-    display: flex;
-    gap: 14px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-    touch-action: pan-x pan-y;
-    margin-right: calc(var(--page-gutter) * -1);
-    padding-right: var(--page-gutter);
-  }
-  .assortmentTrack::-webkit-scrollbar { display: none; }
-  .assortmentCard {
-    flex: 0 0 min(86vw, 380px);
-    min-height: 24rem;
-    scroll-snap-align: start;
-  }
+  .assortmentCard { min-height: 24rem; }
   .branding { width: calc(100% - (var(--page-gutter) * 2)); min-height: 0; overflow: hidden; border-radius: var(--radius-card); background: var(--color-surface-dark, #111); }
   .brandingCompare { position: relative; inset: auto; height: min(62vw, 24rem); }
   .branding .inner { min-height: 0; padding: clamp(1.25rem, 3.5vw, 2rem); }

@@ -1,5 +1,5 @@
 .cue {
-  display: none;
+  display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
@@ -76,9 +76,4 @@
   outline-offset: 2px;
 }
 
-@media (max-width: 1023px) {
-  .cue {
-    display: grid;
-  }
-}
 

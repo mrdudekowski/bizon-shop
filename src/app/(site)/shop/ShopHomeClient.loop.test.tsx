@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement, useLayoutEffect } from "react";
+import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -28,77 +28,56 @@ const models = ["one", "two", "three"].map((slug) => ({
   series: "",
 })) as CmsWheelModel[];
 
-function LayoutHarness() {
-  useLayoutEffect(() => {
-    const first = document.querySelector<HTMLAnchorElement>('a[href="/shop/wheels/forged/one"]');
-    const track = first?.parentElement;
-    if (!track) return;
-    [...track.children].forEach((card, index) => {
-      Object.defineProperty(card, "offsetLeft", { configurable: true, value: index * 180 });
-    });
-  }, []);
-
-  return createElement(ShopHomeClient, {
-    initialPage: getPageDefaults("shop-home"),
-    initialModels: models,
-    initialCategories: [],
-  });
+function activeHref(host: ParentNode) {
+  return host.querySelector("#wheels [data-slot='0'] a")?.getAttribute("href");
 }
 
-describe("ShopHomeClient wheel strip loop integration", () => {
+describe("ShopHomeClient wheel carousel", () => {
   let host: HTMLDivElement;
   let root: Root;
-  let originalOnScrollEnd: PropertyDescriptor | undefined;
 
   afterEach(async () => {
     await act(async () => {
       root?.unmount();
     });
     host?.remove();
-    if (originalOnScrollEnd) Object.defineProperty(window, "onscrollend", originalOnScrollEnd);
-    else Reflect.deleteProperty(window, "onscrollend");
   });
 
-  it("keeps the three-model Shop strip cyclic without exposing its clone cards to Tab", async () => {
-    window.matchMedia = ((query: string) => ({
-      matches: query === "(max-width: 1023px)",
-      media: query,
-      onchange: null,
-      addEventListener() {},
-      removeEventListener() {},
-      addListener() {},
-      removeListener() {},
-      dispatchEvent() {
-        return false;
-      },
-    })) as typeof window.matchMedia;
-    originalOnScrollEnd = Object.getOwnPropertyDescriptor(window, "onscrollend");
-    Object.defineProperty(window, "onscrollend", { configurable: true, value: null });
+  it("pages the real wheel cards forever in either direction", async () => {
     host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
-
     await act(async () => {
-      root.render(createElement(LayoutHarness));
+      root.render(createElement(ShopHomeClient, {
+        initialPage: getPageDefaults("shop-home"),
+        initialModels: models,
+        initialCategories: [],
+      }));
     });
 
-    const firstCard = host.querySelector<HTMLAnchorElement>('a[href="/shop/wheels/forged/one"]');
-    const track = firstCard?.parentElement;
-    if (!track) throw new Error("Shop model track missing");
-    expect(track.children).toHaveLength(6);
-    expect(track.scrollLeft).toBe(540);
-    expect([...track.children].slice(3).every((card) => card.getAttribute("aria-hidden") === "true" && (card as HTMLElement).tabIndex === -1)).toBe(true);
+    const links = [...host.querySelectorAll("#wheels a")].map((link) => link.getAttribute("href"));
+    expect(links).toEqual([
+      "/shop/wheels/forged/one",
+      "/shop/wheels/forged/two",
+      "/shop/wheels/forged/three",
+    ]);
+    expect(host.querySelectorAll("#wheels [data-active]")).toHaveLength(3);
+    expect(activeHref(host)).toBe("/shop/wheels/forged/one");
+
+    const next = host.querySelector<HTMLButtonElement>("#wheels [aria-label='Следующая карточка']");
+    if (!next) throw new Error("cue missing");
+    expect(host.querySelector("#wheels [aria-label='Предыдущая карточка']")).toBeNull();
+
+    const region = host.querySelector("#wheels [aria-roledescription='carousel']");
+    if (!region) throw new Error("carousel missing");
+    await act(async () => {
+      region.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+    });
+    expect(activeHref(host)).toBe("/shop/wheels/forged/three");
 
     await act(async () => {
-      track.scrollLeft = 0;
-      track.dispatchEvent(new Event("scrollend"));
+      next.click();
     });
-    expect(track.scrollLeft).toBe(540);
-
-    await act(async () => {
-      track.scrollLeft = 720;
-      track.dispatchEvent(new Event("scrollend"));
-    });
-    expect(track.scrollLeft).toBe(180);
+    expect(activeHref(host)).toBe("/shop/wheels/forged/one");
   });
 });
