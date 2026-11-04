@@ -40,7 +40,7 @@ export function LoopedStrip({ count, label, tone = "light", className, children 
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return undefined;
-    const media = window.matchMedia("(min-width: 1024px)");
+    const media = window.matchMedia("(min-width: 1280px)");
     const sync = () => {
       desktopRef.current = media.matches;
       setDesktop(media.matches);

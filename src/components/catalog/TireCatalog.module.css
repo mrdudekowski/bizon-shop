@@ -176,7 +176,19 @@
   outline-offset: var(--focus-offset);
 }
 
-@media (hover: none), (pointer: coarse), (max-width: 767px) {
+@media (min-width: 768px) and (max-width: 1279px) {
+  .catalogPage .pageInner {
+    align-content: start;
+    padding-top: clamp(1rem, 2vw, 1.75rem);
+  }
+
+  .directionCard {
+    min-height: 16rem;
+    aspect-ratio: 4 / 3;
+  }
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 1279px) {
   .directionScrim { opacity: 1; }
 
   .directionCard { min-height: 18rem; }

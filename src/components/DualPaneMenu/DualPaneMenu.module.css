@@ -611,6 +611,16 @@
     margin-right: max(16px, env(safe-area-inset-right));
     width: auto;
   }
+
+  .galleryList {
+    gap: 4px;
+  }
+
+  .galleryCard[data-tire] .galleryMedia {
+    width: 5.75rem;
+    height: 7.25rem;
+    aspect-ratio: auto;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

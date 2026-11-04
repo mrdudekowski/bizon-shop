@@ -353,6 +353,18 @@
   }
 }
 
+@media (min-width: 768px) and (max-width: 1279px) {
+  .hero {
+    align-items: center;
+    min-height: min(100svh, 44rem);
+  }
+
+  .heroContent {
+    padding-top: calc(var(--header-height) + 1.5rem);
+    padding-bottom: 2.5rem;
+  }
+}
+
 @media (max-width: 767px) {
   .breadcrumbs > a:first-child,
   .breadcrumbs > span { display: none; }
