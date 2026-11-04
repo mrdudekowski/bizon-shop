@@ -79,5 +79,17 @@ describe("AssortmentCarousel loop", () => {
       region.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
     });
     expect(activeHref(host)).toBe("/models/tbr/three");
+
+    await act(async () => {
+      const trackpadSwipe = new WheelEvent("wheel", { deltaX: 80, deltaY: 4, bubbles: true, cancelable: true });
+      region.dispatchEvent(trackpadSwipe);
+      region.dispatchEvent(trackpadSwipe);
+    });
+    expect(activeHref(host)).toBe("/models/tbr/one");
+
+    await act(async () => {
+      region.dispatchEvent(new WheelEvent("wheel", { deltaX: 4, deltaY: 80, bubbles: true, cancelable: true }));
+    });
+    expect(activeHref(host)).toBe("/models/tbr/one");
   });
 });

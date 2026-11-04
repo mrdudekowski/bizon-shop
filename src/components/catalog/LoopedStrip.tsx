@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, type ReactNode, type TouchEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type TouchEvent } from "react";
 
 import { carouselSwipeStep } from "./carouselSwipe";
 import { HorizontalScrollCue } from "./HorizontalScrollCue";
@@ -20,6 +20,8 @@ export function LoopedStrip({ count, label, tone = "light", className, children 
   const viewportRef = useRef<HTMLDivElement>(null);
   const previousSlots = useRef<number[]>([]);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const dragStart = useRef<{ x: number; y: number } | null>(null);
+  const suppressClick = useRef(false);
   const restoreFocus = useRef(false);
   const slots = Array.from({ length: count }, (_, index) => loopSlot(index, activeIndex, count));
   const jumped = slots.map((slot, index) => {
@@ -34,6 +36,42 @@ export function LoopedStrip({ count, label, tone = "light", className, children 
     viewportRef.current?.querySelector<HTMLElement>('[data-slot="0"] a')?.focus({ preventScroll: true });
   }, [activeIndex, count]);
 
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || count < 2) return undefined;
+    let accumulatedX = 0;
+    let gestureLocked = false;
+    let unlockTimer = 0;
+
+    const onWheel = (event: WheelEvent) => {
+      const scale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? viewport.clientWidth : 1;
+      const deltaX = event.deltaX * scale;
+      const deltaY = event.deltaY * scale;
+      if (Math.abs(deltaY) >= Math.abs(deltaX)) {
+        accumulatedX = 0;
+        return;
+      }
+      event.preventDefault();
+      if (gestureLocked) return;
+      accumulatedX += deltaX;
+      if (Math.abs(accumulatedX) < 48) return;
+      const direction = accumulatedX > 0 ? 1 : -1;
+      accumulatedX = 0;
+      gestureLocked = true;
+      setActiveIndex((current) => wrapIndex(current + direction, count));
+      window.clearTimeout(unlockTimer);
+      unlockTimer = window.setTimeout(() => {
+        gestureLocked = false;
+      }, 450);
+    };
+
+    viewport.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      viewport.removeEventListener("wheel", onWheel);
+      window.clearTimeout(unlockTimer);
+    };
+  }, [count]);
+
   if (count < 1) return null;
 
   function step(direction: -1 | 1) {
@@ -46,6 +84,29 @@ export function LoopedStrip({ count, label, tone = "light", className, children 
     event.preventDefault();
     restoreFocus.current = true;
     step(event.key === "ArrowRight" ? 1 : -1);
+  }
+
+  function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "touch" || count < 2) return;
+    dragStart.current = { x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function onPointerUp(event: React.PointerEvent<HTMLDivElement>) {
+    const start = dragStart.current;
+    dragStart.current = null;
+    if (!start) return;
+    const direction = carouselSwipeStep(event.clientX - start.x, event.clientY - start.y);
+    if (direction === 0) return;
+    suppressClick.current = true;
+    step(direction);
+  }
+
+  function onClickCapture(event: React.MouseEvent<HTMLDivElement>) {
+    if (!suppressClick.current) return;
+    suppressClick.current = false;
+    event.preventDefault();
+    event.stopPropagation();
   }
 
   function onTouchStart(event: TouchEvent<HTMLDivElement>) {
@@ -71,6 +132,9 @@ export function LoopedStrip({ count, label, tone = "light", className, children 
         aria-roledescription="carousel"
         aria-label={label}
         onKeyDown={onKeyDown}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onClickCapture={onClickCapture}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
