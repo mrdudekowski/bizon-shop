@@ -31,3 +31,20 @@
 @media (prefers-reduced-motion: reduce) {
   .item { transition: none; }
 }
+
+@media (min-width: 1024px) {
+  .root {
+    width: 100%;
+  }
+  .viewport {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--loop-gap);
+    overflow: visible;
+  }
+  .item {
+    grid-area: auto;
+    transform: none;
+    transition: none;
+  }
+  .cueSlot { display: none; }
+}

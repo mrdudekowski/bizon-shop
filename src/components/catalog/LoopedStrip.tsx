@@ -23,6 +23,8 @@ export function LoopedStrip({ count, label, tone = "light", className, children 
   const dragStart = useRef<{ x: number; y: number } | null>(null);
   const suppressClick = useRef(false);
   const restoreFocus = useRef(false);
+  const desktopRef = useRef(false);
+  const [desktop, setDesktop] = useState(false);
   const slots = Array.from({ length: count }, (_, index) => loopSlot(index, activeIndex, count));
   const jumped = slots.map((slot, index) => {
     const previous = previousSlots.current[index];
@@ -37,6 +39,18 @@ export function LoopedStrip({ count, label, tone = "light", className, children 
   }, [activeIndex, count]);
 
   useEffect(() => {
+    if (typeof window.matchMedia !== "function") return undefined;
+    const media = window.matchMedia("(min-width: 1024px)");
+    const sync = () => {
+      desktopRef.current = media.matches;
+      setDesktop(media.matches);
+    };
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport || count < 2) return undefined;
     let accumulatedX = 0;
@@ -44,6 +58,7 @@ export function LoopedStrip({ count, label, tone = "light", className, children 
     let unlockTimer = 0;
 
     const onWheel = (event: WheelEvent) => {
+      if (desktopRef.current) return;
       const scale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? viewport.clientWidth : 1;
       const deltaX = event.deltaX * scale;
       const deltaY = event.deltaY * scale;
@@ -87,7 +102,7 @@ export function LoopedStrip({ count, label, tone = "light", className, children 
   }
 
   function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    if (event.pointerType === "touch" || count < 2) return;
+    if (desktopRef.current || event.pointerType === "touch" || count < 2) return;
     dragStart.current = { x: event.clientX, y: event.clientY };
     event.currentTarget.setPointerCapture(event.pointerId);
   }
@@ -145,15 +160,17 @@ export function LoopedStrip({ count, label, tone = "light", className, children 
             style={{ "--slot": slot } as React.CSSProperties}
             data-slot={slot}
             data-jump={jumped[index] ? "true" : "false"}
-            aria-hidden={slot === 0 ? undefined : true}
-            inert={slot === 0 ? undefined : true}
+            aria-hidden={desktop || slot === 0 ? undefined : true}
+            inert={desktop || slot === 0 ? undefined : true}
           >
             {children(index)}
           </div>
         ))}
       </div>
       {count > 1 ? (
-        <HorizontalScrollCue count={count} activeIndex={wrapIndex(activeIndex, count)} onStep={step} tone={tone} />
+        <div className={styles.cueSlot}>
+          <HorizontalScrollCue count={count} activeIndex={wrapIndex(activeIndex, count)} onStep={step} tone={tone} />
+        </div>
       ) : null}
     </div>
   );

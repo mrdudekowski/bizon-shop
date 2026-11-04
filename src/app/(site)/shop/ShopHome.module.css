@@ -156,6 +156,7 @@
 
 .modelStrip {
   margin-top: clamp(32px, 4vw, 52px);
+  --loop-gap: 18px;
 }
 
 .modelCard {

@@ -45,6 +45,16 @@ describe("AssortmentCarousel loop", () => {
   });
 
   it("pages the real cards forever in either direction", async () => {
+    window.matchMedia = ((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      dispatchEvent() { return false; },
+    })) as typeof window.matchMedia;
     host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
