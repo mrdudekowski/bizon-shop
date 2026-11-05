@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { cartItemKey, isCartItemAllowed } from "@/lib/cart/cartStorage";
 import type { CartKind } from "@/lib/cart/cartTypes";
+import { ContactRequest } from "@/components/forms/ContactRequest";
 import { submitRequest } from "@/lib/requests/submitRequest";
 import { HONEYPOT_FIELD } from "@/lib/requests/validateRequest";
 import type { RequestItemInput, SourceForm } from "@/types/requestItem";
@@ -226,6 +227,7 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
           {wheelItems.length > 0 && <CartItemsGroup title="Кованые диски" items={wheelItems} onRemove={cart.removeItem} onQuantityChange={cart.setQuantity} />}
           {shopItems.length > 0 && <CartItemsGroup title="Товары BIZON Shop" items={shopItems} onRemove={cart.removeItem} onQuantityChange={cart.setQuantity} />}
 
+          <ContactRequest notice="Форма заявки скоро появится!" className="max-w-3xl">
           <form className="card-base info-card form-card max-w-3xl" onSubmit={handleSubmit}>
             <h2 className="info-card-title">Контакты для {requestLabel}</h2>
             <p className="info-card-text">Специалист проверит совместимость, уточнит конфигурацию и только затем подтвердит стоимость.</p>
@@ -271,6 +273,7 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
             </button>
             {message && <p className={`${styles.status} ${status === "error" ? styles.statusError : ""}`} role="status" aria-live="polite">{message}</p>}
           </form>
+          </ContactRequest>
         </>
       )}
     </div>

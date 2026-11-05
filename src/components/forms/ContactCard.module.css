@@ -1,0 +1,68 @@
+.card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.contacts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.row {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.label {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.value {
+  color: var(--color-foreground);
+  font-size: 1.125rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.channels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.channel {
+  min-width: 0;
+}
+
+.channel svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+}
+
+.notice {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+@media (min-width: 640px) {
+  .card {
+    padding: clamp(1.5rem, 4vw, 3.5rem);
+  }
+}

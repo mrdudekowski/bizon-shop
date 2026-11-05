@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 
 import { ServicePage } from "@/components/content/ServicePage";
+import { ContactRequest } from "@/components/forms/ContactRequest";
 import { ContextualContactForm } from "@/components/forms/ContextualContactForm";
 import { resolveContactIntent } from "@/lib/requests/contactIntent";
 import type { PublishedStubOverlay } from "@/lib/content/getPageContent";
@@ -23,7 +24,9 @@ export function ContactExperience({ page }: { page: PublishedStubOverlay | null 
       features={page?.features ?? []}
     >
       <div className="section-inner" style={{ paddingTop: 0, paddingBottom: "var(--section-space)" }}>
-        <ContextualContactForm intent={intent} />
+        <ContactRequest>
+          <ContextualContactForm intent={intent} />
+        </ContactRequest>
       </div>
     </ServicePage>
   );

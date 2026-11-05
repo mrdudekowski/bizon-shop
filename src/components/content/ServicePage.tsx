@@ -9,6 +9,7 @@ import { resolveServicePageCta, resolveServicePageProof } from "./servicePageEdi
 
 import { PageHero, type PageHeroBreadcrumb, type PageHeroMedia } from "@/components/content/PageHero";
 import { ConfiguredForm, type ConfiguredSourceForm, type PageForm } from "@/components/forms/ConfiguredForm";
+import { ContactRequest } from "@/components/forms/ContactRequest";
 import { ROUTES } from "@/constants/navigation";
 
 import styles from "./ServicePage.module.css";
@@ -202,7 +203,11 @@ export function ServicePage({
           </>
         ) : children}
 
-        {liveForm && formSource ? <ConfiguredForm form={liveForm} sourceForm={formSource} /> : null}
+        {liveForm && formSource ? (
+          <ContactRequest>
+            <ConfiguredForm form={liveForm} sourceForm={formSource} />
+          </ContactRequest>
+        ) : null}
 
         {activeDocuments.length > 0 ? (
           <section className={styles.documents} aria-labelledby="service-documents-heading">

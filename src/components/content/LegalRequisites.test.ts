@@ -21,6 +21,7 @@ const baseProfile: SiteProfile = {
   requisites: SEEDED_REQUISITES,
   priceNotice: "",
   madeToOrderNotice: "",
+  contactSurface: "form",
 };
 
 describe("LegalRequisites", () => {

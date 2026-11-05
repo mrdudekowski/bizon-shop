@@ -20,6 +20,7 @@ import { fetchBrowserTireCatalog } from "@/lib/catalog/browserTireCatalog";
 import { buildMainDualPaneMenuSections, buildShopDualPaneMenuSections } from "@/lib/content/buildDualPaneMenu";
 import { fetchBrowserPublishedJson, fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
 import { readPublishedRevision } from "@/lib/content/readPublishedRevision";
+import { SiteProfileProvider } from "@/components/forms/siteProfileContext";
 
 /**
  * Client shell: header, burger menu, footer, scroll helpers.
@@ -99,6 +100,7 @@ export function SiteShell({ children, mainMenu, shopMenu, initialSiteProfile = n
   }, [menuOpen, menuRefreshed]);
 
   return (
+    <SiteProfileProvider value={siteProfile}>
     <>
       <div
         className={`page page--with-mobile-nav ${menuOpen ? "page--blurred" : ""}`}
@@ -159,5 +161,6 @@ export function SiteShell({ children, mainMenu, shopMenu, initialSiteProfile = n
         onClear={cart.clear}
       />
     </>
+    </SiteProfileProvider>
   );
 }
