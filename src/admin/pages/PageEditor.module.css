@@ -55,6 +55,28 @@
 
 .fullWidth {
   grid-column: 1 / -1;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.surfaceChoice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  min-width: 0;
+}
+
+.surfaceChoice label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.surfaceChoice input {
+  width: auto;
 }
 
 .row .checkboxField {

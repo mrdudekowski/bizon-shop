@@ -308,6 +308,38 @@ describe("PageEditor conflict recovery", () => {
     }));
   });
 
+  it("publishes the contact card switch with the contact draft", async () => {
+    const contactDraft = {
+      id: "contact",
+      seoTitle: "Контакты",
+      seoDescription: "",
+      hero: { eyebrow: "", title: "", lead: "" },
+      documents: [],
+      siteProfile: {
+        phone: "+7 (421) 200-00-00",
+        email: "sales@bizon.ru",
+        address: "",
+        legalSummary: "",
+        requisites: [],
+        channels: [],
+      },
+    };
+    const record = { ...pageRecord, id: "contact", draft: contactDraft, savedDraft: contactDraft, publishedSnapshot: contactDraft };
+    const savePage = vi.fn().mockImplementation(async (_key: string, next: typeof contactDraft) => ({ ...record, draft: next, savedDraft: next }));
+    mockState.client.getPage = vi.fn().mockResolvedValue(record);
+    mockState.client.savePage = savePage;
+    const user = userEvent.setup();
+    render(createElement(PageEditor, { pageKey: "contact" }));
+
+    expect(await screen.findByRole("radio", { name: "Форма" })).toHaveProperty("checked", true);
+    await user.click(screen.getByRole("radio", { name: "Карточка" }));
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    expect(savePage).toHaveBeenCalledWith("contact", expect.objectContaining({
+      siteProfile: expect.objectContaining({ contactSurface: "card" }),
+    }));
+  });
+
   it("shows a PDF upload failure beside the document control", async () => {
     const legalDraft = { id: "privacy-policy", seoTitle: "Политика", seoDescription: "", hero: { eyebrow: "", title: "", lead: "" }, documents: [] };
     mockState.client.getPage = vi.fn().mockResolvedValue({ ...pageRecord, id: "privacy-policy", draft: legalDraft, savedDraft: legalDraft, publishedSnapshot: legalDraft });

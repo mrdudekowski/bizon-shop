@@ -131,6 +131,7 @@ const EMPTY_SITE_PROFILE: SiteProfileDraft = {
   priceNotice: "",
   madeToOrderNotice: "",
   requisites: [],
+  contactSurface: "form",
 };
 
 function mergeSiteProfileDraft(raw: SiteProfileDraft | undefined): SiteProfileDraft {
@@ -142,6 +143,7 @@ function mergeSiteProfileDraft(raw: SiteProfileDraft | undefined): SiteProfileDr
     madeToOrderNotice: raw?.madeToOrderNotice ?? "",
     requisites: raw?.requisites ?? [],
     channels: raw?.channels ?? [],
+    contactSurface: raw?.contactSurface === "card" ? "card" : "form",
   };
 }
 
@@ -190,6 +192,34 @@ function StubFields({
             Контактные данные и ссылки на каналы связи отображаются в подвале (футере) основного сайта и BIZON Shop, а также на странице контактов. Канал без ссылки или с выключенным показом на сайте скрыт.
           </p>
           <div className={styles.contactGrid}>
+            <fieldset className={styles.fullWidth}>
+              <legend>Заявки на сайте</legend>
+              <div className={styles.surfaceChoice}>
+                <label>
+                  <input
+                    type="radio"
+                    name="contact-surface"
+                    value="form"
+                    checked={siteProfile.contactSurface !== "card"}
+                    onChange={() => patchSiteProfile({ contactSurface: "form" })}
+                  />
+                  Форма
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="contact-surface"
+                    value="card"
+                    checked={siteProfile.contactSurface === "card"}
+                    onChange={() => patchSiteProfile({ contactSurface: "card" })}
+                  />
+                  Карточка
+                </label>
+              </div>
+              <p className={styles.hint}>
+                Публикуется вместе с телефоном и email. Карточка заменяет формы заявок. В корзине список товаров остаётся, а под карточкой пишется «Форма заявки скоро появится!».
+              </p>
+            </fieldset>
             <label>
               Телефон
               <input

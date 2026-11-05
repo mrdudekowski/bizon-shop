@@ -395,6 +395,8 @@ export type SiteProfileDraft = {
   priceNotice: string;
   madeToOrderNotice: string;
   requisites: { id: string; label: string; value: string }[];
+  /** "form" keeps request forms. "card" replaces them after this contact page is published. */
+  contactSurface?: "form" | "card";
 };
 
 /** Request form edited on branding, warranty, supplier, and delivery-geography pages; stored in page_forms and page_form_fields. */
