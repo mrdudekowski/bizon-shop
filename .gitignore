@@ -1,4 +1,5 @@
 node_modules/
+public/content-snapshot.json
 .next/
 out/
 dist/

@@ -41,6 +41,7 @@ import type {
 
 import type { AdminClient, SiteDeployLookup, SiteDeployResult } from "./adminClient";
 import { AdminClientError } from "./errors";
+import { withPublishedSnapshotFallback } from "./publishedSnapshotAdmin";
 import { ERROR_TEXT } from "./errorText";
 import { actorSession, cancelOverlappingPacks, currentUser, recordEditorMutation, requirePermission } from "./applyChangeSet";
 import {
@@ -1776,18 +1777,39 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 }
 
 export function browserAdminClient(): AdminClient {
-  return remoteAdminClient();
+  const remote = remoteAdminClient();
+  const snapshotUrl = process.env.NEXT_PUBLIC_CONTENT_SNAPSHOT_URL?.trim();
+  if (process.env.NODE_ENV === "production" || !snapshotUrl) return remote;
+  return withPublishedSnapshotFallback(remote, snapshotUrl);
 }
 
-/** The CMS browser talks directly to backend-app; the session cookie remains HttpOnly. */
+const LOCAL_API_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/**
+ * The CMS browser talks directly to backend-app; the session cookie remains HttpOnly.
+ * localhost and 127.0.0.1 are different sites, so a loopback API URL follows the page
+ * host. Otherwise SameSite=Lax drops the cookie and a successful login stays logged out.
+ */
 function adminApiBase(): string {
   const configured = (process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "").trim();
-  const localHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
-  const browserHost = typeof window !== "undefined" && localHosts.has(window.location.hostname)
+  const browserHost = typeof window !== "undefined" && LOCAL_API_HOSTS.has(window.location.hostname)
     ? window.location.hostname
-    : "localhost";
-  const base = configured || (process.env.NODE_ENV === "development" ? `http://${browserHost}:4000` : "");
+    : null;
+  const base = alignLoopbackApiHost(configured, browserHost)
+    || (process.env.NODE_ENV === "development" && browserHost ? `http://${browserHost}:4000` : "");
   return base.replace(/\/+$/, "");
+}
+
+function alignLoopbackApiHost(configured: string, browserHost: string | null): string {
+  if (!configured || !browserHost) return configured;
+  try {
+    const url = new URL(configured);
+    if (!LOCAL_API_HOSTS.has(url.hostname) || url.hostname === browserHost) return configured;
+    url.hostname = browserHost;
+    return url.toString();
+  } catch {
+    return configured;
+  }
 }
 
 const savedDraftByEntity = new Map<string, unknown>();

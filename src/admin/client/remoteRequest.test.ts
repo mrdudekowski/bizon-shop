@@ -47,6 +47,17 @@ describe("remote admin client", () => {
       "http://127.0.0.1:4000/v1/admin",
     ]);
   });
+
+  it("rewrites a configured loopback API host to the page host so the session cookie is sent", async () => {
+    vi.stubEnv("NEXT_PUBLIC_ADMIN_API_URL", "http://127.0.0.1:4000");
+    vi.stubGlobal("window", { location: { hostname: "localhost" } });
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, result: [] })));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await browserAdminClient().listPages();
+
+    expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:4000/v1/admin");
+  });
   it("sends the last loaded saved draft with remote saves", async () => {
     vi.stubEnv("NEXT_PUBLIC_ADMIN_API_URL", "https://admin.example.test/");
     const edited = { ...draft, name: "Зимние шины" };
