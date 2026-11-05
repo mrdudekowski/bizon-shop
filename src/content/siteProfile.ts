@@ -9,6 +9,8 @@ export type SiteChannel = {
 
 export type SiteRequisite = { id: string; label: string; value: string };
 
+export type ContactSurface = "form" | "card";
+
 export type SiteProfile = {
   phone: string;
   email: string;
@@ -19,7 +21,13 @@ export type SiteProfile = {
   requisites: SiteRequisite[];
   priceNotice: string;
   madeToOrderNotice: string;
+  contactSurface: ContactSurface;
 };
+
+/** A missing or unknown value stays on the form. Card mode is explicit. */
+export function contactSurfaceOf(value: unknown): ContactSurface {
+  return value === "card" ? "card" : "form";
+}
 
 type SiteProfileDatabase = {
   query(sql: string, params?: unknown[]): Promise<Record<string, unknown>[]>;
@@ -62,13 +70,20 @@ export async function writeSiteProfileContacts(
   db: SiteProfileDatabase,
   contacts: Pick<
     SiteProfile,
-    "phone" | "email" | "address" | "channels" | "legalSummary" | "priceNotice" | "madeToOrderNotice" | "requisites"
-  >,
+    | "phone"
+    | "email"
+    | "address"
+    | "channels"
+    | "legalSummary"
+    | "priceNotice"
+    | "madeToOrderNotice"
+    | "requisites"
+  > & { contactSurface?: unknown },
 ): Promise<void> {
   await db.query(
-    `INSERT INTO site_profile (id, phone, email, address, channels_note, legal_summary, price_notice, made_to_order_notice)
-     VALUES (1, $1, $2, $3, $4, $5, $6, $7)
-     ON CONFLICT (id) DO UPDATE SET phone = EXCLUDED.phone, email = EXCLUDED.email, address = EXCLUDED.address, legal_summary = EXCLUDED.legal_summary, price_notice = EXCLUDED.price_notice, made_to_order_notice = EXCLUDED.made_to_order_notice`,
+    `INSERT INTO site_profile (id, phone, email, address, channels_note, legal_summary, price_notice, made_to_order_notice, contact_surface)
+     VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8)
+     ON CONFLICT (id) DO UPDATE SET phone = EXCLUDED.phone, email = EXCLUDED.email, address = EXCLUDED.address, legal_summary = EXCLUDED.legal_summary, price_notice = EXCLUDED.price_notice, made_to_order_notice = EXCLUDED.made_to_order_notice, contact_surface = EXCLUDED.contact_surface`,
     [
       contacts.phone,
       contacts.email,
@@ -78,6 +93,7 @@ export async function writeSiteProfileContacts(
       // ponytail: a stored draft saved before these fields existed has none; "" keeps the NOT NULL column valid and publishes no notice.
       contacts.priceNotice ?? "",
       contacts.madeToOrderNotice ?? "",
+      contactSurfaceOf(contacts.contactSurface),
     ],
   );
   await db.query(`DELETE FROM site_profile_channels`);
@@ -100,7 +116,7 @@ const asText = (value: unknown): string => (typeof value === "string" ? value : 
 
 export async function readSiteProfile(db: SiteProfileDatabase): Promise<SiteProfile> {
   const [profile] = await db.query(
-    `SELECT phone, email, address, channels_note, legal_summary, price_notice, made_to_order_notice
+    `SELECT phone, email, address, channels_note, legal_summary, price_notice, made_to_order_notice, contact_surface
      FROM site_profile WHERE id = 1`,
   );
   const channels = await db.query(
@@ -129,5 +145,6 @@ export async function readSiteProfile(db: SiteProfileDatabase): Promise<SiteProf
     })),
     priceNotice: profile ? asText(profile.price_notice) : SITE_PROFILE_DEFAULTS.priceNotice,
     madeToOrderNotice: profile ? asText(profile.made_to_order_notice) : SITE_PROFILE_DEFAULTS.madeToOrderNotice,
+    contactSurface: contactSurfaceOf(profile?.contact_surface),
   };
 }

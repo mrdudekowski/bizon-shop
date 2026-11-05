@@ -202,6 +202,7 @@ describe("published content readers", () => {
     await expect(readStubPatch(db, "contact")).resolves.toMatchObject({
       siteProfile: {
         phone: "+7 (421) 000-00-11",
+        contactSurface: "form",
         channels: [{ id: "telegram", href: "", enabled: true }],
         requisites: [{ id: "inn" }],
       },

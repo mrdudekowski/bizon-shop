@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { siteProfileMigration } from "../migrations/0023-site-profile";
 import { CUSTOMER_COPY } from "./customerTemplateCopy";
-import { contactHref, siteChannelsAreValid, visibleChannels, writeSiteProfileContacts } from "./siteProfile";
+import { contactHref, contactSurfaceOf, readSiteProfile, siteChannelsAreValid, visibleChannels, writeSiteProfileContacts } from "./siteProfile";
 
 describe("site profile visibility", () => {
   it("hides a channel without a link or with enabled false", () => {
@@ -19,6 +19,24 @@ describe("site profile visibility", () => {
     expect(contactHref("email", "sales@bizon.ru")).toBe("mailto:sales@bizon.ru");
     expect(contactHref("phone", CUSTOMER_COPY.phone)).toBeNull();
     expect(contactHref("email", CUSTOMER_COPY.email)).toBeNull();
+  });
+});
+
+describe("contact surface", () => {
+  it("keeps the form unless the published value is card", () => {
+    expect(contactSurfaceOf(undefined)).toBe("form");
+    expect(contactSurfaceOf("banner")).toBe("form");
+    expect(contactSurfaceOf("card")).toBe("card");
+  });
+
+  it("reads card mode from the profile row", async () => {
+    const profile = await readSiteProfile({
+      query: async (sql) => {
+        if (sql.includes("site_profile_channels") || sql.includes("site_profile_requisites")) return [];
+        return [{ phone: "", email: "", address: "", channels_note: "", legal_summary: "", price_notice: "", made_to_order_notice: "", contact_surface: "card" }];
+      },
+    });
+    expect(profile.contactSurface).toBe("card");
   });
 });
 
@@ -67,7 +85,7 @@ describe("site profile contact write", () => {
     expect(calls[0].sql).toContain("ON CONFLICT (id) DO UPDATE");
     expect(calls[0].sql).toContain("legal_summary = EXCLUDED.legal_summary");
     expect(calls[0].sql).toContain("price_notice = EXCLUDED.price_notice");
-    expect(calls[0].sql).toContain("made_to_order_notice = EXCLUDED.made_to_order_notice");
+    expect(calls[0].sql).toContain("contact_surface = EXCLUDED.contact_surface");
     expect(calls[0].params).toEqual([
       "+7 (421) 200-00-00",
       "sales@bizon.ru",
@@ -76,6 +94,7 @@ describe("site profile contact write", () => {
       "Реквизиты оператора.",
       "Цены на сайте ориентировочные.",
       "",
+      "form",
     ]);
     expect(calls[1].sql).toContain("DELETE FROM site_profile_channels");
     expect(calls.slice(2, 4).map((call) => call.params)).toEqual([

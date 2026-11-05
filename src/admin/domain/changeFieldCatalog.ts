@@ -292,6 +292,7 @@ const CATALOGS: Record<StatusEntity, { section: string; root: Record<string, Cat
         children: {
           phone: { field: "Телефон" },
           email: { field: "Email" },
+          contactSurface: { field: "Заявки на сайте" },
           address: { field: "Адрес" },
           legalSummary: { field: "Краткое описание реквизитов" },
           priceNotice: { field: "Цены и наличие" },

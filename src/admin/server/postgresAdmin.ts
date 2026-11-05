@@ -889,6 +889,7 @@ async function mapPage(row: Row): Promise<PageDraft> {
     priceNotice: profile.priceNotice,
     madeToOrderNotice: profile.madeToOrderNotice,
     requisites: profile.requisites,
+    contactSurface: profile.contactSurface,
   };
   return {
     ...editorial,

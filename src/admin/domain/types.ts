@@ -369,6 +369,8 @@ export type SiteProfileDraft = {
   priceNotice: string;
   madeToOrderNotice: string;
   requisites: { id: string; label: string; value: string }[];
+  /** "form" keeps request forms. "card" replaces them after this contact page is published. */
+  contactSurface?: "form" | "card";
 };
 
 /** Request form stored in page_forms. A blank submitLabel keeps the public button as «Отправить». */
