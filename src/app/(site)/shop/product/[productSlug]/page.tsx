@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getAllShopProductSlugs, getShopProductBySlug } from "@/lib/content";
 import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { createProductMetadata } from "@/lib/seo/metadata";
-import { createProductStructuredData } from "@/lib/seo/structuredData";
+import { createProductStructuredData, jsonLdScriptContent } from "@/lib/seo/structuredData";
 import { ShopProductConfigurator } from "@/components/shop/ShopProductConfigurator";
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { loadPublished } from "@/lib/content/loadPublished";
@@ -54,7 +54,7 @@ export default async function ProductPage({ params }: PageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(structuredData) }}
       />
       <ShopProductConfigurator product={product} priceNotice={priceNotice} />
     </>

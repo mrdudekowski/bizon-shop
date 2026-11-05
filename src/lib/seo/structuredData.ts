@@ -10,6 +10,11 @@ export type ProductStructuredDataInput = {
   category?: string;
 };
 
+/** JSON.stringify leaves `<` intact, which can close a script element. */
+export function jsonLdScriptContent(data: unknown): string {
+  return JSON.stringify(data).replaceAll("<", "\\u003c");
+}
+
 export function createProductStructuredData(product: ProductStructuredDataInput) {
   const siteUrl = getSiteUrl();
   const path = product.path.startsWith("/") ? product.path : `/${product.path}`;

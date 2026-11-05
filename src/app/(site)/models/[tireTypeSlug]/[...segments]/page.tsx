@@ -12,7 +12,7 @@ import {
   getTireVariantsByModelId,
 } from "@/lib/content";
 import { createPageMetadata } from "@/lib/seo/metadata";
-import { createProductStructuredData } from "@/lib/seo/structuredData";
+import { createProductStructuredData, jsonLdScriptContent } from "@/lib/seo/structuredData";
 import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { loadPublished } from "@/lib/content/loadPublished";
 
@@ -185,7 +185,7 @@ async function TireModelRoute({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(structuredData) }}
       />
       <TireModelStage
         model={hydratedModel}

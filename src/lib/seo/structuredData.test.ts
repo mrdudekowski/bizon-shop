@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { PLACEHOLDER_SITE_PROFILE } from "@/lib/content/siteProfile";
-import { createOrganizationStructuredData } from "./structuredData";
+import { createOrganizationStructuredData, createProductStructuredData, jsonLdScriptContent } from "./structuredData";
 
 describe("createOrganizationStructuredData", () => {
   it("omits the contact point while phone and email are placeholder sentences", () => {
@@ -16,5 +16,17 @@ describe("createOrganizationStructuredData", () => {
 
     expect(contactPoint.email).toBe("sales@bizon.ru");
     expect(contactPoint).not.toHaveProperty("telephone");
+  });
+});
+
+describe("jsonLdScriptContent", () => {
+  it("encodes angle brackets so a catalog name cannot close the script element", () => {
+    const html = jsonLdScriptContent(createProductStructuredData({
+      name: "</script>",
+      path: "/shop/product/x",
+    }));
+
+    expect(html).not.toContain("</");
+    expect(html).toContain("\\u003c");
   });
 });

@@ -7,7 +7,7 @@ import {
 } from "@/lib/content";
 import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { createPageMetadata } from "@/lib/seo/metadata";
-import { createProductStructuredData } from "@/lib/seo/structuredData";
+import { createProductStructuredData, jsonLdScriptContent } from "@/lib/seo/structuredData";
 import { WheelModelStage } from "@/components/catalog/WheelModelStage";
 
 type PageProps = {
@@ -60,7 +60,7 @@ export default async function WheelModelPage({ params }: PageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(structuredData) }}
       />
       <WheelModelStage
         wheelType={wheelType}

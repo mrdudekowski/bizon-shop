@@ -57,7 +57,7 @@ export function contactCardChannels(channels: SiteChannel[]): SiteChannel[] {
 }
 
 export function visibleChannels(channels: SiteChannel[]): SiteChannel[] {
-  return channels.filter((channel) => channel.enabled && channel.href.trim());
+  return channels.filter((channel) => channel.enabled && /^https?:\/\//i.test(channel.href.trim()));
 }
 
 export function contactHref(kind: "phone" | "email", value: string): string | null {
