@@ -189,6 +189,14 @@ describe("lexicalToHtml", () => {
   it("passes an existing html string through", () => {
     expect(lexicalToHtml("<p>Уже html</p>")).toBe("<p>Уже html</p>");
   });
+
+  it("escapes tags and attributes that are not a plain paragraph or break", () => {
+    const html = lexicalToHtml('<p onclick="x"><script>bad</script></p>');
+
+    expect(html).not.toContain("<script");
+    expect(html).not.toContain("<p onclick");
+    expect(html).toContain("&lt;script&gt;");
+  });
 });
 
 describe("normalizeImageUrl", () => {

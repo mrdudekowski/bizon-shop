@@ -37,6 +37,8 @@ describe("trustedAttachmentUrl", () => {
     expect(trustedAttachmentUrl("https://cdn.example/bizon/requests.evil.example/a.pdf", base)).toBeNull();
     expect(trustedAttachmentUrl(undefined, base)).toBeNull();
     expect(trustedAttachmentUrl(`${base}a.pdf`, null)).toBeNull();
+    expect(trustedAttachmentUrl(`${base}../secret.pdf`, base)).toBeNull();
+    expect(trustedAttachmentUrl(`${base}foo/../../secret.pdf`, base)).toBeNull();
   });
 });
 

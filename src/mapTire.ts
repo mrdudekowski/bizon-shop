@@ -152,7 +152,13 @@ export function lexicalToHtml(value: unknown): string {
       return "";
     }
 
-    return value.includes("<p") || value.includes("<br") ? value : `<p>${escapeHtml(value)}</p>`;
+    const escaped = escapeHtml(value)
+      .replaceAll("&lt;p&gt;", "<p>")
+      .replaceAll("&lt;/p&gt;", "</p>")
+      .replaceAll("&lt;br&gt;", "<br>")
+      .replaceAll("&lt;br/&gt;", "<br/>")
+      .replaceAll("&lt;br /&gt;", "<br />");
+    return escaped.includes("<p>") || escaped.includes("<br") ? escaped : `<p>${escaped}</p>`;
   }
 
   const text = collectLexicalText(value).join("");

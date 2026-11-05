@@ -1134,6 +1134,11 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
     if (!canEditorPerform(session, action)) throw new AdminClientError("forbidden");
   }
 
+  function requireCatalogOrPages(): void {
+    if (canEditorPerform(session, "edit_catalog") || canEditorPerform(session, "edit_site_pages")) return;
+    throw new AdminClientError("forbidden");
+  }
+
   async function loadPacks(): Promise<ChangeSet[]> {
     const rows = await query("SELECT pack FROM cms_change_sets");
     return rows.map((row) => row.pack as ChangeSet);
@@ -1187,6 +1192,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return null;
     },
     async listTireDirections() {
+      requirePermission("edit_catalog");
       const rows = await query("SELECT * FROM tire_types ORDER BY COALESCE(sort_order, 0), name, id");
       const items: (TireDirection & { sortOrder: number })[] = [];
       for (const row of rows) {
@@ -1223,6 +1229,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return record;
     },
     async getTireDirection(id) {
+      requirePermission("edit_catalog");
       const row = await requireRow("tire_types", id);
       return present("tire-directions", id, await mapDirection(row), str(row.status));
     },
@@ -1293,6 +1300,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       await query("DELETE FROM tire_types WHERE id = $1", [Number(id)]);
     },
     async listTireModels() {
+      requirePermission("edit_catalog");
       const rows = await query("SELECT * FROM tire_models ORDER BY COALESCE(menu_order, 0), name, id");
       const items: TireModelListItem[] = [];
       for (const row of rows) {
@@ -1313,6 +1321,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return items.sort((a, b) => (a.menuOrder ?? 0) - (b.menuOrder ?? 0) || a.name.localeCompare(b.name, "ru"));
     },
     async getTireModel(id) {
+      requirePermission("edit_catalog");
       const row = await requireRow("tire_models", id);
       return present("tire-models", id, await mapTireModel(row), str(row.status)) as Promise<TireModelRecord>;
     },
@@ -1572,6 +1581,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       }
     },
     async listAssets() {
+      requireCatalogOrPages();
       const rows = await query(
         `SELECT media.id, COALESCE(staged.title, media.title) AS title,
           COALESCE(staged.title, media.filename) AS filename,
@@ -1712,12 +1722,14 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       }));
     },
     async listWheelTypes() {
+      requirePermission("edit_catalog");
       const rows = await query("SELECT * FROM wheel_types ORDER BY sort_order, name");
       const records = [];
       for (const row of rows) records.push(await present("wheel-types", str(row.id), mapWheelType(row), str(row.status)));
       return records;
     },
     async getWheelType(id) {
+      requirePermission("edit_catalog");
       const row = await requireRow("wheel_types", id);
       return present("wheel-types", id, mapWheelType(row), str(row.status));
     },
@@ -1785,6 +1797,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       await query("DELETE FROM wheel_types WHERE id = $1", [Number(id)]);
     },
     async listWheelModels() {
+      requirePermission("edit_catalog");
       const rows = await query("SELECT * FROM wheel_models ORDER BY COALESCE(menu_order, 0), name, id");
       const items = [];
       for (const row of rows) {
@@ -1823,6 +1836,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return record;
     },
     async getWheelModel(id) {
+      requirePermission("edit_catalog");
       const row = await requireRow("wheel_models", id);
       return present("wheel-models", id, await mapWheelModel(row), str(row.status));
     },
@@ -1957,12 +1971,14 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       await query("DELETE FROM wheel_models WHERE id = $1", [Number(id)]);
     },
     async listShopCategories() {
+      requirePermission("edit_catalog");
       const rows = await query("SELECT * FROM shop_categories ORDER BY COALESCE(sort_order, 0), name, id");
       const records = [];
       for (const row of rows) records.push(await presentCategory(row));
       return records.sort((a, b) => (a.draft.sortOrder ?? 0) - (b.draft.sortOrder ?? 0) || a.draft.name.localeCompare(b.draft.name, "ru"));
     },
     async getShopCategory(id) {
+      requirePermission("edit_catalog");
       const row = await requireRow("shop_categories", id);
       return presentCategory(row);
     },
@@ -2045,6 +2061,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       await query("DELETE FROM shop_categories WHERE id = $1", [Number(id)]);
     },
     async listShopSubcategories(categoryId) {
+      requirePermission("edit_catalog");
       const category = numericId(categoryId);
       if (category == null) throw new AdminClientError("invalid_slug");
       const rows = await query(
@@ -2121,6 +2138,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       if (deleted.length === 0) throw new AdminClientError("not_found");
     },
     async listShopProducts() {
+      requirePermission("edit_catalog");
       const rows = await query("SELECT * FROM products ORDER BY COALESCE(sort_order, 0), name, id");
       const items = [];
       for (const row of rows) {
@@ -2162,6 +2180,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return record;
     },
     async getShopProduct(id) {
+      requirePermission("edit_catalog");
       const row = await requireRow("products", id);
       return present("shop-products", id, await mapProduct(row), str(row.status));
     },
@@ -2302,6 +2321,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       await query("DELETE FROM products WHERE id = $1", [Number(id)]);
     },
     async listPages() {
+      requirePermission("edit_site_pages");
       const rows = await query("SELECT * FROM pages");
       const byKey = new Map(rows.map((row) => [str(row.key), row]));
       const pages = [];
@@ -2313,6 +2333,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return pages;
     },
     async getPage(key) {
+      requirePermission("edit_site_pages");
       const rows = await query("SELECT * FROM pages WHERE key = $1", [key]);
       const row = rows[0];
       if (row == null) throw new AdminClientError("publish_blocked");
@@ -2355,6 +2376,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return this.getPage(key);
     },
     async listMaterials() {
+      requirePermission("edit_site_pages");
       const articles = await query(`SELECT tire_iq_articles.*,
         ARRAY(SELECT taxonomy.value FROM tire_iq_articles_taxonomy taxonomy
           WHERE taxonomy.parent_id = tire_iq_articles.id ORDER BY taxonomy."order") AS taxonomy
@@ -2375,6 +2397,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       return items.sort((a, b) => (a.menuOrder ?? 0) - (b.menuOrder ?? 0) || a.title.localeCompare(b.title, "ru"));
     },
     async getMaterial(id) {
+      requirePermission("edit_site_pages");
       const match = /^article-(\d+)$/.exec(id);
       if (!match) throw new AdminClientError("not_found");
       const [row] = await query(`SELECT tire_iq_articles.*,

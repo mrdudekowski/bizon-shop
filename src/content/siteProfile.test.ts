@@ -9,6 +9,7 @@ describe("site profile visibility", () => {
       { id: "telegram", label: "Telegram", href: "https://t.me/bizon", enabled: true },
       { id: "vk", label: "VK", href: "", enabled: true },
       { id: "max", label: "MAX", href: "https://max.ru/bizon", enabled: false },
+      { id: "bad", label: "Bad", href: "notaurl:bad", enabled: true },
     ])).toEqual([
       { id: "telegram", label: "Telegram", href: "https://t.me/bizon", enabled: true },
     ]);

@@ -107,6 +107,23 @@ export function stringValues(body: Record<string, unknown>): Record<string, stri
 /** An attachment URL is trusted only when we issued it, i.e. it lives under our public media base. */
 export function trustedAttachmentUrl(url: string | undefined, publicBase: string | null): string | null {
   if (!url || !publicBase) return null;
+  let parsed: URL;
+  let base: URL;
+  try {
+    parsed = new URL(url);
+    base = new URL(publicBase);
+  } catch {
+    return null;
+  }
+  if (parsed.origin !== base.origin) return null;
+  const basePath = base.pathname.endsWith("/") ? base.pathname : `${base.pathname}/`;
+  let path = parsed.pathname;
+  try {
+    path = decodeURIComponent(path);
+  } catch {
+    return null;
+  }
+  if (path.split("/").includes("..") || !path.startsWith(basePath)) return null;
   return url.startsWith(publicBase) ? url : null;
 }
 
