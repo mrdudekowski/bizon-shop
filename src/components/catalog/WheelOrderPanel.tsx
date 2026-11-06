@@ -43,11 +43,44 @@ function formatPrice(variant: WheelOrderVariant | null): string {
   return `${variant.price.toLocaleString("ru-RU")} ₽`;
 }
 
+const NOTES_LIMIT = 300;
+const BEADLOCK_ON = "С бедлоком";
+const BEADLOCK_OFF = "Без бедлока";
+
+export function buildWheelOrderLine(input: {
+  withBeadlock: boolean;
+  selectedId?: string;
+  price?: number;
+  priceOnRequest: boolean;
+  fitment: string[];
+  detailNotes: string[];
+}): { notes: string; variantId?: string; price?: number; priceOnRequest: boolean } {
+  const phrase = input.withBeadlock ? BEADLOCK_ON : BEADLOCK_OFF;
+  const details = input.detailNotes.filter(Boolean);
+  const appended = [...details, phrase].join("; ");
+  // ponytail: notes are stored at 300 characters, so a long fitment note would cut a trailing phrase
+  const notes = appended.length <= NOTES_LIMIT ? appended : [phrase, ...details].join("; ").slice(0, NOTES_LIMIT);
+  return {
+    notes,
+    variantId: wheelOrderVariantId(input.selectedId, input.fitment, input.withBeadlock),
+    price: input.price,
+    priceOnRequest: input.priceOnRequest,
+  };
+}
+
+function wheelOrderVariantId(selectedId: string | undefined, fitment: string[], withBeadlock: boolean): string | undefined {
+  const flag = withBeadlock ? "с-бедлоком" : "без-бедлока";
+  if (fitment.some(Boolean)) return configurationKey([flag, selectedId ?? "без-размера", ...fitment]);
+  if (!selectedId) return withBeadlock ? flag : undefined;
+  return withBeadlock ? `${selectedId}-${flag}` : selectedId;
+}
+
 export function WheelOrderPanel({ baseItem, variants, available = false, finish = "", className }: WheelOrderPanelProps) {
   const cart = useCart("shop");
   const [variantId, setVariantId] = useState(variants.length === 1 ? variants[0].id : "");
   const maxQuantity = baseItem.parentSlug === "forged" ? 8 : 999;
   const [quantity, setQuantity] = useState(baseItem.parentSlug === "forged" ? 4 : 1);
+  const [withBeadlock, setWithBeadlock] = useState(false);
   const selected = variants.find((variant) => variant.id === variantId) ?? null;
   const needsVariant = variants.length > 0;
 
@@ -62,26 +95,30 @@ export function WheelOrderPanel({ baseItem, variants, available = false, finish 
     const desiredSize = value(formData, "desiredSize");
     const selectedFinish = value(formData, "finish");
     const vehicleLabel = [vehicle, year].filter(Boolean).join(" ");
-    const notes = [
-      vehicleLabel ? `Автомобиль: ${vehicleLabel}` : "",
-      currentSize ? `Текущий размер: ${currentSize}` : "",
-      desiredSize ? `Желаемый размер: ${desiredSize}` : "",
-      selectedFinish ? `Исполнение: ${selectedFinish}` : "",
-    ].filter(Boolean).join("; ");
-    const variantLabel = [selected?.label, vehicleLabel].filter(Boolean).join(" · ");
     const fitmentValues = [vehicle, year, currentSize, desiredSize, selectedFinish];
-    const configuration = fitmentValues.some(Boolean)
-      ? configurationKey([selected?.id ?? "без-размера", ...fitmentValues])
-      : selected?.id;
+    const line = buildWheelOrderLine({
+      withBeadlock,
+      selectedId: selected?.id,
+      price: selected?.price,
+      priceOnRequest: selected == null || selected.priceOnRequest || selected.price == null,
+      fitment: fitmentValues,
+      detailNotes: [
+        vehicleLabel ? `Автомобиль: ${vehicleLabel}` : "",
+        currentSize ? `Текущий размер: ${currentSize}` : "",
+        desiredSize ? `Желаемый размер: ${desiredSize}` : "",
+        selectedFinish ? `Исполнение: ${selectedFinish}` : "",
+      ],
+    });
+    const variantLabel = [selected?.label, vehicleLabel].filter(Boolean).join(" · ");
 
     cart.addItem({
       ...baseItem,
-      variantId: configuration,
+      variantId: line.variantId,
       variantLabel: variantLabel || undefined,
       quantity,
-      price: selected?.price,
-      priceOnRequest: selected == null || selected.priceOnRequest || selected.price == null,
-      notes: notes || undefined,
+      price: line.price,
+      priceOnRequest: line.priceOnRequest,
+      notes: line.notes,
     });
     requestOpenCart("shop");
   }
@@ -93,26 +130,41 @@ export function WheelOrderPanel({ baseItem, variants, available = false, finish 
         <p>Специалист проверит совместимость и уточнит стоимость.</p>
       </div>
 
-      {variants.length > 0 ? (
-        <label className={styles.field}>
-          <span className={styles.label}>Размер и параметры</span>
-          <select
-            className={styles.control}
-            value={variantId}
-            onChange={(event) => setVariantId(event.target.value)}
-            required
-          >
-            <option value="">Выберите размер</option>
-            {variants.map((variant) => (
-              <option key={variant.id} value={variant.id}>
-                {variant.label}
-              </option>
-            ))}
-          </select>
+      <div className={styles.sizeRow}>
+        {variants.length > 0 ? (
+          <label className={styles.field}>
+            <span className={styles.label}>Размер и параметры</span>
+            <select
+              className={styles.control}
+              value={variantId}
+              onChange={(event) => setVariantId(event.target.value)}
+              required
+            >
+              <option value="">Выберите размер</option>
+              {variants.map((variant) => (
+                <option key={variant.id} value={variant.id}>
+                  {variant.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <p className={styles.hint}>Размеры уточняются — специалист поможет подобрать конфигурацию.</p>
+        )}
+        <label className={styles.beadlock}>
+          <span className={styles.label}>Бедлок</span>
+          <span className={styles.switch}>
+            <input
+              className={styles.yep}
+              type="checkbox"
+              role="switch"
+              checked={withBeadlock}
+              onChange={(event) => setWithBeadlock(event.target.checked)}
+            />
+            <span className={styles.slider} />
+          </span>
         </label>
-      ) : (
-        <p className={styles.hint}>Размеры уточняются — специалист поможет подобрать конфигурацию.</p>
-      )}
+      </div>
 
       <div className={styles.orderMeta}>
         <div className={styles.priceBlock}>
