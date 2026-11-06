@@ -457,16 +457,15 @@ test.describe("mobile Shop home hierarchy", () => {
     expect(await hero.evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(760);
   });
 
-  test("opens order-step details only when the visitor asks", async ({ page }) => {
+  test("keeps order-step details off the phone cards and offers the disk catalog", async ({ page }) => {
     await page.goto("/shop", { waitUntil: "domcontentloaded" });
 
     const firstStep = page.getByRole("heading", { name: "Выберите дизайн", exact: true }).locator("xpath=ancestor::article[1]");
-    const disclosure = firstStep.getByRole("button", { name: /Подробнее/ });
-    await expect(disclosure).toBeVisible();
-    const detail = firstStep.locator("p");
-    await expect(detail).toBeHidden();
-    await disclosure.click();
-    await expect(detail).toBeVisible();
+    await expect(firstStep.getByRole("button", { name: /Подробнее/ })).toHaveCount(0);
+    await expect(firstStep.locator("p")).toBeHidden();
+    const catalogCta = page.getByRole("link", { name: "диски BIZON" });
+    await expect(catalogCta).toBeVisible();
+    await expect(catalogCta).toHaveAttribute("href", "/shop/wheels/forged");
   });
 });
 });

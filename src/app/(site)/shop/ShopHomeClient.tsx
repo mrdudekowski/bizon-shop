@@ -112,6 +112,9 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
             </LoopedStrip>
           ) : null}
           <ShopOrderSteps steps={page.orderSteps} />
+          <div className={styles.orderStepsCta}>
+            <Link className="btn-accent" href="/shop/wheels/forged">диски BIZON</Link>
+          </div>
         </div>
       </section>
 
