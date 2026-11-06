@@ -11,6 +11,7 @@ import type {
   PageDraft,
   PageKey,
   PageSectionCopy,
+  SiteProfileDraft,
   ShopCategoryDraft,
   ShopProductDraft,
   TireDirection,
@@ -165,6 +166,7 @@ function stubDraft(key: PageKey, value: unknown, assets: Map<string, MediaListIt
     if (!sectionItem) return [];
     return [{ id: text(sectionItem.id), heading: text(sectionItem.heading), body: text(sectionItem.body) }];
   }) : [];
+  const siteProfile = key === "contact" ? siteProfileFromSnapshot(page?.siteProfile) : undefined;
   return {
     id: key as Exclude<PageKey, "home" | "shop-home">,
     seoTitle: text(page?.seoTitle),
@@ -176,6 +178,33 @@ function stubDraft(key: PageKey, value: unknown, assets: Map<string, MediaListIt
     sections,
     proof: proof ? { image: placement(proof.imageUrl, text(proof.imageAlt)), title: text(proof.title), text: text(proof.text) } : null,
     cta: page?.cta == null ? null : { ...cta(page.cta), secondaryLabel: text(record(page.cta)?.secondaryLabel), secondaryHref: text(record(page.cta)?.secondaryHref) },
+    ...(siteProfile ? { siteProfile } : {}),
+  };
+}
+
+function siteProfileFromSnapshot(value: unknown): SiteProfileDraft | undefined {
+  const profile = record(value);
+  if (!profile) return undefined;
+  const channels = Array.isArray(profile.channels) ? profile.channels.flatMap((item) => {
+    const channel = record(item);
+    if (!channel) return [];
+    return [{ id: text(channel.id), label: text(channel.label), href: text(channel.href), enabled: channel.enabled === true }];
+  }) : [];
+  const requisites = Array.isArray(profile.requisites) ? profile.requisites.flatMap((item) => {
+    const requisite = record(item);
+    if (!requisite) return [];
+    return [{ id: text(requisite.id), label: text(requisite.label), value: text(requisite.value) }];
+  }) : [];
+  return {
+    phone: text(profile.phone),
+    email: text(profile.email),
+    address: text(profile.address),
+    channels,
+    legalSummary: text(profile.legalSummary),
+    priceNotice: text(profile.priceNotice),
+    madeToOrderNotice: text(profile.madeToOrderNotice),
+    requisites,
+    contactSurface: profile.contactSurface === "card" ? "card" : "form",
   };
 }
 

@@ -385,7 +385,7 @@ export const PAGE_FORM_KEYS = ["become-a-supplier", "delivery-geography", "brand
 
 export const LEGAL_PAGE_KEYS = ["privacy-policy", "warranty", "shop-delivery-returns"] as const;
 
-/** Contacts and messenger channels of the contact page; stored in site_profile and site_profile_channels. */
+/** Contacts, messenger channels, and the notices edited on the privacy page, tire catalog, and wheel catalog. Stored in site_profile. */
 export type SiteProfileDraft = {
   phone: string;
   email: string;

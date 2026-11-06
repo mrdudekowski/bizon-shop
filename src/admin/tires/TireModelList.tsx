@@ -16,6 +16,7 @@ import { CatalogRow } from "@/admin/ui/CatalogRow";
 import { CatalogViewToggle } from "@/admin/ui/CatalogViewToggle";
 import { useCatalogView } from "@/admin/ui/catalogView";
 import { useAdminRole, useCanPerform } from "@/admin/ui/DocumentUI";
+import { SiteNoticeField } from "@/admin/catalog/SiteNoticeField";
 import styles from "@/admin/ui/catalog.module.css";
 
 export function TireModelList() {
@@ -122,6 +123,11 @@ export function TireModelList() {
             <div><h1>Шины</h1><p className="subheading">Сначала выберите направление, чтобы открыть каталог его моделей.</p></div>
             <Link className={styles.manageDirections} href="/tires/directions">Управление направлениями</Link>
           </div>
+          <SiteNoticeField
+            label="Цены и наличие"
+            hint="Одно примечание для всех карточек моделей шин и товаров Shop."
+            field="priceNotice"
+          />
           {loading ? <AdminLoading label="Загружаем направления…" /> : <ul className={`${styles.grid} ${styles.directionPicker}`}>
             {directions.map((direction) => {
               const asset = assets.find((item) => item.id === direction.imageAssetId);

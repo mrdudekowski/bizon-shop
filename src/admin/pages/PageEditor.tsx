@@ -169,9 +169,6 @@ function StubFields({
   const patchFormField = (index: number, patch: Partial<PageFormDraft["fields"][number]>) => {
     patchForm({ fields: formFields.map((field, fieldIndex) => (fieldIndex === index ? { ...field, ...patch } : field)) });
   };
-  const patchRequisite = (index: number, patch: Partial<SiteProfileDraft["requisites"][number]>) => {
-    patchSiteProfile({ requisites: siteProfile.requisites.map((requisite, requisiteIndex) => (requisiteIndex === index ? { ...requisite, ...patch } : requisite)) });
-  };
   return (
     <>
       <SectionFields
@@ -246,57 +243,6 @@ function StubFields({
               />
             </label>
           </div>
-          <label className={styles.fullWidth}>
-            Краткое описание реквизитов
-            <textarea
-              value={siteProfile.legalSummary}
-              onChange={(event) => patchSiteProfile({ legalSummary: event.target.value })}
-            />
-          </label>
-          <label className={styles.fullWidth}>
-            Цены и наличие
-            <textarea
-              value={siteProfile.priceNotice}
-              onChange={(event) => patchSiteProfile({ priceNotice: event.target.value })}
-            />
-          </label>
-          <label className={styles.fullWidth}>
-            Товар под заказ
-            <textarea
-              value={siteProfile.madeToOrderNotice}
-              onChange={(event) => patchSiteProfile({ madeToOrderNotice: event.target.value })}
-            />
-          </label>
-          <h3>Юридические реквизиты</h3>
-          {siteProfile.requisites.map((requisite, index) => (
-            <fieldset className={styles.row} key={requisite.id}>
-              <legend>{requisite.label || "Новый реквизит"}</legend>
-              <label>
-                Подпись
-                <input value={requisite.label} onChange={(event) => patchRequisite(index, { label: event.target.value })} />
-              </label>
-              <label>
-                Значение
-                <textarea value={requisite.value} onChange={(event) => patchRequisite(index, { value: event.target.value })} />
-              </label>
-              <button
-                type="button"
-                onClick={() => patchSiteProfile({ requisites: siteProfile.requisites.filter((_, requisiteIndex) => requisiteIndex !== index) })}
-              >
-                Удалить реквизит
-              </button>
-            </fieldset>
-          ))}
-          <button
-            type="button"
-            onClick={() =>
-              patchSiteProfile({
-                requisites: [...siteProfile.requisites, { id: `requisite-${crypto.randomUUID()}`, label: "", value: "" }],
-              })
-            }
-          >
-            Добавить реквизит
-          </button>
           <h3>Каналы связи (мессенджеры и соцсети)</h3>
           {siteProfile.channels.map((channel, index) => (
             <fieldset className={styles.row} key={channel.id}>
@@ -798,9 +744,72 @@ function ShopHomeFields({
   );
 }
 
+type LegalDraft = { legalSummary: string; requisites: SiteProfileDraft["requisites"] };
+
+function legalDraftOf(profile: SiteProfileDraft | undefined): LegalDraft {
+  return { legalSummary: profile?.legalSummary ?? "", requisites: profile?.requisites ?? [] };
+}
+
+function LegalRequisitesFields({
+  value,
+  onChange,
+}: {
+  value: LegalDraft;
+  onChange: (next: LegalDraft) => void;
+}) {
+  const patchRequisite = (index: number, patch: Partial<SiteProfileDraft["requisites"][number]>) => {
+    onChange({
+      ...value,
+      requisites: value.requisites.map((requisite, requisiteIndex) => (requisiteIndex === index ? { ...requisite, ...patch } : requisite)),
+    });
+  };
+  return (
+    <section className={styles.section}>
+      <h2>Юридические реквизиты</h2>
+      <p className="subheading">
+        Показываются на странице политики конфиденциальности. Краткое описание стоит над списком реквизитов.
+      </p>
+      <label className={styles.fullWidth}>
+        Краткое описание реквизитов
+        <textarea value={value.legalSummary} onChange={(event) => onChange({ ...value, legalSummary: event.target.value })} />
+      </label>
+      {value.requisites.map((requisite, index) => (
+        <fieldset className={styles.row} key={requisite.id}>
+          <legend>{requisite.label || "Новый реквизит"}</legend>
+          <label>
+            Подпись
+            <input value={requisite.label} onChange={(event) => patchRequisite(index, { label: event.target.value })} />
+          </label>
+          <label>
+            Значение
+            <textarea value={requisite.value} onChange={(event) => patchRequisite(index, { value: event.target.value })} />
+          </label>
+          <button
+            type="button"
+            onClick={() => onChange({ ...value, requisites: value.requisites.filter((_, requisiteIndex) => requisiteIndex !== index) })}
+          >
+            Удалить реквизит
+          </button>
+        </fieldset>
+      ))}
+      <button
+        type="button"
+        onClick={() => onChange({
+          ...value,
+          requisites: [...value.requisites, { id: `requisite-${crypto.randomUUID()}`, label: "", value: "" }],
+        })}
+      >
+        Добавить реквизит
+      </button>
+    </section>
+  );
+}
+
 export function PageEditor({ pageKey }: { pageKey: PageKey }) {
   const session = useAdminSession();
   const [record, setRecord] = useState<EntityRecord<PageDraft> | null>(null);
+  const [legal, setLegal] = useState<LegalDraft | null>(null);
+  const [savedLegal, setSavedLegal] = useState("");
   const [role, setRole] = useAdminRole();
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -809,16 +818,30 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
 
   useEffect(() => {
     const client = browserAdminClient();
-    void Promise.all([client.getSession(), client.getPage(pageKey)]).then(([session, page]) => {
+    void Promise.all([
+      client.getSession(),
+      client.getPage(pageKey),
+      pageKey === "privacy-policy" ? client.getPage("contact") : Promise.resolve(null),
+    ]).then(([session, page, contact]) => {
       setRole(session.role);
       setRecord(page);
+      if (pageKey !== "privacy-policy") {
+        setLegal(null);
+        setSavedLegal("");
+        return;
+      }
+      const profile = contact?.draft.id === "contact" ? contact.draft.siteProfile : undefined;
+      const next = legalDraftOf(profile);
+      setLegal(next);
+      setSavedLegal(JSON.stringify(next));
     });
   }, [pageKey, setRole]);
 
   if (session == null || record == null) return <main><AdminLoading /></main>;
   if (!canEditorPerform(session, "edit_site_pages")) return <SectionAccessNotice title="Страницы" icon="pages" />;
   const draft = record.draft;
-  const dirty = JSON.stringify(draft) !== JSON.stringify(record.savedDraft);
+  const legalDirty = legal != null && JSON.stringify(legal) !== savedLegal;
+  const dirty = JSON.stringify(draft) !== JSON.stringify(record.savedDraft) || legalDirty;
   const saveBlockReason = editorialSaveBlockReason(draft.id, {
     features: "features" in draft ? draft.features : undefined,
     sections: "sections" in draft ? draft.sections : undefined,
@@ -844,7 +867,11 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
     setSaving(true);
     setMessage("");
     try {
+      if (legalDirty && legal) {
+        await browserAdminClient().saveSiteProfileSlice({ legalSummary: legal.legalSummary, requisites: legal.requisites });
+      }
       setRecord(await browserAdminClient().savePage(pageKey, payload));
+      if (legal) setSavedLegal(JSON.stringify(legal));
       setMessage(DOCUMENT_STATUS.saved);
     } catch (error) {
       setMessage(actionErrorText(error, "Не удалось сохранить"));
@@ -916,6 +943,10 @@ export function PageEditor({ pageKey }: { pageKey: PageKey }) {
       ) : (
         <StubFields draft={draft} onChange={setDraft} />
       )}
+
+      {draft.id === "privacy-policy" && legal ? (
+        <LegalRequisitesFields value={legal} onChange={setLegal} />
+      ) : null}
 
       <DocumentReviewFooter
         entityType="page"

@@ -91,6 +91,12 @@ export type AdminClient = {
   listPages(): Promise<EntityRecord<PageDraft>[]>;
   getPage(key: PageKey): Promise<EntityRecord<PageDraft>>;
   savePage(key: PageKey, draft: PageDraft): Promise<EntityRecord<PageDraft>>;
+  saveSiteProfileSlice(patch: {
+    legalSummary?: string;
+    priceNotice?: string;
+    madeToOrderNotice?: string;
+    requisites?: { id: string; label: string; value: string }[];
+  }): Promise<EntityRecord<PageDraft>>;
   publishPage(key: PageKey): Promise<EntityRecord<PageDraft>>;
   resetPage(key: PageKey): Promise<EntityRecord<PageDraft>>;
   listMaterials(): Promise<

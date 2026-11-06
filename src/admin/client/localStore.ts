@@ -1381,7 +1381,19 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       requirePermission(state, "edit_site_pages");
       const record = requireNamed(state.pages, key);
       const before = record.savedDraft ?? record.publishedSnapshot;
-      const next = clampDeep({ ...draft, id: key } as PageDraft);
+      const kept = key === "contact" && draft.id === "contact" && record.draft.id === "contact" && draft.siteProfile && record.draft.siteProfile
+        ? {
+            ...draft,
+            siteProfile: {
+              ...draft.siteProfile,
+              legalSummary: record.draft.siteProfile.legalSummary,
+              priceNotice: record.draft.siteProfile.priceNotice,
+              madeToOrderNotice: record.draft.siteProfile.madeToOrderNotice,
+              requisites: record.draft.siteProfile.requisites,
+            },
+          }
+        : draft;
+      const next = clampDeep({ ...kept, id: key } as PageDraft);
       record.draft = next;
       record.savedDraft = next;
       record.lastSavedBy = state.session.login;
@@ -1393,6 +1405,45 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         before,
         after: next,
       });
+      save(state);
+      return record;
+    },
+
+    async saveSiteProfileSlice(patch: {
+      legalSummary?: string;
+      priceNotice?: string;
+      madeToOrderNotice?: string;
+      requisites?: { id: string; label: string; value: string }[];
+    }) {
+      const state = load();
+      const touchesLegal = patch.legalSummary !== undefined || patch.requisites !== undefined;
+      const touchesCatalog = patch.priceNotice !== undefined || patch.madeToOrderNotice !== undefined;
+      if (touchesLegal) requirePermission(state, "edit_site_pages");
+      if (touchesCatalog) requirePermission(state, "edit_catalog");
+      if (!touchesLegal && !touchesCatalog) throw new AdminClientError("publish_blocked");
+      const record = requireNamed(state.pages, "contact");
+      if (record.draft.id !== "contact" || !record.draft.siteProfile) throw new AdminClientError("publish_blocked");
+      const profile = {
+        ...record.draft.siteProfile,
+        ...(patch.legalSummary !== undefined ? { legalSummary: patch.legalSummary } : {}),
+        ...(patch.priceNotice !== undefined ? { priceNotice: patch.priceNotice } : {}),
+        ...(patch.madeToOrderNotice !== undefined ? { madeToOrderNotice: patch.madeToOrderNotice } : {}),
+        ...(patch.requisites !== undefined ? { requisites: patch.requisites } : {}),
+      };
+      record.draft = { ...record.draft, siteProfile: profile };
+      record.savedDraft = record.draft;
+      if (record.publishedSnapshot?.id === "contact" && record.publishedSnapshot.siteProfile) {
+        record.publishedSnapshot = {
+          ...record.publishedSnapshot,
+          siteProfile: {
+            ...record.publishedSnapshot.siteProfile,
+            ...(patch.legalSummary !== undefined ? { legalSummary: patch.legalSummary } : {}),
+            ...(patch.priceNotice !== undefined ? { priceNotice: patch.priceNotice } : {}),
+            ...(patch.madeToOrderNotice !== undefined ? { madeToOrderNotice: patch.madeToOrderNotice } : {}),
+            ...(patch.requisites !== undefined ? { requisites: patch.requisites } : {}),
+          },
+        };
+      }
       save(state);
       return record;
     },

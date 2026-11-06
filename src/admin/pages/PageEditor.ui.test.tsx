@@ -269,7 +269,36 @@ describe("PageEditor conflict recovery", () => {
     }));
   });
 
-  it("edits the price and made-to-order notices and defaults a draft without them to empty text", async () => {
+  it("keeps price and made-to-order notices off the contact page", async () => {
+    const contactDraft = {
+      id: "contact",
+      seoTitle: "Контакты",
+      seoDescription: "",
+      hero: { eyebrow: "", title: "", lead: "" },
+      documents: [],
+      siteProfile: {
+        phone: "",
+        email: "",
+        address: "",
+        legalSummary: "Реквизиты оператора.",
+        priceNotice: "Цены ориентировочные.",
+        madeToOrderNotice: "Часть продукции — под заказ.",
+        requisites: [],
+        channels: [],
+      },
+    };
+    const record = { ...pageRecord, id: "contact", draft: contactDraft, savedDraft: contactDraft, publishedSnapshot: contactDraft };
+    mockState.client.getPage = vi.fn().mockResolvedValue(record);
+    render(createElement(PageEditor, { pageKey: "contact" }));
+
+    expect(await screen.findByLabelText("Адрес")).toBeTruthy();
+    expect(screen.queryByLabelText("Цены и наличие")).toBeNull();
+    expect(screen.queryByLabelText("Товар под заказ")).toBeNull();
+    expect(screen.queryByLabelText("Краткое описание реквизитов")).toBeNull();
+  });
+
+  it("edits the legal summary on the privacy page and saves it to the contact profile", async () => {
+    const privacyDraft = { id: "privacy-policy", seoTitle: "Политика", seoDescription: "", hero: { eyebrow: "", title: "", lead: "" }, documents: [] };
     const contactDraft = {
       id: "contact",
       seoTitle: "Контакты",
@@ -285,27 +314,24 @@ describe("PageEditor conflict recovery", () => {
         channels: [],
       },
     };
-    const record = { ...pageRecord, id: "contact", draft: contactDraft, savedDraft: contactDraft, publishedSnapshot: contactDraft };
-    const savePage = vi.fn().mockImplementation(async (_key: string, next: typeof contactDraft) => ({ ...record, draft: next, savedDraft: next }));
-    mockState.client.getPage = vi.fn().mockResolvedValue(record);
-    mockState.client.savePage = savePage;
+    const privacyRecord = { ...pageRecord, id: "privacy-policy", draft: privacyDraft, savedDraft: privacyDraft, publishedSnapshot: privacyDraft };
+    const contactRecord = { ...pageRecord, id: "contact", draft: contactDraft, savedDraft: contactDraft, publishedSnapshot: contactDraft };
+    const saveSiteProfileSlice = vi.fn().mockResolvedValue(contactRecord);
+    mockState.client.getPage = vi.fn(async (key: string) => (key === "contact" ? contactRecord : privacyRecord));
+    mockState.client.savePage = vi.fn().mockResolvedValue(privacyRecord);
+    mockState.client.saveSiteProfileSlice = saveSiteProfileSlice;
     const user = userEvent.setup();
-    render(createElement(PageEditor, { pageKey: "contact" }));
+    render(createElement(PageEditor, { pageKey: "privacy-policy" }));
 
-    const priceNotice = await screen.findByLabelText("Цены и наличие");
-    expect(priceNotice).toHaveProperty("value", "");
-    expect(screen.getByLabelText("Товар под заказ")).toHaveProperty("value", "");
-    await user.type(priceNotice, "Цены ориентировочные.");
-    await user.type(screen.getByLabelText("Товар под заказ"), "Часть продукции — под заказ.");
+    const summary = await screen.findByLabelText("Краткое описание реквизитов");
+    expect(summary).toHaveProperty("value", "");
+    await user.type(summary, "ООО «Бизон».");
     await user.click(screen.getByRole("button", { name: "Сохранить" }));
 
-    expect((await screen.findByRole("status")).textContent).toBe("Черновик сохранён");
-    expect(savePage).toHaveBeenCalledWith("contact", expect.objectContaining({
-      siteProfile: expect.objectContaining({
-        priceNotice: "Цены ориентировочные.",
-        madeToOrderNotice: "Часть продукции — под заказ.",
-      }),
-    }));
+    expect(saveSiteProfileSlice).toHaveBeenCalledWith({
+      legalSummary: "ООО «Бизон».",
+      requisites: [],
+    });
   });
 
   it("publishes the contact card switch with the contact draft", async () => {

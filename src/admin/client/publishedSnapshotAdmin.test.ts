@@ -11,7 +11,10 @@ const snapshot = {
   content: {
     home: { hero: { title: "Главная из снимка" } },
     shopHome: null,
-    stubs: { about: { hero: { title: "О компании из снимка" }, sections: [{ id: "one", heading: "Раздел", body: "Текст" }] } },
+    stubs: {
+      about: { hero: { title: "О компании из снимка" }, sections: [{ id: "one", heading: "Раздел", body: "Текст" }] },
+      contact: { hero: { title: "Контакты" }, siteProfile: { legalSummary: "Реквизиты оператора.", priceNotice: "Цены ориентировочные.", madeToOrderNotice: "Под заказ.", requisites: [{ id: "inn", label: "ИНН", value: "000" }] } },
+    },
     articles: [{ slug: "story", title: "Материал", excerpt: "Кратко", content: "Текст материала" }],
     tires: {
       types: [{ name: "Магистральные", slug: "tbr", description: "Для трассы", imageUrl: "https://cdn.example/tbr.jpg" }],
@@ -31,6 +34,9 @@ describe("published snapshot admin", () => {
     const pages = await reads.listPages!();
     const about = pages.find((page) => page.id === "about");
     expect(about?.draft.id === "about" ? about.draft.hero.title : "").toBe("О компании из снимка");
+    const contact = await reads.getPage!("contact");
+    expect(contact.draft.id === "contact" ? contact.draft.siteProfile?.legalSummary : "").toBe("Реквизиты оператора.");
+    expect(contact.draft.id === "contact" ? contact.draft.siteProfile?.priceNotice : "").toBe("Цены ориентировочные.");
     expect(await reads.listTireDirections!()).toMatchObject([
       { id: "tbr", name: "Магистральные", status: "on_site", imageAssetId: "https://cdn.example/tbr.jpg" },
     ]);
