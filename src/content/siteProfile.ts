@@ -65,7 +65,7 @@ export function siteChannelsAreValid(channels: SiteChannel[]): boolean {
   );
 }
 
-/** Replaces contact fields, messenger channels, legal summary, price and made-to-order notices, and all requisite rows in one write. */
+/** Replaces phone, email, address, messenger channels, and the contact surface. Legal copy, price and made-to-order notices, and requisites stay on their own editors. */
 export async function writeSiteProfileContacts(
   db: SiteProfileDatabase,
   contacts: Pick<
@@ -83,7 +83,7 @@ export async function writeSiteProfileContacts(
   await db.query(
     `INSERT INTO site_profile (id, phone, email, address, channels_note, legal_summary, price_notice, made_to_order_notice, contact_surface)
      VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8)
-     ON CONFLICT (id) DO UPDATE SET phone = EXCLUDED.phone, email = EXCLUDED.email, address = EXCLUDED.address, legal_summary = EXCLUDED.legal_summary, price_notice = EXCLUDED.price_notice, made_to_order_notice = EXCLUDED.made_to_order_notice, contact_surface = EXCLUDED.contact_surface`,
+     ON CONFLICT (id) DO UPDATE SET phone = EXCLUDED.phone, email = EXCLUDED.email, address = EXCLUDED.address, contact_surface = EXCLUDED.contact_surface`,
     [
       contacts.phone,
       contacts.email,
@@ -103,8 +103,30 @@ export async function writeSiteProfileContacts(
       [channel.id.trim(), index, channel.label.trim(), channel.href.trim(), channel.enabled],
     );
   }
+}
+
+export type SiteProfileSlice = Partial<Pick<SiteProfile, "legalSummary" | "priceNotice" | "madeToOrderNotice" | "requisites">>;
+
+/** Writes only the notices edited outside the contact page. Phone, email, address, and channels stay as they are. */
+export async function writeSiteProfileSlice(db: SiteProfileDatabase, slice: SiteProfileSlice): Promise<void> {
+  const assignments: string[] = [];
+  const params: unknown[] = [];
+  const columns = {
+    legalSummary: "legal_summary",
+    priceNotice: "price_notice",
+    madeToOrderNotice: "made_to_order_notice",
+  } as const;
+  for (const key of Object.keys(columns) as (keyof typeof columns)[]) {
+    if (slice[key] === undefined) continue;
+    params.push(slice[key]);
+    assignments.push(`${columns[key]} = $${params.length}`);
+  }
+  if (assignments.length > 0) {
+    await db.query(`UPDATE site_profile SET ${assignments.join(", ")} WHERE id = 1`, params);
+  }
+  if (slice.requisites === undefined) return;
   await db.query(`DELETE FROM site_profile_requisites`);
-  for (const [index, requisite] of contacts.requisites.entries()) {
+  for (const [index, requisite] of slice.requisites.entries()) {
     await db.query(
       `INSERT INTO site_profile_requisites (id, sort_order, label, value) VALUES ($1, $2, $3, $4)`,
       [requisite.id.trim(), index, requisite.label.trim(), requisite.value],

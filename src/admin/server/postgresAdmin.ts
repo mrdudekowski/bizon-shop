@@ -4,7 +4,7 @@ import { afterTransactionCommit, getTransactionClient, withTransaction } from ".
 import { AdminClientError, adminCodeFromDatabaseError } from "../client/errors";
 import { mergeLegacyPageOverlay } from "./pageOverlay";
 import { FORM_FIELD_TYPES, isPageFormKey, pageFormFieldsAreValid, readPageFormDraft, writePageForm } from "../../content/pageForm";
-import { readSiteProfile, siteChannelsAreValid, writeSiteProfileContacts } from "../../content/siteProfile";
+import { readSiteProfile, siteChannelsAreValid, writeSiteProfileContacts, writeSiteProfileSlice, type SiteProfileSlice } from "../../content/siteProfile";
 import { mediaUsageSql, publicDocumentPageKeys, toMediaUsageRecord } from "./mediaUsage";
 import { detachStoredMediaReference } from "../../storage/mediaReferences";
 import type { AdminClient } from "../client/adminClient";
@@ -2343,16 +2343,47 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       requirePermission("edit_site_pages");
       const current = await this.getPage(key);
       assertDraftVersion(expectedSavedDraft, current.savedDraft);
-      await writeOverlay("pages", key, draft);
+      const stored = key === "contact" && draft.id === "contact" && current.draft.id === "contact" && draft.siteProfile && current.draft.siteProfile
+        ? {
+            ...draft,
+            siteProfile: {
+              ...draft.siteProfile,
+              legalSummary: current.draft.siteProfile.legalSummary,
+              priceNotice: current.draft.siteProfile.priceNotice,
+              madeToOrderNotice: current.draft.siteProfile.madeToOrderNotice,
+              requisites: current.draft.siteProfile.requisites,
+            },
+          }
+        : draft;
+      await writeOverlay("pages", key, stored);
       await rememberMutation({
         entityType: "page",
         entityId: key,
         entityTitle: entityTitle(draft, key),
         operation: current.publishedSnapshot == null ? "create" : "update",
         before: current.savedDraft ?? current.publishedSnapshot,
-        after: draft,
+        after: stored,
       });
       return this.getPage(key);
+    },
+    async saveSiteProfileSlice(patch: SiteProfileSlice) {
+      const touchesLegal = patch.legalSummary !== undefined || patch.requisites !== undefined;
+      const touchesCatalog = patch.priceNotice !== undefined || patch.madeToOrderNotice !== undefined;
+      if (touchesLegal) requirePermission("edit_site_pages");
+      if (touchesCatalog) requireCatalogOrPages();
+      if (!touchesLegal && !touchesCatalog) throw new AdminClientError("publish_blocked");
+      const current = await this.getPage("contact");
+      if (current.draft.id !== "contact" || !current.draft.siteProfile) throw new AdminClientError("publish_blocked");
+      const profile = {
+        ...current.draft.siteProfile,
+        ...(patch.legalSummary !== undefined ? { legalSummary: patch.legalSummary } : {}),
+        ...(patch.priceNotice !== undefined ? { priceNotice: patch.priceNotice } : {}),
+        ...(patch.madeToOrderNotice !== undefined ? { madeToOrderNotice: patch.madeToOrderNotice } : {}),
+        ...(patch.requisites !== undefined ? { requisites: patch.requisites } : {}),
+      };
+      await writeOverlay("pages", "contact", { ...current.draft, siteProfile: profile });
+      await writeSiteProfileSlice({ query }, patch);
+      return this.getPage("contact");
     },
     async publishPage(key) {
       requirePermission("publish");

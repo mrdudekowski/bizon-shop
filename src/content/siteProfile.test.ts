@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { siteProfileMigration } from "../migrations/0023-site-profile";
 import { CUSTOMER_COPY } from "./customerTemplateCopy";
-import { contactHref, contactSurfaceOf, readSiteProfile, siteChannelsAreValid, visibleChannels, writeSiteProfileContacts } from "./siteProfile";
+import { contactHref, contactSurfaceOf, readSiteProfile, siteChannelsAreValid, visibleChannels, writeSiteProfileContacts, writeSiteProfileSlice } from "./siteProfile";
 
 describe("site profile visibility", () => {
   it("hides a channel without a link or with enabled false", () => {
@@ -84,8 +84,8 @@ describe("site profile contact write", () => {
 
     expect(calls[0].sql).toContain("INSERT INTO site_profile");
     expect(calls[0].sql).toContain("ON CONFLICT (id) DO UPDATE");
-    expect(calls[0].sql).toContain("legal_summary = EXCLUDED.legal_summary");
-    expect(calls[0].sql).toContain("price_notice = EXCLUDED.price_notice");
+    expect(calls[0].sql).not.toContain("legal_summary = EXCLUDED.legal_summary");
+    expect(calls[0].sql).not.toContain("price_notice = EXCLUDED.price_notice");
     expect(calls[0].sql).toContain("contact_surface = EXCLUDED.contact_surface");
     expect(calls[0].params).toEqual([
       "+7 (421) 200-00-00",
@@ -102,11 +102,22 @@ describe("site profile contact write", () => {
       ["telegram", 0, "Telegram", "https://t.me/bizon", true],
       ["channel-1", 1, "Дзен", "", false],
     ]);
-    expect(calls[4].sql).toContain("DELETE FROM site_profile_requisites");
-    expect(calls.slice(5).map((call) => call.params)).toEqual([
-      ["inn", 0, "ИНН", "000"],
-      ["kpp", 1, "КПП", "111"],
+    expect(calls.some((call) => call.sql.includes("site_profile_requisites"))).toBe(false);
+  });
+
+  it("updates a notice without rewriting phone or channels", async () => {
+    const calls: { sql: string; params: unknown[] }[] = [];
+    await writeSiteProfileSlice({ query: async (sql, params = []) => { calls.push({ sql, params }); return []; } }, {
+      priceNotice: "Цены ориентировочные.",
+      requisites: [{ id: "inn", label: "ИНН", value: "000" }],
+    });
+    expect(calls.map((call) => call.sql)).toEqual([
+      "UPDATE site_profile SET price_notice = $1 WHERE id = 1",
+      "DELETE FROM site_profile_requisites",
+      "INSERT INTO site_profile_requisites (id, sort_order, label, value) VALUES ($1, $2, $3, $4)",
     ]);
+    expect(calls[0].params).toEqual(["Цены ориентировочные."]);
+    expect(calls[2].params).toEqual(["inn", 0, "ИНН", "000"]);
   });
 
   it("rejects duplicate ids, blank labels and links that are not http(s)", () => {
