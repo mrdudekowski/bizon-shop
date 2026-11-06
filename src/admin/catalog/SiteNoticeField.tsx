@@ -17,7 +17,7 @@ export function SiteNoticeField({
   field: "priceNotice" | "madeToOrderNotice";
 }) {
   const [value, setValue] = useState<string | null>(null);
-  const [saved, setSaved] = useState("");
+  const [saved, setSaved] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
