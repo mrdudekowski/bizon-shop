@@ -12,6 +12,15 @@
   background: var(--color-surface);
 }
 
+.card > h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 5vw, var(--type-title));
+  font-weight: var(--weight-display);
+  line-height: var(--leading-display);
+  letter-spacing: var(--tracking-display);
+  overflow-wrap: anywhere;
+}
+
 .contacts {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -39,14 +48,17 @@
 }
 
 .channels {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
   min-width: 0;
 }
 
-.channel {
+a.channel {
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  justify-content: center;
 }
 
 .channel svg {
@@ -64,5 +76,21 @@
 @media (min-width: 640px) {
   .card {
     padding: clamp(1.5rem, 4vw, 3.5rem);
+  }
+
+  .channels {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .channels {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  a.channel {
+    width: auto;
   }
 }

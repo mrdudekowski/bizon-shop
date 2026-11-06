@@ -1097,7 +1097,12 @@
     flex-direction: row-reverse;
     color: var(--bizon-coral-400);
   }
+  .expertiseBanner {
+    min-height: clamp(20rem, 58vw, 26rem);
+  }
   .expertiseBannerContent {
+    align-content: center;
+    min-height: clamp(20rem, 58vw, 26rem);
     padding: clamp(1.75rem, 4.5vw, 3rem) clamp(1.25rem, 4vw, 2.5rem);
   }
   .expertiseBannerContent h2 {
@@ -1112,17 +1117,19 @@
     align-content: stretch;
     padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px) + 1.75rem);
   }
-  .heroActions { margin-top: auto; }
+  .heroActions { margin-top: 2rem; }
   .heroCopy {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    height: 100%;
+    justify-content: flex-start;
+    gap: 0.85rem;
+    height: auto;
     min-height: 0;
     width: 100%;
     min-width: 0;
   }
-  .heroCopy > p:not(.eyebrow) { margin-top: -1.25rem; }
+  .heroCopy > p:not(.eyebrow) { margin-top: -0.85rem; }
   .heroOverlay { background: linear-gradient(0deg, rgba(0,0,0,.78), rgba(0,0,0,.12) 68%), linear-gradient(180deg, rgba(0,0,0,.28), transparent 30%); }
   .brandingCompare { height: min(68vw, 20rem); }
   .brandingCopy h2 { font-size: clamp(1.6rem, 8vw, 2.25rem); }
@@ -1151,7 +1158,25 @@
     background: linear-gradient(90deg, rgba(5, 7, 7, .82), rgba(5, 7, 7, .34)), linear-gradient(0deg, rgba(5, 7, 7, .76), rgba(5, 7, 7, .08) 78%);
   }
   .expertiseBannerImage { object-position: 78% center; }
-  .expertiseBannerContent { align-content: end; padding: 1.75rem 1.25rem 2rem; }
+  .expertiseBanner { min-height: 28rem; }
+  .expertiseBannerContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    min-height: 28rem;
+    padding: 2.75rem 1.5rem;
+    text-align: center;
+  }
+  .expertiseBannerContent > * + *:not(a) {
+    margin-top: 0.85rem;
+  }
+  .expertiseCta {
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+  .expertiseBannerLead { max-width: 22rem; }
   .expertiseBannerContent h2 { font-size: clamp(1.7rem, 7.4vw, 2.25rem); line-height: 1.06; }
 }
 @media (prefers-reduced-motion: reduce) {

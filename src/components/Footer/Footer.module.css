@@ -24,9 +24,12 @@
 }
 
 .wordmark {
-  font-size: clamp(2.25rem, 5vw, 4.5rem);
-  letter-spacing: var(--tracking-kicker);
-  line-height: var(--leading-display);
+  max-width: 100%;
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  font-weight: 800;
+  letter-spacing: var(--tracking-display);
+  line-height: 0.9;
 }
 
 .brand p {
