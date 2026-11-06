@@ -195,10 +195,10 @@
   color: #f7f5f0;
   font-family: var(--font-doloto), "Doloto", sans-serif;
   display: inline-block;
-  font-size: 4.5rem;
+  font-size: 1.5rem;
   font-weight: 400;
   letter-spacing: 0.01em;
-  line-height: 0.7;
+  line-height: 0.85;
   text-decoration: none;
   vertical-align: baseline;
 }
