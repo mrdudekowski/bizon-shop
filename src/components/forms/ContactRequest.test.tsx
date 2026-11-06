@@ -19,11 +19,11 @@ const profile: SiteProfile = {
 };
 
 const render = (surface: SiteProfile["contactSurface"], notice?: string) =>
-  renderToStaticMarkup(createElement(ContactRequest, {
-    profile: { ...profile, contactSurface: surface },
-    notice,
-    children: createElement("form", null, "Заявка"),
-  }));
+  renderToStaticMarkup(createElement(
+    ContactRequest,
+    { profile: { ...profile, contactSurface: surface }, notice },
+    createElement("form", null, "Заявка"),
+  ));
 
 describe("ContactRequest", () => {
   it("keeps the request form until contacts are published as a card", () => {
