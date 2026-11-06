@@ -42,7 +42,7 @@ export function ContactCard({
           {channels.map((channel) => (
             <a
               key={channel.id}
-              className={`btn-accent ${styles.channel}`}
+              className={`btn-secondary ${styles.channel}`}
               href={channel.href}
               target="_blank"
               rel="noopener noreferrer"
