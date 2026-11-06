@@ -20,6 +20,14 @@ const manrope = localFont({
   display: "swap",
 });
 
+// Doloto, rakapatakunta, https://rakapata.ru/ — CC BY 3.0
+const doloto = localFont({
+  src: "../../public/Fonts/Doloto-Regular.ttf",
+  variable: "--font-doloto",
+  weight: "400",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   ...createPageMetadata(),
   manifest: "/manifest.webmanifest",
@@ -39,7 +47,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className={`${bounded.variable} ${manrope.variable}`} data-scroll-behavior="smooth">
+    <html lang="ru" className={`${bounded.variable} ${manrope.variable} ${doloto.variable}`} data-scroll-behavior="smooth">
       <body>
         <SmoothScrollRoot />
         {children}

@@ -193,12 +193,14 @@
 
 .legal a.sila {
   color: #f7f5f0;
-  font-family: var(--font-dela), "Dela Gothic One", sans-serif;
-  font-size: 0.95rem;
+  font-family: var(--font-doloto), "Doloto", sans-serif;
+  display: inline-block;
+  font-size: 4.5rem;
   font-weight: 400;
   letter-spacing: 0.01em;
-  line-height: 1;
+  line-height: 0.7;
   text-decoration: none;
+  vertical-align: baseline;
 }
 
 .legal a.sila:hover {

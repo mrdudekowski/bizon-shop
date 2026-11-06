@@ -280,6 +280,16 @@
   from { transform: translateY(-50%) scaleX(0); }
   to { transform: translateY(-50%) scaleX(1); }
 }
+@keyframes hero-cta-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .heroProgressFill { animation: none; transform: translateY(-50%) scaleX(1); }
 }
@@ -1129,6 +1139,7 @@
     align-items: center;
     width: 100%;
     max-width: 100%;
+    animation: hero-cta-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
   }
   .heroCopy {
     display: flex;
@@ -1204,4 +1215,5 @@
   .assortmentCard:hover .assortmentMedia :global(img),
   .assortmentCard:hover .assortmentArrow { transform: none; }
   .directionWatermark { animation: none; opacity: 0.22; }
+  .heroCopy .heroActions { animation: none; }
 }
