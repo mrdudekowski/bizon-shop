@@ -17,6 +17,7 @@ type FooterSurface = "main" | "shop";
 type FooterLink = {
   href: string;
   label: string;
+  accent?: boolean;
 };
 
 type FooterSection = {
@@ -27,10 +28,15 @@ type FooterSection = {
 type FooterConfig = {
   wordmark: string;
   description: string;
-  primaryLink?: FooterLink;
   sections: FooterSection[];
   copyright: string;
   note: string;
+};
+
+const SHOP_WHEELS_LINK: FooterLink = {
+  href: "/shop/wheels/forged",
+  label: "Выбрать диски BIZON",
+  accent: true,
 };
 
 const FOOTER_CONFIG: Record<FooterSurface, FooterConfig> = {
@@ -51,24 +57,23 @@ const FOOTER_CONFIG: Record<FooterSurface, FooterConfig> = {
       {
         label: "Сервисы",
         links: [
-          { href: ROUTES.models, label: "Каталог шин" },
+          { href: ROUTES.models, label: "Выбери шины BIZON", accent: true },
           { href: ROUTES.branding, label: "Брендирование" },
           { href: ROUTES.shop, label: "BIZON Shop" },
         ],
       },
     ],
     copyright: "BIZON Tires",
-    note: "Для профессионального применения",
+    note: "",
   },
   shop: {
     wordmark: "BIZON SHOP",
     description: "Кованые диски под заказ и lifestyle-товары BIZON.",
-    primaryLink: { href: "/shop#wheels", label: "Выбрать диски" },
     sections: [
       {
         label: "Каталог",
         links: [
-          { href: "/shop/wheels/forged", label: "BIZON Forged" },
+          SHOP_WHEELS_LINK,
           { href: "/shop/categories", label: "Все категории" },
         ],
       },
@@ -106,8 +111,8 @@ export function SiteFooter({
             ? {
                 ...section,
                 links: [
-                  { href: "/shop/wheels/forged", label: "BIZON Forged" },
-                  ...catalogLinks.filter((link) => link.href !== "/shop/categories"),
+                  SHOP_WHEELS_LINK,
+                  ...catalogLinks.filter((link) => link.href !== "/shop/categories" && link.href !== SHOP_WHEELS_LINK.href),
                   { href: "/shop/categories", label: "Все категории" },
                 ],
               }
@@ -129,7 +134,6 @@ export function SiteFooter({
         <div className={styles.brand}>
           <strong className={styles.wordmark} translate="no">{config.wordmark}</strong>
           <p>{config.description}</p>
-          {config.primaryLink ? <Link href={config.primaryLink.href}>{config.primaryLink.label}</Link> : null}
         </div>
 
         {sections.map((section) => (
@@ -137,7 +141,7 @@ export function SiteFooter({
             <nav className={styles.nav} aria-label={section.label}>
               <p>{section.label}</p>
               {section.links.map((link) => (
-                <Link href={link.href} key={link.href}>
+                <Link className={link.accent ? styles.accent : undefined} href={link.href} key={link.href}>
                   {link.label}
                   {link.href === "/" && surface === "shop" ? <SiteArrow direction="ne" /> : null}
                 </Link>
@@ -185,7 +189,14 @@ export function SiteFooter({
             <Link href={ROUTES.privacyPolicy}>Политика конфиденциальности</Link>
           </nav>
           <span>© {year} {config.copyright}</span>
-          <span>{config.note}</span>
+          {surface === "main" ? (
+            <span>
+              Сделано студией{" "}
+              <a className={styles.sila} href="https://t.me/mrdudekowski" target="_blank" rel="noopener noreferrer">SILA</a>
+            </span>
+          ) : (
+            <span>{config.note}</span>
+          )}
         </div>
       </div>
     </footer>

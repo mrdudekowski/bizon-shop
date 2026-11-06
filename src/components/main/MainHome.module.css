@@ -1113,20 +1113,33 @@
 }
 @media (max-width: 767px) {
   .hero {
-    grid-template-rows: 1fr;
+    grid-template-rows: minmax(0, 1fr);
     align-content: stretch;
     padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px) + 1.75rem);
   }
-  .heroActions { margin-top: 2rem; }
+  .hero .inner {
+    height: 100%;
+    min-height: 0;
+    align-items: stretch;
+  }
+  .heroCopy .heroActions {
+    margin-top: auto;
+    margin-bottom: auto;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
+  }
   .heroCopy {
     display: flex;
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
     gap: 0.85rem;
-    height: auto;
+    height: 100%;
     min-height: 0;
     width: 100%;
+    max-width: 100%;
     min-width: 0;
   }
   .heroCopy > p:not(.eyebrow) { margin-top: -0.85rem; }

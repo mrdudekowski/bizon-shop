@@ -3,6 +3,7 @@ import {
   buildMainDualPaneMenuSections,
   buildShopDualPaneMenuSections,
 } from "./buildDualPaneMenu";
+import { shopCategoryIconUrl } from "./shopCategoryPresentation";
 import type { CmsTireModel, CmsWheelModel } from "./types";
 
 const model = {
@@ -176,6 +177,9 @@ describe("buildShopDualPaneMenuSections", () => {
       href: "/",
       items: [],
     });
+    const categoryItems = sections.find((section) => section.id === "categories")?.items ?? [];
+    expect(categoryItems.find((item) => item.id === "accessories")?.iconUrl).toBe(shopCategoryIconUrl("accessories"));
+    expect(categoryItems.find((item) => item.id === "all-categories")?.iconUrl).toBeUndefined();
     expect(sections.find((section) => section.id === "buyers")?.items.map((item) => ({
       title: item.title,
       href: item.href,

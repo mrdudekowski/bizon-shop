@@ -13,6 +13,8 @@ describe("SiteFooter navigation", () => {
     const main = renderToStaticMarkup(createElement(SiteFooter, { surface: "main", siteProfile: PLACEHOLDER_SITE_PROFILE }));
     const shop = renderToStaticMarkup(createElement(SiteFooter, { surface: "shop", siteProfile: PLACEHOLDER_SITE_PROFILE }));
 
+    expect(main).toContain("Выбери шины BIZON");
+    expect(main).not.toContain("Каталог шин");
     expect(main).toContain('href="/delivery"');
     expect(main).toContain("Доставка");
     expect(main).toContain('href="/payment"');
@@ -21,6 +23,10 @@ describe("SiteFooter navigation", () => {
     expect(main).toContain("Гарантия и возврат");
     expect(main).not.toContain("География поставок");
 
+    expect(shop).toContain("Выбрать диски BIZON");
+    expect(shop).toContain('href="/shop/wheels/forged"');
+    expect(shop).not.toContain('href="/shop#wheels"');
+    expect(shop).not.toContain("BIZON Forged");
     expect(shop).toContain('href="/shop/cart"');
     expect(shop).toContain('href="/shop/delivery"');
     expect(shop).toContain('href="/shop/payment"');
@@ -49,7 +55,10 @@ describe("SiteFooter contacts", () => {
     }
     expect(html).not.toContain('<a href="tel:');
     expect(html).not.toContain("mailto:");
-    expect(html).not.toContain('target="_blank"');
+    expect(html).toContain("Сделано студией");
+    expect(html).toContain('href="https://t.me/mrdudekowski"');
+    expect(html).not.toContain("Для профессионального применения");
+    expect(html.match(/target="_blank"/g)).toHaveLength(1);
   });
 
   it("links a real phone, email and an enabled channel, and hides disabled ones", () => {
@@ -69,7 +78,7 @@ describe("SiteFooter contacts", () => {
     expect(html).toContain('href="https://t.me/bizon"');
     expect(html).toContain("<svg");
     expect(html).toContain('aria-label="Telegram"');
-    expect(html.match(/target="_blank"/g)).toHaveLength(1);
+    expect(html.match(/target="_blank"/g)).toHaveLength(2);
     expect(html).not.toContain("vk.com");
     expect(html).not.toContain("Актуальные ссылки на каналы связи");
   });

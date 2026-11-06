@@ -453,8 +453,9 @@
 
 .listLink {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -469,6 +470,22 @@
 .listLink[aria-current="page"] {
   color: var(--menu-link-hover);
   transform: translateX(4px);
+}
+
+.listIcon {
+  width: 2.5rem;
+  height: 2.5rem;
+  max-width: 100%;
+  flex: none;
+  object-fit: contain;
+}
+
+.listCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .listMeta {

@@ -3,6 +3,7 @@ import { HERO_TIRE_CUTOUT_BY_SLUG } from "@/lib/catalog/heroTireSlides";
 import { getModelHref } from "@/lib/catalog/tireReadModel";
 import { curateMenuItems } from "./curateMenuItems";
 import type { DualPaneSection } from "./dualPaneMenuTypes";
+import { shopCategoryIconUrl } from "./shopCategoryPresentation";
 import type { CmsArticle, CmsShopCategory, CmsTireModel, CmsWheelModel } from "./types";
 
 function tireModelPills(model: CmsTireModel): string[] {
@@ -111,6 +112,7 @@ export function buildShopDualPaneMenuSections(input: {
       title: category.name,
       href: `${ROUTES.shop}/${category.slug}`,
       imageUrl: category.imageUrl,
+      iconUrl: shopCategoryIconUrl(category.slug),
       description: category.description,
     }));
 

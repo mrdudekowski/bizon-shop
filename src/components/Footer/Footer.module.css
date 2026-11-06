@@ -40,15 +40,6 @@
   line-height: var(--leading-body);
 }
 
-.brand a {
-  width: fit-content;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  color: var(--bizon-coral-400);
-  font-weight: 600;
-}
-
 .nav,
 .contact {
   display: grid;
@@ -93,9 +84,14 @@
 }
 
 .nav a:hover,
-.contact a:hover,
-.brand a:hover {
+.contact a:hover {
   color: var(--bizon-coral-400);
+}
+
+.nav a.accent,
+.nav a.accent:hover {
+  color: var(--bizon-coral-400);
+  font-weight: 600;
 }
 
 .contactRow {
@@ -167,7 +163,6 @@
 
 .nav a:focus-visible,
 .contact a:focus-visible,
-.brand a:focus-visible,
 .legal a:focus-visible {
   outline: var(--focus-outline);
   outline-offset: 3px;
@@ -194,6 +189,20 @@
 
 .legal a {
   color: rgba(255, 255, 255, 0.75);
+}
+
+.legal a.sila {
+  color: #f7f5f0;
+  font-family: var(--font-dela), "Dela Gothic One", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.legal a.sila:hover {
+  color: #c8a96e;
 }
 
 .legal a:hover {

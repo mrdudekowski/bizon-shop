@@ -3,6 +3,8 @@ export type DualPaneItem = {
   title: string;
   href: string;
   imageUrl?: string | null;
+  /** Catalog icon for a shop category. Resolved by the catalog, not chosen in the menu. */
+  iconUrl?: string | null;
   pills?: string[];
   description?: string;
   advantages?: Array<{ key: string; title: string }>;

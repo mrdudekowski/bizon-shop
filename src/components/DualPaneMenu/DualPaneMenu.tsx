@@ -143,10 +143,15 @@ function ListPane({
               aria-current={isCurrentLink(item.href) ? "page" : undefined}
               onClick={onNavigate}
             >
-              <span>{item.title}</span>
-              {item.description ? (
-                <span className={styles.listMeta}>{item.description}</span>
+              {item.iconUrl ? (
+                <Image className={styles.listIcon} src={item.iconUrl} alt="" width={40} height={40} />
               ) : null}
+              <span className={styles.listCopy}>
+                <span>{item.title}</span>
+                {item.description ? (
+                  <span className={styles.listMeta}>{item.description}</span>
+                ) : null}
+              </span>
             </Link>
           </li>
         ))}
