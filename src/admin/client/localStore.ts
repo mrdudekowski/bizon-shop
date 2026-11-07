@@ -1387,8 +1387,6 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
             siteProfile: {
               ...draft.siteProfile,
               legalSummary: record.draft.siteProfile.legalSummary,
-              priceNotice: record.draft.siteProfile.priceNotice,
-              madeToOrderNotice: record.draft.siteProfile.madeToOrderNotice,
               requisites: record.draft.siteProfile.requisites,
             },
           }
@@ -1411,23 +1409,17 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
 
     async saveSiteProfileSlice(patch: {
       legalSummary?: string;
-      priceNotice?: string;
-      madeToOrderNotice?: string;
       requisites?: { id: string; label: string; value: string }[];
     }) {
       const state = load();
       const touchesLegal = patch.legalSummary !== undefined || patch.requisites !== undefined;
-      const touchesCatalog = patch.priceNotice !== undefined || patch.madeToOrderNotice !== undefined;
-      if (touchesLegal) requirePermission(state, "edit_site_pages");
-      if (touchesCatalog) requirePermission(state, "edit_catalog");
-      if (!touchesLegal && !touchesCatalog) throw new AdminClientError("publish_blocked");
+      if (!touchesLegal) throw new AdminClientError("publish_blocked");
+      requirePermission(state, "edit_site_pages");
       const record = requireNamed(state.pages, "contact");
       if (record.draft.id !== "contact" || !record.draft.siteProfile) throw new AdminClientError("publish_blocked");
       const profile = {
         ...record.draft.siteProfile,
         ...(patch.legalSummary !== undefined ? { legalSummary: patch.legalSummary } : {}),
-        ...(patch.priceNotice !== undefined ? { priceNotice: patch.priceNotice } : {}),
-        ...(patch.madeToOrderNotice !== undefined ? { madeToOrderNotice: patch.madeToOrderNotice } : {}),
         ...(patch.requisites !== undefined ? { requisites: patch.requisites } : {}),
       };
       record.draft = { ...record.draft, siteProfile: profile };
@@ -1438,8 +1430,6 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
           siteProfile: {
             ...record.publishedSnapshot.siteProfile,
             ...(patch.legalSummary !== undefined ? { legalSummary: patch.legalSummary } : {}),
-            ...(patch.priceNotice !== undefined ? { priceNotice: patch.priceNotice } : {}),
-            ...(patch.madeToOrderNotice !== undefined ? { madeToOrderNotice: patch.madeToOrderNotice } : {}),
             ...(patch.requisites !== undefined ? { requisites: patch.requisites } : {}),
           },
         };

@@ -269,7 +269,7 @@ describe("PageEditor conflict recovery", () => {
     }));
   });
 
-  it("keeps price and made-to-order notices off the contact page", async () => {
+  it("saves the request notices with the contact page", async () => {
     const contactDraft = {
       id: "contact",
       seoTitle: "Контакты",
@@ -288,13 +288,29 @@ describe("PageEditor conflict recovery", () => {
       },
     };
     const record = { ...pageRecord, id: "contact", draft: contactDraft, savedDraft: contactDraft, publishedSnapshot: contactDraft };
+    const savePage = vi.fn().mockImplementation(async (_key: string, next: typeof contactDraft) => ({ ...record, draft: next, savedDraft: next }));
     mockState.client.getPage = vi.fn().mockResolvedValue(record);
+    mockState.client.savePage = savePage;
+    const user = userEvent.setup();
     render(createElement(PageEditor, { pageKey: "contact" }));
 
     expect(await screen.findByLabelText("Адрес")).toBeTruthy();
-    expect(screen.queryByLabelText("Цены и наличие")).toBeNull();
-    expect(screen.queryByLabelText("Товар под заказ")).toBeNull();
     expect(screen.queryByLabelText("Краткое описание реквизитов")).toBeNull();
+    const price = screen.getByLabelText("Цены и наличие");
+    const order = screen.getByLabelText("Товар под заказ");
+    expect(price).toHaveProperty("value", "Цены ориентировочные.");
+    expect(order).toHaveProperty("value", "Часть продукции — под заказ.");
+    await user.clear(price);
+    await user.type(price, "Цены подтверждает менеджер.");
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    expect(savePage).toHaveBeenCalledWith("contact", expect.objectContaining({
+      siteProfile: expect.objectContaining({
+        priceNotice: "Цены подтверждает менеджер.",
+        madeToOrderNotice: "Часть продукции — под заказ.",
+        legalSummary: "Реквизиты оператора.",
+      }),
+    }));
   });
 
   it("edits the legal summary on the privacy page and saves it to the contact profile", async () => {

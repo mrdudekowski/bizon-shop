@@ -16,7 +16,6 @@ import { useCatalogView } from "@/admin/ui/catalogView";
 import { CatalogCreateDialog } from "@/admin/ui/CatalogCreateDialog";
 import { useAdminRole, useCanPerform } from "@/admin/ui/DocumentUI";
 
-import { SiteNoticeField } from "@/admin/catalog/SiteNoticeField";
 import styles from "@/admin/ui/catalog.module.css";
 
 export function WheelModelList() {
@@ -128,11 +127,6 @@ export function WheelModelList() {
           </Link>
         ) : null}
       </div>
-      <SiteNoticeField
-        label="Товар под заказ"
-        hint="Одно примечание внизу каждой карточки модели диска."
-        field="madeToOrderNotice"
-      />
       <div className={styles.pageHead}><h2>Модели дисков</h2>{canCreate ? <button className="primary" type="button" onClick={openModelDialog}>Добавить модель</button> : null}</div>
       <div className={styles.catalogControls}>
         <CatalogFilters query={query} onQueryChange={setQuery} status={status} onStatusChange={setStatus} placeholder="Название модели…" />

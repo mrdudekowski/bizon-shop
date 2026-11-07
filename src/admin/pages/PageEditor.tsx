@@ -242,6 +242,21 @@ function StubFields({
                 onChange={(event) => patchSiteProfile({ address: event.target.value })}
               />
             </label>
+            <label className={styles.fullWidth}>
+              Цены и наличие
+              <textarea
+                value={siteProfile.priceNotice}
+                onChange={(event) => patchSiteProfile({ priceNotice: event.target.value })}
+              />
+            </label>
+            <label className={styles.fullWidth}>
+              Товар под заказ
+              <textarea
+                value={siteProfile.madeToOrderNotice}
+                onChange={(event) => patchSiteProfile({ madeToOrderNotice: event.target.value })}
+              />
+            </label>
+            <p className={`${styles.hint} ${styles.fullWidth}`}>Текст виден на обеих страницах заявки.</p>
           </div>
           <h3>Каналы связи (мессенджеры и соцсети)</h3>
           {siteProfile.channels.map((channel, index) => (
