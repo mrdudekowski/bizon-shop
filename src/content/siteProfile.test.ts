@@ -85,7 +85,8 @@ describe("site profile contact write", () => {
     expect(calls[0].sql).toContain("INSERT INTO site_profile");
     expect(calls[0].sql).toContain("ON CONFLICT (id) DO UPDATE");
     expect(calls[0].sql).not.toContain("legal_summary = EXCLUDED.legal_summary");
-    expect(calls[0].sql).not.toContain("price_notice = EXCLUDED.price_notice");
+    expect(calls[0].sql).toContain("price_notice = EXCLUDED.price_notice");
+    expect(calls[0].sql).toContain("made_to_order_notice = EXCLUDED.made_to_order_notice");
     expect(calls[0].sql).toContain("contact_surface = EXCLUDED.contact_surface");
     expect(calls[0].params).toEqual([
       "+7 (421) 200-00-00",
@@ -105,18 +106,18 @@ describe("site profile contact write", () => {
     expect(calls.some((call) => call.sql.includes("site_profile_requisites"))).toBe(false);
   });
 
-  it("updates a notice without rewriting phone or channels", async () => {
+  it("updates the legal summary without rewriting phone or notices", async () => {
     const calls: { sql: string; params: unknown[] }[] = [];
     await writeSiteProfileSlice({ query: async (sql, params = []) => { calls.push({ sql, params }); return []; } }, {
-      priceNotice: "Цены ориентировочные.",
+      legalSummary: "Реквизиты оператора.",
       requisites: [{ id: "inn", label: "ИНН", value: "000" }],
     });
     expect(calls.map((call) => call.sql)).toEqual([
-      "UPDATE site_profile SET price_notice = $1 WHERE id = 1",
+      "UPDATE site_profile SET legal_summary = $1 WHERE id = 1",
       "DELETE FROM site_profile_requisites",
       "INSERT INTO site_profile_requisites (id, sort_order, label, value) VALUES ($1, $2, $3, $4)",
     ]);
-    expect(calls[0].params).toEqual(["Цены ориентировочные."]);
+    expect(calls[0].params).toEqual(["Реквизиты оператора."]);
     expect(calls[2].params).toEqual(["inn", 0, "ИНН", "000"]);
   });
 

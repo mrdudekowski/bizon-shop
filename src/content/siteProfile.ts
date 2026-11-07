@@ -83,7 +83,13 @@ export async function writeSiteProfileContacts(
   await db.query(
     `INSERT INTO site_profile (id, phone, email, address, channels_note, legal_summary, price_notice, made_to_order_notice, contact_surface)
      VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8)
-     ON CONFLICT (id) DO UPDATE SET phone = EXCLUDED.phone, email = EXCLUDED.email, address = EXCLUDED.address, contact_surface = EXCLUDED.contact_surface`,
+     ON CONFLICT (id) DO UPDATE SET
+       phone = EXCLUDED.phone,
+       email = EXCLUDED.email,
+       address = EXCLUDED.address,
+       contact_surface = EXCLUDED.contact_surface,
+       price_notice = EXCLUDED.price_notice,
+       made_to_order_notice = EXCLUDED.made_to_order_notice`,
     [
       contacts.phone,
       contacts.email,
@@ -105,16 +111,14 @@ export async function writeSiteProfileContacts(
   }
 }
 
-export type SiteProfileSlice = Partial<Pick<SiteProfile, "legalSummary" | "priceNotice" | "madeToOrderNotice" | "requisites">>;
+export type SiteProfileSlice = Partial<Pick<SiteProfile, "legalSummary" | "requisites">>;
 
-/** Writes only the notices edited outside the contact page. Phone, email, address, and channels stay as they are. */
+/** Writes the legal summary edited on the privacy page. Phone, notices, and channels stay as they are. */
 export async function writeSiteProfileSlice(db: SiteProfileDatabase, slice: SiteProfileSlice): Promise<void> {
   const assignments: string[] = [];
   const params: unknown[] = [];
   const columns = {
     legalSummary: "legal_summary",
-    priceNotice: "price_notice",
-    madeToOrderNotice: "made_to_order_notice",
   } as const;
   for (const key of Object.keys(columns) as (keyof typeof columns)[]) {
     if (slice[key] === undefined) continue;
