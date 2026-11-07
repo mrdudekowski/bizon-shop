@@ -216,4 +216,48 @@ describe("ServicePage documents", () => {
     expect(shopPayment).not.toContain("<form");
     expect(shopPayment).not.toContain("Имя получателя");
   });
+
+  it("links each condition page to the other pages of the same site", () => {
+    const payment = renderToStaticMarkup(
+      createElement(ServicePage, {
+        title: "Оплата",
+        description: "",
+        breadcrumbs: [],
+        features: [],
+        runtimePageKey: "payment",
+      }),
+    );
+    expect(payment).toContain('aria-current="page"');
+    expect(payment).toContain("Информация о ценах и наличии товаров на сайте носит информационный характер. Это запрос на подбор, а не покупка: цена и совместимость подтверждаются специалистом. Часть продукции может быть доступна под заказ.");
+    expect(payment).not.toContain("Срок поставки зависит от производителя");
+    expect(payment).toContain('href="/delivery"');
+    expect(payment).toContain('href="/warranty"');
+    expect(payment).not.toContain('href="/shop/delivery"');
+
+    const shopWarranty = renderToStaticMarkup(
+      createElement(ServicePage, {
+        title: "Гарантия и возврат",
+        description: "",
+        breadcrumbs: [],
+        features: [],
+        runtimePageKey: "shop-warranty",
+      }),
+    );
+    expect(shopWarranty).toContain('href="/shop/payment"');
+    expect(shopWarranty).toContain('href="/shop/delivery"');
+    expect(shopWarranty).not.toContain('href="/warranty"');
+    expect(shopWarranty).not.toContain("Информация о ценах и наличии");
+
+    const delivery = renderToStaticMarkup(
+      createElement(ServicePage, {
+        title: "Доставка",
+        description: "",
+        breadcrumbs: [],
+        features: [],
+        runtimePageKey: "delivery",
+      }),
+    );
+    expect(delivery).toContain("Срок поставки зависит от производителя, наличия продукции, объема заказа, производственного цикла и выбранной логистической схемы. Если товар отсутствует в наличии, возможность и сроки поставки под заказ уточняются индивидуально. Точные сроки, стоимость и условия поставки сообщаются после обработки заявки.");
+    expect(delivery).not.toContain("Это запрос на подбор");
+  });
 });

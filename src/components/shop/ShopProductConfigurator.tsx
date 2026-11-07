@@ -40,10 +40,9 @@ function variantLabel(variant: CmsProductVariant): string {
 
 type ShopProductConfiguratorProps = {
   product: CmsProduct;
-  priceNotice?: string;
 };
 
-export function ShopProductConfigurator({ product: initialProduct, priceNotice }: ShopProductConfiguratorProps) {
+export function ShopProductConfigurator({ product: initialProduct }: ShopProductConfiguratorProps) {
   const [product, setProduct] = useState(initialProduct);
   const router = useRouter();
   const pathname = usePathname();
@@ -375,10 +374,6 @@ export function ShopProductConfigurator({ product: initialProduct, priceNotice }
           {product.material ? <p>Материал: {product.material}</p> : null}
         </section>
       </ResponsiveDisclosure>
-
-      {priceNotice?.trim() ? (
-        <p className={styles.priceNotice} data-price-notice="">{priceNotice}</p>
-      ) : null}
     </div>
   );
 }

@@ -22,6 +22,9 @@ vi.mock("@/hooks/useCart", () => ({
   }),
 }));
 
+import { SiteProfileProvider } from "@/components/forms/siteProfileContext";
+import { PLACEHOLDER_SITE_PROFILE } from "@/lib/content/siteProfile";
+import { REQUEST_TERMS_LINE } from "@/lib/content/termsPages";
 import { submitRequest } from "@/lib/requests/submitRequest";
 import { CartPage } from "./CartPage";
 
@@ -91,5 +94,46 @@ describe("CartPage checkout success", () => {
     expect(status?.getAttribute("aria-live")).toBe("polite");
     expect(status?.textContent).toContain("Спасибо");
     expect(document.activeElement).toBe(status);
+  });
+
+  it.each(routes)("prints one terms line and the matching condition links under the form on $path", async (route) => {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => {
+      root.render(createElement(CartPage, route));
+    });
+
+    const text = host.textContent ?? "";
+    const html = host.innerHTML;
+    const submitAt = text.indexOf("Отправить");
+    expect(submitAt).toBeGreaterThan(-1);
+    expect(submitAt).toBeLessThan(text.indexOf(REQUEST_TERMS_LINE));
+    expect(text).not.toContain("Информация о ценах и наличии");
+    expect(text).not.toContain("Часть продукции может быть доступна под заказ");
+    expect(text).not.toContain("Это запрос на подбор");
+    const prefix = route.kind === "shop" ? "/shop" : "";
+    expect(html).toContain(`href="${prefix}/payment"`);
+    expect(html).toContain(`href="${prefix}/delivery"`);
+    expect(html).toContain(`href="${prefix}/warranty"`);
+  });
+
+  it("prints the terms line under the contact card", async () => {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => {
+      root.render(createElement(
+        SiteProfileProvider,
+        { value: { ...PLACEHOLDER_SITE_PROFILE, contactSurface: "card" } },
+        createElement(CartPage, routes[1]),
+      ));
+    });
+
+    const text = host.textContent ?? "";
+    const cardAt = text.indexOf("Форма заявки скоро появится!");
+    expect(cardAt).toBeGreaterThan(-1);
+    expect(cardAt).toBeLessThan(text.indexOf(REQUEST_TERMS_LINE));
+    expect(host.innerHTML).toContain('href="/shop/warranty"');
   });
 });

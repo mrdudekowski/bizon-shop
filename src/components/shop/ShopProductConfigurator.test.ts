@@ -48,6 +48,7 @@ function declaredCursor(css: string, className: string): string {
 describe("ShopProductConfigurator pin control", () => {
   it("does not use a zoom cursor on the pin control", () => {
     const html = renderToStaticMarkup(createElement(ShopProductConfigurator, { product }));
+    expect(html).not.toContain("data-price-notice");
     const pin = html.match(/<button\b[^>]*aria-label="Закрепить это фото"[^>]*>/)?.[0] ?? "";
     expect(pin).toContain(styles.mainImage);
 

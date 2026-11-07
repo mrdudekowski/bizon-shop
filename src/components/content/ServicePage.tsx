@@ -8,6 +8,8 @@ import type { PublishedStubOverlay } from "@/lib/content/getPageContent";
 import { resolveServicePageCta, resolveServicePageProof } from "./servicePageEditorial";
 
 import { PageHero, type PageHeroBreadcrumb, type PageHeroMedia } from "@/components/content/PageHero";
+import { TermsLinks } from "@/components/content/TermsLinks";
+import { termsContextOfPage, termsParagraph } from "@/lib/content/termsPages";
 import { ConfiguredForm, type ConfiguredSourceForm, type PageForm } from "@/components/forms/ConfiguredForm";
 import { ContactRequest } from "@/components/forms/ContactRequest";
 import { ROUTES } from "@/constants/navigation";
@@ -137,6 +139,7 @@ export function ServicePage({
   const resolvedCta: ServiceCta | undefined = lockedCtaHref
     ? { href: lockedCtaHref, label: activeEditorial?.cta?.label?.trim() || DEFAULT_PAYMENT_CTA_LABEL }
     : resolveServicePageCta(activeEditorial, cta);
+  const termsContext = termsContextOfPage(runtimePageKey);
   return (
     <div data-main-chrome-tone="light">
       <PageHero
@@ -237,6 +240,13 @@ export function ServicePage({
             </div>
           </section>
         ) : null}
+
+        {termsContext && termsParagraph(termsContext.current) ? (
+          <section className={styles.editorialSection}>
+            <p>{termsParagraph(termsContext.current)}</p>
+          </section>
+        ) : null}
+        {termsContext ? <TermsLinks surface={termsContext.surface} current={termsContext.current} /> : null}
       </div>
     </div>
   );

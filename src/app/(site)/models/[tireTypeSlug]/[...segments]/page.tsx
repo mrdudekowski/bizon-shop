@@ -13,7 +13,6 @@ import {
 } from "@/lib/content";
 import { createPageMetadata } from "@/lib/seo/metadata";
 import { createProductStructuredData, jsonLdScriptContent } from "@/lib/seo/structuredData";
-import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { loadPublished } from "@/lib/content/loadPublished";
 
 type PageProps = {
@@ -128,14 +127,13 @@ async function TireModelRoute({
   requestedPath: string;
 }) {
   const loaded = await loadPublished(async () => {
-    const [catalog, model, contactPage] = await Promise.all([
+    const [catalog, model] = await Promise.all([
       getPublishedTireCatalog(),
       getTireModelByTypeAndSlug(tireTypeSlug, modelSlug),
-      getPublishedStubOverlay("contact"),
     ]);
     if (!model) return null;
     const variants = await getTireVariantsByModelId(model.id);
-    return { catalog, model, variants, priceNotice: contactPage?.siteProfile?.priceNotice ?? "" };
+    return { catalog, model, variants };
   });
   if (loaded.kind === "unavailable") {
     return (
@@ -152,7 +150,7 @@ async function TireModelRoute({
     ?.models.find((item) => item.slug === modelSlug);
   if (catalogModel && requestedPath !== catalogModel.href) redirect(catalogModel.href);
 
-  const { variants, priceNotice } = loaded.value;
+  const { variants } = loaded.value;
   const modelPath =
     catalogModel?.href || requestedPath || `/models/${tireTypeSlug}/${modelSlug}`;
   const hydratedModel = catalogModel ?? {
@@ -192,7 +190,6 @@ async function TireModelRoute({
         variants={variants}
         modelPath={modelPath}
         breadcrumbs={breadcrumbs}
-        priceNotice={priceNotice}
       />
     </>
   );

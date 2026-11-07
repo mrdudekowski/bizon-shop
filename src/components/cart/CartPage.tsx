@@ -6,7 +6,9 @@ import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { cartItemKey, isCartItemAllowed } from "@/lib/cart/cartStorage";
 import type { CartKind } from "@/lib/cart/cartTypes";
+import { TermsLinks } from "@/components/content/TermsLinks";
 import { ContactRequest } from "@/components/forms/ContactRequest";
+import { REQUEST_TERMS_LINE } from "@/lib/content/termsPages";
 import { submitRequest } from "@/lib/requests/submitRequest";
 import { HONEYPOT_FIELD } from "@/lib/requests/validateRequest";
 import type { RequestItemInput, SourceForm } from "@/types/requestItem";
@@ -274,6 +276,10 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
             {message && <p className={`${styles.status} ${status === "error" ? styles.statusError : ""}`} role="status" aria-live="polite">{message}</p>}
           </form>
           </ContactRequest>
+          <div className={`${styles.requestNotices} max-w-3xl`}>
+            <p className={styles.requestNotice}>{REQUEST_TERMS_LINE}</p>
+            <TermsLinks surface={kind === "shop" ? "shop" : "tires"} />
+          </div>
         </>
       )}
     </div>

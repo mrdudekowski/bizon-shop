@@ -33,24 +33,19 @@ const emptyModel = {
 const SPECIALIST_SENTENCE = "Финальную совместимость, наличие и предложение подтверждает специалист BIZON.";
 
 describe("TireModelStage", () => {
-  it("shows the profile price notice instead of the hardcoded specialist sentence", () => {
-    const notice = "Информация о ценах и наличии товаров на сайте носит информационный характер.";
-    const stage = (priceNotice: string) => renderToStaticMarkup(
+  it("leaves the shared price notice off the model page", () => {
+    const markup = renderToStaticMarkup(
       createElement(TireModelStage, {
         model: { ...emptyModel },
         variants: [],
         modelPath: "/models/tbr/dsr188",
         breadcrumbs: [],
-        priceNotice,
       }),
     );
 
-    const markup = stage(notice);
-    expect(markup).toContain(notice);
-    expect(markup.indexOf("Проверим модель под вашу технику и маршрут")).toBeLessThan(markup.indexOf(notice));
+    expect(markup).toContain("Проверим модель под вашу технику и маршрут");
     expect(markup).not.toContain(SPECIALIST_SENTENCE);
-    expect(stage("")).not.toContain(SPECIALIST_SENTENCE);
-    expect(stage("")).not.toContain("data-price-notice");
+    expect(markup).not.toContain("data-price-notice");
   });
 
   it("disambiguates same-size choices by their load indexes and keeps variant IDs", () => {

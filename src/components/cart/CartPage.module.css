@@ -103,6 +103,28 @@
   text-decoration: underline;
 }
 
+.requestNotices {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 16px 0 0;
+}
+
+.requestNotice {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
 .checkoutGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

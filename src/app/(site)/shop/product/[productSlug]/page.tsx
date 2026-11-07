@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { getAllShopProductSlugs, getShopProductBySlug } from "@/lib/content";
-import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { createProductMetadata } from "@/lib/seo/metadata";
 import { createProductStructuredData, jsonLdScriptContent } from "@/lib/seo/structuredData";
 import { ShopProductConfigurator } from "@/components/shop/ShopProductConfigurator";
@@ -28,15 +27,9 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function ProductPage({ params }: PageProps) {
   const { productSlug } = await params;
-  const loaded = await loadPublished(async () => {
-    const [product, contactPage] = await Promise.all([
-      getShopProductBySlug(productSlug),
-      getPublishedStubOverlay("contact"),
-    ]);
-    return { product, priceNotice: contactPage?.siteProfile?.priceNotice ?? "" };
-  });
+  const loaded = await loadPublished(() => getShopProductBySlug(productSlug));
   if (loaded.kind === "unavailable") return <PublishedContentUnavailable />;
-  const { product, priceNotice } = loaded.value;
+  const product = loaded.value;
 
   if (!product) {
     notFound();
@@ -56,7 +49,7 @@ export default async function ProductPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(structuredData) }}
       />
-      <ShopProductConfigurator product={product} priceNotice={priceNotice} />
+      <ShopProductConfigurator product={product} />
     </>
   );
 }
