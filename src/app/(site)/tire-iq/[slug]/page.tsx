@@ -4,7 +4,14 @@ import { TireIqArticleRuntime } from "@/components/content/TireIqArticleRuntime"
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { getAllTireIQSlugs, getTireIQArticleBySlug } from "@/lib/content";
 import { loadPublished } from "@/lib/content/loadPublished";
-import { createPageMetadata } from "@/lib/seo/metadata";
+import { resolveTireIqArticleCover } from "@/lib/content/tireIqVisuals";
+import { createPageMetadata, textOrFallback } from "@/lib/seo/metadata";
+import {
+  createArticleStructuredData,
+  createBreadcrumbStructuredData,
+  jsonLdScriptContent,
+  tireIqBreadcrumbs,
+} from "@/lib/seo/structuredData";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -23,8 +30,8 @@ export async function generateMetadata({ params }: PageProps) {
   const article = loaded.value;
   if (!article) return {};
   return createPageMetadata({
-    title: article.title,
-    description: article.excerpt,
+    title: textOrFallback(article.title, article.slug),
+    description: textOrFallback(article.excerpt, article.title),
     path: `/tire-iq/${article.slug}`,
   });
 }
@@ -43,5 +50,26 @@ export default async function TireIQArticlePage({ params }: PageProps) {
   const article = loaded.value;
   if (!article) notFound();
 
-  return <TireIqArticleRuntime article={article} />;
+  const breadcrumbs = tireIqBreadcrumbs(article);
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLdScriptContent(createArticleStructuredData({
+            title: article.title,
+            excerpt: article.excerpt,
+            path: `/tire-iq/${article.slug}`,
+            publishedAt: article.publishedAt,
+            image: resolveTireIqArticleCover(article),
+          })),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(createBreadcrumbStructuredData(breadcrumbs)) }}
+      />
+      <TireIqArticleRuntime article={article} />
+    </>
+  );
 }

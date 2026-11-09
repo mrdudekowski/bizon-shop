@@ -5,8 +5,14 @@ import {
   getWheelTypeBySlug,
   getWheelVariantsByModelId,
 } from "@/lib/content";
-import { createPageMetadata } from "@/lib/seo/metadata";
-import { createProductStructuredData, jsonLdScriptContent } from "@/lib/seo/structuredData";
+import { createPageMetadata, textOrFallback } from "@/lib/seo/metadata";
+import {
+  createBreadcrumbStructuredData,
+  createProductStructuredData,
+  jsonLdScriptContent,
+  singleVariantOffer,
+  wheelModelBreadcrumbs,
+} from "@/lib/seo/structuredData";
 import { WheelModelStage } from "@/components/catalog/WheelModelStage";
 
 type PageProps = {
@@ -26,8 +32,8 @@ export async function generateMetadata({ params }: PageProps) {
   if (!wheelType || !model) notFound();
 
   return createPageMetadata({
-    title: model.seoTitle?.trim() || model.name,
-    description: model.seoDescription?.trim() || model.descriptionShort,
+    title: textOrFallback(model.seoTitle, model.name),
+    description: textOrFallback(model.seoDescription, textOrFallback(model.descriptionShort, model.name)),
     path: `/shop/wheels/${model.wheelTypeSlug}/${model.slug}`,
   });
 }
@@ -44,21 +50,32 @@ export default async function WheelModelPage({ params }: PageProps) {
   }
 
   const modelPath = `/shop/wheels/${wheelType.slug}/${model.slug}`;
+  const variants = await getWheelVariantsByModelId(model.id);
+  const breadcrumbs = wheelModelBreadcrumbs({
+    typeSlug: wheelType.slug,
+    typeName: wheelType.name,
+    modelPath,
+    modelName: model.name,
+  });
   const structuredData = createProductStructuredData({
     name: model.name,
     description: model.descriptionShort,
     path: modelPath,
-    brand: model.series ?? "BIZON",
+    brand: "BIZON",
     category: wheelType.name,
+    image: model.imageUrl,
+    offer: singleVariantOffer(variants, model.available),
   });
-
-  const variants = await getWheelVariantsByModelId(model.id);
 
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(structuredData) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(createBreadcrumbStructuredData(breadcrumbs)) }}
       />
       <WheelModelStage
         wheelType={wheelType}

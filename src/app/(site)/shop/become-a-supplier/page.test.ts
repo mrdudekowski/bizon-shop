@@ -11,7 +11,7 @@ describe("shop become-a-supplier page", () => {
   it("renders the registry title when the overlay is missing", async () => {
     getPublishedStubOverlay.mockResolvedValue(null);
     const html = renderToStaticMarkup(await ShopSupplierPage());
-    expect(html).toContain("Стать поставщиком");
+    expect(html).toContain("Поставщикам BIZON Shop");
   });
 
   it("renders the published overlay", async () => {

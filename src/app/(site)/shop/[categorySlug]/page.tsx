@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getAllShopCategorySlugs, getShopProducts, getShopCategoryBySlug, getShopCategories } from "@/lib/content";
-import { createPageMetadata } from "@/lib/seo/metadata";
+import { createPageMetadata, textOrFallback } from "@/lib/seo/metadata";
 import { ShopLifestyleCategoryPage } from "@/components/shop/ShopLifestyleCategory";
 import { ShopProductCatalog } from "@/components/shop/ShopProductCatalog";
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
@@ -30,8 +30,8 @@ export async function generateMetadata({ params }: PageProps) {
   const category = loaded.kind === "ok" ? loaded.value : null;
   if (category) {
     return createPageMetadata({
-      title: category.seoTitle?.trim() || category.name,
-      description: category.seoDescription?.trim() || category.description,
+      title: textOrFallback(category.seoTitle, category.name),
+      description: textOrFallback(category.seoDescription, textOrFallback(category.description, category.name)),
       path: `/shop/${category.slug}`,
     });
   }

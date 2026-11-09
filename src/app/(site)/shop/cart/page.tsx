@@ -7,6 +7,7 @@ export const metadata = createPageMetadata({
   title: "Заявка BIZON Shop",
   description: "Оставьте заявку на товары BIZON Shop.",
   path: ROUTES.shopCart,
+  noIndex: true,
 });
 
 export default function ShopCartRoutePage() {

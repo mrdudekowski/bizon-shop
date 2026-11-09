@@ -1,22 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
 
-const redirect = vi.hoisted(() => vi.fn());
-const getPublishedStubOverlay = vi.hoisted(() => vi.fn());
-
-vi.mock("next/navigation", () => ({
-  redirect: (href: string) => {
-    redirect(href);
-    throw new Error(`REDIRECT:${href}`);
-  },
-}));
-vi.mock("@/lib/content/getPageContent", () => ({ getPublishedStubOverlay }));
-
-import DeliveryAndReturnsPage from "./page";
+import DeliveryAndReturnsPage, { metadata } from "./page";
 
 describe("shop delivery-and-returns page", () => {
-  it("redirects to /shop/delivery without loading page content", () => {
-    expect(() => DeliveryAndReturnsPage()).toThrow("REDIRECT:/shop/delivery");
-    expect(redirect).toHaveBeenCalledWith("/shop/delivery");
-    expect(getPublishedStubOverlay).not.toHaveBeenCalled();
+  it("renders a noindex refresh to the shop delivery page", () => {
+    const html = renderToStaticMarkup(DeliveryAndReturnsPage());
+
+    expect(html).toContain('href="/shop/delivery/"');
+    expect(html).toContain("url=/shop/delivery/");
+    expect(metadata.robots).toEqual({ index: false, follow: true });
   });
 });

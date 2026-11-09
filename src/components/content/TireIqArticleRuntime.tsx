@@ -7,6 +7,7 @@ import { TireIqContextualVisuals } from "@/components/content/TireIqContextualVi
 import type { CmsArticle } from "@/lib/content/types";
 import { fetchBrowserPublishedJson } from "@/lib/content/browserPublishedClient";
 import { resolveTireIqArticleCover } from "@/lib/content/tireIqVisuals";
+import { tireIqBreadcrumbs } from "@/lib/seo/structuredData";
 
 export function TireIqArticleRuntime({ article: initialArticle }: { article: CmsArticle }) {
   const [article, setArticle] = useState(initialArticle);
@@ -25,7 +26,7 @@ export function TireIqArticleRuntime({ article: initialArticle }: { article: Cms
     kicker="Tire IQ"
     title={article.title}
     description={article.excerpt}
-    breadcrumbs={[{ href: "/", label: "Главная" }, { href: "/tire-iq", label: "Tire IQ" }, { href: `/tire-iq/${article.slug}`, label: article.title }]}
+    breadcrumbs={tireIqBreadcrumbs(article)}
     meta={article.publishedAt}
     imageUrl={imageUrl}
     imageAlt={article.title}

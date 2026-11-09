@@ -6,7 +6,7 @@ import {
   getTireTypeBySlug,
 } from "@/lib/content";
 import { TireDirectionPage } from "@/components/catalog/TireDirectionPage";
-import { createPageMetadata } from "@/lib/seo/metadata";
+import { createPageMetadata, textOrFallback } from "@/lib/seo/metadata";
 import { loadPublished } from "@/lib/content/loadPublished";
 
 type PageProps = {
@@ -25,8 +25,8 @@ export async function generateMetadata({ params }: PageProps) {
   const tireType = loaded.kind === "ok" ? loaded.value : null;
   if (!tireType) return {};
   return createPageMetadata({
-    title: tireType.seoTitle?.trim() || tireType.name,
-    description: tireType.seoDescription?.trim() || tireType.description,
+    title: textOrFallback(tireType.seoTitle, tireType.name),
+    description: textOrFallback(tireType.seoDescription, textOrFallback(tireType.description, tireType.name)),
     path: `/models/${tireType.slug}`,
   });
 }

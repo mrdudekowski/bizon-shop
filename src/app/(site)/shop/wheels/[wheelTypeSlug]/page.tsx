@@ -6,7 +6,7 @@ import {
   getWheelTypeBySlug,
   getWheelVariantsByTypeSlug,
 } from "@/lib/content";
-import { createPageMetadata } from "@/lib/seo/metadata";
+import { createPageMetadata, textOrFallback } from "@/lib/seo/metadata";
 import { ForgedCatalog } from "@/components/shop/ForgedCatalog";
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { loadPublished } from "@/lib/content/loadPublished";
@@ -27,8 +27,11 @@ export async function generateMetadata({ params }: PageProps) {
   const wheelType = loaded.kind === "ok" ? loaded.value : null;
   if (!wheelType) return {};
   return createPageMetadata({
-    title: wheelType.seoTitle?.trim() || wheelType.name,
-    description: wheelType.seoDescription?.trim() || wheelType.shortDescription || wheelType.description,
+    title: textOrFallback(wheelType.seoTitle, wheelType.name),
+    description: textOrFallback(
+      wheelType.seoDescription,
+      textOrFallback(wheelType.shortDescription, textOrFallback(wheelType.description, wheelType.name)),
+    ),
     path: `/shop/wheels/${wheelType.slug}`,
   });
 }

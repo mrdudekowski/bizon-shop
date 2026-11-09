@@ -2,6 +2,7 @@ import { YandexMetrika } from "@/components/analytics/YandexMetrika";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { getMainDualPaneMenu, getShopDualPaneMenu } from "@/lib/content/getDualPaneMenu";
 import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
+import { createOrganizationStructuredData, jsonLdScriptContent } from "@/lib/seo/structuredData";
 
 // CMS content is fetched with cache: "no-store"; do not advertise a 60-second
 // route cache that could suggest published edits are delayed.
@@ -17,8 +18,14 @@ export default async function SiteLayout({
     getPublishedStubOverlay("contact").catch(() => null),
   ]);
 
+  const organization = createOrganizationStructuredData(contactPage?.siteProfile ?? { phone: "", email: "" });
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(organization) }}
+      />
       <YandexMetrika />
       <SiteShell mainMenu={mainMenu} shopMenu={shopMenu} initialSiteProfile={contactPage?.siteProfile ?? null}>
         {children}

@@ -1,7 +1,13 @@
 import { notFound } from "next/navigation";
 import { getAllShopProductSlugs, getShopProductBySlug } from "@/lib/content";
-import { createProductMetadata } from "@/lib/seo/metadata";
-import { createProductStructuredData, jsonLdScriptContent } from "@/lib/seo/structuredData";
+import { createProductMetadata, productSearchDescription } from "@/lib/seo/metadata";
+import {
+  createBreadcrumbStructuredData,
+  createProductStructuredData,
+  jsonLdScriptContent,
+  shopProductBreadcrumbs,
+  visibleProductOffer,
+} from "@/lib/seo/structuredData";
 import { ShopProductConfigurator } from "@/components/shop/ShopProductConfigurator";
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { loadPublished } from "@/lib/content/loadPublished";
@@ -35,12 +41,16 @@ export default async function ProductPage({ params }: PageProps) {
     notFound();
   }
 
+  const breadcrumbs = shopProductBreadcrumbs(product);
   const structuredData = createProductStructuredData({
     name: product.name,
-    description: product.descriptionShort,
+    description: productSearchDescription(product),
     path: `/shop/product/${product.slug}`,
     brand: product.brand,
     category: product.categorySlug,
+    image: product.imageUrl,
+    sku: product.sku,
+    offer: visibleProductOffer(product.price, product.priceOnRequest, product.available),
   });
 
   return (
@@ -48,6 +58,10 @@ export default async function ProductPage({ params }: PageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(structuredData) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(createBreadcrumbStructuredData(breadcrumbs)) }}
       />
       <ShopProductConfigurator product={product} />
     </>

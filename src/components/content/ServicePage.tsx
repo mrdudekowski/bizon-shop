@@ -8,6 +8,7 @@ import type { PublishedStubOverlay } from "@/lib/content/getPageContent";
 import { resolveServicePageCta, resolveServicePageProof } from "./servicePageEditorial";
 
 import { PageHero, type PageHeroBreadcrumb, type PageHeroMedia } from "@/components/content/PageHero";
+import { createBreadcrumbStructuredData, jsonLdScriptContent } from "@/lib/seo/structuredData";
 import { TermsLinks } from "@/components/content/TermsLinks";
 import { termsContextOfPage, termsParagraph } from "@/lib/content/termsPages";
 import { ConfiguredForm, type ConfiguredSourceForm, type PageForm } from "@/components/forms/ConfiguredForm";
@@ -142,6 +143,12 @@ export function ServicePage({
   const termsContext = termsContextOfPage(runtimePageKey);
   return (
     <div data-main-chrome-tone="light">
+      {breadcrumbs.length > 0 ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(createBreadcrumbStructuredData(breadcrumbs)) }}
+        />
+      ) : null}
       <PageHero
         kicker={activeKicker}
         title={activeTitle}

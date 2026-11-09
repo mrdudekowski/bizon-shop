@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
 import { marketplaceShown } from "@/components/catalog/marketplaceGallery";
 import { LexicalContent } from "@/components/content/LexicalContent";
@@ -13,6 +13,7 @@ import { useCart } from "@/hooks/useCart";
 import { cartItemKey, requestOpenCart } from "@/lib/cart/cartStorage";
 import type { CmsProduct, CmsProductVariant } from "@/lib/content/types";
 import { fetchBrowserPublishedJson } from "@/lib/content/browserPublishedClient";
+import { shopProductBreadcrumbs } from "@/lib/seo/structuredData";
 import type { RequestItemInput } from "@/types/requestItem";
 import styles from "./ShopProductConfigurator.module.css";
 
@@ -232,9 +233,12 @@ export function ShopProductConfigurator({ product: initialProduct }: ShopProduct
   return (
     <div className={styles.page} data-shop-chrome-tone="light" data-main-chrome-tone="light">
       <nav className={styles.breadcrumbs} aria-label="Хлебные крошки">
-        <Link href="/shop">Shop</Link>
-        <span aria-hidden="true">/</span>
-        <Link href={`/shop/${product.categorySlug}`}>{product.categorySlug}</Link>
+        {shopProductBreadcrumbs(product).map((crumb, index) => (
+          <Fragment key={crumb.href}>
+            {index > 0 ? <span aria-hidden="true">/</span> : null}
+            <Link href={crumb.href}>{crumb.label}</Link>
+          </Fragment>
+        ))}
       </nav>
 
       <div className={styles.layout}>

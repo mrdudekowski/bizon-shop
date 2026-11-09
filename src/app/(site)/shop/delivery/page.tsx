@@ -2,7 +2,7 @@ import { ServicePage } from "@/components/content/ServicePage";
 import { ROUTES } from "@/constants/navigation";
 import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
 import { getPageRegistryEntry } from "@/lib/content/pages/registry";
-import { createPageMetadata } from "@/lib/seo/metadata";
+import { createPageMetadata, textOrFallback } from "@/lib/seo/metadata";
 
 const PAGE_KEY = "shop-delivery" as const;
 
@@ -10,8 +10,8 @@ export async function generateMetadata() {
   const page = await getPublishedStubOverlay(PAGE_KEY);
   const entry = getPageRegistryEntry(PAGE_KEY);
   return createPageMetadata({
-    title: page?.seoTitle || entry.title,
-    description: page?.seoDescription ?? "",
+    title: textOrFallback(page?.seoTitle, entry.title),
+    description: textOrFallback(page?.seoDescription, entry.description || entry.title),
     path: ROUTES.shopDelivery,
   });
 }

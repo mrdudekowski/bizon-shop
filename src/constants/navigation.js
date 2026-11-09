@@ -44,8 +44,6 @@ export const SITEMAP_STATIC_ROUTES = [
   ROUTES.payment,
   ROUTES.branding,
   ROUTES.privacyPolicy,
-  ROUTES.cart,
-  ROUTES.shopCart,
   ROUTES.shopCategories,
   ROUTES.shopDelivery,
   ROUTES.shopPayment,

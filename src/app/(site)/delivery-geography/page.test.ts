@@ -1,22 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
 
-const redirect = vi.hoisted(() => vi.fn());
-const getPublishedStubOverlay = vi.hoisted(() => vi.fn());
-
-vi.mock("next/navigation", () => ({
-  redirect: (href: string) => {
-    redirect(href);
-    throw new Error(`REDIRECT:${href}`);
-  },
-}));
-vi.mock("@/lib/content/getPageContent", () => ({ getPublishedStubOverlay }));
-
-import DeliveryGeographyPage from "./page";
+import DeliveryGeographyPage, { metadata } from "./page";
 
 describe("delivery-geography page", () => {
-  it("redirects to /delivery without loading page content", () => {
-    expect(() => DeliveryGeographyPage()).toThrow("REDIRECT:/delivery");
-    expect(redirect).toHaveBeenCalledWith("/delivery");
-    expect(getPublishedStubOverlay).not.toHaveBeenCalled();
+  it("renders a noindex refresh to the delivery page", () => {
+    const html = renderToStaticMarkup(DeliveryGeographyPage());
+
+    expect(html).toContain('href="/delivery/"');
+    expect(html).toContain("url=/delivery/");
+    expect(metadata.robots).toEqual({ index: false, follow: true });
   });
 });

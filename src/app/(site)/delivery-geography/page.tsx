@@ -1,6 +1,9 @@
-import { redirect } from "next/navigation";
-import { ROUTES } from "@/constants/navigation";
+import { StaticRedirect, staticRedirectMetadata } from "@/components/seo/StaticRedirect";
+
+const TARGET = "/delivery/";
+
+export const metadata = staticRedirectMetadata(TARGET, "Доставка", "Переход на страницу доставки.");
 
 export default function DeliveryGeographyPage() {
-  redirect(ROUTES.delivery);
+  return <StaticRedirect href={TARGET} label="Доставка" />;
 }

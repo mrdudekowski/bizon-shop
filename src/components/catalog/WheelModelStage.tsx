@@ -7,6 +7,7 @@ import { CatalogProductGallery } from "@/components/catalog/CatalogProductGaller
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { WheelVariantsTable } from "@/components/catalog/WheelVariantsTable";
 import { getWheelConstructionMethodLabel } from "@/lib/content/wheelConstructionMethod";
+import { wheelModelBreadcrumbs } from "@/lib/seo/structuredData";
 import type { CmsWheelModel, CmsWheelType, CmsWheelVariant } from "@/lib/content/types";
 import { fetchBrowserPublishedJson, fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
 
@@ -50,7 +51,6 @@ export function WheelModelStage({
     return () => controller.abort();
   }, [initialModel.id, initialModel.slug, initialWheelType.slug]);
 
-  const typeBasePath = `/shop/wheels/${wheelType.slug}`;
   const gallery = [
     model.imageUrl,
     ...model.gallery.map((image) => image.url),
@@ -67,12 +67,12 @@ export function WheelModelStage({
         <PageHeader
           title={model.name}
           description={model.descriptionShort}
-          breadcrumbs={[
-            { href: "/", label: "Главная" },
-            { href: "/shop", label: "Магазин" },
-            { href: typeBasePath, label: wheelType.name },
-            { href: modelPath, label: model.name },
-          ]}
+          breadcrumbs={wheelModelBreadcrumbs({
+            typeSlug: wheelType.slug,
+            typeName: wheelType.name,
+            modelPath,
+            modelName: model.name,
+          })}
         />
 
         <section className={styles.productStage} aria-label={model.name}>

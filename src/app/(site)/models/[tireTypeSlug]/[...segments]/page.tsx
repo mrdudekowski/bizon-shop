@@ -1,8 +1,9 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
 import { TireDirectionPage } from "@/components/catalog/TireDirectionPage";
 import { TireModelStage } from "@/components/catalog/TireModelStage";
+import { StaticRedirect, staticRedirectMetadata } from "@/components/seo/StaticRedirect";
 import { getModelApplicationCategories, getTireCategoryBySlug } from "@/lib/catalog/tireCategories";
 import { getPublishedTireCatalog } from "@/lib/catalog/getPublishedTireCatalog";
 import {
@@ -11,13 +12,23 @@ import {
   getTireTypeBySlug,
   getTireVariantsByModelId,
 } from "@/lib/content";
-import { createPageMetadata } from "@/lib/seo/metadata";
-import { createProductStructuredData, jsonLdScriptContent } from "@/lib/seo/structuredData";
+import { createPageMetadata, textOrFallback } from "@/lib/seo/metadata";
+import { createBreadcrumbStructuredData, createProductStructuredData, jsonLdScriptContent, singleVariantOffer } from "@/lib/seo/structuredData";
 import { loadPublished } from "@/lib/content/loadPublished";
 
 type PageProps = {
   params: Promise<{ tireTypeSlug: string; segments: string[] }>;
 };
+
+/** Short model URL that is not the catalog href. Static export cannot emit HTTP 308. */
+export function tireModelAliasTarget(requestedPath: string, canonicalHref?: string): string | null {
+  if (!canonicalHref || requestedPath === canonicalHref) return null;
+  return canonicalHref;
+}
+
+function trailingSlash(path: string): string {
+  return path.endsWith("/") ? path : `${path}/`;
+}
 
 export async function generateStaticParams() {
   const loaded = await loadPublished(async () => {
@@ -66,7 +77,7 @@ export async function generateMetadata({ params }: PageProps) {
     if (!tireType) return {};
     return createPageMetadata({
       title: `${category.name} — ${tireType.name}`,
-      description: category.description,
+      description: textOrFallback(category.description, `${category.name} — ${tireType.name}`),
       path: `/models/${tireType.slug}/${category.slug}`,
     });
   }
@@ -87,10 +98,18 @@ export async function generateMetadata({ params }: PageProps) {
   const catalogModel = catalog.directions
     .find((direction) => direction.slug === tireTypeSlug)
     ?.models.find((item) => item.slug === modelSlug);
+  const requestedPath = segments.length === 2
+    ? `/models/${tireTypeSlug}/${segments.join("/")}`
+    : `/models/${tireTypeSlug}/${modelSlug}`;
+  const alias = tireModelAliasTarget(requestedPath, catalogModel?.href);
+  const title = textOrFallback(model.seoTitle, model.name);
+  if (alias) {
+    return staticRedirectMetadata(alias, title, `Переход к модели ${model.name}.`);
+  }
   return createPageMetadata({
-    title: model.seoTitle?.trim() || model.name,
-    description: model.seoDescription?.trim() || model.descriptionShort,
-    path: catalogModel?.href ?? `/models/${tireTypeSlug}/${modelSlug}`,
+    title,
+    description: textOrFallback(model.seoDescription, textOrFallback(model.descriptionShort, model.name)),
+    path: catalogModel?.href ?? requestedPath,
   });
 }
 
@@ -148,7 +167,8 @@ async function TireModelRoute({
   const catalogModel = catalog.directions
     .find((direction) => direction.slug === tireTypeSlug)
     ?.models.find((item) => item.slug === modelSlug);
-  if (catalogModel && requestedPath !== catalogModel.href) redirect(catalogModel.href);
+  const alias = tireModelAliasTarget(requestedPath, catalogModel?.href);
+  if (alias) return <StaticRedirect href={trailingSlash(alias)} label={model.name} />;
 
   const { variants } = loaded.value;
   const modelPath =
@@ -177,13 +197,20 @@ async function TireModelRoute({
     path: modelPath,
     brand: hydratedModel.brand,
     category: hydratedModel.tireTypeName,
+    image: hydratedModel.imageUrl,
+    offer: singleVariantOffer(variants, model.available),
   });
+  const breadcrumbData = createBreadcrumbStructuredData(breadcrumbs);
 
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(structuredData) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(breadcrumbData) }}
       />
       <TireModelStage
         model={hydratedModel}

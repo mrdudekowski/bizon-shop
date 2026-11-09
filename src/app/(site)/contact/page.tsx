@@ -3,13 +3,16 @@ import { notFound } from "next/navigation";
 import { PageHero } from "@/components/content/PageHero";
 import { ContactExperience } from "@/components/forms/ContactExperience";
 import { getPublishedStubOverlay } from "@/lib/content/getPageContent";
-import { createPageMetadata } from "@/lib/seo/metadata";
+import { createPageMetadata, textOrFallback } from "@/lib/seo/metadata";
 
 export async function generateMetadata() {
   const page = await getPublishedStubOverlay("contact");
   return createPageMetadata({
-    title: page?.seoTitle ?? "Контакты",
-    description: page?.seoDescription ?? "Свяжитесь с BIZON для расчёта, консультации по шинам или вопросам парка.",
+    title: textOrFallback(page?.seoTitle, "Контакты"),
+    description: textOrFallback(
+      page?.seoDescription,
+      "Свяжитесь с BIZON для расчёта, консультации по шинам или вопросам парка.",
+    ),
     path: "/contact",
   });
 }
