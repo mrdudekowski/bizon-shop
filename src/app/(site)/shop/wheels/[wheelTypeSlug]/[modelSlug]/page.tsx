@@ -14,21 +14,26 @@ import {
   wheelModelBreadcrumbs,
 } from "@/lib/seo/structuredData";
 import { WheelModelStage } from "@/components/catalog/WheelModelStage";
+import { PublishedContentUnavailable } from "@/components/content/PublishedContentUnavailable";
+import { loadPublished } from "@/lib/content/loadPublished";
 
 type PageProps = {
   params: Promise<{ wheelTypeSlug: string; modelSlug: string }>;
 };
 
 export async function generateStaticParams() {
-  return getAllWheelModelRouteParams();
+  const loaded = await loadPublished(getAllWheelModelRouteParams);
+  return loaded.kind === "ok" ? loaded.value : [];
 }
 
 export async function generateMetadata({ params }: PageProps) {
   const { wheelTypeSlug, modelSlug } = await params;
-  const [wheelType, model] = await Promise.all([
+  const loaded = await loadPublished(() => Promise.all([
     getWheelTypeBySlug(wheelTypeSlug),
     getWheelModelByTypeAndSlug(wheelTypeSlug, modelSlug),
-  ]);
+  ]));
+  if (loaded.kind === "unavailable") return {};
+  const [wheelType, model] = loaded.value;
   if (!wheelType || !model) notFound();
 
   return createPageMetadata({
@@ -40,17 +45,27 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function WheelModelPage({ params }: PageProps) {
   const { wheelTypeSlug, modelSlug } = await params;
-  const [wheelType, model] = await Promise.all([
-    getWheelTypeBySlug(wheelTypeSlug),
-    getWheelModelByTypeAndSlug(wheelTypeSlug, modelSlug),
-  ]);
-
-  if (!wheelType || !model) {
-    notFound();
+  const loaded = await loadPublished(async () => {
+    const [wheelType, model] = await Promise.all([
+      getWheelTypeBySlug(wheelTypeSlug),
+      getWheelModelByTypeAndSlug(wheelTypeSlug, modelSlug),
+    ]);
+    if (!wheelType || !model) return null;
+    const variants = await getWheelVariantsByModelId(model.id);
+    return { wheelType, model, variants };
+  });
+  if (loaded.kind === "unavailable") {
+    return (
+      <PublishedContentUnavailable
+        title="Каталог дисков временно недоступен"
+        message="Не получилось загрузить модель диска. Попробуйте ещё раз через минуту."
+      />
+    );
   }
+  if (!loaded.value) notFound();
 
+  const { wheelType, model, variants } = loaded.value;
   const modelPath = `/shop/wheels/${wheelType.slug}/${model.slug}`;
-  const variants = await getWheelVariantsByModelId(model.id);
   const breadcrumbs = wheelModelBreadcrumbs({
     typeSlug: wheelType.slug,
     typeName: wheelType.name,

@@ -12,13 +12,24 @@ import { shopCategoryCarouselIconUrl, shopCategoryIconUrl } from "@/lib/content/
 
 import styles from "./ShopChrome.module.css";
 
+function CatalogGridIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3" y="3" width="7.5" height="7.5" rx="1.2" />
+      <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.2" />
+      <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.2" />
+      <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.2" />
+    </svg>
+  );
+}
+
 export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, categoryMarks = [] }) {
   const [iconsOpen, setIconsOpen] = useState(false);
   const [mobile, setMobile] = useState(false);
   const rootRef = useRef(null);
   const { tone } = useAdaptiveChrome("data-shop-chrome-tone", "dark");
-  const marks = categoryMarks.filter((mark) => shopCategoryIconUrl(mark.slug));
-  const showMarks = mobile && iconsOpen;
+  const mobileMarks = categoryMarks.filter((mark) => shopCategoryIconUrl(mark.slug));
+  const showMobileMarks = mobile && iconsOpen;
 
   useEffect(() => {
     const query = window.matchMedia("(max-width: 767px)");
@@ -30,6 +41,17 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
     query.addEventListener("change", sync);
     return () => query.removeEventListener("change", sync);
   }, []);
+
+  function renderMarkIcon(mark) {
+    const icon = tone === "dark" ? shopCategoryCarouselIconUrl(mark.slug) : shopCategoryIconUrl(mark.slug);
+    return icon ? (
+      <span
+        className={styles.categoryIcon}
+        aria-hidden="true"
+        style={{ "--category-icon": `url("${icon}")` }}
+      />
+    ) : mark.label;
+  }
 
   useEffect(() => {
     if (!iconsOpen) return undefined;
@@ -55,30 +77,31 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
       brand={(
         <span
           className={styles.brandSlot}
-          data-icons={showMarks ? "true" : "false"}
-          style={{ "--mark-count": marks.length }}
+          data-icons={showMobileMarks ? "true" : "false"}
+          style={{ "--mark-count": mobileMarks.length }}
         >
           <Link
             className={styles.wordmarkLink}
             href="/shop"
             aria-label="BIZON Shop — на главную"
-            aria-hidden={showMarks || undefined}
-            tabIndex={showMarks ? -1 : undefined}
+            aria-hidden={showMobileMarks || undefined}
+            tabIndex={showMobileMarks ? -1 : undefined}
           >
             <ChromeWordmark />
           </Link>
-          <span className={styles.categoryMarks} aria-hidden={showMarks ? undefined : true}>
-            {marks.map((mark, index) => {
-              const icon = tone === "dark" ? shopCategoryCarouselIconUrl(mark.slug) : shopCategoryIconUrl(mark.slug);
+          <span className={styles.categoryMarks} aria-hidden={showMobileMarks ? undefined : true}>
+            {mobileMarks.map((mark, index) => {
               return (
                 <Link
                   key={mark.href}
                   href={mark.href}
                   aria-label={mark.label}
-                  tabIndex={showMarks ? undefined : -1}
+                  title={mark.label}
+                  tabIndex={showMobileMarks ? undefined : -1}
+                  onClick={() => setIconsOpen(false)}
                   style={{ "--mark-index": index }}
                 >
-                  {icon ? <img src={icon} alt="" /> : mark.label}
+                  {renderMarkIcon(mark)}
                 </Link>
               );
             })}
@@ -102,17 +125,13 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
         <>
           <button
             type="button"
-            className={styles.catalogToggle}
+            className={styles.mobileCatalogToggle}
             aria-expanded={iconsOpen}
             aria-label={iconsOpen ? "Скрыть категории" : "Категории"}
             onClick={() => setIconsOpen((open) => !open)}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="3" y="3" width="7.5" height="7.5" rx="1.2" />
-              <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.2" />
-              <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.2" />
-              <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.2" />
-            </svg>
+            <CatalogGridIcon />
+            <span>Каталог</span>
           </button>
           <span className={styles.cartSlot}>
             <CartHeaderButton count={cartCount} onOpen={onCartOpen} />

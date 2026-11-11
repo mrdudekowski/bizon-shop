@@ -101,7 +101,7 @@ export function FloatingChrome({
               inverted={tone === "dark"}
             />
           </div>
-          {startNavigation ? <div className={styles.navigation}>{startNavigation}</div> : null}
+          {startNavigation ? <div className={`${styles.navigation} ${styles.startNavigation}`}>{startNavigation}</div> : null}
         </div>
         <div className={styles.brand}>{brand}</div>
         <div className={styles.end}>

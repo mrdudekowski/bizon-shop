@@ -175,6 +175,13 @@
   white-space: nowrap;
 }
 
+.startNavigation {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
 .navigation :global(a),
 .navigation :global(button),
 .utility :global(a) {
@@ -218,6 +225,8 @@
 
 .burgerButton :global(button:focus-visible),
 .brand :global(a:focus-visible),
+.startNavigation :global(a:focus-visible),
+.startNavigation :global(button:focus-visible),
 .navigation :global(a:focus-visible),
 .navigation :global(button:focus-visible),
 .utility :global(a:focus-visible),
@@ -231,6 +240,14 @@
   .navigation,
   .utility {
     display: none;
+  }
+
+  .chrome[data-shop-chrome] .startNavigation {
+    display: flex;
+  }
+
+  .chrome[data-shop-chrome] .end > .navigation {
+    display: flex;
   }
 
   .action :global(.chrome-primary) {
@@ -250,6 +267,37 @@
 
   .action :global(.chrome-primary > span:last-child) {
     display: inline;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .chrome[data-shop-chrome] .end > .navigation {
+    gap: 2px;
+    font-size: 0.75rem;
+  }
+
+  .chrome[data-shop-chrome] .end > .navigation :global(a) {
+    padding-inline: 6px;
+  }
+
+  .chrome[data-shop-chrome] .wordmark img {
+    max-width: 7rem;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .chrome[data-shop-chrome] .utility {
+    display: flex;
+  }
+}
+
+@media (max-width: 767px) {
+  .chrome[data-shop-chrome] .startNavigation {
+    display: none;
+  }
+
+  .chrome[data-shop-chrome] .end > .navigation {
+    display: none;
   }
 }
 

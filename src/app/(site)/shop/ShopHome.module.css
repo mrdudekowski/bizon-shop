@@ -497,6 +497,9 @@
   .orderSteps article { grid-column: auto; border-right: 1px solid rgba(255,255,255,.14); border-bottom: 1px solid rgba(255,255,255,.14); }
   .orderSteps article:nth-child(2n) { border-right: 0; }
   .orderSteps article:nth-last-child(-n + 2) { border-bottom: 0; }
+}
+
+@media (min-width: 768px) and (max-width: 900px) {
   .orderSteps article:nth-child(2n + 1):last-child { grid-column: 1 / -1; width: 50%; max-width: 50%; justify-self: center; border-right: 0; }
 }
 
