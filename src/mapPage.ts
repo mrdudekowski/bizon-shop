@@ -482,12 +482,10 @@ export function mapShopHomePatch(input: {
     visible: boolean;
     sort_order: string | number;
     icon_url?: string | null;
-    image_url?: string | null;
     carousel_image_url?: string | null;
     carousel_image_alt?: string | null;
     carousel_visible?: boolean;
     icon_alt?: string | null;
-    image_alt?: string | null;
   }[];
   vehicles: { title?: string | null; image_url?: string | null; alt?: string | null }[];
   orderSteps?: { title?: string | null; description?: string | null }[];
@@ -559,11 +557,9 @@ export function mapShopHomePatch(input: {
         visible: tile.visible,
         sortOrder: Number(tile.sort_order) || 0,
         ...(publicImageUrl(tile.icon_url) ? { iconUrl: publicImageUrl(tile.icon_url) } : {}),
-        ...(publicImageUrl(tile.image_url) ? { imageUrl: publicImageUrl(tile.image_url) } : {}),
         ...(publicImageUrl(tile.carousel_image_url) ? { carouselImageUrl: publicImageUrl(tile.carousel_image_url) } : {}),
         carouselVisible: tile.carousel_visible === true,
         ...(optionalText(tile.icon_alt) ? { iconAlt: optionalText(tile.icon_alt) } : {}),
-        ...(optionalText(tile.image_alt) ? { imageAlt: optionalText(tile.image_alt) } : {}),
         ...(optionalText(tile.carousel_image_alt) ? { carouselImageAlt: optionalText(tile.carousel_image_alt) } : {}),
       })),
     },

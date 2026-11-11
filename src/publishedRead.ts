@@ -351,13 +351,13 @@ export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch
     ),
     db.query(
       `SELECT tiles.category_id, categories.slug AS category_slug, tiles.title, tiles.visible,
-        tiles._order AS sort_order, icon.url AS icon_url, image.url AS image_url,
-        carousel.url AS carousel_image_url, tiles.icon_alt, tiles.image_alt,
+        tiles._order AS sort_order, COALESCE(icon.url, legacy_image.url) AS icon_url,
+        carousel.url AS carousel_image_url, tiles.icon_alt,
         tiles.carousel_image_alt, tiles.carousel_visible
        FROM pages_shop_catalog_tiles tiles
        JOIN shop_categories categories ON categories.id = tiles.category_id AND categories.status = 'published'
        LEFT JOIN media AS icon ON icon.id = tiles.icon_media_id
-       LEFT JOIN media AS image ON image.id = tiles.image_media_id
+       LEFT JOIN media AS legacy_image ON legacy_image.id = tiles.image_media_id
        LEFT JOIN media AS carousel ON carousel.id = tiles.carousel_image_media_id
        WHERE tiles._parent_id = $1
        ORDER BY tiles._order, tiles.id`,

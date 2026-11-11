@@ -16,7 +16,7 @@ const draft: ShopHomePageDraft = {
   categoryCarousel: [],
   catalog: {
     copy: { eyebrow: "Shop", title: "Catalog", lead: "Pick a category", sectionTitle: "Categories" },
-    tiles: [{ categoryId: "5", title: "Camp", visible: true, sortOrder: 2, carouselVisible: true, icon: placement("11"), image: placement("12"), carouselImage: placement("13") }],
+    tiles: [{ categoryId: "5", title: "Camp", visible: true, sortOrder: 2, carouselVisible: true, icon: placement("11"), carouselImage: placement("13") }],
   },
   vehicles: { eyebrow: "", title: "", lead: "", cta: { label: "", href: "" }, slides: [] },
 };
@@ -31,11 +31,9 @@ describe("shopHomeChildRows catalog tiles", () => {
         title: "Camp",
         visible: true,
         iconId: 11,
-        imageId: 12,
         carouselImageId: 13,
         carouselVisible: true,
         iconAlt: "Shop tile",
-        imageAlt: "Shop tile",
         carouselImageAlt: "Shop tile",
       },
     ]);

@@ -845,8 +845,7 @@ async function mapPage(row: Row): Promise<PageDraft> {
         },
         tiles: legacyCatalogTiles.map((tile) => {
           const categoryId = str(tile.category_id ?? tile.id);
-          const imageId = tile.image_media_id ?? tile.cover_image_id;
-          const iconId = tile.icon_media_id ?? tile.cover_image_id;
+          const iconId = tile.icon_media_id ?? tile.image_media_id ?? tile.cover_image_id;
           return {
             categoryId,
             title: str(tile.title ?? tile.name),
@@ -854,7 +853,6 @@ async function mapPage(row: Row): Promise<PageDraft> {
             carouselVisible: Boolean(tile.carousel_visible),
             sortOrder: num(tile._order ?? tile.sort_order) ?? 0,
             icon: placement(iconId, str(tile.icon_alt ?? tile.name)),
-            image: placement(imageId, str(tile.image_alt ?? tile.name)),
             carouselImage: placement(tile.carousel_image_media_id, str(tile.carousel_image_alt ?? tile.name)),
           };
         }),
@@ -2989,8 +2987,8 @@ async function writePage(draft: PageDraft) {
     await query(`DELETE FROM pages_shop_catalog_tiles WHERE _parent_id=$1`, [parentId]);
     for (const tile of children.catalogTiles) {
       await query(
-        `INSERT INTO pages_shop_catalog_tiles (_parent_id, category_id, _order, title, visible, icon_media_id, image_media_id, carousel_image_media_id, carousel_visible, icon_alt, image_alt, carousel_image_alt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-        [tile.parentId, tile.categoryId, tile.order, tile.title, tile.visible, tile.iconId, tile.imageId, tile.carouselImageId, tile.carouselVisible, tile.iconAlt, tile.imageAlt, tile.carouselImageAlt],
+        `INSERT INTO pages_shop_catalog_tiles (_parent_id, category_id, _order, title, visible, icon_media_id, image_media_id, carousel_image_media_id, carousel_visible, icon_alt, image_alt, carousel_image_alt) VALUES ($1, $2, $3, $4, $5, $6, NULL, $7, $8, $9, NULL, $10)`,
+        [tile.parentId, tile.categoryId, tile.order, tile.title, tile.visible, tile.iconId, tile.carouselImageId, tile.carouselVisible, tile.iconAlt, tile.carouselImageAlt],
       );
     }
     await query(`DELETE FROM pages_shop_vehicles_slides WHERE _parent_id=$1`, [parentId]);

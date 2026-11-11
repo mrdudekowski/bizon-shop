@@ -61,11 +61,9 @@ export function shopHomeChildRows(parentId: number, draft: ShopHomePageDraft) {
       title: tile.title,
       visible: tile.visible,
       iconId: mediaId(tile.icon),
-      imageId: mediaId(tile.image),
       carouselImageId: mediaId(tile.carouselImage),
       carouselVisible: tile.carouselVisible,
       iconAlt: tile.icon?.alt ?? "",
-      imageAlt: tile.image?.alt ?? "",
       carouselImageAlt: tile.carouselImage?.alt ?? "",
     })),
     vehicles: draft.vehicles.slides.map((slide, index) => ({
