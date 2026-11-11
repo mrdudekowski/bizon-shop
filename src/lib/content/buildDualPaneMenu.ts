@@ -95,6 +95,7 @@ export function buildMainDualPaneMenuSections(input: {
 export function buildShopDualPaneMenuSections(input: {
   wheels: CmsWheelModel[];
   categories: CmsShopCategory[];
+  categoryIcons?: Readonly<Record<string, string>>;
 }): DualPaneSection[] {
   const wheels = curateMenuItems(input.wheels).map((model) => ({
     id: model.id,
@@ -112,7 +113,7 @@ export function buildShopDualPaneMenuSections(input: {
       title: category.name,
       href: `${ROUTES.shop}/${category.slug}`,
       imageUrl: category.imageUrl,
-      iconUrl: shopCategoryIconUrl(category.slug),
+      iconUrl: input.categoryIcons?.[category.slug] || shopCategoryIconUrl(category.slug),
       description: category.description,
     }));
 

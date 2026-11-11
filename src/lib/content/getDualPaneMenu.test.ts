@@ -154,6 +154,7 @@ describe("buildShopDualPaneMenuSections", () => {
 
     const sections = buildShopDualPaneMenuSections({
       wheels: [wheel],
+      categoryIcons: { accessories: "/cms/accessories-icon.webp" },
       categories: [
         {
           slug: "accessories",
@@ -178,7 +179,7 @@ describe("buildShopDualPaneMenuSections", () => {
       items: [],
     });
     const categoryItems = sections.find((section) => section.id === "categories")?.items ?? [];
-    expect(categoryItems.find((item) => item.id === "accessories")?.iconUrl).toBe(shopCategoryIconUrl("accessories"));
+    expect(categoryItems.find((item) => item.id === "accessories")?.iconUrl).toBe("/cms/accessories-icon.webp");
     expect(categoryItems.find((item) => item.id === "all-categories")?.iconUrl).toBeUndefined();
     expect(sections.find((section) => section.id === "buyers")?.items.map((item) => ({
       title: item.title,

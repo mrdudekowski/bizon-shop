@@ -4,9 +4,9 @@ import { shopCategoryCarouselIconUrl, shopCategoryIconUrl } from "./shopCategory
 
 describe("shopCategoryCarouselIconUrl", () => {
   it.each([
-    ["outdoor", "/images/shop/category-icons/camping-travel-white.png"],
-    ["accessory", "/images/shop/category-icons/accessories-shirt-white.png"],
-    ["masla-i-zapchasti", "/images/shop/category-icons/oils-spare-parts-white.png"],
+    ["outdoor", "/images/shop/category-icons/campfire-white.svg"],
+    ["accessory", "/images/shop/category-icons/tshirt-white.svg"],
+    ["masla-i-zapchasti", "/images/shop/category-icons/jerrycan-white.svg"],
   ])("maps %s to its white carousel icon", (slug, expected) => {
     expect(shopCategoryCarouselIconUrl(slug)).toBe(expected);
   });
@@ -14,11 +14,11 @@ describe("shopCategoryCarouselIconUrl", () => {
 
 describe("shopCategoryIconUrl", () => {
   it.each([
-    ["outdoor", "/images/shop/category-icons/camping-travel-black.png"],
-    ["accessory", "/images/shop/category-icons/accessories-shirt-black.png"],
-    ["accessories", "/images/shop/category-icons/car-comfort-black.png"],
-    ["masla-i-zapchasti", "/images/shop/category-icons/oils-spare-parts-black.png"],
-    ["pritsepy", "/images/shop/category-icons/trailers-black.png"],
+    ["outdoor", "/images/shop/category-icons/campfire-black.svg"],
+    ["accessory", "/images/shop/category-icons/tshirt-black.svg"],
+    ["accessories", "/images/shop/category-icons/car_seat-black.svg"],
+    ["masla-i-zapchasti", "/images/shop/category-icons/jerrycan-black.svg"],
+    ["pritsepy", "/images/shop/category-icons/rv_car-black.svg"],
   ])("maps %s to its black category icon", (slug, expected) => {
     expect(shopCategoryIconUrl(slug)).toBe(expected);
   });

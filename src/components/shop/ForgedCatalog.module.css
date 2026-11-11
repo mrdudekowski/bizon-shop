@@ -271,7 +271,7 @@
   min-height: 48px;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-pill);
   background: var(--bizon-coral-500);
   color: var(--bizon-white);
   padding: 13px 20px;

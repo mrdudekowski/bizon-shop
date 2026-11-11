@@ -32,6 +32,7 @@ export function SiteShell({ children, mainMenu, shopMenu, initialSiteProfile = n
   const [runtimeShopMenu, setRuntimeShopMenu] = useState(shopMenu);
   const [menuRefreshed, setMenuRefreshed] = useState(false);
   const [publishedCategories, setPublishedCategories] = useState(null);
+  const [publishedCategoryIcons, setPublishedCategoryIcons] = useState({});
   const [siteProfile, setSiteProfile] = useState(initialSiteProfile);
   const lenis = useLenis();
   const pathname = usePathname();
@@ -50,12 +51,28 @@ export function SiteShell({ children, mainMenu, shopMenu, initialSiteProfile = n
   ].map((item) => ({ href: item.href, label: item.title }));
   const categoryMarks = categoryLinks.flatMap((link) => {
     const slug = link.href.startsWith("/shop/") ? link.href.slice("/shop/".length) : "";
-    return slug && !slug.includes("/") ? [{ href: link.href, label: link.label, slug }] : [];
+    return slug && !slug.includes("/")
+      ? [{ href: link.href, label: link.label, slug, iconUrl: publishedCategoryIcons[slug] }]
+      : [];
   });
   useBodyScrollLock(cart.open, "cart-open");
 
   useEffect(() => {
     const controller = new AbortController();
+    void fetchBrowserPublishedJson("/v1/pages/shop-home", controller.signal)
+      .then((page) => {
+        if (controller.signal.aborted || !page || typeof page !== "object") return;
+        const tiles = page.catalog?.tiles;
+        if (!Array.isArray(tiles)) return;
+        setPublishedCategoryIcons(Object.fromEntries(
+          tiles.flatMap((tile) =>
+            tile && typeof tile.categorySlug === "string" && typeof tile.iconUrl === "string"
+              ? [[tile.categorySlug, tile.iconUrl]]
+              : [],
+          ),
+        ));
+      })
+      .catch(() => {});
     void readPublishedRevision(controller.signal)
       .then((refresh) => {
         if (!refresh || controller.signal.aborted) return;
@@ -84,14 +101,21 @@ export function SiteShell({ children, mainMenu, shopMenu, initialSiteProfile = n
       fetchBrowserPublishedList("/v1/articles", controller.signal),
       fetchBrowserPublishedList("/v1/shop/categories", controller.signal),
       fetchBrowserPublishedList("/v1/wheels/types", controller.signal),
-    ]).then(async ([tires, articles, categories, wheelTypes]) => {
+      fetchBrowserPublishedJson("/v1/pages/shop-home", controller.signal),
+    ]).then(async ([tires, articles, categories, wheelTypes, shopHomePage]) => {
       const wheelGroups = await Promise.all(wheelTypes.map((type) =>
         fetchBrowserPublishedList(`/v1/wheels/types/${encodeURIComponent(type.slug)}/models`, controller.signal),
       ));
       if (controller.signal.aborted) return;
       const tireModels = tires.directions.flatMap((direction) => direction.models);
+      const tiles = shopHomePage && typeof shopHomePage === "object" ? shopHomePage.catalog?.tiles : null;
+      const categoryIcons = Array.isArray(tiles) ? Object.fromEntries(
+        tiles.flatMap((tile) => tile && typeof tile.categorySlug === "string" && typeof tile.iconUrl === "string"
+          ? [[tile.categorySlug, tile.iconUrl]]
+          : []),
+      ) : {};
       setRuntimeMainMenu({ defaultSectionId: "models", sections: buildMainDualPaneMenuSections({ models: tireModels, articles, categories }) });
-      setRuntimeShopMenu({ defaultSectionId: "wheels", sections: buildShopDualPaneMenuSections({ wheels: wheelGroups.flat(), categories }) });
+      setRuntimeShopMenu({ defaultSectionId: "wheels", sections: buildShopDualPaneMenuSections({ wheels: wheelGroups.flat(), categories, categoryIcons }) });
       setMenuRefreshed(true);
     }).catch((error) => {
       if (!controller.signal.aborted) console.warn("Could not refresh published menu content; showing generated menu.", error);

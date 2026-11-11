@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 
 import { ShopCategoryCarousel } from "@/components/shop/ShopCategoryCarousel";
-import { shopCategoryIconUrl, shopHomeCarouselSlides } from "@/lib/content/shopCategoryPresentation";
+import { shopHomeCarouselSlides } from "@/lib/content/shopCategoryPresentation";
 import { shopCategoryIndexCards } from "@/lib/content/shopCategoryPresentation";
 import type { CmsShopCategory } from "@/lib/content/types";
 import type { ShopHomePageContent } from "@/lib/content/pages/types";
@@ -73,12 +73,12 @@ export function ShopCategoriesIndex({
           {cards.length > 0 ? (
             <div className={styles.grid}>
               {cards.map((category) => {
-                const iconUrl = shopCategoryIconUrl(category.slug);
+                const iconUrl = category.iconUrl;
                 return (
                   <Link className={styles.card} href={category.href} key={category.slug} aria-label={category.title}>
                     <span className={styles.iconFrame} aria-hidden="true">
                       {iconUrl ? (
-                        <Image className={styles.icon} src={iconUrl} alt="" width={128} height={128} />
+                        <span className={styles.icon} style={{ "--category-icon": `url("${iconUrl}")` } as CSSProperties} />
                       ) : (
                         <span className={styles.iconFallback}>{category.title.trim().charAt(0) || "?"}</span>
                       )}

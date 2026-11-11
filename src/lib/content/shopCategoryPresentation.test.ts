@@ -88,7 +88,7 @@ describe("shopCategoryPresentation", () => {
     ]);
   });
 
-  it("builds index cards from CMS names and images, with lifestyle photos only as fallback", () => {
+  it("builds index cards from CMS names and CMS icons with static icon fallbacks", () => {
     const cards = shopCategoryIndexCards(categories);
     expect(cards.map((card) => card.slug)).toEqual(["outdoor", "accessories", "pritsepy"]);
     expect(cards[0]).toEqual({
@@ -96,18 +96,14 @@ describe("shopCategoryPresentation", () => {
       kicker: "",
       title: "Кемпинг и путешествия",
       href: "/shop/outdoor",
-      desktopImage: "/cms/outdoor.png",
-      mobileImage: "/cms/outdoor.png",
-      imageAlt: "Кемпинг и путешествия",
+      iconUrl: "/images/shop/category-icons/campfire-black.svg",
     });
     expect(cards[2]).toEqual({
       slug: "pritsepy",
       kicker: "",
       title: "Прицепы",
       href: "/shop/pritsepy",
-      desktopImage: "/cms/trailer.png",
-      mobileImage: "/cms/trailer.png",
-      imageAlt: "Прицепы",
+      iconUrl: "/images/shop/category-icons/rv_car-black.svg",
     });
   });
 
@@ -144,7 +140,7 @@ describe("shopCategoryPresentation", () => {
     ]);
   });
 
-  it("builds category cards with white carousel icons from static assets", () => {
+  it("uses the CMS category icon for home cards while retaining static fallback icons", () => {
     expect(
       shopHomeCategoryCards(categories).map((card) => ({
         slug: card.slug,
@@ -152,27 +148,27 @@ describe("shopCategoryPresentation", () => {
         iconUrl: card.iconUrl,
       })),
     ).toEqual([
-      { slug: "outdoor", href: "/shop/outdoor", iconUrl: "/images/shop/category-icons/camping-travel-white.png" },
-      { slug: "accessories", href: "/shop/accessories", iconUrl: "/images/shop/category-icons/car-comfort-white.png" },
-      { slug: "pritsepy", href: "/shop/pritsepy", iconUrl: "/images/shop/category-icons/trailers-white.png" },
+      { slug: "outdoor", href: "/shop/outdoor", iconUrl: "/images/shop/category-icons/campfire-black.svg" },
+      { slug: "accessories", href: "/shop/accessories", iconUrl: "/images/shop/category-icons/car_seat-black.svg" },
+      { slug: "pritsepy", href: "/shop/pritsepy", iconUrl: "/images/shop/category-icons/rv_car-black.svg" },
     ]);
   });
 
   it("keeps Shop tile overrides and derives categories missing from the saved tile list", () => {
     const tiles = [
-      { categoryId: "1", categorySlug: "pritsepy", title: "Прицепы BIZON", visible: true, sortOrder: 0, iconUrl: "/page/icon.svg", imageUrl: "/page/trailer.jpg", carouselVisible: true, carouselImageUrl: "/page/trailer-slide.jpg" },
-      { categoryId: "2", categorySlug: "hidden", title: "Скрыто", visible: true, sortOrder: 1, imageUrl: "/page/hidden.jpg", carouselVisible: true },
+      { categoryId: "1", categorySlug: "pritsepy", title: "Прицепы BIZON", visible: true, sortOrder: 0, iconUrl: "/page/icon.svg", carouselVisible: true, carouselImageUrl: "/page/trailer-slide.jpg" },
+      { categoryId: "2", categorySlug: "hidden", title: "Скрыто", visible: true, sortOrder: 1, carouselVisible: true },
       { categoryId: "3", categorySlug: "outdoor", title: "Скрытая плитка", visible: false, sortOrder: 2, carouselVisible: false },
     ];
 
     expect(shopHomeCategoryCards(categories, tiles)).toEqual([
-      { slug: "pritsepy", title: "Прицепы BIZON", href: "/shop/pritsepy", iconUrl: "/images/shop/category-icons/trailers-white.png" },
+      { slug: "pritsepy", title: "Прицепы BIZON", href: "/shop/pritsepy", iconUrl: "/page/icon.svg" },
       { slug: "hidden", title: "Скрыто", href: "/shop/hidden", iconUrl: null },
-      { slug: "accessories", title: "Комфорт в автомобиле", href: "/shop/accessories", iconUrl: "/images/shop/category-icons/car-comfort-white.png" },
+      { slug: "accessories", title: "Комфорт в автомобиле", href: "/shop/accessories", iconUrl: "/images/shop/category-icons/car_seat-black.svg" },
     ]);
     expect(shopHomeCarouselSlides(categories, tiles)).toEqual([
       { id: "pritsepy", title: "Прицепы BIZON", href: "/shop/pritsepy", imageUrl: "/page/trailer-slide.jpg" },
-      { id: "hidden", title: "Скрыто", href: "/shop/hidden", imageUrl: "/page/hidden.jpg" },
+      { id: "hidden", title: "Скрыто", href: "/shop/hidden", imageUrl: null },
     ]);
   });
 
@@ -198,18 +194,18 @@ describe("shopCategoryPresentation", () => {
 
   it("builds the catalog index from visible Shop tiles in configured order", () => {
     const cards = shopCategoryIndexCards(categories, [
-      { categoryId: "1", categorySlug: "pritsepy", title: "Тяговые решения", visible: true, sortOrder: 0, carouselVisible: false, imageUrl: "/page/trailers.jpg" },
+      { categoryId: "1", categorySlug: "pritsepy", title: "Тяговые решения", visible: true, sortOrder: 0, carouselVisible: false, iconUrl: "/page/trailers-icon.svg" },
       { categoryId: "2", categorySlug: "missing", title: "Несуществующая категория", visible: true, sortOrder: 1, carouselVisible: false },
-      { categoryId: "3", categorySlug: "outdoor", title: "Походы", visible: true, sortOrder: 2, carouselVisible: false, imageUrl: "/page/outdoor.jpg" },
+      { categoryId: "3", categorySlug: "outdoor", title: "Походы", visible: true, sortOrder: 2, carouselVisible: false },
       { categoryId: "4", categorySlug: "accessories", title: "Скрыто", visible: false, sortOrder: 3, carouselVisible: false },
     ]);
-    expect(cards.map((card) => ({ title: card.title, href: card.href, desktopImage: card.desktopImage }))).toEqual([
-      { title: "Тяговые решения", href: "/shop/pritsepy", desktopImage: "/page/trailers.jpg" },
-      { title: "Походы", href: "/shop/outdoor", desktopImage: "/page/outdoor.jpg" },
+    expect(cards.map((card) => ({ title: card.title, href: card.href, iconUrl: card.iconUrl }))).toEqual([
+      { title: "Тяговые решения", href: "/shop/pritsepy", iconUrl: "/page/trailers-icon.svg" },
+      { title: "Походы", href: "/shop/outdoor", iconUrl: "/images/shop/category-icons/campfire-black.svg" },
     ]);
   });
 
-  it("does not substitute code-owned photos when CMS category images are empty", () => {
+  it("uses a category icon on the index instead of treating a category photo as an icon", () => {
     const cards = shopCategoryIndexCards([
       {
         slug: "accessories",
@@ -221,8 +217,7 @@ describe("shopCategoryPresentation", () => {
     ]);
     expect(cards[0]).toMatchObject({
       title: "Комфорт в автомобиле",
-      desktopImage: "",
-      mobileImage: "",
+      iconUrl: "/images/shop/category-icons/car_seat-black.svg",
     });
   });
 });

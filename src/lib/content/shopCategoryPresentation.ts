@@ -5,18 +5,18 @@ import type { ShopCatalogTile } from "./pages/types";
 export type ShopCategoryPageView = "catalog" | "lifestyle" | "not-found";
 
 const SHOP_CATEGORY_ICON_FILES: Readonly<Record<string, string>> = {
-  outdoor: "camping-travel",
-  accessory: "accessories-shirt",
-  accessories: "car-comfort",
-  "car-comfort": "car-comfort",
-  "masla-i-zapchasti": "oils-spare-parts",
-  pritsepy: "trailers",
-  trailers: "trailers",
+  outdoor: "campfire",
+  accessory: "tshirt",
+  accessories: "car_seat",
+  "car-comfort": "car_seat",
+  "masla-i-zapchasti": "jerrycan",
+  pritsepy: "rv_car",
+  trailers: "rv_car",
 };
 
 function shopCategoryStaticIconUrl(slug: string, tone: "black" | "white"): string | null {
   const file = SHOP_CATEGORY_ICON_FILES[slug];
-  return file ? `/images/shop/category-icons/${file}-${tone}.png` : null;
+  return file ? `/images/shop/category-icons/${file}-${tone}.svg` : null;
 }
 
 /** Dark icons for light surfaces (e.g. category index). */
@@ -24,9 +24,9 @@ export function shopCategoryIconUrl(slug: string): string | null {
   return shopCategoryStaticIconUrl(slug, "black");
 }
 
-/** White icons for the Shop home carousel overlay on dark photography. */
+/** Compatibility alias: monochrome icons are tinted by their surface via currentColor. */
 export function shopCategoryCarouselIconUrl(slug: string): string | null {
-  return shopCategoryStaticIconUrl(slug, "white");
+  return shopCategoryStaticIconUrl(slug, "black");
 }
 
 export function shopCategoryPageView(
@@ -98,7 +98,7 @@ export function shopHomeCategoryCards(
       slug: category.slug,
       title: tile?.title || category.name,
       href: `${ROUTES.shop}/${category.slug}`,
-      iconUrl: shopCategoryCarouselIconUrl(category.slug),
+      iconUrl: tile?.iconUrl || shopCategoryCarouselIconUrl(category.slug),
     }));
 }
 
@@ -111,13 +111,11 @@ export type ShopHomeCarouselSlide = {
 
 function shopCategoryCarouselImage(
   category: CmsShopCategory,
-  tileImageUrl?: string,
   tileCarouselImageUrl?: string,
 ): string | null {
   return (
     tileCarouselImageUrl ||
     category.carousel?.find((frame) => frame.imageUrl)?.imageUrl ||
-    tileImageUrl ||
     category.imageUrl ||
     null
   );
@@ -133,7 +131,7 @@ export function shopHomeCarouselSlides(
       (tile?.carouselVisible ?? (tiles && tiles.length > 0 ? (category.carousel?.length ?? 0) > 0 : category.showInMenu)),
     )
     .map(({ category, tile }) => {
-      const imageUrl = shopCategoryCarouselImage(category, tile?.imageUrl, tile?.carouselImageUrl);
+      const imageUrl = shopCategoryCarouselImage(category, tile?.carouselImageUrl);
       return {
         id: category.slug,
         title: tile?.title || category.name,
@@ -150,17 +148,12 @@ export function shopCategoryIndexCards(
   return categoryTileRows(categories, tiles)
     .filter(({ category, tile }) => tile?.visible ?? category.showInMenu)
     .map(({ category, tile }) => {
-      const imageUrl = tile?.imageUrl || category.imageUrl || "";
-      const mobileImage = imageUrl;
-      const imageAlt = tile?.imageAlt || category.name;
       return {
         slug: category.slug,
         kicker: "",
         title: tile?.title || category.name,
         href: `${ROUTES.shop}/${category.slug}`,
-        desktopImage: imageUrl,
-        mobileImage,
-        imageAlt,
+        iconUrl: tile?.iconUrl || shopCategoryIconUrl(category.slug),
       };
     });
 }

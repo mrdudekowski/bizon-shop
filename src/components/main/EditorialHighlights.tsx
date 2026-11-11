@@ -23,7 +23,11 @@ export function EditorialHighlights({ content }: { content: HomeExpertiseContent
         ) : null}
         <div className={styles.expertiseBannerContent}>
           {content.eyebrow ? <p className={styles.expertiseBannerEyebrow}>{content.eyebrow}</p> : null}
-          <h2 id="expertise-support-title">{content.title}</h2>
+          <h2 id="expertise-support-title">
+            {content.title === "Экспертиза и поддержка"
+              ? <>Экспертиза и <br className={styles.expertiseBannerWideBreak} />поддержка</>
+              : content.title}
+          </h2>
           {content.lead ? <p className={styles.expertiseBannerLead}>{content.lead}</p> : null}
           {content.cta.label.trim() && content.cta.href.trim() ? (
             <Link className={`btn-accent ${styles.expertiseCta}`} href={content.cta.href}>

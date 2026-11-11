@@ -46,7 +46,7 @@
 }
 
 .lineName:hover {
-  color: var(--color-accent);
+  color: var(--bizon-coral-500);
 }
 
 .lineMeta {

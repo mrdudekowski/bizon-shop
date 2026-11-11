@@ -192,7 +192,9 @@
   max-width: 100%;
   min-width: 0;
   height: 100%;
-  object-fit: contain;
+  background-color: currentColor;
+  -webkit-mask: var(--category-icon) center / contain no-repeat;
+  mask: var(--category-icon) center / contain no-repeat;
 }
 
 .iconFallback {

@@ -101,10 +101,8 @@ export type ShopCatalogTile = {
   sortOrder: number;
   carouselVisible: boolean;
   iconUrl?: string;
-  imageUrl?: string;
   carouselImageUrl?: string;
   iconAlt?: string;
-  imageAlt?: string;
   carouselImageAlt?: string;
 };
 

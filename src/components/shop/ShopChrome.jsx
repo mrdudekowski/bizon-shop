@@ -28,7 +28,7 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
   const [mobile, setMobile] = useState(false);
   const rootRef = useRef(null);
   const { tone } = useAdaptiveChrome("data-shop-chrome-tone", "dark");
-  const mobileMarks = categoryMarks.filter((mark) => shopCategoryIconUrl(mark.slug));
+  const mobileMarks = categoryMarks.filter((mark) => mark.iconUrl || shopCategoryIconUrl(mark.slug));
   const showMobileMarks = mobile && iconsOpen;
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
   }, []);
 
   function renderMarkIcon(mark) {
-    const icon = tone === "dark" ? shopCategoryCarouselIconUrl(mark.slug) : shopCategoryIconUrl(mark.slug);
+    const icon = mark.iconUrl || (tone === "dark" ? shopCategoryCarouselIconUrl(mark.slug) : shopCategoryIconUrl(mark.slug));
     return icon ? (
       <span
         className={styles.categoryIcon}

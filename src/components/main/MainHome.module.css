@@ -614,6 +614,7 @@
   text-wrap: balance;
   overflow-wrap: normal;
 }
+.expertiseBannerWideBreak { display: none; }
 .expertiseBannerLead {
   max-width: 38rem;
   margin: 0;
@@ -1039,6 +1040,8 @@
     gap: clamp(24px, 4vw, 56px);
   }
   .assortmentIntro { max-width: none; }
+  .expertiseBannerWideBreak { display: initial; }
+  .expertiseBannerContent h2 { text-wrap: wrap; }
 }
 @media (max-width: 800px) {
   .assortmentContent { width: min(var(--container-max), calc(100% - (var(--page-gutter) * 2))); }
