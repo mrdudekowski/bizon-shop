@@ -13,7 +13,7 @@ export default function CartRoutePage() {
   return (
     <div className="section-inner">
       <PageHeader
-        title="Заявка Bizon"
+        title={<>Заявка <strong>Bizon</strong></>}
         description="Проверьте выбранные шины и оставьте контакты для заявки."
         breadcrumbs={[{ href: "/", label: "Главная" }, { href: "/cart", label: "Заявка" }]}
       />

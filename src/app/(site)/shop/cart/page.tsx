@@ -14,7 +14,7 @@ export default function ShopCartRoutePage() {
   return (
     <div className="section-inner">
       <PageHeader
-        title="Заявка BIZON Shop"
+        title={<>Заявка <strong>BIZON</strong> Shop</>}
         description="Проверьте выбранные товары и оставьте контакты для заявки."
         breadcrumbs={[{ href: ROUTES.shop, label: "BIZON Shop" }, { href: ROUTES.shopCart, label: "Заявка" }]}
       />
