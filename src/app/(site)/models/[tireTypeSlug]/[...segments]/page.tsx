@@ -15,16 +15,11 @@ import {
 import { createPageMetadata, textOrFallback } from "@/lib/seo/metadata";
 import { createBreadcrumbStructuredData, createProductStructuredData, jsonLdScriptContent, singleVariantOffer } from "@/lib/seo/structuredData";
 import { loadPublished } from "@/lib/content/loadPublished";
+import { tireModelAliasTarget } from "@/lib/models/aliasTarget";
 
 type PageProps = {
   params: Promise<{ tireTypeSlug: string; segments: string[] }>;
 };
-
-/** Short model URL that is not the catalog href. Static export cannot emit HTTP 308. */
-export function tireModelAliasTarget(requestedPath: string, canonicalHref?: string): string | null {
-  if (!canonicalHref || requestedPath === canonicalHref) return null;
-  return canonicalHref;
-}
 
 function trailingSlash(path: string): string {
   return path.endsWith("/") ? path : `${path}/`;

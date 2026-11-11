@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { tireModelAliasTarget } from "./page";
+import { tireModelAliasTarget } from "@/lib/models/aliasTarget";
 
 describe("tireModelAliasTarget", () => {
   it("sends only a non-canonical model path to the static redirect", () => {
