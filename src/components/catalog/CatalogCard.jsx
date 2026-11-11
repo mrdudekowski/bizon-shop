@@ -11,12 +11,13 @@ export function CatalogCard({
   imageUrl = null,
   imageAlt,
   mediaKey = undefined,
+  mediaFit = "cover",
 }) {
   const alt = imageAlt ?? title;
 
   return (
     <article className="card-base info-card catalog-card">
-      <div className="catalog-card__media">
+      <div className={`catalog-card__media${mediaFit === "contain" ? " catalog-card__media--contain" : ""}`}>
         <CatalogImage
           src={imageUrl}
           alt={alt}

@@ -1172,6 +1172,10 @@ h1.section-title {
   background: var(--color-surface-muted);
 }
 
+.catalog-card__media--contain {
+  aspect-ratio: 1 / 1;
+}
+
 .catalog-card__body {
   min-height: 190px;
   padding: 1.5rem;
@@ -1186,6 +1190,12 @@ h1.section-title {
   height: 100%;
   object-fit: var(--media-fit-cover);
   display: block;
+}
+
+.catalog-card__media--contain .catalog-image {
+  box-sizing: border-box;
+  object-fit: var(--media-fit-contain);
+  padding: clamp(1rem, 4vw, 2.5rem);
 }
 
 .catalog-image--placeholder {

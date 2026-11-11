@@ -119,6 +119,7 @@ export function WheelModelGrid({
               imageUrl={model.imageUrl}
               imageAlt={`${model.name} — диск BIZON`}
               mediaKey={model.slug}
+              mediaFit="contain"
             />
           ))}
         </div>
