@@ -3,13 +3,13 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ client: {} as Record<string, ReturnType<typeof vi.fn>> }));
+const mocks = vi.hoisted(() => ({ client: {} as Record<string, ReturnType<typeof vi.fn>>, view: "tiles" as "tiles" | "list" }));
 vi.mock("@/admin/client/localStore", () => ({ browserAdminClient: () => mocks.client }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
-vi.mock("@/admin/ui/catalogView", () => ({ useCatalogView: () => ({ view: "tiles", setView: vi.fn() }) }));
+vi.mock("@/admin/ui/catalogView", () => ({ useCatalogView: () => ({ view: mocks.view, setView: vi.fn() }) }));
 vi.mock("@/admin/ui/CatalogRow", () => ({
-  CatalogRow: ({ title, meta, tileImageUrl }: { title: string; meta?: string; tileImageUrl?: string | null }) =>
-    createElement("div", { "data-testid": `category-${title}`, "data-tile-image": tileImageUrl ?? "" }, meta),
+  CatalogRow: ({ title, meta, imageUrl, tileImageUrl }: { title: string; meta?: string; imageUrl?: string | null; tileImageUrl?: string | null }) =>
+    createElement("div", { "data-testid": `category-${title}`, "data-image": imageUrl ?? "", "data-tile-image": tileImageUrl ?? "" }, meta),
 }));
 vi.mock("@/admin/ui/CatalogViewToggle", () => ({ CatalogViewToggle: () => null }));
 vi.mock("@/admin/ui/CatalogCreateDialog", () => ({ CatalogCreateDialog: () => null }));
@@ -22,6 +22,7 @@ import { ShopProductList } from "./ShopProductList";
 afterEach(cleanup);
 
 it("uses the configured Shop catalog icon for the matching category", async () => {
+  mocks.view = "list";
   const category = {
     id: "category-oils",
     draft: { id: "category-oils", name: "Масла", slug: "masla", description: "", sortOrder: 1, showInMenu: true, carousel: [] },
@@ -39,6 +40,7 @@ it("uses the configured Shop catalog icon for the matching category", async () =
   render(createElement(ShopProductList));
 
   await waitFor(() => expect(screen.getByTestId("category-Масла").getAttribute("data-tile-image")).toBe("https://cdn.example/oils-icon.png"));
+  expect(screen.getByTestId("category-Масла").getAttribute("data-image")).toBe("https://cdn.example/oils-icon.png");
   expect(mocks.client.getPage).toHaveBeenCalledWith("shop-home");
 });
 

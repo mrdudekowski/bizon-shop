@@ -104,15 +104,12 @@ export function ShopProductList() {
   }
 
   function imageUrl(category: EntityRecord<ShopCategoryDraft>) {
-    const assetId = category.draft.mainImage?.assetId;
+    const assetId = shopTileIconIds[category.id] ?? category.draft.mainImage?.assetId;
     return assets.find((asset) => asset.id === assetId)?.dataUrl ?? null;
   }
 
   function tileImageUrl(category: EntityRecord<ShopCategoryDraft>) {
-    const assetId = shopTileIconIds[category.id]
-      ?? category.draft.carousel.find((slide) => slide.image?.assetId)?.image?.assetId
-      ?? category.draft.mainImage?.assetId;
-    return assets.find((asset) => asset.id === assetId)?.dataUrl ?? null;
+    return imageUrl(category);
   }
 
   return (
