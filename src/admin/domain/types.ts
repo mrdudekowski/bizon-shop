@@ -474,7 +474,6 @@ export type ShopCatalogTileDraft = {
   sortOrder: number;
   carouselVisible: boolean;
   icon?: ImagePlacement | null;
-  image?: ImagePlacement | null;
   carouselImage?: ImagePlacement | null;
 };
 

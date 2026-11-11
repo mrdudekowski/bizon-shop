@@ -23,14 +23,18 @@ function mergeCategories(page: ShopHomePageDraft, categories: EntityRecord<ShopC
   const existing = new Map(page.catalog.tiles.map((tile) => [tile.categoryId, tile]));
   const tiles = categories.map(({ id, draft }, index) => {
     const tile = existing.get(id);
-    return tile ?? {
+    if (tile) {
+      const normalizedTile = { ...tile } as typeof tile & { image?: ImagePlacement | null };
+      delete normalizedTile.image;
+      return normalizedTile;
+    }
+    return {
       categoryId: id,
       title: draft.name,
       visible: draft.showInMenu,
       sortOrder: draft.sortOrder || index,
       carouselVisible: draft.carousel.length > 0,
       icon: draft.mainImage,
-      image: draft.mainImage,
       carouselImage: draft.carousel[0]?.image,
     };
   });
@@ -73,7 +77,7 @@ export function ShopShowcaseEditor() {
       catalog: { ...current.catalog, tiles: current.catalog.tiles.map((tile) => tile.categoryId === categoryId ? update(tile) : tile) },
     }));
   }
-  function patchPlacement(categoryId: string, field: "icon" | "image" | "carouselImage", image: ImagePlacement | null | undefined) {
+  function patchPlacement(categoryId: string, field: "icon" | "carouselImage", image: ImagePlacement | null | undefined) {
     patchTile(categoryId, (tile) => ({ ...tile, [field]: image ?? null }));
   }
   function moveTile(index: number, delta: -1 | 1) {
@@ -129,6 +133,7 @@ export function ShopShowcaseEditor() {
       </section> : null}
       {panel === "tiles" ? <section className={styles.list} aria-label="Плитки категорий">
         <h2>Плитки категорий</h2>
+        <p>Иконка используется на плитке и в меню каталога Bizon Shop. Цвет автоматически подстраивается под светлый или тёмный фон.</p>
         {orderedTiles.map((tile, index) => <article className={styles.card} key={tile.categoryId}>
           <div className={styles.cardHead}>
             <h3>{tile.title || `Категория ${tile.categoryId}`}</h3>
@@ -143,7 +148,6 @@ export function ShopShowcaseEditor() {
           </div>
           <label className={styles.field}>Название плитки<input value={tile.title} onChange={(e) => patchTile(tile.categoryId, (row) => ({ ...row, title: e.target.value }))} /></label>
           <PlacementFields label="Иконка" value={tile.icon} onChange={(image) => patchPlacement(tile.categoryId, "icon", image)} previewSurface="dark" uploadMode="new-asset" />
-          <PlacementFields label="Изображение плитки" value={tile.image} onChange={(image) => patchPlacement(tile.categoryId, "image", image)} />
         </article>)}
       </section> : null}
       {panel === "catalog" ? <section className={styles.list} aria-label="Содержимое страницы каталога">

@@ -21,7 +21,7 @@ import { ShopProductList } from "./ShopProductList";
 
 afterEach(cleanup);
 
-it("uses the configured Shop catalog tile image for the matching category", async () => {
+it("uses the configured Shop catalog icon for the matching category", async () => {
   const category = {
     id: "category-oils",
     draft: { id: "category-oils", name: "Масла", slug: "masla", description: "", sortOrder: 1, showInMenu: true, carousel: [] },
@@ -32,13 +32,13 @@ it("uses the configured Shop catalog tile image for the matching category", asyn
   mocks.client = {
     listShopCategories: vi.fn().mockResolvedValue([category]),
     listShopProducts: vi.fn().mockResolvedValue([]),
-    listAssets: vi.fn().mockResolvedValue([{ id: "media-oils-tile", dataUrl: "https://cdn.example/oils.jpg" }]),
-    getPage: vi.fn().mockResolvedValue({ draft: { id: "shop-home", catalog: { tiles: [{ categoryId: "category-oils", image: { assetId: "media-oils-tile" } }] } } }),
+    listAssets: vi.fn().mockResolvedValue([{ id: "media-oils-icon", dataUrl: "https://cdn.example/oils-icon.png" }]),
+    getPage: vi.fn().mockResolvedValue({ draft: { id: "shop-home", catalog: { tiles: [{ categoryId: "category-oils", icon: { assetId: "media-oils-icon" } }] } } }),
   };
 
   render(createElement(ShopProductList));
 
-  await waitFor(() => expect(screen.getByTestId("category-Масла").getAttribute("data-tile-image")).toBe("https://cdn.example/oils.jpg"));
+  await waitFor(() => expect(screen.getByTestId("category-Масла").getAttribute("data-tile-image")).toBe("https://cdn.example/oils-icon.png"));
   expect(mocks.client.getPage).toHaveBeenCalledWith("shop-home");
 });
 

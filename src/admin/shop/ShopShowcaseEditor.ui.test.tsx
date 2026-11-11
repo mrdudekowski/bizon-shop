@@ -32,7 +32,7 @@ const pageRecord = {
 };
 const category = {
   id: "category-1",
-  draft: { id: "category-1", name: "Шины", slug: "tires", description: "", sortOrder: 1, showInMenu: true, carousel: [] },
+  draft: { id: "category-1", name: "Шины", slug: "tires", description: "", sortOrder: 1, showInMenu: true, mainImage: { assetId: "category-icon" }, carousel: [] },
   savedDraft: null,
   publishedSnapshot: null,
   hidden: false,
@@ -47,6 +47,7 @@ describe("Shop showcase editor", () => {
   beforeEach(() => {
     mockState.client = {
       getSession: vi.fn().mockResolvedValue({ login: "editor", role: "editor", capabilities: ["edit_site_pages"] }),
+      listAssets: vi.fn().mockResolvedValue([]),
       getPage: vi.fn().mockResolvedValue(pageRecord),
       listShopCategories: vi.fn().mockResolvedValue([category]),
       listChangeSets: vi.fn().mockResolvedValue([]),
@@ -86,6 +87,15 @@ describe("Shop showcase editor", () => {
     await user.click(await screen.findByRole("tab", { name: "Плитки категорий" }));
     expect(screen.getByLabelText(/Название плитки/i)).toBeTruthy();
     expect(screen.getByLabelText(/Показывать на сайте/i)).toBeTruthy();
+    expect(screen.getByText("Иконка")).toBeTruthy();
+    expect(screen.queryByText("Изображение плитки")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+    expect(mockState.client.savePage).toHaveBeenCalledWith("shop-home", expect.objectContaining({
+      catalog: expect.objectContaining({
+        tiles: [expect.objectContaining({ categoryId: "category-1", icon: expect.objectContaining({ assetId: "category-icon" }) })],
+      }),
+    }));
+    expect(mockState.client.savePage.mock.calls[0][1].catalog.tiles[0]).not.toHaveProperty("image");
     await user.click(screen.getByRole("tab", { name: "Страница каталога" }));
     expect(screen.getByLabelText("Заголовок списка категорий")).toBeTruthy();
   });
