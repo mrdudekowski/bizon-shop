@@ -86,14 +86,14 @@ describe("static media snapshot", () => {
     await expect(readFile(path.join(outDir, "media-manifest.json"))).rejects.toMatchObject({ code: "ENOENT" });
   });
 
-  it("removes an HTML-encoded quote from the end of a media URL before download and rewrite", async () => {
+  it("removes an HTML-encoded quote before trailing markup punctuation", async () => {
     const outDir = await temporaryDirectory();
     const sourceUrl = "https://media.example/bucket/bizon/media/icon.png";
     const body = Buffer.concat([
       Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
       Buffer.from("snapshot fixture"),
     ]);
-    await writeFile(path.join(outDir, "index.html"), `{"imageUrl":"${sourceUrl}&amp;quot;"}`);
+    await writeFile(path.join(outDir, "index.html"), `{"imageUrl":"url(${sourceUrl}&amp;quot;)"}`);
     const fetchImpl = vi.fn().mockResolvedValue(new Response(body, {
       status: 200,
       headers: { "content-type": "image/png" },
@@ -109,7 +109,7 @@ describe("static media snapshot", () => {
     const checksum = createHash("sha256").update(body).digest("hex");
     const html = await readFile(path.join(outDir, "index.html"), "utf8");
     expect(fetchImpl).toHaveBeenCalledWith(sourceUrl, expect.any(Object));
-    expect(html).toContain(`"/snapshot-media/${checksum}.png"`);
+    expect(html).toContain(`"url(/snapshot-media/${checksum}.png)"`);
     expect(html).not.toContain("&quot");
   });
 

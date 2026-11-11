@@ -19,7 +19,7 @@ const EXTENSION_BY_MIME = new Map([
   ["video/mp4", ".mp4"],
   ["application/pdf", ".pdf"],
 ]);
-const TRAILING_HTML_QUOTE_ENTITY = /(?:&quot|&#0*34|&#x0*22|&apos|&#0*39|&#x0*27);?$/i;
+const HTML_QUOTE_ENTITY_AT_URL_END = /(?:&quot|&#0*34|&#x0*22|&apos|&#0*39|&#x0*27);?(?=[),;]*$)/i;
 
 function sha256(buffer) {
   return createHash("sha256").update(buffer).digest("hex");
@@ -38,19 +38,27 @@ function normalizePublicBase(publicMediaUrl) {
 }
 
 function canonicalUrl(candidate) {
-  return candidate
+  const normalized = candidate
     .replace(/&amp;/g, "&")
-    .replace(/\\u0026/gi, "&")
-    .replace(TRAILING_HTML_QUOTE_ENTITY, "")
-    .replace(/[),;]+$/, "");
+    .replace(/\\u0026/gi, "&");
+  const quoteEntity = normalized.match(HTML_QUOTE_ENTITY_AT_URL_END);
+  const withoutQuoteEntity = quoteEntity?.index == null
+    ? normalized
+    : normalized.slice(0, quoteEntity.index) + normalized.slice(quoteEntity.index + quoteEntity[0].length);
+  return withoutQuoteEntity.replace(/[),;]+$/, "");
 }
 
 function trailingMarkupSuffix(candidate) {
-  const withoutQuoteEntity = candidate
+  const normalized = candidate
     .replace(/&amp;/g, "&")
-    .replace(/\\u0026/gi, "&")
-    .replace(TRAILING_HTML_QUOTE_ENTITY, "");
-  return withoutQuoteEntity.match(/[),;]+$/)?.[0] ?? "";
+    .replace(/\\u0026/gi, "&");
+  const quoteEntity = normalized.match(HTML_QUOTE_ENTITY_AT_URL_END);
+  if (quoteEntity?.index == null) return normalized.match(/[),;]+$/)?.[0] ?? "";
+  const beforeQuote = normalized.slice(0, quoteEntity.index);
+  const afterQuote = normalized.slice(quoteEntity.index + quoteEntity[0].length);
+  const punctuationBeforeQuote = beforeQuote.match(/[),;]+$/)?.[0] ?? "";
+  const punctuationAfterQuote = afterQuote.match(/[),;]+$/)?.[0] ?? "";
+  return `${punctuationBeforeQuote}${punctuationAfterQuote}`;
 }
 
 function managedMediaUrl(value, base) {
