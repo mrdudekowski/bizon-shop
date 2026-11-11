@@ -19,6 +19,7 @@ const EXTENSION_BY_MIME = new Map([
   ["video/mp4", ".mp4"],
   ["application/pdf", ".pdf"],
 ]);
+const TRAILING_HTML_QUOTE_ENTITY = /(?:&quot|&#0*34|&#x0*22|&apos|&#0*39|&#x0*27);?$/i;
 
 function sha256(buffer) {
   return createHash("sha256").update(buffer).digest("hex");
@@ -40,7 +41,16 @@ function canonicalUrl(candidate) {
   return candidate
     .replace(/&amp;/g, "&")
     .replace(/\\u0026/gi, "&")
+    .replace(TRAILING_HTML_QUOTE_ENTITY, "")
     .replace(/[),;]+$/, "");
+}
+
+function trailingMarkupSuffix(candidate) {
+  const withoutQuoteEntity = candidate
+    .replace(/&amp;/g, "&")
+    .replace(/\\u0026/gi, "&")
+    .replace(TRAILING_HTML_QUOTE_ENTITY, "");
+  return withoutQuoteEntity.match(/[),;]+$/)?.[0] ?? "";
 }
 
 function managedMediaUrl(value, base) {
@@ -232,10 +242,9 @@ export async function createMediaSnapshot({
   for (const [relativePath, original] of contents) {
     let rewritten = original;
     rewritten = rewritten.replace(/https?:\/\/[^\s"'<>\\]+/g, (raw) => {
-      const trimmed = raw.replace(/[),;]+$/, "");
-      const sourceUrl = managedMediaUrl(canonicalUrl(trimmed), base);
+      const sourceUrl = managedMediaUrl(canonicalUrl(raw), base);
       const localPath = sourceUrl ? replacements.get(sourceUrl) : undefined;
-      return localPath ? `${localPath}${raw.slice(trimmed.length)}` : raw;
+      return localPath ? `${localPath}${trailingMarkupSuffix(raw)}` : raw;
     });
     const remaining = [...rewritten.matchAll(/https?:\/\/[^\s"'<>\\]+/g)]
       .map(([url]) => managedMediaUrl(canonicalUrl(url), base))

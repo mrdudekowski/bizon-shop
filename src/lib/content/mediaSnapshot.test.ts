@@ -86,6 +86,33 @@ describe("static media snapshot", () => {
     await expect(readFile(path.join(outDir, "media-manifest.json"))).rejects.toMatchObject({ code: "ENOENT" });
   });
 
+  it("removes an HTML-encoded quote from the end of a media URL before download and rewrite", async () => {
+    const outDir = await temporaryDirectory();
+    const sourceUrl = "https://media.example/bucket/bizon/media/icon.png";
+    const body = Buffer.concat([
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+      Buffer.from("snapshot fixture"),
+    ]);
+    await writeFile(path.join(outDir, "index.html"), `{"imageUrl":"${sourceUrl}&amp;quot;"}`);
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(body, {
+      status: 200,
+      headers: { "content-type": "image/png" },
+    }));
+
+    await createMediaSnapshot({
+      outDir,
+      revision,
+      publicMediaUrl: "https://media.example/bucket",
+      fetchImpl,
+    });
+
+    const checksum = createHash("sha256").update(body).digest("hex");
+    const html = await readFile(path.join(outDir, "index.html"), "utf8");
+    expect(fetchImpl).toHaveBeenCalledWith(sourceUrl, expect.any(Object));
+    expect(html).toContain(`"/snapshot-media/${checksum}.png"`);
+    expect(html).not.toContain("&quot");
+  });
+
   it("reuses only the checksum-verified prior copy of the same source URL when S3 is unavailable", async () => {
     const root = await temporaryDirectory();
     const outDir = path.join(root, "new-output");
