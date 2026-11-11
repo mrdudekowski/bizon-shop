@@ -348,8 +348,8 @@
 .modelBrand { margin: 0 0 0.25rem; color: var(--color-muted); font-size: 0.75rem; letter-spacing: var(--tracking-label); text-transform: uppercase; }
 .modelTitle { margin: 0; font-size: var(--type-subtitle); font-weight: 580; letter-spacing: var(--tracking-display); }
 .modelTitle a { color: inherit; text-decoration: none; }
-.modelTitleBrand { color: var(--color-accent-coral); font-weight: 750; }
-.modelCode { font-size: 0.8em; font-weight: 500; }
+.modelTitleBrand { font-weight: 750; }
+.modelCode { color: var(--color-accent-coral); font-size: 0.8em; font-weight: 500; }
 .modelDescription { min-height: 3em; margin: 0; color: var(--color-muted); line-height: 1.5; }
 .modelFooter { display: flex; justify-content: space-between; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border); font-size: 0.8125rem; }
 .modelFooter > span { color: var(--color-muted); }
@@ -554,7 +554,7 @@
   .modelMeta span:nth-child(n + 2), .modelBrand { display: none; }
   .modelTitle { font-size: 1.125rem; line-height: 1.2; overflow-wrap: anywhere; }
   .modelDescription { display: none; }
-  .modelFooter { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.45rem; padding-top: 0.55rem; font-size: 0.75rem; }
+  .modelFooter { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.45rem; padding-top: 0.55rem; font-size: 0.75rem; }
   .modelFooter a { width: 44px; height: 44px; min-height: 44px; }
   .resultHeader, .finalCta { align-items: flex-start; flex-direction: column; }
   .resultHeader p:last-child { align-self: auto; }
