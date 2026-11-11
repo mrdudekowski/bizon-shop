@@ -71,6 +71,21 @@ describe("static media snapshot", () => {
     await expect(readFile(path.join(outDir, "media-manifest.json"))).rejects.toMatchObject({ code: "ENOENT" });
   });
 
+  it("identifies the media object when the public URL returns 403", async () => {
+    const outDir = await temporaryDirectory();
+    const sourceUrl = "https://media.example/bucket/bizon/media/private-image.png";
+    await writeFile(path.join(outDir, "index.html"), `<img src="${sourceUrl}">`);
+
+    await expect(createMediaSnapshot({
+      outDir,
+      revision,
+      publicMediaUrl: "https://media.example/bucket",
+      fetchImpl: vi.fn().mockResolvedValue(new Response("Forbidden", { status: 403 })),
+    })).rejects.toThrow(/HTTP 403.*\/bizon\/media\/private-image\.png/i);
+
+    await expect(readFile(path.join(outDir, "media-manifest.json"))).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
   it("reuses only the checksum-verified prior copy of the same source URL when S3 is unavailable", async () => {
     const root = await temporaryDirectory();
     const outDir = path.join(root, "new-output");

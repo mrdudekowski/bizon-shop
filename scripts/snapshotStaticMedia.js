@@ -202,7 +202,14 @@ export async function createMediaSnapshot({
       downloaded = await downloadMedia(sourceUrl, { fetchImpl, maxBytes });
     } catch (error) {
       downloaded = await reusePreviousMedia(sourceUrl, previousOutputDir, previousFiles, maxBytes, fetchPreviousFile);
-      if (!downloaded) throw error;
+      if (!downloaded) {
+        const message = error instanceof Error ? error.message : "Media snapshot download failed";
+        const sourcePath = new URL(sourceUrl).pathname;
+        throw new Error(
+          `${message} for ${sourcePath}. Ensure this object is publicly readable at S3_PUBLIC_URL or available in a verified previous release.`,
+          { cause: error },
+        );
+      }
     }
     const extension = EXTENSION_BY_MIME.get(downloaded.mimeType);
     const relativePath = `snapshot-media/${downloaded.sha256}${extension}`;
