@@ -113,7 +113,7 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
           ) : null}
           <ShopOrderSteps steps={page.orderSteps} />
           <div className={styles.orderStepsCta}>
-            <Link className="btn-accent" href="/shop/wheels/forged">диски BIZON</Link>
+            <Link className="btn-accent" href="/shop/wheels/forged">Диски BIZON</Link>
           </div>
         </div>
       </section>

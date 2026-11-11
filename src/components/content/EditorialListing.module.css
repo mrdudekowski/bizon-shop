@@ -33,7 +33,7 @@
 }
 
 .taxonomyLink {
-  color: var(--color-link);
+  color: var(--color-muted);
   font-size: 0.9375rem;
   font-weight: 650;
   text-decoration: none;
@@ -136,14 +136,7 @@
   line-height: var(--leading-body);
 }
 
-.readMore {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--color-link);
-  font-weight: 650;
-}
+.readMore { text-decoration: none; }
 
 .empty {
   display: grid;

@@ -32,13 +32,10 @@
 }
 
 .caption {
-  padding: 0.25rem 0.45rem;
-  border-radius: 0.3rem;
-  background: #111;
-  color: #fff;
-  font-size: 0.65rem;
-  font-weight: 650;
-  line-height: 1.2;
-  letter-spacing: var(--tracking-display);
+  color: var(--color-foreground, #1c1c1c);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: normal;
   white-space: nowrap;
 }

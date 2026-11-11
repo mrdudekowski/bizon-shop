@@ -64,7 +64,7 @@
 }
 
 .toggle:hover {
-  border-color: var(--bizon-mint-300);
+  border-color: rgba(255, 255, 255, 0.55);
   background: rgba(20, 22, 22, 0.62);
   transform: scale(1.08);
 }
@@ -164,7 +164,7 @@
 .iconRail[data-open="true"] .iconLink:nth-child(5) { transition-delay: 190ms; }
 
 .iconLink:hover {
-  border-color: var(--bizon-mint-300);
+  border-color: rgba(255, 255, 255, 0.55);
   background: rgba(20, 22, 22, 0.76);
 }
 

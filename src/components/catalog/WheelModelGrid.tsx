@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { CatalogCard } from "@/components/catalog/CatalogCard";
 import { MobileFilterSheet } from "@/components/catalog/MobileFilterSheet";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import type { CmsWheelModel, CmsWheelVariant } from "@/lib/content/types";
 import {
   filterWheelModels,
@@ -59,20 +60,20 @@ export function WheelModelGrid({
         {FILTER_FIELDS.map(({ key, label, empty }) => options[key].length > 0 ? (
           <label className={styles.field} key={key}>
             <span>{label}</span>
-            <select name={key} value={filters[key] ?? ""} onChange={(event) => setFilter(key, event.target.value)}>
-              <option value="">{empty}</option>
-              {options[key].map((option) => <option key={option} value={option}>{option}</option>)}
-            </select>
+            <CustomSelect name={key} value={filters[key] ?? ""} onValueChange={(value) => setFilter(key, value)} options={[
+              { value: "", label: empty },
+              ...options[key].map((option) => ({ value: option, label: option })),
+            ]} />
           </label>
         ) : null)}
         {options.priceOnRequest.length > 0 ? (
           <label className={styles.field}>
             <span>Цена</span>
-            <select name="priceOnRequest" value={filters.priceOnRequest ?? ""} onChange={(event) => setFilter("priceOnRequest", event.target.value)}>
-              <option value="">Любая</option>
-              <option value="yes">По запросу</option>
-              <option value="no">Указана</option>
-            </select>
+            <CustomSelect name="priceOnRequest" value={filters.priceOnRequest ?? ""} onValueChange={(value) => setFilter("priceOnRequest", value)} options={[
+              { value: "", label: "Любая" },
+              { value: "yes", label: "По запросу" },
+              { value: "no", label: "Указана" },
+            ]} />
           </label>
         ) : null}
       </>

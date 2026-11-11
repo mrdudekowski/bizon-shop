@@ -119,7 +119,7 @@ export function EditorialListing({
                     <Link href={item.href}>{item.title}</Link>
                   </h2>
                   {item.description ? <p>{item.description}</p> : null}
-                  <Link href={item.href} className={styles.readMore}>
+                  <Link href={item.href} className={`btn-accent ${styles.readMore}`}>
                     Читать <SiteArrow direction="ne" />
                   </Link>
                 </div>

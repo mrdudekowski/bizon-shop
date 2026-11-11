@@ -8,6 +8,7 @@ import { cartItemKey, isCartItemAllowed } from "@/lib/cart/cartStorage";
 import type { CartKind } from "@/lib/cart/cartTypes";
 import { TermsLinks } from "@/components/content/TermsLinks";
 import { ContactRequest } from "@/components/forms/ContactRequest";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import { REQUEST_TERMS_LINE } from "@/lib/content/termsPages";
 import { submitRequest } from "@/lib/requests/submitRequest";
 import { HONEYPOT_FIELD } from "@/lib/requests/validateRequest";
@@ -237,10 +238,10 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
             <div className={styles.checkoutGrid}>
               <label className={styles.fullWidth}>
                 <span className="field-label">Тип клиента</span>
-                <select className="field-input" name="clientType" value={clientType} onChange={(event) => setClientType(event.target.value === "company" ? "company" : "individual")}>
-                  <option value="individual">Физическое лицо</option>
-                  <option value="company">Юридическое лицо</option>
-                </select>
+                <CustomSelect className="field-input" name="clientType" value={clientType} onValueChange={(value) => setClientType(value === "company" ? "company" : "individual")} options={[
+                  { value: "individual", label: "Физическое лицо" },
+                  { value: "company", label: "Юридическое лицо" },
+                ]} />
               </label>
               <label><span className="field-label">Имя</span><input className="field-input" name="name" required autoComplete="name" /></label>
               <label><span className="field-label">Телефон</span><input className="field-input" name="phone" type="tel" required autoComplete="tel" inputMode="tel" /></label>
@@ -248,12 +249,12 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
               <label><span className="field-label">Город или регион</span><input className="field-input" name="city" required autoComplete="address-level2" /></label>
               <label className={styles.fullWidth}>
                 <span className="field-label">Предпочтительный способ связи</span>
-                <select className="field-input" name="preferredContact" defaultValue="phone">
-                  <option value="phone">Телефон</option>
-                  <option value="email">Email</option>
-                  <option value="telegram">Telegram</option>
-                  <option value="whatsapp">WhatsApp</option>
-                </select>
+                <CustomSelect className="field-input" name="preferredContact" defaultValue="phone" options={[
+                  { value: "phone", label: "Телефон" },
+                  { value: "email", label: "Email" },
+                  { value: "telegram", label: "Telegram" },
+                  { value: "whatsapp", label: "WhatsApp" },
+                ]} />
               </label>
               {clientType === "company" && (
                 <>

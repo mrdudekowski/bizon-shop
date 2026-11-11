@@ -16,6 +16,7 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
     .join(" · ");
   const sizeSummary = model.sizes.slice(0, 2).join(" · ");
   const additionalSizes = Math.max(model.sizes.length - 2, 0);
+  const brandedName = model.name.match(/^(BIZON)\s+(.+)$/i);
 
   return (
     <article
@@ -42,7 +43,14 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
         <div>
           <p className={styles.modelBrand}>{model.brand}</p>
           <h2 className={styles.modelTitle}>
-            <Link href={model.href}>{model.name}</Link>
+            <Link href={model.href}>
+              {brandedName ? (
+                <>
+                  <strong className={styles.modelTitleBrand}>{brandedName[1]}</strong>{" "}
+                  <span className={styles.modelCode}>{brandedName[2]}</span>
+                </>
+              ) : model.name}
+            </Link>
           </h2>
         </div>
         <p className={styles.modelDescription}>{model.descriptionShort}</p>

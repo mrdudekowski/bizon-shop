@@ -22,7 +22,7 @@
   font-size: 0.875rem;
 }
 
-.filter select {
+.filter :global([data-custom-select-trigger]) {
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -31,7 +31,6 @@
   border-radius: var(--radius-control);
   background-color: var(--color-surface);
   padding: 0 12px;
-  padding-right: calc(20px + 16px + 0.6rem);
   color: var(--color-foreground);
 }
 

@@ -132,7 +132,14 @@ export function SiteFooter({
     <footer className={styles.footer} data-site-footer={surface}>
       <div className={styles.inner}>
         <div className={styles.brand}>
-          <strong className={styles.wordmark} translate="no">{config.wordmark}</strong>
+          <strong className={styles.wordmark} translate="no">
+            {surface === "shop" ? (
+              <>
+                <span className={styles.wordmarkBizon}>BIZON</span>{" "}
+                <span className={styles.wordmarkShop}>SHOP</span>
+              </>
+            ) : config.wordmark}
+          </strong>
           <p>{config.description}</p>
         </div>
 

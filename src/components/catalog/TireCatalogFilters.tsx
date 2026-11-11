@@ -8,6 +8,7 @@ import { filterTireModels, formatTireModelCount, parseTireFilters, type TireFilt
 import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
 import { AXLE_OPTIONS } from "@/lib/selection/options";
 import { MobileFilterSheet } from "@/components/catalog/MobileFilterSheet";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 import styles from "./TireCatalog.module.css";
 
@@ -47,34 +48,26 @@ export function TireCatalogFilters({
         {lockApplication ? <input type="hidden" name="application" value={lockApplication} readOnly /> : (
           <label className={styles.field}>
             <span>Применение</span>
-            <select
+            <CustomSelect
               name="application"
               value={draft.application ?? ""}
-              onChange={(event) => setDraft((current) => ({ ...current, application: event.target.value || undefined }))}
-            >
-              <option value="">Все условия</option>
-              {TIRE_CATEGORIES.map((category) => (
-                <option key={category.value} value={category.value}>{category.name}</option>
-              ))}
-            </select>
+              onValueChange={(application) => setDraft((current) => ({ ...current, application: application || undefined }))}
+              options={[{ value: "", label: "Все условия" }, ...TIRE_CATEGORIES.map((category) => ({ value: category.value, label: category.name }))]}
+            />
           </label>
         )}
 
         <label className={styles.field}>
           <span>Ось</span>
-          <select
+          <CustomSelect
             name="axle"
             value={draft.axle ?? ""}
-            onChange={(event) => setDraft((current) => ({
+            onValueChange={(axle) => setDraft((current) => ({
               ...current,
-              axle: (event.target.value || undefined) as TireFilters["axle"],
+              axle: (axle || undefined) as TireFilters["axle"],
             }))}
-          >
-            <option value="">Любая ось</option>
-            {AXLE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
+            options={[{ value: "", label: "Любая ось" }, ...AXLE_OPTIONS.map((option) => ({ value: option.value, label: option.label }))]}
+          />
         </label>
 
         <label className={styles.field}>

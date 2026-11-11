@@ -32,6 +32,14 @@
   line-height: 0.9;
 }
 
+.wordmarkBizon,
+.wordmarkShop {
+  display: block;
+}
+
+.wordmarkBizon { font-weight: 800; }
+.wordmarkShop { font-weight: 500; }
+
 .brand p {
   max-width: 34ch;
   margin: 0;
@@ -85,12 +93,12 @@
 
 .nav a:hover,
 .contact a:hover {
-  color: var(--bizon-coral-400);
+  color: var(--bizon-coral-500);
 }
 
 .nav a.accent,
 .nav a.accent:hover {
-  color: var(--bizon-coral-400);
+  color: var(--bizon-coral-500);
   font-weight: 600;
 }
 
@@ -208,7 +216,7 @@
 }
 
 .legal a:hover {
-  color: var(--bizon-coral-400);
+  color: var(--bizon-coral-500);
 }
 
 @media (max-width: 1023px) {

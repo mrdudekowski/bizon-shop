@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { ShopProductCard } from "@/components/shop/ShopProductCard";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import type { CmsProduct, CmsShopCategory } from "@/lib/content/types";
 import { fetchBrowserPublishedJson, fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
 import styles from "./ShopProductCatalog.module.css";
@@ -61,10 +62,11 @@ export function ShopProductCatalog({
       {subcategories.length > 0 ? (
         <label className={styles.filter}>
           Подкатегория
-          <select value={subcategorySlug} onChange={(event) => setSubcategorySlug(event.target.value)}>
-            <option value="">Все товары</option>
-            {subcategories.map(([slug, name]) => <option key={slug} value={slug}>{name}</option>)}
-          </select>
+          <CustomSelect
+            value={subcategorySlug}
+            onValueChange={setSubcategorySlug}
+            options={[{ value: "", label: "Все товары" }, ...subcategories.map(([slug, name]) => ({ value: slug, label: name }))]}
+          />
         </label>
       ) : null}
       {visibleProducts.length > 0 ? (

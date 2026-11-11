@@ -99,7 +99,7 @@
   max-width: 100%;
   min-width: 0;
   padding: 0.5rem 0;
-  color: var(--color-link);
+  color: var(--color-muted);
   font-weight: 650;
   text-decoration: none;
 }

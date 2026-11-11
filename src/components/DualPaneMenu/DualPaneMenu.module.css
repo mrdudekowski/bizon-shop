@@ -146,8 +146,13 @@
   box-sizing: border-box;
 }
 
-.featuredLink:hover {
-  background: var(--color-accent);
+.featuredLink > span:first-child {
+  transform-origin: left center;
+  transition: transform var(--transition-fast, 160ms ease);
+}
+
+.featuredLink:hover > span:first-child {
+  transform: scale(1.04);
 }
 
 .cartLink {
@@ -498,7 +503,7 @@
   align-items: center;
   gap: 8px;
   margin-top: 8px;
-  color: var(--color-link);
+  color: var(--menu-link-hover);
   font-weight: 650;
   text-decoration: none;
 }

@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { requestOpenCart } from "@/lib/cart/cartStorage";
 import { useCart } from "@/hooks/useCart";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import type { RequestItemInput } from "@/types/requestItem";
 import styles from "./WheelOrderPanel.module.css";
 
@@ -134,19 +135,13 @@ export function WheelOrderPanel({ baseItem, variants, available = false, finish 
         {variants.length > 0 ? (
           <label className={styles.field}>
             <span className={styles.label}>Размер и параметры</span>
-            <select
+            <CustomSelect
               className={styles.control}
               value={variantId}
-              onChange={(event) => setVariantId(event.target.value)}
+              onValueChange={setVariantId}
               required
-            >
-              <option value="">Выберите размер</option>
-              {variants.map((variant) => (
-                <option key={variant.id} value={variant.id}>
-                  {variant.label}
-                </option>
-              ))}
-            </select>
+              options={[{ value: "", label: "Выберите размер" }, ...variants.map((variant) => ({ value: variant.id, label: variant.label }))]}
+            />
           </label>
         ) : (
           <p className={styles.hint}>Размеры уточняются — специалист поможет подобрать конфигурацию.</p>

@@ -584,12 +584,12 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   justify-items: start;
   align-content: center;
   gap: clamp(1rem, 2vw, 1.5rem);
   width: 100%;
-  max-width: 52rem;
+  max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
   padding: clamp(2rem, 7vw, 6rem);
@@ -620,6 +620,12 @@
   color: rgba(255, 255, 255, .78);
   font-size: clamp(1rem, 1.35vw, 1.25rem);
   line-height: 1.55;
+}
+.expertiseCta {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+  justify-self: end;
 }
 .expertiseBannerMark {
   position: absolute;

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import type { RequestItemInput } from "@/types/requestItem";
 
 import styles from "./CatalogBuyPanel.module.css";
@@ -68,18 +69,12 @@ export function CatalogBuyPanel({
       {variants.length > 0 ? (
         <label className={styles.field}>
           <span className={styles.label}>{sizeLabel}</span>
-          <select
+          <CustomSelect
             className={styles.select}
             value={variantId}
-            onChange={(event) => setVariantId(event.target.value)}
-          >
-            <option value="">Выберите размер</option>
-            {variants.map((variant) => (
-              <option key={variant.id} value={variant.id}>
-                {variant.label}
-              </option>
-            ))}
-          </select>
+            onValueChange={setVariantId}
+            options={[{ value: "", label: "Выберите размер" }, ...variants.map((variant) => ({ value: variant.id, label: variant.label }))]}
+          />
         </label>
       ) : (
         <p className={styles.hint}>{emptyVariantsMessage}</p>

@@ -248,7 +248,7 @@
   text-transform: uppercase;
 }
 
-.field select,
+.field :global([data-custom-select-trigger]),
 .field input {
   width: 100%;
   max-width: 100%;
@@ -267,11 +267,7 @@
   text-transform: none;
 }
 
-.field select {
-  padding-right: calc(20px + 16px + 0.6rem);
-}
-
-.field select:focus-visible,
+.field :global([data-custom-select-trigger]):focus-visible,
 .field input:focus-visible {
   outline: var(--focus-outline);
   outline-offset: var(--focus-offset);
@@ -342,7 +338,7 @@
   background: var(--color-surface-muted);
 }
 
-.modelMedia img { object-fit: var(--media-fit-contain); padding: clamp(1.25rem, 3vw, 2.75rem); transition: transform 600ms cubic-bezier(.2,.7,.2,1); }
+.modelMedia img { object-fit: cover; padding: 0; transition: transform 600ms cubic-bezier(.2,.7,.2,1); }
 .modelCard:hover .modelMedia img { transform: scale(1.035); }
 
 .modelBody { display: grid; gap: 1rem; padding: clamp(1.25rem, 2vw, 1.75rem); }
@@ -351,6 +347,9 @@
 .modelMeta span + span::before { content: "·"; margin-right: 0.6rem; color: var(--color-border-strong); }
 .modelBrand { margin: 0 0 0.25rem; color: var(--color-muted); font-size: 0.75rem; letter-spacing: var(--tracking-label); text-transform: uppercase; }
 .modelTitle { margin: 0; font-size: var(--type-subtitle); font-weight: 580; letter-spacing: var(--tracking-display); }
+.modelTitle a { color: inherit; text-decoration: none; }
+.modelTitleBrand { color: var(--color-accent-coral); font-weight: 750; }
+.modelCode { font-size: 0.8em; font-weight: 500; }
 .modelDescription { min-height: 3em; margin: 0; color: var(--color-muted); line-height: 1.5; }
 .modelFooter { display: flex; justify-content: space-between; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border); font-size: 0.8125rem; }
 .modelFooter > span { color: var(--color-muted); }
@@ -501,7 +500,7 @@
 .pageDisclaimer p { margin: 0; }
 
 .pageInnerBeforeAdvantages {
-  padding-bottom: 1rem;
+  padding-bottom: clamp(3rem, 6vw, var(--section-space));
 }
 
 .advantagesBlock {

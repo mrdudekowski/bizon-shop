@@ -105,7 +105,7 @@
 }
 
 .heroAction:focus-visible {
-  outline: 2px solid var(--bizon-mint-300);
+  outline: var(--focus-outline);
   outline-offset: 3px;
 }
 
@@ -277,7 +277,7 @@
 
 .orderSteps {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
   margin-top: clamp(56px, 7vw, 88px);
   overflow: hidden;
@@ -287,14 +287,15 @@
 }
 
 .orderSteps article {
+  grid-column: 1;
   min-width: 0;
   min-height: 0;
   background: transparent;
   padding: 22px clamp(18px, 2.4vw, 32px);
-  border-right: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-.orderSteps article:last-child { border-right: 0; }
+.orderSteps article:last-child { border-bottom: 0; }
 
 .orderSteps article > span {
   color: var(--bizon-coral-500);
@@ -337,6 +338,13 @@
   max-width: 100%;
   min-width: 0;
   margin-top: clamp(1.75rem, 4vw, 2.75rem);
+}
+
+.orderStepsCta :global(.btn-accent) {
+  min-height: clamp(52px, 4.4vw, 64px);
+  padding: clamp(15px, 1.5vw, 20px) clamp(28px, 3vw, 40px);
+  font-size: clamp(1rem, 1.3vw, 1.25rem);
+  font-weight: 700;
 }
 
 .vehiclesSection {
@@ -484,14 +492,26 @@
   .modelCard { min-height: 360px; }
 }
 
+@media (min-width: 768px) {
+  .orderSteps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .orderSteps article { grid-column: auto; border-right: 1px solid rgba(255,255,255,.14); border-bottom: 1px solid rgba(255,255,255,.14); }
+  .orderSteps article:nth-child(2n) { border-right: 0; }
+  .orderSteps article:nth-last-child(-n + 2) { border-bottom: 0; }
+  .orderSteps article:nth-child(2n + 1):last-child { grid-column: 1 / -1; width: 50%; max-width: 50%; justify-self: center; border-right: 0; }
+}
+
+@media (min-width: 901px) {
+  .orderSteps { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .orderSteps article { grid-column: span 2; }
+  .orderSteps article:nth-child(3n) { border-right: 0; }
+  .orderSteps article:nth-last-child(-n + 3) { border-bottom: 0; }
+  /* Center incomplete rows while keeping the steps in numeric reading order. */
+  .orderSteps article:nth-child(3n + 1):nth-last-child(2) { grid-column: 2 / span 2; }
+  .orderSteps article:nth-child(3n + 2):last-child { grid-column: 4 / span 2; }
+  .orderSteps article:nth-child(3n + 1):last-child { grid-column: 3 / span 2; border-right: 0; }
+}
+
 @media (max-width: 900px) {
-  .orderSteps {
-    grid-template-columns: 1fr;
-  }
-
-  .orderSteps article { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.14); }
-  .orderSteps article:last-child { border-bottom: 0; }
-
   .vehiclesHead {
     grid-template-columns: 1fr;
     align-items: start;

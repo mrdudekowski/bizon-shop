@@ -147,7 +147,7 @@
 }
 
 .switch input:focus-visible + .slider {
-  outline: 2px solid var(--bizon-mint-500);
+  outline: var(--focus-outline);
   outline-offset: 2px;
 }
 
