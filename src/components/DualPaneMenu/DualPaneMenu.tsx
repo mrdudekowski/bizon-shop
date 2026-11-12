@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import type { CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -145,7 +144,7 @@ function ListPane({
               onClick={onNavigate}
             >
               {item.iconUrl ? (
-                <span className={styles.listIcon} aria-hidden="true" style={{ "--category-icon": `url("${item.iconUrl}")` } as CSSProperties} />
+                <Image className={styles.listIcon} src={item.iconUrl} alt="" width={40} height={40} unoptimized />
               ) : null}
               <span className={styles.listCopy}>
                 <span>{item.title}</span>

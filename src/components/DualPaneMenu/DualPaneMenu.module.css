@@ -482,9 +482,7 @@
   height: 2.5rem;
   max-width: 100%;
   flex: none;
-  background-color: currentColor;
-  -webkit-mask: var(--category-icon) center / contain no-repeat;
-  mask: var(--category-icon) center / contain no-repeat;
+  object-fit: contain;
 }
 
 .listCopy {

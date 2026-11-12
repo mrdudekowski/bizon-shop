@@ -22,6 +22,13 @@ const validPng = Buffer.from(
   "base64",
 );
 const validPdf = Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n");
+
+function expectWebp(body: Buffer) {
+  expect(body.length).toBeGreaterThanOrEqual(12);
+  expect(body.toString("ascii", 0, 4)).toBe("RIFF");
+  expect(body.toString("ascii", 8, 12)).toBe("WEBP");
+}
+
 const approvedTireBenefitCopy = [
   { key: "handling", title: "Управляемость", description: "Шина помогает сохранять устойчивость и точность управления." },
   { key: "safety", title: "Безопасность", description: "Помогает сохранять контроль над автомобилем в движении." },
@@ -274,12 +281,13 @@ test("tire model photo and approved benefits survive CMS editing, publication, a
     expect(publicModel.advantages).toEqual(approvedTireBenefitCopy.map(({ key, title, description }) => ({ key, title, description })));
     const assets = await adminCall<MediaAsset[]>(request, "listAssets");
     const uploadedAsset = assets.find((asset) => asset.id === assetId);
-    expect(uploadedAsset).toMatchObject({ name: assetName, mimeType: "image/png" });
+    expect(uploadedAsset).toMatchObject({ name: assetName, mimeType: "image/webp" });
     expect(publicModel.imageUrl).toBe(uploadedAsset?.dataUrl);
     expect(uploadedAsset?.usages?.some((usage) => usage.placementKey === "tire-model.main" && usage.state === "published-visible")).toBe(true);
     const storedImage = await request.get(publicModel.imageUrl!);
     expect(storedImage.status()).toBe(200);
-    expect(Buffer.from(await storedImage.body())).toEqual(validPng);
+    expect(storedImage.headers()["content-type"]).toContain("image/webp");
+    expectWebp(Buffer.from(await storedImage.body()));
 
     const current = await adminCall<{ savedDraft: TireModelDraft; publishedSnapshot: TireModelDraft }>(request, "getTireModel", [modelId]);
     const galleryDraft = {
@@ -685,7 +693,8 @@ test("Wheel type copy and cover survive CMS save, publish, and public API read",
     ]));
     const publicImage = await request.get(publicPayload.imageUrl!);
     expect(publicImage.status()).toBe(200);
-    expect(Buffer.from(await publicImage.body())).toEqual(validPng);
+    expect(publicImage.headers()["content-type"]).toContain("image/webp");
+    expectWebp(Buffer.from(await publicImage.body()));
   } catch (error) {
     testFailed = true;
     throw error;
@@ -988,6 +997,7 @@ test("CMS media survives upload, gallery selection, save, publish, and public st
   const request = page.context().request;
   let originalPage: AdminPage | null = null;
   let asset: MediaAsset | null = null;
+  let uploadedImageBytes: Buffer | null = null;
   let pageMutationStarted = false;
   let publishedForBuild = false;
   let restorePublicOutput: (() => Promise<void>) | null = null;
@@ -1094,12 +1104,13 @@ test("CMS media survives upload, gallery selection, save, publish, and public st
     const uploadedAssets = await adminCall<MediaAsset[]>(request, "listAssets");
     asset = uploadedAssets.find((item) => item.id === uploadedId) ?? null;
     expect(asset).not.toBeNull();
-    expect(asset).toMatchObject({ id: uploadedId, name: validName, mimeType: "image/png", usedBy: [] });
+    expect(asset).toMatchObject({ id: uploadedId, name: validName, mimeType: "image/webp", usedBy: [] });
     expect(new URL(asset!.dataUrl).origin).toBe(new URL(config.s3Endpoint).origin);
     const storedImage = await request.get(asset!.dataUrl, { maxRedirects: 0 });
     expect(storedImage.status()).toBe(200);
-    expect(storedImage.headers()["content-type"]).toContain("image/png");
-    expect(Buffer.from(await storedImage.body())).toEqual(validPng);
+    expect(storedImage.headers()["content-type"]).toContain("image/webp");
+    uploadedImageBytes = Buffer.from(await storedImage.body());
+    expectWebp(uploadedImageBytes);
 
     await campaign.getByRole("button", { name: "Убрать фото", exact: true }).click();
     await campaign.getByRole("button", { name: "Выбрать из галереи", exact: true }).click();
@@ -1168,13 +1179,13 @@ test("CMS media survives upload, gallery selection, save, publish, and public st
     expect(manifest.revision).toBe(contentSnapshot.revision);
     expect(contentSnapshot.revision).toBe(publicSnapshot.revision);
     expect(file).toMatchObject({
-      mimeType: "image/png",
-      byteSize: validPng.length,
-      sha256: createHash("sha256").update(validPng).digest("hex"),
+      mimeType: "image/webp",
+      byteSize: uploadedImageBytes!.length,
+      sha256: createHash("sha256").update(uploadedImageBytes!).digest("hex"),
     });
     const publicImagePath = path.resolve(outputDirectory, `.${file!.path}`);
     expect(publicImagePath.startsWith(`${path.resolve(outputDirectory)}${path.sep}`)).toBe(true);
-    expect(Buffer.from(await readFile(publicImagePath))).toEqual(validPng);
+    expect(Buffer.from(await readFile(publicImagePath))).toEqual(uploadedImageBytes);
     expect(await readFile(path.join(outputDirectory, "index.html"), "utf8")).toContain(file!.path);
 
     await campaign.getByRole("button", { name: "Убрать фото", exact: true }).click();

@@ -6,7 +6,7 @@ export async function readPublishedRevision(signal?: AbortSignal): Promise<boole
     fetch("/content-revision.json", { signal }),
     fetchBrowserPublishedJson<unknown>("/v1/content/revision", signal),
   ]);
-  if (!builtResponse.ok) return false;
+  if (!builtResponse.ok) return process.env.NODE_ENV === "development";
   const built: unknown = await builtResponse.json();
   return shouldRefreshPublishedContent(built, live);
 }
