@@ -1,0 +1,104 @@
+.editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line, #d8dce2);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+  box-sizing: border-box;
+}
+
+.heading,
+.rows,
+.row,
+.captionField {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.heading h3 {
+  margin: 0;
+}
+
+.heading p {
+  margin: 6px 0 0;
+  color: var(--muted, #667085);
+}
+
+.rows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line, #e4e7ec);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.iconFrame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 72px;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line, #d8dce2);
+  border-radius: 8px;
+  background: #f7f8fa;
+  color: var(--muted, #667085);
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+.iconFrame img {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  min-width: 0;
+  object-fit: contain;
+}
+
+.captionField {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.captionField input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.empty {
+  margin: 0;
+  color: var(--muted, #667085);
+}
+
+@media (min-width: 640px) {
+  .row {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 16px;
+  }
+}
