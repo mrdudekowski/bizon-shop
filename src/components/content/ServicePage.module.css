@@ -92,6 +92,14 @@
   letter-spacing: var(--tracking-label);
 }
 
+.featureIndexBranding {
+  padding-top: 0.15rem;
+  color: var(--color-kicker);
+  font-family: var(--font-display);
+  font-size: var(--type-index);
+  font-weight: 700;
+}
+
 .featureList h3 {
   margin: 0 0 0.35rem;
   font-size: 1.25rem;

@@ -171,7 +171,7 @@ export function ServicePage({
           <ol className={styles.featureList}>
             {resolvedFeatures.map((feature, index) => (
               <li key={(feature as { id?: string }).id ?? feature.title}>
-                <span className={styles.featureIndex}>
+                <span className={`${styles.featureIndex} ${runtimePageKey === "branding" ? styles.featureIndexBranding : ""}`}>
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <div>
