@@ -49,6 +49,7 @@
   display: grid;
   align-content: center;
   grid-area: 1 / 1;
+  justify-self: center;
   width: 100%;
   max-width: 32rem;
   min-width: 0;
