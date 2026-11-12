@@ -825,6 +825,7 @@ async function mapPage(row: Row): Promise<PageDraft> {
         ...section(row.shop_wheels_intro_eyebrow, row.shop_wheels_intro_title, row.shop_wheels_intro_lead),
         kicker: str(row.shop_wheels_intro_kicker),
       },
+      homeCarousel: { diskCaption: str(row.shop_home_disk_carousel_caption) },
       orderSteps: steps.map((step) => ({ id: str(step.id), title: str(step.title), description: str(step.description) })),
       categoryCarousel: carousel.map((slide) => ({
         id: str(slide.id),
@@ -851,6 +852,7 @@ async function mapPage(row: Row): Promise<PageDraft> {
             title: str(tile.title ?? tile.name),
             visible: tile.visible == null ? Boolean(tile.show_in_menu) : Boolean(tile.visible),
             carouselVisible: Boolean(tile.carousel_visible),
+            homeCarouselCaption: str(tile.home_carousel_caption),
             sortOrder: num(tile._order ?? tile.sort_order) ?? 0,
             icon: placement(iconId, str(tile.icon_alt ?? tile.name)),
             carouselImage: placement(tile.carousel_image_media_id, str(tile.carousel_image_alt ?? tile.name)),
@@ -2955,7 +2957,7 @@ async function writePage(draft: PageDraft) {
     if (page == null) return;
     const parentId = Number(page.id);
     await query(
-      `UPDATE pages SET seo_seo_title=$1, seo_seo_description=$2, shop_hero_eyebrow=$3, shop_hero_title=$4, shop_hero_lead=$5, shop_hero_cta_label=$6, shop_hero_cta_href=$7, shop_hero_image_id=$8, shop_hero_image_alt=$9, shop_wheels_intro_eyebrow=$10, shop_wheels_intro_title=$11, shop_wheels_intro_lead=$12, shop_wheels_intro_kicker=$13, shop_vehicles_eyebrow=$14, shop_vehicles_title=$15, shop_vehicles_lead=$16, shop_vehicles_cta_label=$17, shop_vehicles_cta_href=$18, shop_catalog_eyebrow=$19, shop_catalog_title=$20, shop_catalog_lead=$21, shop_catalog_section_title=$22, status='published', published_at=COALESCE(published_at, now()), updated_at=now() WHERE key='shop-home'`,
+      `UPDATE pages SET seo_seo_title=$1, seo_seo_description=$2, shop_hero_eyebrow=$3, shop_hero_title=$4, shop_hero_lead=$5, shop_hero_cta_label=$6, shop_hero_cta_href=$7, shop_hero_image_id=$8, shop_hero_image_alt=$9, shop_wheels_intro_eyebrow=$10, shop_wheels_intro_title=$11, shop_wheels_intro_lead=$12, shop_wheels_intro_kicker=$13, shop_vehicles_eyebrow=$14, shop_vehicles_title=$15, shop_vehicles_lead=$16, shop_vehicles_cta_label=$17, shop_vehicles_cta_href=$18, shop_catalog_eyebrow=$19, shop_catalog_title=$20, shop_catalog_lead=$21, shop_catalog_section_title=$22, shop_home_disk_carousel_caption=$23, status='published', published_at=COALESCE(published_at, now()), updated_at=now() WHERE key='shop-home'`,
       shopHomeParentValues(draft),
     );
     const children = shopHomeChildRows(parentId, draft);
@@ -2987,8 +2989,8 @@ async function writePage(draft: PageDraft) {
     await query(`DELETE FROM pages_shop_catalog_tiles WHERE _parent_id=$1`, [parentId]);
     for (const tile of children.catalogTiles) {
       await query(
-        `INSERT INTO pages_shop_catalog_tiles (_parent_id, category_id, _order, title, visible, icon_media_id, image_media_id, carousel_image_media_id, carousel_visible, icon_alt, image_alt, carousel_image_alt) VALUES ($1, $2, $3, $4, $5, $6, NULL, $7, $8, $9, NULL, $10)`,
-        [tile.parentId, tile.categoryId, tile.order, tile.title, tile.visible, tile.iconId, tile.carouselImageId, tile.carouselVisible, tile.iconAlt, tile.carouselImageAlt],
+        `INSERT INTO pages_shop_catalog_tiles (_parent_id, category_id, _order, title, visible, icon_media_id, image_media_id, carousel_image_media_id, carousel_visible, icon_alt, image_alt, carousel_image_alt, home_carousel_caption) VALUES ($1, $2, $3, $4, $5, $6, NULL, $7, $8, $9, NULL, $10, $11)`,
+        [tile.parentId, tile.categoryId, tile.order, tile.title, tile.visible, tile.iconId, tile.carouselImageId, tile.carouselVisible, tile.iconAlt, tile.carouselImageAlt, tile.homeCarouselCaption],
       );
     }
     await query(`DELETE FROM pages_shop_vehicles_slides WHERE _parent_id=$1`, [parentId]);

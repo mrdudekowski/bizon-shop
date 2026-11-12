@@ -329,7 +329,8 @@ export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch
       pages.shop_wheels_intro_kicker, pages.shop_wheels_intro_eyebrow, pages.shop_wheels_intro_title, pages.shop_wheels_intro_lead,
       pages.shop_vehicles_eyebrow, pages.shop_vehicles_title, pages.shop_vehicles_lead,
       pages.shop_vehicles_cta_label, pages.shop_vehicles_cta_href,
-      pages.shop_catalog_eyebrow, pages.shop_catalog_title, pages.shop_catalog_lead, pages.shop_catalog_section_title
+      pages.shop_catalog_eyebrow, pages.shop_catalog_title, pages.shop_catalog_lead, pages.shop_catalog_section_title,
+      pages.shop_home_disk_carousel_caption
     FROM pages
     LEFT JOIN media ON media.id = pages.shop_hero_image_id
     WHERE pages.key = 'shop-home' AND pages.status = 'published'
@@ -353,7 +354,8 @@ export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch
       `SELECT tiles.category_id, categories.slug AS category_slug, tiles.title, tiles.visible,
         tiles._order AS sort_order, COALESCE(icon.url, legacy_image.url) AS icon_url,
         carousel.url AS carousel_image_url, tiles.icon_alt,
-        tiles.carousel_image_alt, tiles.carousel_visible
+        tiles.carousel_image_alt, tiles.carousel_visible,
+        tiles.home_carousel_caption
        FROM pages_shop_catalog_tiles tiles
        JOIN shop_categories categories ON categories.id = tiles.category_id AND categories.status = 'published'
        LEFT JOIN media AS icon ON icon.id = tiles.icon_media_id

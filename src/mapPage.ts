@@ -404,6 +404,7 @@ type ShopHomeRow = {
   shop_catalog_title?: string | null;
   shop_catalog_lead?: string | null;
   shop_catalog_section_title?: string | null;
+  shop_home_disk_carousel_caption?: string | null;
 };
 
 export type ShopHomePatch = {
@@ -441,6 +442,7 @@ export type ShopHomePatch = {
     cta?: HomeCta;
     slides?: { title?: string; image?: string; alt?: string }[];
   };
+  homeCarousel: { diskCaption?: string };
   catalog?: {
     copy: { eyebrow?: string; title?: string; lead?: string; sectionTitle?: string };
     tiles: {
@@ -453,6 +455,7 @@ export type ShopHomePatch = {
       imageUrl?: string;
       carouselImageUrl?: string;
       carouselVisible: boolean;
+      homeCarouselCaption?: string;
       iconAlt?: string;
       imageAlt?: string;
       carouselImageAlt?: string;
@@ -485,6 +488,7 @@ export function mapShopHomePatch(input: {
     carousel_image_url?: string | null;
     carousel_image_alt?: string | null;
     carousel_visible?: boolean;
+    home_carousel_caption?: string | null;
     icon_alt?: string | null;
   }[];
   vehicles: { title?: string | null; image_url?: string | null; alt?: string | null }[];
@@ -543,6 +547,9 @@ export function mapShopHomePatch(input: {
         image: publicImageUrl(slide.image_url) ?? "",
       })),
     },
+    homeCarousel: {
+      ...(isConfiguredText(row.shop_home_disk_carousel_caption) ? { diskCaption: row.shop_home_disk_carousel_caption } : {}),
+    },
     catalog: {
       copy: {
         ...(isConfiguredText(row.shop_catalog_eyebrow) ? { eyebrow: row.shop_catalog_eyebrow } : {}),
@@ -559,6 +566,7 @@ export function mapShopHomePatch(input: {
         ...(publicImageUrl(tile.icon_url) ? { iconUrl: publicImageUrl(tile.icon_url) } : {}),
         ...(publicImageUrl(tile.carousel_image_url) ? { carouselImageUrl: publicImageUrl(tile.carousel_image_url) } : {}),
         carouselVisible: tile.carousel_visible === true,
+        ...(isConfiguredText(tile.home_carousel_caption) ? { homeCarouselCaption: tile.home_carousel_caption } : {}),
         ...(optionalText(tile.icon_alt) ? { iconAlt: optionalText(tile.icon_alt) } : {}),
         ...(optionalText(tile.carousel_image_alt) ? { carouselImageAlt: optionalText(tile.carousel_image_alt) } : {}),
       })),

@@ -31,4 +31,51 @@ describe("mergeLegacyPageOverlay", () => {
 
     expect(result).toMatchObject({ sections: [{ id: "old", heading: "Published", body: "Keep it" }] });
   });
+
+  it("keeps migrated Shop tile captions and icons when an older page draft omits them", () => {
+    const result = mergeLegacyPageOverlay(
+      {
+        id: "shop-home",
+        homeCarousel: { diskCaption: "Кованые диски" },
+        catalog: {
+          copy: { title: "Каталог" },
+          tiles: [{ categoryId: "8", title: "Кемпинг", visible: true, homeCarouselCaption: "Для маршрута", icon: { assetId: "current-icon" } }],
+        },
+      },
+      {
+        id: "shop-home",
+        catalog: {
+          copy: { title: "Обновлённый каталог" },
+          tiles: [{ categoryId: "8", title: "Путешествия", visible: true }],
+        },
+      },
+    );
+
+    expect(result).toMatchObject({
+      homeCarousel: { diskCaption: "Кованые диски" },
+      catalog: {
+        copy: { title: "Обновлённый каталог" },
+        tiles: [{
+          categoryId: "8",
+          title: "Путешествия",
+          homeCarouselCaption: "Для маршрута",
+          icon: { assetId: "current-icon" },
+        }],
+      },
+    });
+  });
+
+  it("keeps migrated Shop tiles when an older page draft has an empty catalog list", () => {
+    const result = mergeLegacyPageOverlay(
+      { id: "shop-home", catalog: { copy: { title: "Catalog" }, tiles: [{ categoryId: "8", homeCarouselCaption: "Для маршрута" }] } },
+      { id: "shop-home", catalog: { copy: { title: "Legacy draft" }, tiles: [] } },
+    );
+
+    expect(result).toMatchObject({
+      catalog: {
+        copy: { title: "Legacy draft" },
+        tiles: [{ categoryId: "8", homeCarouselCaption: "Для маршрута" }],
+      },
+    });
+  });
 });

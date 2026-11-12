@@ -421,6 +421,7 @@ describe("published content readers", () => {
         image_url: "/media/tile.png",
         carousel_image_url: "/media/slide.png",
         carousel_visible: true,
+        home_carousel_caption: "Своя подпись",
         icon_alt: "Иконка",
         image_alt: "Плитка",
       }];
@@ -442,6 +443,7 @@ describe("published content readers", () => {
           categorySlug: "outdoor-current",
           visible: true,
           carouselVisible: true,
+          homeCarouselCaption: "Своя подпись",
           carouselImageUrl: "/media/slide.png",
         }],
       },

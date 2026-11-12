@@ -12,11 +12,12 @@ const draft: ShopHomePageDraft = {
   seoDescription: "",
   hero: { eyebrow: "", title: "", lead: "", cta: { label: "", href: "" } },
   wheelsIntro: { eyebrow: "", title: "", lead: "", kicker: "" },
+  homeCarousel: { diskCaption: "Кованые диски, созданные под ваш автомобиль" },
   orderSteps: [],
   categoryCarousel: [],
   catalog: {
     copy: { eyebrow: "Shop", title: "Catalog", lead: "Pick a category", sectionTitle: "Categories" },
-    tiles: [{ categoryId: "5", title: "Camp", visible: true, sortOrder: 2, carouselVisible: true, icon: placement("11"), carouselImage: placement("13") }],
+    tiles: [{ categoryId: "5", title: "Camp", visible: true, sortOrder: 2, carouselVisible: true, homeCarouselCaption: "Всё для поездок", icon: placement("11"), carouselImage: placement("13") }],
   },
   vehicles: { eyebrow: "", title: "", lead: "", cta: { label: "", href: "" }, slides: [] },
 };
@@ -33,6 +34,7 @@ describe("shopHomeChildRows catalog tiles", () => {
         iconId: 11,
         carouselImageId: 13,
         carouselVisible: true,
+        homeCarouselCaption: "Всё для поездок",
         iconAlt: "Shop tile",
         carouselImageAlt: "Shop tile",
       },
@@ -40,11 +42,12 @@ describe("shopHomeChildRows catalog tiles", () => {
   });
 
   it("includes catalog page copy in the Shop page row values", () => {
-    expect(shopHomeParentValues(draft).slice(-4)).toEqual([
+    expect(shopHomeParentValues(draft).slice(-5)).toEqual([
       "Shop",
       "Catalog",
       "Pick a category",
       "Categories",
+      "Кованые диски, созданные под ваш автомобиль",
     ]);
   });
 });

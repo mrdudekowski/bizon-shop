@@ -411,6 +411,7 @@ describe("mapShopHomePatch", () => {
           shop_catalog_title: "Дорожные вещи",
           shop_catalog_lead: "Подберите товары для поездки.",
           shop_catalog_section_title: "Направления",
+          shop_home_disk_carousel_caption: "Диски для автомобиля",
         },
         carousel: [],
         vehicles: [],
@@ -425,6 +426,7 @@ describe("mapShopHomePatch", () => {
             icon_url: "/media/outdoor-icon.png",
             carousel_image_url: "/media/outdoor-carousel.png",
             carousel_visible: true,
+            home_carousel_caption: "Для поездок",
             icon_alt: "Кемпинг",
           },
         ],
@@ -447,9 +449,11 @@ describe("mapShopHomePatch", () => {
             iconUrl: "/media/outdoor-icon.png",
             carouselImageUrl: "/media/outdoor-carousel.png",
             carouselVisible: true,
+            homeCarouselCaption: "Для поездок",
           },
         ],
       },
+      homeCarousel: { diskCaption: "Диски для автомобиля" },
     });
   });
 

@@ -30,6 +30,7 @@ export function shopHomeParentValues(draft: ShopHomePageDraft): unknown[] {
     draft.catalog.copy.title,
     draft.catalog.copy.lead,
     draft.catalog.copy.sectionTitle,
+    draft.homeCarousel.diskCaption,
   ];
 }
 
@@ -63,6 +64,7 @@ export function shopHomeChildRows(parentId: number, draft: ShopHomePageDraft) {
       iconId: mediaId(tile.icon),
       carouselImageId: mediaId(tile.carouselImage),
       carouselVisible: tile.carouselVisible,
+      homeCarouselCaption: tile.homeCarouselCaption ?? "",
       iconAlt: tile.icon?.alt ?? "",
       carouselImageAlt: tile.carouselImage?.alt ?? "",
     })),
