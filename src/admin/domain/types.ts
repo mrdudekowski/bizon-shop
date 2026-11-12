@@ -473,6 +473,7 @@ export type ShopCatalogTileDraft = {
   visible: boolean;
   sortOrder: number;
   carouselVisible: boolean;
+  homeCarouselCaption: string;
   icon?: ImagePlacement | null;
   carouselImage?: ImagePlacement | null;
 };
@@ -490,6 +491,7 @@ export type ShopHomePageDraft = {
   seoDescription: string;
   hero: PageSectionCopy & { image?: ImagePlacement | null; cta: PageCta };
   wheelsIntro: PageSectionCopy & { kicker: string };
+  homeCarousel: { diskCaption: string };
   orderSteps: { id: string; title: string; description: string }[];
   categoryCarousel: ShopHomeCategorySlide[];
   catalog: { copy: ShopCatalogCopyDraft; tiles: ShopCatalogTileDraft[] };

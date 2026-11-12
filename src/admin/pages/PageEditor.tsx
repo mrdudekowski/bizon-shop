@@ -532,6 +532,7 @@ function HomeFields({
         title="Кампания магазина"
         value={draft.shopCampaign}
         onChange={(shopCampaign) => onChange({ ...draft, shopCampaign: { ...draft.shopCampaign, ...shopCampaign } })}
+        includeLead={false}
       />
       <PlacementFields
         label="Картинка кампании"

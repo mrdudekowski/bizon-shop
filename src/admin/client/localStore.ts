@@ -152,6 +152,7 @@ function emptyPageDraft(key: PageKey): PageDraft {
       seoDescription: "",
       hero: { ...emptySection(), cta: emptyCta() },
       wheelsIntro: { ...emptySection(), kicker: "" },
+      homeCarousel: { diskCaption: "Кованые диски, созданные под ваш автомобиль" },
       orderSteps: [],
       categoryCarousel: [],
       catalog: {

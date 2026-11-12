@@ -10,7 +10,7 @@ const snapshot = {
   revision,
   content: {
     home: { hero: { title: "Главная из снимка" } },
-    shopHome: null,
+    shopHome: { homeCarousel: { diskCaption: "Кованые диски из снимка" } },
     stubs: {
       about: { hero: { title: "О компании из снимка" }, sections: [{ id: "one", heading: "Раздел", body: "Текст" }] },
       contact: { hero: { title: "Контакты" }, siteProfile: { legalSummary: "Реквизиты оператора.", priceNotice: "Цены ориентировочные.", madeToOrderNotice: "Под заказ.", requisites: [{ id: "inn", label: "ИНН", value: "000" }] } },
@@ -32,6 +32,9 @@ describe("published snapshot admin", () => {
   it("reads published pages and tire directions from the snapshot", async () => {
     const reads = publishedSnapshotReads(snapshot);
     const pages = await reads.listPages!();
+    const shopHome = await reads.getPage!("shop-home");
+    expect(shopHome.draft.id === "shop-home" ? shopHome.draft.homeCarousel.diskCaption : "")
+      .toBe("Кованые диски из снимка");
     const about = pages.find((page) => page.id === "about");
     expect(about?.draft.id === "about" ? about.draft.hero.title : "").toBe("О компании из снимка");
     const contact = await reads.getPage!("contact");

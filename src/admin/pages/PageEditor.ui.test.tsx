@@ -33,6 +33,7 @@ const shopHomeDraft = {
   seoDescription: "",
   hero: { eyebrow: "", title: "", lead: "", cta: { label: "", href: "" } },
   wheelsIntro: { eyebrow: "", title: "", lead: "", kicker: "" },
+  homeCarousel: { diskCaption: "Кованые диски, созданные под ваш автомобиль" },
   orderSteps: [],
   categoryCarousel: [],
   catalog: { copy: { eyebrow: "", title: "", lead: "", sectionTitle: "" }, tiles: [] },
@@ -218,6 +219,16 @@ describe("PageEditor conflict recovery", () => {
     expect(wheelsIntro?.textContent).not.toContain("Лид");
     expect(screen.queryByRole("heading", { name: "Карусель главной" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Карусель категорий на главной" })).toBeNull();
+  });
+
+  it("does not expose the retired Shop campaign lead in CMS", async () => {
+    mockState.client.getPage = vi.fn().mockResolvedValue({ ...pageRecord, id: "home", draft: homeDraft, savedDraft: homeDraft, publishedSnapshot: homeDraft });
+    render(createElement(PageEditor, { pageKey: "home" }));
+
+    await userEvent.setup().click(await screen.findByRole("tab", { name: "Кампания магазина" }));
+    const campaign = (await screen.findByRole("heading", { name: "Кампания магазина" })).closest("section");
+    expect(campaign).toBeTruthy();
+    expect(within(campaign!).queryByLabelText("Лид")).toBeNull();
   });
 
   it("edits the contact profile: address label, channel toggle, removal, and a custom channel", async () => {

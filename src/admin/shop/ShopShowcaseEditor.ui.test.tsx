@@ -15,6 +15,7 @@ const pageDraft = {
   seoDescription: "",
   hero: { eyebrow: "", title: "", lead: "", cta: { label: "", href: "" } },
   wheelsIntro: { eyebrow: "", title: "", lead: "", kicker: "" },
+  homeCarousel: { diskCaption: "Кованые диски, созданные под ваш автомобиль" },
   orderSteps: [],
   categoryCarousel: [],
   catalog: { copy: { eyebrow: "", title: "", lead: "", sectionTitle: "" }, tiles: [] },
@@ -98,5 +99,39 @@ describe("Shop showcase editor", () => {
     expect(mockState.client.savePage.mock.calls[0][1].catalog.tiles[0]).not.toHaveProperty("image");
     await user.click(screen.getByRole("tab", { name: "Страница каталога" }));
     expect(screen.getByLabelText("Заголовок списка категорий")).toBeTruthy();
+  });
+
+  it("saves disk and category homepage carousel captions from the tiles panel", async () => {
+    const user = userEvent.setup();
+    const seededPage = {
+      ...pageRecord,
+      draft: {
+        ...pageDraft,
+        homeCarousel: { diskCaption: "Кованые диски, созданные под ваш автомобиль" },
+        catalog: {
+          ...pageDraft.catalog,
+          tiles: [{ categoryId: "category-1", title: "Кемпинг и путешествия", visible: true, sortOrder: 1, carouselVisible: false, homeCarouselCaption: "Старый текст", icon: { assetId: "old-icon" } }],
+        },
+      },
+      savedDraft: undefined,
+    };
+    mockState.client.getPage = vi.fn().mockResolvedValue(seededPage);
+    render(createElement(ShopShowcaseEditor));
+
+    await user.click(await screen.findByRole("tab", { name: "Плитки категорий" }));
+    const diskCaption = screen.getByRole("textbox", { name: "Подпись для карусели главной — Диски" });
+    const categoryCaption = screen.getByRole("textbox", { name: "Подпись карусели: Кемпинг и путешествия" });
+    await user.clear(diskCaption);
+    await user.type(diskCaption, "Диски BIZON");
+    await user.clear(categoryCaption);
+    await user.type(categoryCaption, "Поездки и отдых");
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    expect(mockState.client.savePage).toHaveBeenCalledWith("shop-home", expect.objectContaining({
+      homeCarousel: { diskCaption: "Диски BIZON" },
+      catalog: expect.objectContaining({
+        tiles: [expect.objectContaining({ homeCarouselCaption: "Поездки и отдых" })],
+      }),
+    }));
   });
 });

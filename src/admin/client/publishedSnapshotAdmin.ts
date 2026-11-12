@@ -140,6 +140,7 @@ function shopHomeDraft(value: unknown, assets: Map<string, MediaListItem>): Page
     seoDescription: text(page?.seoDescription),
     hero: { ...section(hero), image: placement(hero?.imageUrl, text(hero?.imageAlt)), cta: cta(hero?.cta) },
     wheelsIntro: { ...emptySection(), kicker: "" },
+    homeCarousel: { diskCaption: text(record(page?.homeCarousel)?.diskCaption) },
     orderSteps: [],
     categoryCarousel: [],
     catalog: {

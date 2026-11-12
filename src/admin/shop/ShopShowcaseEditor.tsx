@@ -6,6 +6,7 @@ import { actionErrorText, DOCUMENT_STATUS } from "@/admin/client/actionFeedback"
 import { moveItemInList } from "@/admin/domain/catalogSort";
 import type { EntityRecord, ImagePlacement, ShopCategoryDraft, ShopHomePageDraft } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
+import { SHOP_CATEGORY_ICON_UPLOAD_TYPES } from "@/admin/media/uploadLibraryFile";
 import { DocumentReviewFooter } from "@/admin/ui/DocumentReviewFooter";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 import { canEditorPerform } from "@/admin/domain/editorPermissions";
@@ -26,6 +27,7 @@ function mergeCategories(page: ShopHomePageDraft, categories: EntityRecord<ShopC
     if (tile) {
       const normalizedTile = { ...tile } as typeof tile & { image?: ImagePlacement | null };
       delete normalizedTile.image;
+      normalizedTile.homeCarouselCaption ??= "";
       return normalizedTile;
     }
     return {
@@ -34,6 +36,7 @@ function mergeCategories(page: ShopHomePageDraft, categories: EntityRecord<ShopC
       visible: draft.showInMenu,
       sortOrder: draft.sortOrder || index,
       carouselVisible: draft.carousel.length > 0,
+      homeCarouselCaption: "",
       icon: draft.mainImage,
       carouselImage: draft.carousel[0]?.image,
     };
@@ -133,7 +136,8 @@ export function ShopShowcaseEditor() {
       </section> : null}
       {panel === "tiles" ? <section className={styles.list} aria-label="Плитки категорий">
         <h2>Плитки категорий</h2>
-        <p>Иконка используется на плитке и в меню каталога Bizon Shop. Цвет автоматически подстраивается под светлый или тёмный фон.</p>
+        <p>Иконка и подпись плитки используются в автоматической карусели Shop на главной. Иконка остаётся общей с каталогом.</p>
+        <label className={styles.field}>Подпись для карусели главной — Диски<input value={draft.homeCarousel.diskCaption} onChange={(e) => setDraft({ ...draft, homeCarousel: { ...draft.homeCarousel, diskCaption: e.target.value } })} /></label>
         {orderedTiles.map((tile, index) => <article className={styles.card} key={tile.categoryId}>
           <div className={styles.cardHead}>
             <h3>{tile.title || `Категория ${tile.categoryId}`}</h3>
@@ -147,7 +151,8 @@ export function ShopShowcaseEditor() {
             </div>
           </div>
           <label className={styles.field}>Название плитки<input value={tile.title} onChange={(e) => patchTile(tile.categoryId, (row) => ({ ...row, title: e.target.value }))} /></label>
-          <PlacementFields label="Иконка" value={tile.icon} onChange={(image) => patchPlacement(tile.categoryId, "icon", image)} previewSurface="dark" uploadMode="new-asset" />
+          <label className={styles.field}>Подпись карусели: {tile.title || `Категория ${tile.categoryId}`}<input value={tile.homeCarouselCaption} onChange={(e) => patchTile(tile.categoryId, (row) => ({ ...row, homeCarouselCaption: e.target.value }))} /></label>
+          <PlacementFields label="Иконка" value={tile.icon} onChange={(image) => patchPlacement(tile.categoryId, "icon", image)} previewSurface="dark" uploadMode="new-asset" allowedMimeTypes={SHOP_CATEGORY_ICON_UPLOAD_TYPES} />
         </article>)}
       </section> : null}
       {panel === "catalog" ? <section className={styles.list} aria-label="Содержимое страницы каталога">
