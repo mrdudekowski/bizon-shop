@@ -118,7 +118,8 @@ export function ShopShowcaseEditor() {
       </nav>
       {panel === "carousel" ? <section className={styles.list} aria-label="Карусель главной">
         <h2>Карусель категорий на главной</h2>
-        <p>Название и адрес ссылки берутся из категории. Здесь настраиваются показ и фотография.</p>
+        <p>Диски идут первыми. Иконки и подписи категорий общие с каталогом и настраиваются во вкладке «Плитки категорий».</p>
+        <button type="button" onClick={() => setPanel("tiles")}>К иконкам и подписям категорий</button>
         {orderedTiles.map((tile, index) => <article className={styles.card} key={tile.categoryId}>
           <div className={styles.cardHead}>
             <h3>{tile.title || `Категория ${tile.categoryId}`}</h3>

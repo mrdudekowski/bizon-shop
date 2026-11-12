@@ -73,6 +73,16 @@ describe("Shop showcase editor", () => {
     expect(await screen.findByRole("button", { name: "Отправить на одобрение" })).toBeTruthy();
   });
 
+  it("links carousel settings to the shared category icon controls", async () => {
+    const user = userEvent.setup();
+    render(createElement(ShopShowcaseEditor));
+
+    await user.click(await screen.findByRole("button", { name: "К иконкам и подписям категорий" }));
+
+    expect(screen.getByRole("tab", { name: "Плитки категорий" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByText("Иконка")).toBeTruthy();
+  });
+
   it("does not treat category-derived tiles as unsaved edits on initial load", async () => {
     const { container } = render(createElement(ShopShowcaseEditor));
 
