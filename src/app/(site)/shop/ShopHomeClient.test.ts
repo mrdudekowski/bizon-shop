@@ -33,11 +33,11 @@ function occurrences(haystack: string, needle: string): number {
 }
 
 describe("ShopHomeClient wheels section", () => {
-  it("keeps the made-to-order chip on the cards and leaves the long notice off the section", () => {
+  it("shows one made-to-order chip for the single model card and keeps the long notice off the section", () => {
     const markup = render();
 
     expect(markup).not.toContain("data-made-to-order-notice");
-    expect(occurrences(markup, MADE_TO_ORDER_CHIP)).toBe(2);
+    expect(occurrences(markup, MADE_TO_ORDER_CHIP)).toBe(1);
     expect(markup).toContain("Выберите свой дизайн");
     expect(markup).not.toContain("изготавливаются под заказ. Выберите модель");
     expect(markup).toContain("Получите подтверждение");

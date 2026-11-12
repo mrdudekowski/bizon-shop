@@ -30,7 +30,7 @@ describe("CMS driven home sections", () => {
     expect(text).toContain("Для вашего маршрута");
   });
 
-  it("shows the configured Shop campaign copy and CTA", () => {
+  it("shows the Shop campaign fields exposed by the current editor", () => {
     const element = ShopCampaign({
       content: {
         eyebrow: "BIZON SHOP",
@@ -47,7 +47,7 @@ describe("CMS driven home sections", () => {
     const text = collectText(element);
     expect(text).toContain("BIZON SHOP");
     expect(text).toContain("Кованые диски");
-    expect(text).toContain("Созданы для вашей техники");
+    expect(text).not.toContain("Созданы для вашей техники");
     expect(text).toContain("Выбрать диск");
   });
 

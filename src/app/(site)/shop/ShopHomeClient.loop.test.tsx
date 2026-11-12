@@ -55,7 +55,7 @@ describe("ShopHomeClient wheel carousel", () => {
       }));
     });
 
-    const links = [...host.querySelectorAll("#wheels a")].map((link) => link.getAttribute("href"));
+    const links = [...host.querySelectorAll("#wheels [aria-roledescription='carousel'] a")].map((link) => link.getAttribute("href"));
     expect(links).toEqual([
       "/shop/wheels/forged/one",
       "/shop/wheels/forged/two",
@@ -63,6 +63,7 @@ describe("ShopHomeClient wheel carousel", () => {
     ]);
     expect(host.querySelectorAll("#wheels [data-active]")).toHaveLength(3);
     expect(activeHref(host)).toBe("/shop/wheels/forged/one");
+    expect([...host.querySelectorAll("#wheels a")].some((link) => link.textContent?.includes("Диски BIZON"))).toBe(true);
 
     const next = host.querySelector<HTMLButtonElement>("#wheels [aria-label='Следующая карточка']");
     if (!next) throw new Error("cue missing");
