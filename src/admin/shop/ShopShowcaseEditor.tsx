@@ -4,13 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { browserAdminClient } from "@/admin/client/localStore";
 import { actionErrorText, DOCUMENT_STATUS } from "@/admin/client/actionFeedback";
 import { moveItemInList } from "@/admin/domain/catalogSort";
-import type { EntityRecord, ImagePlacement, ShopCategoryDraft, ShopHomePageDraft } from "@/admin/domain/types";
+import type { EntityRecord, ImagePlacement, ShopHomePageDraft } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
 import { SHOP_CATEGORY_ICON_UPLOAD_TYPES } from "@/admin/media/uploadLibraryFile";
 import { DocumentReviewFooter } from "@/admin/ui/DocumentReviewFooter";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 import { canEditorPerform } from "@/admin/domain/editorPermissions";
 import { useAdminSession } from "@/admin/ui/DocumentUI";
+import { mergeShopHomeCategories } from "./shopHomeCategories";
 import styles from "./ShopShowcaseEditor.module.css";
 
 type Panel = "carousel" | "tiles" | "catalog";
@@ -19,30 +20,6 @@ const PANELS: { id: Panel; title: string }[] = [
   { id: "tiles", title: "Плитки категорий" },
   { id: "catalog", title: "Страница каталога" },
 ];
-
-function mergeCategories(page: ShopHomePageDraft, categories: EntityRecord<ShopCategoryDraft>[]): ShopHomePageDraft {
-  const existing = new Map(page.catalog.tiles.map((tile) => [tile.categoryId, tile]));
-  const tiles = categories.map(({ id, draft }, index) => {
-    const tile = existing.get(id);
-    if (tile) {
-      const normalizedTile = { ...tile } as typeof tile & { image?: ImagePlacement | null };
-      delete normalizedTile.image;
-      normalizedTile.homeCarouselCaption ??= "";
-      return normalizedTile;
-    }
-    return {
-      categoryId: id,
-      title: draft.name,
-      visible: draft.showInMenu,
-      sortOrder: draft.sortOrder || index,
-      carouselVisible: draft.carousel.length > 0,
-      homeCarouselCaption: "",
-      icon: draft.mainImage,
-      carouselImage: draft.carousel[0]?.image,
-    };
-  });
-  return { ...page, catalog: { ...page.catalog, tiles } };
-}
 
 export function ShopShowcaseEditor() {
   const session = useAdminSession();
@@ -56,8 +33,8 @@ export function ShopShowcaseEditor() {
   useEffect(() => {
     void Promise.all([browserAdminClient().getPage("shop-home"), browserAdminClient().listShopCategories()])
       .then(([page, categories]) => {
-        const normalized = mergeCategories(page.draft as ShopHomePageDraft, categories);
-        const savedBaseline = mergeCategories((page.savedDraft ?? page.draft) as ShopHomePageDraft, categories);
+        const normalized = mergeShopHomeCategories(page.draft as ShopHomePageDraft, categories);
+        const savedBaseline = mergeShopHomeCategories((page.savedDraft ?? page.draft) as ShopHomePageDraft, categories);
         setRecord({
           ...page,
           draft: normalized,
