@@ -17,7 +17,7 @@ export function uploadErrorText(error: unknown): string {
     return "Нет связи с сервером. Проверьте, что API запущен, и повторите загрузку.";
   }
   if (error instanceof AdminClientError && error.code === "publish_blocked") {
-    return "Файл не подошёл. Нужны JPEG, PNG, WebP или PDF до 20 МБ.";
+    return "Файл не подошёл для этого поля. Проверьте допустимый формат и размер до 20 МБ.";
   }
   return "Не удалось загрузить файл. Попробуйте другой файл.";
 }

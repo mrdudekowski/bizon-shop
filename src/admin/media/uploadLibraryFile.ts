@@ -4,6 +4,7 @@ import { browserAdminClient } from "@/admin/client/localStore";
 import { mediaMimeFromFile } from "./mediaMime";
 
 export const IMAGE_UPLOAD_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export const SHOP_CATEGORY_ICON_UPLOAD_TYPES = ["image/svg+xml"] as const;
 
 export function acceptAttribute(types: readonly string[]): string {
   const extensions: string[] = [];
@@ -19,6 +20,10 @@ export function acceptAttribute(types: readonly string[]): string {
   if (types.includes("image/webp")) {
     extensions.push(".webp");
     mimes.push("image/webp");
+  }
+  if (types.includes("image/svg+xml")) {
+    extensions.push(".svg");
+    mimes.push("image/svg+xml");
   }
   if (types.includes("application/pdf")) {
     extensions.push(".pdf");

@@ -32,6 +32,14 @@ describe("uploadLibraryFile", () => {
     expect(createAsset).not.toHaveBeenCalled();
   });
 
+  it("uploads an SVG icon unchanged when the icon field allows SVG", async () => {
+    createAsset.mockReset();
+    createAsset.mockResolvedValue({ id: "svg-1" });
+    const svg = new File(["<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M1 1h22v22H1z\"/></svg>"], "icon.svg", { type: "image/svg+xml" });
+    await expect(uploadLibraryFile(svg, ["image/svg+xml"])).resolves.toEqual({ id: "svg-1" });
+    expect(createAsset).toHaveBeenCalledWith(expect.objectContaining({ name: "icon.svg", mimeType: "image/svg+xml", body: svg }));
+  });
+
   it("keeps the first file whose type is allowed", () => {
     const pdf = new File(["pdf"], "policy.pdf", { type: "application/pdf" });
     const png = new File(["image"], "hero.png", { type: "image/png" });
@@ -45,7 +53,7 @@ describe("uploadLibraryFile", () => {
     const notes = new File(["text"], "notes.txt", { type: "" });
     const allowed = ["image/jpeg", "image/png", "image/webp"] as const;
     await expect(uploadLibraryFile(notes, allowed)).rejects.toSatisfy((error: unknown) => {
-      return uploadErrorText(error) === "Файл не подошёл. Нужны JPEG, PNG, WebP или PDF до 20 МБ.";
+      return uploadErrorText(error) === "Файл не подошёл для этого поля. Проверьте допустимый формат и размер до 20 МБ.";
     });
     expect(createAsset).not.toHaveBeenCalled();
   });

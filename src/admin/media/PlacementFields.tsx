@@ -13,15 +13,15 @@ import frameStyles from "@/admin/pages/pageImageFrame.module.css";
 import styles from "./PlacementFields.module.css";
 function emptyPlacement(assetId: string): ImagePlacement { return { assetId, alt: "", focalX: .5, focalY: .5, crop: { x: 0, y: 0, width: 1, height: 1 } }; }
 function clamp(value: number) { return Math.min(1, Math.max(0, value)); }
-async function uploadImageFile(file: File, current?: ImagePlacement): Promise<ImagePlacement> {
+async function uploadImageFile(file: File, allowedTypes: readonly string[], current?: ImagePlacement): Promise<ImagePlacement> {
   const mimeType = mediaMimeFromFile(file);
-  if (!(IMAGE_UPLOAD_TYPES as readonly string[]).includes(mimeType)) throw new AdminClientError("publish_blocked");
+  if (!allowedTypes.includes(mimeType)) throw new AdminClientError("publish_blocked");
   const upload = { name: file.name, mimeType, body: file };
   if (current) {
     const replacement = await browserAdminClient().replaceAsset(current.assetId, upload);
     return { ...current, replacementAssetId: replacement.replacementAssetId };
   }
-  const asset = await uploadLibraryFile(file, IMAGE_UPLOAD_TYPES);
+  const asset = await uploadLibraryFile(file, allowedTypes);
   return emptyPlacement(asset.id);
 }
 function fitCmsPreviewToViewport() {
@@ -41,11 +41,12 @@ type Props = {
   previewSrc?: string | null;
   previewSurface?: "default" | "dark";
   uploadMode?: "replace" | "new-asset";
+  allowedMimeTypes?: readonly string[];
   showFocus?: boolean;
   /** Guest crop. Absent on product, tire, wheel, and file editors, which stay square. */
   frame?: PageImageFrame;
 };
-export function PlacementFields({ value, onChange, label = "Фото", thumbs, previewSrc, previewSurface = "default", uploadMode = "replace", showFocus = true, frame }: Props) {
+export function PlacementFields({ value, onChange, label = "Фото", thumbs, previewSrc, previewSurface = "default", uploadMode = "replace", allowedMimeTypes = IMAGE_UPLOAD_TYPES, showFocus = true, frame }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -94,7 +95,7 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
     setUploading(true);
     try {
       const replaceExisting = uploadMode === "replace";
-      const placement = await uploadImageFile(file, replaceExisting ? value ?? undefined : undefined);
+      const placement = await uploadImageFile(file, allowedMimeTypes, replaceExisting ? value ?? undefined : undefined);
       setPreviewUrl(URL.createObjectURL(file));
       if (value && replaceExisting) setReplacementPending(true);
       onChange(placement);
@@ -164,7 +165,7 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
       <input
         aria-label={`${label}: файл`}
         type="file"
-        accept={acceptAttribute(IMAGE_UPLOAD_TYPES)}
+        accept={acceptAttribute(allowedMimeTypes)}
         disabled={uploading}
         onChange={(event) => {
           void onFile(event.target.files?.[0]);
@@ -175,7 +176,7 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
   ) : null;
   const mediaActions = <div className={styles.mediaActions}>
     {replaceLabel}
-    <MediaPicker disabled={uploading} excludeIds={assetId ? [assetId] : []} onSelect={chooseAsset} />
+    <MediaPicker disabled={uploading} excludeIds={assetId ? [assetId] : []} filterMimeTypes={[...allowedMimeTypes]} onSelect={chooseAsset} />
   </div>;
   return <fieldset className={styles.fields} data-cms-image-fields><legend>{label}</legend>
     {displayUrl ? null : mediaActions}

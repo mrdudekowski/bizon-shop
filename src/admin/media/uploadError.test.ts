@@ -30,7 +30,7 @@ describe("uploadErrorText", () => {
 
   it("explains a rejected file without calling it a publish block", () => {
     const text = uploadErrorText(new AdminClientError("publish_blocked"));
-    expect(text).toMatch(/JPEG|PNG|WebP|PDF|20/);
+    expect(text).toMatch(/для этого поля.*формат.*20 МБ/i);
     expect(text).not.toMatch(/Публикация закрыта/);
   });
 

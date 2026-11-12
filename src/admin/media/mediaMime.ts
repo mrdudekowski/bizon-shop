@@ -1,4 +1,4 @@
-const ALLOWED = ["image/jpeg", "image/png", "image/webp", "video/mp4", "application/pdf"] as const;
+const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/svg+xml", "video/mp4", "application/pdf"] as const;
 
 export function mediaMimeFromFile(file: { name: string; type: string }): string {
   const declared = file.type.split(";")[0].trim().toLowerCase();
@@ -9,6 +9,7 @@ export function mediaMimeFromFile(file: { name: string; type: string }): string 
   if (name.endsWith(".png")) return "image/png";
   if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "image/jpeg";
   if (name.endsWith(".webp")) return "image/webp";
+  if (name.endsWith(".svg")) return "image/svg+xml";
   if (name.endsWith(".pdf")) return "application/pdf";
   if (name.endsWith(".mp4")) return "video/mp4";
   return declared;

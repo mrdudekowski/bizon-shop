@@ -21,6 +21,11 @@ describe("mediaMimeFromFile", () => {
     expect(mediaMimeFromFile({ name: "pic.webp", type: "" })).toBe("image/webp");
   });
 
+  it("recognizes an SVG by its MIME type or file name", () => {
+    expect(mediaMimeFromFile({ name: "icon.svg", type: "" })).toBe("image/svg+xml");
+    expect(mediaMimeFromFile({ name: "icon.svg", type: "image/svg+xml" })).toBe("image/svg+xml");
+  });
+
   it("still recognizes a PDF by its file name", () => {
     expect(mediaMimeFromFile({ name: "terms.pdf", type: "" })).toBe("application/pdf");
   });
