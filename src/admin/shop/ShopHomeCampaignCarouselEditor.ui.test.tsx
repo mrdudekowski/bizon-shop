@@ -86,6 +86,7 @@ describe("Shop home campaign carousel editor", () => {
     render(createElement(ShopHomeCampaignCarouselEditor));
 
     expect(await screen.findByRole("textbox", { name: "Подпись для карусели — Диски" })).toHaveProperty("value", "Диски для поездок");
+    expect(screen.getByRole("img", { name: "Иконка дисков" })).toHaveProperty("src", "http://localhost:3000/images/shop/category-icons/tire.svg");
     expect(screen.getByRole("textbox", { name: "Подпись карусели: Шины" })).toHaveProperty("value", "Для любых дорог");
     expect(screen.getByRole("img", { name: "Иконка категории Шины" })).toHaveProperty("src", "http://localhost:3000/media/shop-tire-icon.png");
     expect(screen.getByRole("textbox", { name: "Подпись карусели: Путешествия" })).toHaveProperty("value", "");

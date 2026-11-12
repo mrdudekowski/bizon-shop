@@ -12,6 +12,8 @@ import { useAdminSession } from "@/admin/ui/DocumentUI";
 import { mergeShopHomeCategories } from "./shopHomeCategories";
 import styles from "./ShopHomeCampaignCarouselEditor.module.css";
 
+const DISK_ICON_URL = resolveMediaPreviewUrl("/images/shop/category-icons/tire.svg");
+
 export function ShopHomeCampaignCarouselEditor() {
   const session = useAdminSession();
   const [record, setRecord] = useState<EntityRecord<ShopHomePageDraft> | null>(null);
@@ -132,7 +134,9 @@ export function ShopHomeCampaignCarouselEditor() {
       </div>
       <div className={styles.rows}>
         <div className={styles.row}>
-          <div className={styles.iconFrame} aria-hidden="true"><span>Диски</span></div>
+          <div className={styles.iconFrame}>
+            {DISK_ICON_URL ? <img src={DISK_ICON_URL} alt="Иконка дисков" /> : <span>Нет иконки</span>}
+          </div>
           <label className={styles.captionField}>
             Подпись для карусели — Диски
             <input
