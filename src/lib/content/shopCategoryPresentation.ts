@@ -153,7 +153,7 @@ export function shopCategoryIndexCards(
         kicker: "",
         title: tile?.title || category.name,
         href: `${ROUTES.shop}/${category.slug}`,
-        iconUrl: tile?.iconUrl || shopCategoryIconUrl(category.slug),
+        iconUrl: shopCategoryIconUrl(category.slug) || tile?.iconUrl || null,
       };
     });
 }

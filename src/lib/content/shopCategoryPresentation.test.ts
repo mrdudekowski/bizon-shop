@@ -200,7 +200,7 @@ describe("shopCategoryPresentation", () => {
       { categoryId: "4", categorySlug: "accessories", title: "Скрыто", visible: false, sortOrder: 3, carouselVisible: false },
     ]);
     expect(cards.map((card) => ({ title: card.title, href: card.href, iconUrl: card.iconUrl }))).toEqual([
-      { title: "Тяговые решения", href: "/shop/pritsepy", iconUrl: "/page/trailers-icon.svg" },
+      { title: "Тяговые решения", href: "/shop/pritsepy", iconUrl: "/images/shop/category-icons/rv_car-black.svg" },
       { title: "Походы", href: "/shop/outdoor", iconUrl: "/images/shop/category-icons/campfire-black.svg" },
     ]);
   });
