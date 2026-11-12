@@ -244,6 +244,31 @@ describe("mergeShopHomeContent", () => {
     expect(merged.wheelsIntro.lead).toBe(SHOP_HOME_PAGE_DEFAULTS.wheelsIntro.lead);
   });
 
+  it("uses the Shop CMS disk caption and keeps the default for older payloads", () => {
+    const merged = mergeShopHomeContent(SHOP_HOME_PAGE_DEFAULTS, {
+      homeCarousel: { diskCaption: "Новая подпись дисков" },
+      catalog: {
+        tiles: [{
+          categoryId: "4",
+          categorySlug: "outdoor",
+          title: "Путешествия",
+          visible: true,
+          sortOrder: 2,
+          carouselVisible: false,
+          homeCarouselCaption: "Новая подпись категории",
+          iconUrl: "/media/icon.svg",
+        }],
+      },
+    });
+    expect(merged.homeCarousel.diskCaption).toBe("Новая подпись дисков");
+    expect(merged.catalog.tiles[0]).toMatchObject({
+      homeCarouselCaption: "Новая подпись категории",
+      iconUrl: "/media/icon.svg",
+    });
+    expect(mergeShopHomeContent(SHOP_HOME_PAGE_DEFAULTS, {}).homeCarousel)
+      .toEqual(SHOP_HOME_PAGE_DEFAULTS.homeCarousel);
+  });
+
   it("merges Shop catalog copy and category tile configuration", () => {
     const merged = mergeShopHomeContent(SHOP_HOME_PAGE_DEFAULTS, {
       catalog: {

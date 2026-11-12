@@ -952,45 +952,6 @@
 .shopMedia img {
   object-fit: var(--media-fit-cover);
   object-position: center;
-  opacity: 0;
-  transition: opacity 700ms ease;
-}
-.shopMedia img[data-active="true"] { opacity: 1; }
-.shopPager {
-  position: absolute;
-  z-index: 2;
-  bottom: clamp(1.25rem, 3vw, 2rem);
-  left: 50%;
-  display: flex;
-  gap: 8px;
-  width: min(16rem, calc(100% - (var(--page-gutter) * 2)));
-  max-width: 100%;
-  min-width: 0;
-  transform: translateX(-50%);
-}
-.shopPager span {
-  flex: 1;
-  height: 2px;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.35);
-}
-.shopPager i {
-  display: block;
-  width: 0;
-  height: 100%;
-  background: #fff;
-}
-.shopPager span[data-active="true"] i {
-  width: 100%;
-  animation: shop-pager 6s linear;
-}
-@keyframes shop-pager {
-  from { width: 0; }
-  to { width: 100%; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .shopMedia img { transition: none; }
-  .shopPager span[data-active="true"] i { animation: none; width: 100%; }
 }
 .shopOverlay {
   position: absolute;

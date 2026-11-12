@@ -41,6 +41,7 @@ describe("CMS driven home sections", () => {
         frames: [],
         cta: { label: "Выбрать диск", href: "/shop" },
       },
+      carouselItems: [],
     });
 
     const text = collectText(element);

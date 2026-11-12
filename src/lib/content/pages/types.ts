@@ -100,6 +100,7 @@ export type ShopCatalogTile = {
   visible: boolean;
   sortOrder: number;
   carouselVisible: boolean;
+  homeCarouselCaption?: string;
   iconUrl?: string;
   carouselImageUrl?: string;
   iconAlt?: string;
@@ -124,6 +125,7 @@ export type ShopHomePageContent = {
   seoDescription?: string;
   hero: ShopHeroContent;
   wheelsIntro: PageShell & { kicker: string };
+  homeCarousel: { diskCaption: string };
   orderSteps: ShopOrderStep[];
   categoryCarousel: ShopCategorySlide[];
   catalog: { copy: ShopCatalogCopy; tiles: ShopCatalogTile[] };

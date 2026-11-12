@@ -1,0 +1,75 @@
+.carousel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: clamp(1rem, 2vw, 1.5rem);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.iconTile {
+  display: grid;
+  place-items: center;
+  width: clamp(7.5rem, 12vw, 10rem);
+  max-width: 100%;
+  aspect-ratio: 1;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 58%);
+  border-radius: 1.25rem;
+  background: rgb(0 0 0 / 22%);
+  backdrop-filter: blur(6px);
+  animation: icon-swipe-in 480ms cubic-bezier(.2,.75,.25,1) both;
+}
+
+.iconTile img {
+  display: block;
+  width: 58%;
+  max-width: 100%;
+  height: auto;
+  max-height: 58%;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.caption {
+  display: grid;
+  align-content: center;
+  width: 100%;
+  max-width: 32rem;
+  min-width: 0;
+  min-height: 3.2em;
+  margin: 0;
+  color: var(--color-on-dark-subtle);
+  font-size: var(--type-body);
+  line-height: var(--leading-body);
+  text-align: center;
+  text-wrap: balance;
+  animation: caption-fade-in 360ms ease both;
+}
+
+.carousel[data-reduced-motion="true"] .iconTile,
+.carousel[data-reduced-motion="true"] .caption {
+  animation: none;
+}
+
+@keyframes icon-swipe-in {
+  from { opacity: 0; transform: translateX(1.25rem); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes caption-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iconTile,
+  .caption { animation: none; }
+}
+
+@media (max-width: 639px) {
+  .iconTile { width: clamp(6.5rem, 28vw, 8rem); }
+  .caption { max-width: 22rem; font-size: var(--type-small); }
+}

@@ -23,6 +23,7 @@ export const SHOP_HOME_PAGE_DEFAULTS: ShopHomePageContent = {
     title: "Выберите свой дизайн",
     lead: "",
   },
+  homeCarousel: { diskCaption: "Кованые диски, созданные под ваш автомобиль" },
   orderSteps: SHOP_ORDER_STEPS.map((step) => ({
     title: step.title,
     description: step.description,

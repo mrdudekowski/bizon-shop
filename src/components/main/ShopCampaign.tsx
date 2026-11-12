@@ -2,74 +2,33 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
 
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { shopCampaignFrames, type ShopCampaignFrame } from "@/lib/content/pages/shopCampaignFrames";
+import type { HomeShopCarouselItem } from "@/lib/content/homeShopCarousel";
 import type { HomeShopCampaignContent } from "@/lib/content/pages/types";
 
 import { HOME_SHOP_ZONE_SECTION_ID } from "./homeShopZone";
+import { HomeShopIconCarousel } from "./HomeShopIconCarousel";
 import styles from "./MainHome.module.css";
 
-const FRAME_MS = 6000;
-
-function ShopCampaignStage({ frames }: { frames: ShopCampaignFrame[] }) {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [autoplayPaused, setAutoplayPaused] = useState(false);
-  const mediaRef = useRef<HTMLDivElement>(null);
-  const count = frames.length;
-
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [count]);
-
-  useEffect(() => {
-    // The CTA sits on the parent section, and ShopCampaign itself stays free of hooks.
-    const section = mediaRef.current?.closest("section");
-    if (!section) return undefined;
-    const pause = () => setAutoplayPaused(true);
-    section.addEventListener("focusin", pause);
-    return () => section.removeEventListener("focusin", pause);
-  }, []);
-
-  useEffect(() => {
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (reducedMotion.matches || count < 2 || autoplayPaused) return undefined;
-    const timer = window.setInterval(() => {
-      setActiveIndex((current) => (current + 1) % count);
-    }, FRAME_MS);
-    return () => window.clearInterval(timer);
-  }, [count, autoplayPaused]);
-
+function ShopCampaignBackground({ frame }: { frame?: ShopCampaignFrame }) {
+  if (!frame) return null;
   return (
-    <>
-      <div className={styles.shopMedia} ref={mediaRef}>
-        {frames.map((frame, index) => (
-          <Image
-            key={`${frame.imageUrl}-${index}`}
-            src={frame.imageUrl}
-            alt={index === activeIndex ? frame.imageAlt : ""}
-            fill
-            sizes="100vw"
-            data-active={index === activeIndex ? "true" : "false"}
-            style={{ objectPosition: `${(frame.imageFocalX ?? 0.5) * 100}% ${(frame.imageFocalY ?? 0.5) * 100}%` }}
-          />
-        ))}
-      </div>
-      {count > 1 ? (
-        <div className={styles.shopPager} aria-hidden="true">
-          {frames.map((frame, index) => (
-            <span key={`${frame.imageUrl}-${index}-pager`} data-active={index === activeIndex ? "true" : "false"}>
-              <i />
-            </span>
-          ))}
-        </div>
-      ) : null}
-    </>
+    <div className={styles.shopMedia} data-static-background="">
+      <Image
+        src={frame.imageUrl}
+        alt=""
+        fill
+        sizes="100vw"
+        priority={false}
+        style={{ objectPosition: `${(frame.imageFocalX ?? 0.5) * 100}% ${(frame.imageFocalY ?? 0.5) * 100}%` }}
+      />
+    </div>
   );
 }
 
-export function ShopCampaign({ content }: { content: HomeShopCampaignContent }) {
+export function ShopCampaign({ content, carouselItems }: { content: HomeShopCampaignContent; carouselItems: HomeShopCarouselItem[] }) {
   const frames = shopCampaignFrames(content);
 
   return (
@@ -82,13 +41,13 @@ export function ShopCampaign({ content }: { content: HomeShopCampaignContent }) 
         data-main-chrome-tone="dark"
         aria-label={content.title}
       >
-        <ShopCampaignStage frames={frames} />
+        <ShopCampaignBackground frame={frames[0]} />
         <div className={styles.shopOverlay} aria-hidden="true" />
         <div className={styles.inner}>
           <div className={styles.shopCampaignCopy}>
+            <HomeShopIconCarousel items={carouselItems} />
             {content.eyebrow ? <p className={styles.eyebrow}>{content.eyebrow}</p> : null}
             <h2>{content.title}</h2>
-            {content.lead ? <p>{content.lead}</p> : null}
             {content.cta.label.trim() && content.cta.href.trim() ? (
               <Link className={`btn-accent ${styles.shopCta}`} href={content.cta.href}>
                 {content.cta.label} <SiteArrow />

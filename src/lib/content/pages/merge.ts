@@ -144,6 +144,7 @@ export function mergeShopHomeContent(
     seoDescription?: string;
     hero?: Partial<Omit<ShopHomePageContent["hero"], "cta">> & { cta?: CtaPatch };
     wheelsIntro?: Partial<ShopHomePageContent["wheelsIntro"]>;
+    homeCarousel?: Partial<ShopHomePageContent["homeCarousel"]>;
     orderSteps?: ShopOrderStep[];
     categoryCarousel?: ShopCategorySlide[];
     catalog?: {
@@ -169,6 +170,9 @@ export function mergeShopHomeContent(
     wheelsIntro: {
       ...pickShell(patch.wheelsIntro, defaults.wheelsIntro),
       kicker: pickText(patch.wheelsIntro?.kicker, defaults.wheelsIntro.kicker),
+    },
+    homeCarousel: {
+      diskCaption: pickText(patch.homeCarousel?.diskCaption, defaults.homeCarousel.diskCaption),
     },
     orderSteps: patch.orderSteps ?? defaults.orderSteps,
     categoryCarousel: patch.categoryCarousel ?? defaults.categoryCarousel,
