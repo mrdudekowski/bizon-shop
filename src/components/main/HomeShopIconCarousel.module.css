@@ -9,7 +9,9 @@
 }
 
 .iconTile {
+  position: relative;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   width: clamp(7.5rem, 12vw, 10rem);
   max-width: 100%;
@@ -23,19 +25,30 @@
 }
 
 .icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
   display: block;
   width: 58%;
   max-width: 100%;
-  height: auto;
-  max-height: 58%;
+  height: 58%;
   object-fit: contain;
   filter: brightness(0) invert(1);
-  animation: icon-swipe-in 480ms cubic-bezier(.2,.75,.25,1) both;
+  transform: translate(-50%, -50%);
+}
+
+.iconExit {
+  animation: icon-slide-out 480ms cubic-bezier(.2,.75,.25,1) both;
+}
+
+.iconEnter {
+  animation: icon-slide-in 480ms cubic-bezier(.2,.75,.25,1) both;
 }
 
 .caption {
   display: grid;
   align-content: center;
+  grid-area: 1 / 1;
   width: 100%;
   max-width: 32rem;
   min-width: 0;
@@ -46,17 +59,39 @@
   line-height: var(--leading-body);
   text-align: center;
   text-wrap: balance;
-  animation: caption-fade-in 360ms ease both;
 }
 
-.carousel[data-reduced-motion="true"] .icon,
-.carousel[data-reduced-motion="true"] .caption {
+.captionSlot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.captionExit {
+  animation: caption-fade-out 120ms ease-out both;
+}
+
+.captionEnter {
+  animation: caption-fade-in 360ms ease 120ms both;
+}
+
+.carousel[data-reduced-motion="true"] .iconExit,
+.carousel[data-reduced-motion="true"] .iconEnter,
+.carousel[data-reduced-motion="true"] .captionExit,
+.carousel[data-reduced-motion="true"] .captionEnter {
   animation: none;
 }
 
-@keyframes icon-swipe-in {
-  from { opacity: 0; transform: translateX(1.25rem); }
-  to { opacity: 1; transform: translateX(0); }
+@keyframes icon-slide-in {
+  from { transform: translate(180%, -50%); }
+  to { transform: translate(-50%, -50%); }
+}
+
+@keyframes icon-slide-out {
+  from { transform: translate(-50%, -50%); }
+  to { transform: translate(-280%, -50%); }
 }
 
 @keyframes caption-fade-in {
@@ -64,10 +99,16 @@
   to { opacity: 1; }
 }
 
+@keyframes caption-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .iconTile,
-  .caption { animation: none; }
-  .icon { animation: none; }
+  .iconExit,
+  .iconEnter,
+  .captionExit,
+  .captionEnter { animation: none; }
 }
 
 @media (max-width: 639px) {

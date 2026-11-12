@@ -40,6 +40,20 @@ describe("buildHomeShopCarouselItems", () => {
     expect(items.map((item) => item.id)).toEqual(["wheels", "category-on"]);
   });
 
+  it("uses the catalog category icon when a visible carousel tile has no CMS icon", () => {
+    const items = buildHomeShopCarouselItems(shopHome([
+      { categoryId: "accessory", categorySlug: "accessory", title: "Аксессуары", visible: true, sortOrder: 1, carouselVisible: true, homeCarouselCaption: "Аксессуары для вашего стиля", iconUrl: null },
+    ]));
+
+    expect(items).toContainEqual({
+      id: "category-accessory",
+      title: "Аксессуары",
+      caption: "Аксессуары для вашего стиля",
+      iconUrl: "/images/shop/category-icons/tshirt-black.svg",
+      iconAlt: "Аксессуары",
+    });
+  });
+
   it("uses the latest published icon and caption from the Shop tile", () => {
     const items = buildHomeShopCarouselItems(shopHome([
       { categoryId: "3", categorySlug: "outdoor", title: "Кемпинг", visible: true, sortOrder: 1, carouselVisible: true, homeCarouselCaption: "Обновлено", iconUrl: "/new.svg" },

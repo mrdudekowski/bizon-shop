@@ -4,10 +4,10 @@ import { shopCategoryCarouselIconUrl, shopCategoryIconUrl } from "./shopCategory
 
 describe("shopCategoryCarouselIconUrl", () => {
   it.each([
-    ["outdoor", "/images/shop/category-icons/campfire-white.svg"],
-    ["accessory", "/images/shop/category-icons/tshirt-white.svg"],
-    ["masla-i-zapchasti", "/images/shop/category-icons/jerrycan-white.svg"],
-  ])("maps %s to its white carousel icon", (slug, expected) => {
+    ["outdoor", "/images/shop/category-icons/campfire-black.svg"],
+    ["accessory", "/images/shop/category-icons/tshirt-black.svg"],
+    ["masla-i-zapchasti", "/images/shop/category-icons/jerrycan-black.svg"],
+  ])("maps %s to a monochrome carousel source", (slug, expected) => {
     expect(shopCategoryCarouselIconUrl(slug)).toBe(expected);
   });
 });

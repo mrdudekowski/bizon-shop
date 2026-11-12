@@ -24,7 +24,7 @@ export function shopCategoryIconUrl(slug: string): string | null {
   return shopCategoryStaticIconUrl(slug, "black");
 }
 
-/** Compatibility alias: monochrome icons are tinted by their surface via currentColor. */
+/** Compatibility alias: dark source icons are inverted by the chrome on dark surfaces. */
 export function shopCategoryCarouselIconUrl(slug: string): string | null {
   return shopCategoryStaticIconUrl(slug, "black");
 }

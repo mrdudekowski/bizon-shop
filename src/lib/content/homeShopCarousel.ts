@@ -1,4 +1,5 @@
 import type { ShopHomePageContent } from "./pages/types";
+import { shopCategoryCarouselIconUrl } from "./shopCategoryPresentation";
 
 export type HomeShopCarouselItem = {
   id: string;
@@ -13,15 +14,19 @@ const DISK_ICON_URL = "/images/shop/category-icons/tire.svg";
 export function buildHomeShopCarouselItems(shopHome: ShopHomePageContent): HomeShopCarouselItem[] {
   const categories = shopHome.catalog.tiles
     .map((tile, index) => ({ tile, index }))
-    .filter(({ tile }) => tile.visible && tile.carouselVisible && tile.homeCarouselCaption?.trim() && tile.iconUrl?.trim())
+    .filter(({ tile }) => tile.visible && tile.carouselVisible && tile.homeCarouselCaption?.trim())
     .sort((left, right) => left.tile.sortOrder - right.tile.sortOrder || left.index - right.index)
-    .map(({ tile }) => ({
-      id: `category-${tile.categoryId}`,
-      title: tile.title,
-      caption: tile.homeCarouselCaption!.trim(),
-      iconUrl: tile.iconUrl!.trim(),
-      iconAlt: tile.iconAlt?.trim() || tile.title,
-    }));
+    .flatMap(({ tile }) => {
+      const iconUrl = tile.iconUrl?.trim() || shopCategoryCarouselIconUrl(tile.categorySlug);
+      if (!iconUrl) return [];
+      return [{
+        id: `category-${tile.categoryId}`,
+        title: tile.title,
+        caption: tile.homeCarouselCaption!.trim(),
+        iconUrl,
+        iconAlt: tile.iconAlt?.trim() || tile.title,
+      }];
+    });
 
   return [
     {

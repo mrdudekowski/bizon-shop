@@ -57,10 +57,25 @@ describe("HomeShopIconCarousel", () => {
     await renderCarousel();
     const tile = host.querySelector("[data-home-shop-icon-tile]");
     await act(async () => vi.advanceTimersByTime(TICK_MS));
-    expect(host.querySelector("img")?.getAttribute("src")).toBe("/camp.svg");
+    expect(Array.from(host.querySelectorAll("img")).map((image) => image.getAttribute("src"))).toEqual(["/tire.svg", "/camp.svg"]);
     expect(host.querySelector("[data-home-shop-icon-tile]")).toBe(tile);
+    expect(host.querySelector('[data-home-shop-caption="outgoing"]')?.textContent).toBe("Кованые диски");
+    expect(host.querySelector('[data-home-shop-caption="incoming"]')?.textContent).toBe("Для маршрута");
+    expect(host.textContent).toContain("Кованые диски");
+
+    const incomingIcon = host.querySelector('img[data-home-shop-icon="incoming"]');
+    expect(incomingIcon).not.toBeNull();
+    await act(async () => incomingIcon?.dispatchEvent(new Event("animationend", { bubbles: true })));
+    expect(host.querySelectorAll("img")).toHaveLength(1);
+    expect(host.querySelector("img")?.getAttribute("src")).toBe("/camp.svg");
+    expect(host.querySelectorAll("[data-home-shop-caption]")).toHaveLength(1);
     expect(host.textContent).toContain("Для маршрута");
+
     await act(async () => vi.advanceTimersByTime(TICK_MS));
+    expect(Array.from(host.querySelectorAll("img")).map((image) => image.getAttribute("src"))).toEqual(["/camp.svg", "/tire.svg"]);
+    expect(host.querySelector('[data-home-shop-caption="incoming"]')?.textContent).toBe("Кованые диски");
+    const nextIncomingIcon = host.querySelector('img[data-home-shop-icon="incoming"]');
+    await act(async () => nextIncomingIcon?.dispatchEvent(new Event("animationend", { bubbles: true })));
     expect(host.querySelector("img")?.getAttribute("src")).toBe("/tire.svg");
     expect(host.querySelector("button, a")).toBeNull();
   });

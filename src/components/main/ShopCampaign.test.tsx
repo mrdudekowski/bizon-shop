@@ -76,7 +76,16 @@ describe("ShopCampaign", () => {
 
     await act(async () => vi.advanceTimersByTime(TICK_MS));
     expect(background?.querySelectorAll("img")).toHaveLength(1);
-    expect(host.querySelector("[data-home-shop-icon]")?.getAttribute("src")).toBe("/camp.svg");
+    const incomingIcon = host.querySelector('[data-home-shop-icon="incoming"]');
+    expect(incomingIcon?.getAttribute("src")).toBe("/camp.svg");
+    expect(host.querySelector('[data-home-shop-caption="outgoing"]')?.textContent).toBe("Кованые диски");
+    expect(host.querySelector('[data-home-shop-caption="incoming"]')?.textContent).toBe("Для маршрута");
+
+    await act(async () => incomingIcon?.dispatchEvent(new Event("animationend", { bubbles: true })));
+    expect(host.querySelector('[data-home-shop-icon="current"]')?.getAttribute("src")).toBe("/camp.svg");
+    expect(host.querySelector('[data-home-shop-caption="current"]')?.textContent).toBe("Для маршрута");
+    expect(host.querySelectorAll("[data-home-shop-caption]")).toHaveLength(1);
+    expect(host.textContent).toContain("Для маршрута");
   });
 
   it("uses the primary campaign image when the frame list is empty", async () => {
