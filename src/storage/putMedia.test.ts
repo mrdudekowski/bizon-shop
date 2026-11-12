@@ -146,6 +146,44 @@ describe("putMedia", () => {
     expect(store.contentTypes.get(result.key)).toBe("image/webp");
   });
 
+  it("keeps a safe SVG icon byte-for-byte and stores it as SVG", async () => {
+    setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
+    setEnv("S3_BUCKET", "bucket");
+    setEnv("S3_ACCESS_KEY_ID", "id");
+    setEnv("S3_SECRET_ACCESS_KEY", "secret");
+    const store = memoryStore();
+    const svg = Buffer.from('<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g><path d="M1 1h22v22H1z"/></g></svg>');
+
+    const result = await putMedia(store, { name: "category-icon.svg", mimeType: "image/svg+xml", body: svg });
+
+    expect(result.url).toMatch(/\.svg$/);
+    expect(result.mimeType).toBe("image/svg+xml");
+    expect(result.declaredMimeType).toBe("image/svg+xml");
+    expect(store.objects.get(result.key)).toEqual(svg);
+    expect(store.contentTypes.get(result.key)).toBe("image/svg+xml");
+  });
+
+  it("rejects active SVG content and embedded CSS", async () => {
+    setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
+    setEnv("S3_BUCKET", "bucket");
+    setEnv("S3_ACCESS_KEY_ID", "id");
+    setEnv("S3_SECRET_ACCESS_KEY", "secret");
+
+    const unsafeSvgs = [
+      '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><path d="M0 0"/></svg>',
+      '<svg xmlns="http://www.w3.org/2000/svg"><style>@import "https://example.test/track.css";</style></svg>',
+      '<svg xmlns="http://www.w3.org/2000/svg"><path style="fill:red" d="M0 0"/></svg>',
+    ];
+
+    for (const source of unsafeSvgs) {
+      await expect(putMedia(memoryStore(), {
+        name: "unsafe.svg",
+        mimeType: "image/svg+xml",
+        body: Buffer.from(source),
+      })).rejects.toMatchObject({ code: "publish_blocked" });
+    }
+  });
+
   it("passes converted media metadata to the persistence callback", async () => {
     setEnv("S3_PUBLIC_URL", "https://cdn.example.test");
     setEnv("S3_BUCKET", "bucket");

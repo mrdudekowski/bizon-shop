@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getStaticSiteDeployStatus } from "./timewebApps";
+import { getStaticSiteDeployStatus, isSiteAffectingPublicationMethod } from "./timewebApps";
 
 const revision = `sha256:${"a".repeat(64)}`;
 const jsonResponse = (value: unknown) => new Response(JSON.stringify(value), {
@@ -109,5 +109,23 @@ describe("static site deployment revision verification", () => {
 
     await expect(getStaticSiteDeployStatus("../deploy-5", revision)).resolves.toEqual({ status: "not_found" });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("public site rebuild triggers", () => {
+  it("rebuilds after direct admin mutations that change published content", () => {
+    for (const method of [
+      "deleteAsset",
+      "detachAssetUsage",
+      "updateCatalogOrder",
+      "saveShopSubcategory",
+      "saveSiteProfileSlice",
+    ]) {
+      expect(isSiteAffectingPublicationMethod(method), `${method} should rebuild the static public site`).toBe(true);
+    }
+  });
+
+  it("does not rebuild for operations that only create an unattached media asset", () => {
+    expect(isSiteAffectingPublicationMethod("createAsset")).toBe(false);
   });
 });

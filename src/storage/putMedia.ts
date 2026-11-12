@@ -11,6 +11,7 @@ export const ALLOWED_MEDIA_MIME_TYPES = [
   "image/jpeg",
   "image/png",
   "image/webp",
+  "image/svg+xml",
   "video/mp4",
   "application/pdf",
 ] as const;
@@ -63,6 +64,22 @@ function looksLikeWebp(body: Buffer): boolean {
   return body.length >= 12 && body.toString("ascii", 0, 4) === "RIFF" && body.toString("ascii", 8, 12) === "WEBP";
 }
 
+function looksLikeSvg(body: Buffer): boolean {
+  const source = body.toString("utf8").trimStart();
+  return /^(?:<\?xml\s[^?]*\?>\s*)?<svg(?:\s|>)/i.test(source);
+}
+
+function assertSafeSvg(body: Buffer): void {
+  const source = body.toString("utf8");
+  if (
+    source.includes("\u0000") ||
+    source.includes("\ufffd") ||
+    /<!DOCTYPE|<!ENTITY|<\s*script\b|<\s*foreignObject\b|<\s*image\b|<\s*a\b|<\s*style\b|<\s*(?:animate|animateMotion|animateTransform|set)\b|\bhref\s*=|\bstyle\s*=|@import\b|url\s*\(|\bon[a-z]+\s*=/i.test(source)
+  ) {
+    throw new MediaRejected("publish_blocked");
+  }
+}
+
 function looksLikePdf(body: Buffer): boolean {
   return body.length >= 5 && body.toString("ascii", 0, 5) === "%PDF-";
 }
@@ -75,6 +92,7 @@ function detectedMime(body: Buffer): string | null {
   if (looksLikePng(body)) return "image/png";
   if (looksLikeJpeg(body)) return "image/jpeg";
   if (looksLikeWebp(body)) return "image/webp";
+  if (looksLikeSvg(body)) return "image/svg+xml";
   if (looksLikePdf(body)) return "application/pdf";
   if (looksLikeMp4(body)) return "video/mp4";
   return null;
@@ -97,7 +115,7 @@ async function assertImageDecodes(body: Buffer, mimeType: string): Promise<void>
 }
 
 function assertImageMetadata(metadata: { format?: string; width?: number; height?: number }, mimeType: string): void {
-  const expectedFormat = mimeType === "image/jpeg" ? "jpeg" : mimeType.slice("image/".length);
+  const expectedFormat = mimeType === "image/jpeg" ? "jpeg" : mimeType === "image/svg+xml" ? "svg" : mimeType.slice("image/".length);
   if (metadata.format !== expectedFormat || !metadata.width || !metadata.height) {
     throw new Error("image_format_mismatch");
   }
@@ -139,6 +157,7 @@ function extensionFor(mime: string, name: string): string {
   if (mime === "image/jpeg") return ".jpg";
   if (mime === "image/png") return ".png";
   if (mime === "image/webp") return ".webp";
+  if (mime === "image/svg+xml") return ".svg";
   if (mime === "video/mp4") return ".mp4";
   if (mime === "application/pdf") return ".pdf";
   const match = name.toLowerCase().match(/\.[a-z0-9]+$/);
@@ -157,6 +176,7 @@ export async function putMedia(
   }
   let body = file.body;
   let mimeType = sourceMimeType;
+  if (sourceMimeType === "image/svg+xml") assertSafeSvg(body);
   if (sourceMimeType === "image/jpeg" || sourceMimeType === "image/png") {
     try {
       body = await displayWebp(file.body);

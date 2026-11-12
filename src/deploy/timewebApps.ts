@@ -76,6 +76,12 @@ const PUBLIC_SITE_DEPLOY_METHODS = new Set([
   "hideShopProduct",
   "hideMaterial",
   "hidePage",
+  // These admin actions update published read-model data directly, outside draft/publish.
+  "deleteAsset",
+  "detachAssetUsage",
+  "updateCatalogOrder",
+  "saveShopSubcategory",
+  "saveSiteProfileSlice",
 ]);
 
 export function isSiteAffectingPublicationMethod(method: unknown): method is string {
