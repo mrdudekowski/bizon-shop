@@ -609,6 +609,16 @@ a {
   position: relative;
 }
 
+.cart-button-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  background-color: currentColor;
+  -webkit-mask: url("/icons/mobile-nav/cart.png") center / contain no-repeat;
+  mask: url("/icons/mobile-nav/cart.png") center / contain no-repeat;
+}
+
 .cart-badge {
   position: absolute;
   top: -4px;

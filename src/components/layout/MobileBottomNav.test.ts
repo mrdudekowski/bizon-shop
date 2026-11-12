@@ -34,29 +34,29 @@ function linkHtml(html: string, label: string) {
 }
 
 describe("MobileBottomNav shop current item", () => {
-  it("does not mark Категории current on a product page", () => {
+  it("does not mark Каталог current on a product page", () => {
     for (const path of ["/shop/product/mega-pritsep", "/shop/product/mega-pritsep/"]) {
       pathname.current = path;
       const html = renderShopNav();
-      expect(linkHtml(html, "Категории")).not.toContain('aria-current="page"');
+      expect(linkHtml(html, "Каталог")).not.toContain('aria-current="page"');
       expect(html).not.toContain('aria-current="page"');
     }
   });
 
-  it("keeps Категории current on a category path", () => {
+  it("keeps Каталог current on a category path", () => {
     pathname.current = "/shop/pritsepy";
     const html = renderShopNav();
-    expect(linkHtml(html, "Категории")).toContain('aria-current="page"');
+    expect(linkHtml(html, "Каталог")).toContain('aria-current="page"');
   });
 });
 
-describe("MobileBottomNav cart context", () => {
-  it("keeps the Tires request link separate from the Shop cart", () => {
+describe("MobileBottomNav request destinations", () => {
+  it("keeps the Tires and Shop request destinations separate", () => {
     pathname.current = "/";
     const main = renderMainNav();
     const shop = renderShopNav();
 
     expect(linkHtml(main, "Заявка")).toContain('href="/cart"');
-    expect(linkHtml(shop, "Корзина")).toContain('href="/shop/cart"');
+    expect(linkHtml(shop, "Заявка")).toContain('href="/shop/cart"');
   });
 });

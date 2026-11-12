@@ -39,7 +39,13 @@
 .item:focus-visible { outline: var(--focus-outline); outline-offset: -2px; }
 .item:hover { color: var(--color-link-hover, var(--bizon-coral-500, #e45433)); }
 .iconWrap { position: relative; display: grid; width: 24px; height: 24px; place-items: center; }
-.icon { width: 21px; height: 21px; }
+.icon { display: block; width: 21px; height: 21px; background-color: currentColor; -webkit-mask-position: center; mask-position: center; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; }
+.iconHome { -webkit-mask-image: url("/icons/mobile-nav/home.svg"); mask-image: url("/icons/mobile-nav/home.svg"); }
+.iconCatalog { -webkit-mask-image: url("/icons/mobile-nav/category.svg"); mask-image: url("/icons/mobile-nav/category.svg"); }
+.iconCompass { -webkit-mask-image: url("/icons/mobile-nav/compass.svg"); mask-image: url("/icons/mobile-nav/compass.svg"); }
+.iconTire { -webkit-mask-image: url("/icons/mobile-nav/tire.svg"); mask-image: url("/icons/mobile-nav/tire.svg"); }
+.iconRequest { -webkit-mask-image: url("/icons/mobile-nav/list.svg"); mask-image: url("/icons/mobile-nav/list.svg"); }
+.iconActive { color: var(--color-link-hover, var(--bizon-coral-500, #e45433)); }
 .label, .labelActive { max-width: 100%; overflow: hidden; font-size: 0.75rem; font-weight: 500; letter-spacing: var(--tracking-body, normal); line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
 .labelActive { color: var(--color-link-hover, var(--bizon-coral-500, #e45433)); font-weight: 600; }
 .badge { position: absolute; top: -5px; right: -9px; display: grid; min-width: 16px; height: 16px; padding: 0 4px; place-items: center; border: 1px solid #fff; border-radius: 999px; background: var(--bizon-coral-500, #e45433); color: #fff; font-size: 9px; font-weight: 800; line-height: 1; }
