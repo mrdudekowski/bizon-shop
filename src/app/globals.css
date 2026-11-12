@@ -2130,6 +2130,10 @@ textarea.field-input {
     0 0 0 1px rgba(6, 227, 190, 0.18);
 }
 
+[data-brand-context="shop"] .catalog-card--no-shop-hover-ring:hover {
+  box-shadow: var(--shadow-card);
+}
+
 [data-brand-context="shop"] .catalog-card:hover .catalog-card__arrow {
   background: var(--color-primary);
   color: var(--color-on-primary);

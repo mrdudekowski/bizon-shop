@@ -12,11 +12,12 @@ export function CatalogCard({
   imageAlt,
   mediaKey = undefined,
   mediaFit = "cover",
+  disableShopHoverRing = false,
 }) {
   const alt = imageAlt ?? title;
 
   return (
-    <article className="card-base info-card catalog-card">
+    <article className={`card-base info-card catalog-card${disableShopHoverRing ? " catalog-card--no-shop-hover-ring" : ""}`}>
       <div className={`catalog-card__media${mediaFit === "contain" ? " catalog-card__media--contain" : ""}`}>
         <CatalogImage
           src={imageUrl}

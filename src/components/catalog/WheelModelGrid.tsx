@@ -120,6 +120,7 @@ export function WheelModelGrid({
               imageAlt={`${model.name} — диск BIZON`}
               mediaKey={model.slug}
               mediaFit="contain"
+              disableShopHoverRing
             />
           ))}
         </div>
