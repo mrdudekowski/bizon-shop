@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { CartHeaderButton } from "@/components/cart/CartHeaderButton";
+import { ChromeNavIcon } from "@/components/chrome/ChromeNavIcon";
 import { ChromeWordmark, FloatingChrome } from "@/components/chrome/FloatingChrome";
 import { ROUTES } from "@/constants/navigation";
 
@@ -31,8 +32,14 @@ export function MainChrome({
       }
       navigation={
         <>
-          <Link href={ROUTES.models}>Каталог</Link>
-          <Link href={ROUTES.tireIq}>Tire IQ</Link>
+          <Link href={ROUTES.models}>
+            <ChromeNavIcon name="catalog" />
+            <span>Каталог</span>
+          </Link>
+          <Link href={ROUTES.tireIq}>
+            <ChromeNavIcon name="compass" />
+            <span>Tire IQ</span>
+          </Link>
         </>
       }
       action={<CartHeaderButton count={cartCount} onOpen={onCartOpen} />}

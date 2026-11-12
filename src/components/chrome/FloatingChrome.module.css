@@ -242,6 +242,11 @@
     display: none;
   }
 
+  .navigation :global([data-icon]),
+  .utility :global([data-icon]) {
+    display: none;
+  }
+
   .chrome[data-shop-chrome] .startNavigation {
     display: flex;
   }
@@ -308,5 +313,31 @@
 
   .bar {
     padding: 10px 12px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .chrome[data-shop-chrome] .bar {
+    overflow: visible;
+  }
+
+  .chrome[data-shop-chrome] .startNavigation :global([data-shop-catalog-link]) {
+    display: none;
+  }
+
+  .chrome[data-shop-chrome] .startNavigation :global([data-shop-catalog-toggle]) {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 1280px) {
+  .chrome[data-shop-chrome] .end > .navigation :global([data-shop-request]) {
+    display: none;
+  }
+}
+
+@media (max-width: 1599px) {
+  .chrome[data-shop-chrome] .startNavigation :global([data-shop-catalog-toggle]) {
+    display: none;
   }
 }

@@ -31,6 +31,23 @@
   white-space: nowrap;
 }
 
+.desktopHomeIcon {
+  display: none;
+  align-items: center;
+}
+
+.wideCatalogToggle {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.compactHomeArrow {
+  display: inline-flex;
+}
+
 .categoryIcon,
 .categoryMarks svg {
   display: block;
@@ -41,9 +58,11 @@
 }
 
 .categoryIcon {
-  background-color: currentColor;
-  -webkit-mask: var(--category-icon) center / contain no-repeat;
-  mask: var(--category-icon) center / contain no-repeat;
+  object-fit: contain;
+}
+
+.categoryIcon[data-tone="dark"] {
+  filter: invert(1);
 }
 
 .brandSlot {
@@ -137,6 +156,65 @@
 
 @media (min-width: 768px) {
   .categoryMarks { display: none; }
+}
+
+@media (min-width: 1280px) {
+  .desktopHomeIcon { display: inline-flex; }
+  .compactHomeArrow { display: none; }
+}
+
+@media (min-width: 1600px) {
+  .categoryMarks { display: flex; }
+
+  .brandSlot[data-icons="true"] {
+    width: min(720px, calc(100vw - 48px));
+  }
+
+  .categoryMarks { overflow: visible; }
+
+  .categoryMarks a {
+    position: relative;
+  }
+
+  .categoryMarks a::after {
+    position: absolute;
+    z-index: 10;
+    bottom: calc(100% - 1px);
+    left: 50%;
+    width: max-content;
+    max-width: min(480px, calc(100vw - 24px));
+    transform: translateX(-50%);
+    padding: 2px 8px;
+    border-radius: 6px;
+    content: attr(data-tooltip);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    overflow: hidden;
+    pointer-events: none;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: none;
+  }
+
+  .categoryMarks a:hover::after,
+  .categoryMarks a:focus-visible::after {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  :global([data-shop-chrome][data-tone="light"]) .categoryMarks a::after {
+    background: #1c1c1c;
+    color: #fff;
+  }
+
+  :global([data-shop-chrome][data-tone="dark"]) .categoryMarks a::after {
+    background: #fff;
+    color: #1c1c1c;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

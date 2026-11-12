@@ -1,0 +1,39 @@
+.icon {
+  display: inline-block;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  max-width: 100%;
+  background-color: currentColor;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.icon[data-icon="catalog"] {
+  -webkit-mask-image: url("/icons/mobile-nav/category.svg");
+  mask-image: url("/icons/mobile-nav/category.svg");
+}
+
+.icon[data-icon="compass"] {
+  -webkit-mask-image: url("/icons/mobile-nav/compass.svg");
+  mask-image: url("/icons/mobile-nav/compass.svg");
+}
+
+.icon[data-icon="disk"] {
+  -webkit-mask-image: url("/icons/navbar/disk.svg");
+  mask-image: url("/icons/navbar/disk.svg");
+}
+
+.icon[data-icon="delivery"] {
+  -webkit-mask-image: url("/icons/navbar/delivery.svg");
+  mask-image: url("/icons/navbar/delivery.svg");
+}
+
+.icon[data-icon="home"] {
+  -webkit-mask-image: url("/icons/mobile-nav/home.svg");
+  mask-image: url("/icons/mobile-nav/home.svg");
+}
