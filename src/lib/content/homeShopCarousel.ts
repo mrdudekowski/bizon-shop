@@ -13,7 +13,7 @@ const DISK_ICON_URL = "/images/shop/category-icons/tire.svg";
 export function buildHomeShopCarouselItems(shopHome: ShopHomePageContent): HomeShopCarouselItem[] {
   const categories = shopHome.catalog.tiles
     .map((tile, index) => ({ tile, index }))
-    .filter(({ tile }) => tile.visible && tile.homeCarouselCaption?.trim() && tile.iconUrl?.trim())
+    .filter(({ tile }) => tile.visible && tile.carouselVisible && tile.homeCarouselCaption?.trim() && tile.iconUrl?.trim())
     .sort((left, right) => left.tile.sortOrder - right.tile.sortOrder || left.index - right.index)
     .map(({ tile }) => ({
       id: `category-${tile.categoryId}`,

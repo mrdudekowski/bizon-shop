@@ -14,8 +14,8 @@ function shopHome(tiles: ShopHomePageContent["catalog"]["tiles"]): ShopHomePageC
 describe("buildHomeShopCarouselItems", () => {
   it("puts the fixed disk item first and follows visible categories by CMS sort order", () => {
     expect(buildHomeShopCarouselItems(shopHome([
-      { categoryId: "2", categorySlug: "outdoor", title: "Кемпинг", visible: true, sortOrder: 8, carouselVisible: false, homeCarouselCaption: "Для маршрута", iconUrl: "/outdoor.svg" },
-      { categoryId: "1", categorySlug: "accessories", title: "Аксессуары", visible: true, sortOrder: 2, carouselVisible: false, homeCarouselCaption: "Ваш стиль", iconUrl: "/accessories.svg" },
+      { categoryId: "2", categorySlug: "outdoor", title: "Кемпинг", visible: true, sortOrder: 8, carouselVisible: true, homeCarouselCaption: "Для маршрута", iconUrl: "/outdoor.svg" },
+      { categoryId: "1", categorySlug: "accessories", title: "Аксессуары", visible: true, sortOrder: 2, carouselVisible: true, homeCarouselCaption: "Ваш стиль", iconUrl: "/accessories.svg" },
     ]))).toEqual([
       { id: "wheels", title: "Диски", caption: "Диски под ваш автомобиль", iconUrl: "/images/shop/category-icons/tire.svg", iconAlt: "Диск" },
       { id: "category-1", title: "Аксессуары", caption: "Ваш стиль", iconUrl: "/accessories.svg", iconAlt: "Аксессуары" },
@@ -29,6 +29,15 @@ describe("buildHomeShopCarouselItems", () => {
       { categoryId: "caption", categorySlug: "caption", title: "Без подписи", visible: true, sortOrder: 1, carouselVisible: true, homeCarouselCaption: "   ", iconUrl: "/caption.svg" },
       { categoryId: "icon", categorySlug: "icon", title: "Без иконки", visible: true, sortOrder: 2, carouselVisible: true, homeCarouselCaption: "Текст", iconUrl: "" },
     ]))).toHaveLength(1);
+  });
+
+  it("omits categories disabled in the homepage carousel", () => {
+    const items = buildHomeShopCarouselItems(shopHome([
+      { categoryId: "off", categorySlug: "off", title: "Скрытая из карусели", visible: true, sortOrder: 1, carouselVisible: false, homeCarouselCaption: "Не показывать", iconUrl: "/off.svg" },
+      { categoryId: "on", categorySlug: "on", title: "В карусели", visible: true, sortOrder: 2, carouselVisible: true, homeCarouselCaption: "Показывать", iconUrl: "/on.svg" },
+    ]));
+
+    expect(items.map((item) => item.id)).toEqual(["wheels", "category-on"]);
   });
 
   it("uses the latest published icon and caption from the Shop tile", () => {

@@ -55,8 +55,10 @@ describe("HomeShopIconCarousel", () => {
   it("advances automatically and wraps to the first item without manual controls", async () => {
     vi.useFakeTimers();
     await renderCarousel();
+    const tile = host.querySelector("[data-home-shop-icon-tile]");
     await act(async () => vi.advanceTimersByTime(TICK_MS));
     expect(host.querySelector("img")?.getAttribute("src")).toBe("/camp.svg");
+    expect(host.querySelector("[data-home-shop-icon-tile]")).toBe(tile);
     expect(host.textContent).toContain("Для маршрута");
     await act(async () => vi.advanceTimersByTime(TICK_MS));
     expect(host.querySelector("img")?.getAttribute("src")).toBe("/tire.svg");

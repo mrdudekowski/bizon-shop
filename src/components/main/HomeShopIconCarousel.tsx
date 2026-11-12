@@ -33,8 +33,8 @@ export function HomeShopIconCarousel({ items }: { items: HomeShopCarouselItem[] 
 
   return (
     <div className={styles.carousel} data-reduced-motion={reducedMotion ? "true" : undefined}>
-      <div key={activeItem.id} className={styles.iconTile} role="img" aria-label={activeItem.title}>
-        <Image src={activeItem.iconUrl} alt="" aria-hidden width={96} height={96} unoptimized data-home-shop-icon="" />
+      <div className={styles.iconTile} data-home-shop-icon-tile="" role="img" aria-label={activeItem.title}>
+        <Image key={activeItem.id} className={styles.icon} src={activeItem.iconUrl} alt="" aria-hidden width={96} height={96} unoptimized data-home-shop-icon="" />
       </div>
       <p key={`${activeItem.id}-caption`} className={styles.caption}>{activeItem.caption}</p>
     </div>
