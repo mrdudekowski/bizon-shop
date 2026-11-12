@@ -12,6 +12,15 @@
   box-sizing: border-box;
 }
 
+.editor :global(.documentActions) {
+  position: static;
+  bottom: auto;
+  z-index: auto;
+  margin: 0 -16px -16px;
+  border-radius: 0 0 12px 12px;
+  box-shadow: none;
+}
+
 .heading,
 .rows,
 .row,

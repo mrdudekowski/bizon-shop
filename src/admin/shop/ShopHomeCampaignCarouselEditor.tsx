@@ -66,6 +66,7 @@ export function ShopHomeCampaignCarouselEditor() {
   }
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(record.savedDraft);
+  const actionInProgress = saving || publishing;
 
   function patchCaption(categoryId: string, caption: string) {
     setDraft((current) => current == null ? current : ({
@@ -135,6 +136,7 @@ export function ShopHomeCampaignCarouselEditor() {
           <label className={styles.captionField}>
             Подпись для карусели — Диски
             <input
+              disabled={actionInProgress}
               value={draft.homeCarousel.diskCaption}
               onChange={(event) => setDraft({ ...draft, homeCarousel: { ...draft.homeCarousel, diskCaption: event.target.value } })}
             />
@@ -150,7 +152,7 @@ export function ShopHomeCampaignCarouselEditor() {
               </div>
               <label className={styles.captionField}>
                 Подпись карусели: {label}
-                <input value={tile.homeCarouselCaption} onChange={(event) => patchCaption(tile.categoryId, event.target.value)} />
+                <input disabled={actionInProgress} value={tile.homeCarouselCaption} onChange={(event) => patchCaption(tile.categoryId, event.target.value)} />
               </label>
             </div>
           );
@@ -162,11 +164,12 @@ export function ShopHomeCampaignCarouselEditor() {
         entityId="shop-home"
         dirty={dirty}
         saving={saving}
+        saveDisabled={publishing}
         message={message}
         lastSavedBy={record.lastSavedBy}
         lastPublishedBy={record.lastPublishedBy}
         onSave={save}
-        adminActions={<button type="button" disabled={dirty || publishing} onClick={() => void publish()}>{publishing ? "Публикуем…" : "Опубликовать"}</button>}
+        adminActions={<button type="button" disabled={dirty || actionInProgress} onClick={() => void publish()}>{publishing ? "Публикуем…" : "Опубликовать"}</button>}
       />
     </div>
   );

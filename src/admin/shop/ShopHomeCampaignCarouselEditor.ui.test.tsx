@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -7,10 +7,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mockState = vi.hoisted(() => ({ client: {} as Record<string, ReturnType<typeof vi.fn>> }));
 vi.mock("@/admin/client/localStore", () => ({ browserAdminClient: () => mockState.client }));
 vi.mock("@/admin/ui/DocumentReviewFooter", () => ({
-  DocumentReviewFooter: ({ onSave, adminActions, message }: { onSave: () => Promise<void>; adminActions: React.ReactNode; message?: string }) => (
+  DocumentReviewFooter: ({ onSave, adminActions, message, saving, saveDisabled }: { onSave: () => Promise<void>; adminActions: React.ReactNode; message?: string; saving: boolean; saveDisabled?: boolean }) => (
     <footer>
       {message ? <p role="status">{message}</p> : null}
-      <button type="button" onClick={() => void onSave()}>Сохранить карусель</button>
+      <button type="button" disabled={saving || saveDisabled} onClick={() => void onSave()}>Сохранить карусель</button>
       {adminActions}
     </footer>
   ),
@@ -57,6 +57,12 @@ const newCategory = {
   id: "camping",
   draft: { ...tiresCategory.draft, id: "camping", name: "Путешествия", slug: "camping", sortOrder: 2, mainImage: undefined },
 };
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => { resolve = done; });
+  return { promise, resolve };
+}
 
 afterEach(cleanup);
 
@@ -130,5 +136,40 @@ describe("Shop home campaign carousel editor", () => {
 
     expect((await screen.findByRole("status")).textContent).toContain("Не удалось сохранить");
     expect(caption).toHaveProperty("value", "Новый текст");
+  });
+
+  it("locks caption editing and publish while a save is in flight", async () => {
+    const pendingSave = deferred<typeof pageRecord>();
+    mockState.client.savePage = vi.fn(() => pendingSave.promise);
+    const user = userEvent.setup();
+    render(createElement(ShopHomeCampaignCarouselEditor));
+
+    const caption = await screen.findByRole("textbox", { name: "Подпись карусели: Шины" });
+    await user.clear(caption);
+    await user.type(caption, "Текст во время сохранения");
+    await user.click(screen.getByRole("button", { name: "Сохранить карусель" }));
+    await waitFor(() => expect(mockState.client.savePage).toHaveBeenCalled());
+
+    expect(caption).toHaveProperty("disabled", true);
+    expect(screen.getByRole("button", { name: "Опубликовать" })).toHaveProperty("disabled", true);
+    pendingSave.resolve({ ...pageRecord, draft: mockState.client.savePage.mock.calls[0][1], savedDraft: mockState.client.savePage.mock.calls[0][1] });
+    await waitFor(() => expect(caption).toHaveProperty("disabled", false));
+    expect(caption).toHaveProperty("value", "Текст во время сохранения");
+  });
+
+  it("locks caption editing and save while publishing is in flight", async () => {
+    const pendingPublish = deferred<typeof pageRecord>();
+    mockState.client.publishPage = vi.fn(() => pendingPublish.promise);
+    const user = userEvent.setup();
+    render(createElement(ShopHomeCampaignCarouselEditor));
+
+    const caption = await screen.findByRole("textbox", { name: "Подпись карусели: Шины" });
+    await user.click(screen.getByRole("button", { name: "Опубликовать" }));
+    await waitFor(() => expect(mockState.client.publishPage).toHaveBeenCalledWith("shop-home"));
+
+    expect(caption).toHaveProperty("disabled", true);
+    expect(screen.getByRole("button", { name: "Сохранить карусель" })).toHaveProperty("disabled", true);
+    pendingPublish.resolve(pageRecord);
+    await waitFor(() => expect(caption).toHaveProperty("disabled", false));
   });
 });
