@@ -77,7 +77,7 @@ describe("Shop showcase editor", () => {
     const user = userEvent.setup();
     render(createElement(ShopShowcaseEditor));
 
-    await user.click(await screen.findByRole("button", { name: "К иконкам и подписям категорий" }));
+    await user.click(await screen.findByRole("button", { name: "К иконкам и настройкам категорий" }));
 
     expect(screen.getByRole("tab", { name: "Плитки категорий" }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByText("Иконка")).toBeTruthy();
@@ -111,7 +111,7 @@ describe("Shop showcase editor", () => {
     expect(screen.getByLabelText("Заголовок списка категорий")).toBeTruthy();
   });
 
-  it("saves disk and category homepage carousel captions from the tiles panel", async () => {
+  it("keeps icon and carousel image controls in the Shop tile panel without duplicate carousel captions", async () => {
     const user = userEvent.setup();
     const seededPage = {
       ...pageRecord,
@@ -129,19 +129,10 @@ describe("Shop showcase editor", () => {
     render(createElement(ShopShowcaseEditor));
 
     await user.click(await screen.findByRole("tab", { name: "Плитки категорий" }));
-    const diskCaption = screen.getByRole("textbox", { name: "Подпись для карусели главной — Диски" });
-    const categoryCaption = screen.getByRole("textbox", { name: "Подпись карусели: Кемпинг и путешествия" });
-    await user.clear(diskCaption);
-    await user.type(diskCaption, "Диски BIZON");
-    await user.clear(categoryCaption);
-    await user.type(categoryCaption, "Поездки и отдых");
-    await user.click(screen.getByRole("button", { name: "Сохранить" }));
-
-    expect(mockState.client.savePage).toHaveBeenCalledWith("shop-home", expect.objectContaining({
-      homeCarousel: { diskCaption: "Диски BIZON" },
-      catalog: expect.objectContaining({
-        tiles: [expect.objectContaining({ homeCarouselCaption: "Поездки и отдых" })],
-      }),
-    }));
+    expect(screen.queryByRole("textbox", { name: "Подпись для карусели главной — Диски" })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "Подпись карусели: Кемпинг и путешествия" })).toBeNull();
+    expect(screen.getByText("Иконка")).toBeTruthy();
+    await user.click(screen.getByRole("tab", { name: "Карусель главной" }));
+    expect(screen.getByRole("group", { name: "Фото для карусели" })).toBeTruthy();
   });
 });

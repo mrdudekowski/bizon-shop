@@ -95,8 +95,8 @@ export function ShopShowcaseEditor() {
       </nav>
       {panel === "carousel" ? <section className={styles.list} aria-label="Карусель главной">
         <h2>Карусель категорий на главной</h2>
-        <p>Диски идут первыми. Иконки и подписи категорий общие с каталогом и настраиваются во вкладке «Плитки категорий».</p>
-        <button type="button" onClick={() => setPanel("tiles")}>К иконкам и подписям категорий</button>
+        <p>Диски идут первыми. Иконки категорий общие с каталогом. Подписи карусели настраиваются в «Главная → Кампания магазина».</p>
+        <button type="button" onClick={() => setPanel("tiles")}>К иконкам и настройкам категорий</button>
         {orderedTiles.map((tile, index) => <article className={styles.card} key={tile.categoryId}>
           <div className={styles.cardHead}>
             <h3>{tile.title || `Категория ${tile.categoryId}`}</h3>
@@ -114,8 +114,7 @@ export function ShopShowcaseEditor() {
       </section> : null}
       {panel === "tiles" ? <section className={styles.list} aria-label="Плитки категорий">
         <h2>Плитки категорий</h2>
-        <p>Иконка и подпись плитки используются в автоматической карусели Shop на главной. Иконка остаётся общей с каталогом.</p>
-        <label className={styles.field}>Подпись для карусели главной — Диски<input value={draft.homeCarousel.diskCaption} onChange={(e) => setDraft({ ...draft, homeCarousel: { ...draft.homeCarousel, diskCaption: e.target.value } })} /></label>
+        <p>Настройте название плитки, видимость и иконку категории. Подписи карусели редактируются в «Главная → Кампания магазина».</p>
         {orderedTiles.map((tile, index) => <article className={styles.card} key={tile.categoryId}>
           <div className={styles.cardHead}>
             <h3>{tile.title || `Категория ${tile.categoryId}`}</h3>
@@ -129,7 +128,6 @@ export function ShopShowcaseEditor() {
             </div>
           </div>
           <label className={styles.field}>Название плитки<input value={tile.title} onChange={(e) => patchTile(tile.categoryId, (row) => ({ ...row, title: e.target.value }))} /></label>
-          <label className={styles.field}>Подпись карусели: {tile.title || `Категория ${tile.categoryId}`}<input value={tile.homeCarouselCaption} onChange={(e) => patchTile(tile.categoryId, (row) => ({ ...row, homeCarouselCaption: e.target.value }))} /></label>
           <PlacementFields label="Иконка" value={tile.icon} onChange={(image) => patchPlacement(tile.categoryId, "icon", image)} previewSurface="dark" uploadMode="new-asset" allowedMimeTypes={SHOP_CATEGORY_ICON_UPLOAD_TYPES} />
         </article>)}
       </section> : null}

@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { DOCUMENT_STATUS, actionErrorText } from "@/admin/client/actionFeedback";
 import { browserAdminClient } from "@/admin/client/localStore";
+import { ShopHomeCampaignCarouselEditor } from "@/admin/shop/ShopHomeCampaignCarouselEditor";
 import {
   LEGAL_PAGE_KEYS,
   PAGE_FORM_KEYS,
@@ -584,6 +585,7 @@ function HomeFields({
         value={draft.shopCampaign.cta}
         onChange={(cta) => onChange({ ...draft, shopCampaign: { ...draft.shopCampaign, cta } })}
       />
+      <ShopHomeCampaignCarouselEditor />
     </>
   );
 }

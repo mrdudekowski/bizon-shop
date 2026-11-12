@@ -39,6 +39,7 @@ const shopHomeDraft = {
   catalog: { copy: { eyebrow: "", title: "", lead: "", sectionTitle: "" }, tiles: [] },
   vehicles: { eyebrow: "", title: "", lead: "", cta: { label: "", href: "" }, slides: [] },
 };
+const shopHomeRecord = { ...pageRecord, id: "shop-home", draft: shopHomeDraft, savedDraft: shopHomeDraft, publishedSnapshot: shopHomeDraft };
 const homeDraft = {
   id: "home",
   seoTitle: "Главная",
@@ -60,7 +61,9 @@ describe("PageEditor conflict recovery", () => {
     vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} unobserve() {} });
     mockState.client = {
       getSession: vi.fn().mockResolvedValue({ login: "editor", role: "editor", capabilities: ["edit_site_pages"] }),
-      getPage: vi.fn().mockResolvedValue(pageRecord),
+      getPage: vi.fn().mockImplementation(async (key: string) => key === "shop-home" ? shopHomeRecord : pageRecord),
+      listShopCategories: vi.fn().mockResolvedValue([]),
+      listAssets: vi.fn().mockResolvedValue([]),
       listChangeSets: vi.fn().mockResolvedValue([]),
       savePage: vi.fn().mockRejectedValue(new AdminClientError("conflict")),
     };
@@ -229,6 +232,42 @@ describe("PageEditor conflict recovery", () => {
     const campaign = (await screen.findByRole("heading", { name: "Кампания магазина" })).closest("section");
     expect(campaign).toBeTruthy();
     expect(within(campaign!).queryByLabelText("Лид")).toBeNull();
+  });
+
+  it("embeds independently saved Shop carousel captions in Home campaign", async () => {
+    const homeRecord = { ...pageRecord, id: "home", draft: homeDraft, savedDraft: homeDraft, publishedSnapshot: homeDraft };
+    const shopRecord = { ...pageRecord, id: "shop-home", draft: shopHomeDraft, savedDraft: shopHomeDraft, publishedSnapshot: shopHomeDraft };
+    mockState.client.getPage = vi.fn().mockImplementation(async (key: string) => key === "home" ? homeRecord : shopRecord);
+    mockState.client.listShopCategories = vi.fn().mockResolvedValue([{
+      id: "tires",
+      draft: { id: "tires", name: "Шины", slug: "tires", description: "", sortOrder: 1, showInMenu: true, carousel: [] },
+      savedDraft: null, publishedSnapshot: null, hidden: false, slugLocked: false, lastSavedBy: null, lastPublishedBy: null,
+    }]);
+    mockState.client.listAssets = vi.fn().mockResolvedValue([]);
+    mockState.client.savePage = vi.fn().mockImplementation(async (key: string, next: typeof homeDraft | typeof shopHomeDraft) => ({
+      ...(key === "home" ? homeRecord : shopRecord), draft: next, savedDraft: next,
+    }));
+    const user = userEvent.setup();
+    render(createElement(PageEditor, { pageKey: "home" }));
+
+    const searchTitle = await screen.findByLabelText("Заголовок страницы в поиске");
+    await user.clear(searchTitle);
+    await user.type(searchTitle, "Главная после правки");
+    await user.click(await screen.findByRole("tab", { name: "Кампания магазина" }));
+    const carouselHeading = await screen.findByRole("heading", { name: "Подписи карусели иконок" });
+    const campaign = screen.getByRole("heading", { name: "Кампания магазина" }).closest("section");
+    expect(carouselHeading.closest("[data-document-tab-panel]")?.getAttribute("data-document-tab-panel")).toBe(campaign?.id);
+    const diskCaption = await screen.findByRole("textbox", { name: "Подпись для карусели — Диски" });
+    await user.clear(diskCaption);
+    await user.type(diskCaption, "Диски Bizon");
+
+    const saveButtons = screen.getAllByRole("button", { name: "Сохранить" });
+    await user.click(saveButtons[0]);
+    expect(mockState.client.savePage).toHaveBeenCalledWith("shop-home", expect.objectContaining({ homeCarousel: { diskCaption: "Диски Bizon" } }));
+    expect(mockState.client.savePage).not.toHaveBeenCalledWith("home", expect.anything());
+
+    await user.click(screen.getAllByRole("button", { name: "Сохранить" }).at(-1)!);
+    expect(mockState.client.savePage).toHaveBeenCalledWith("home", expect.objectContaining({ seoTitle: "Главная после правки" }));
   });
 
   it("edits the contact profile: address label, channel toggle, removal, and a custom channel", async () => {

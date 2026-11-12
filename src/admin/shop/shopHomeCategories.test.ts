@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { EntityRecord, ShopCategoryDraft, ShopHomePageDraft } from "@/admin/domain/types";
 import { mergeShopHomeCategories } from "./shopHomeCategories";
 
+function image(assetId: string) {
+  return { assetId, alt: "", focalX: 0.5, focalY: 0.5, crop: { x: 0, y: 0, width: 1, height: 1 } };
+}
+
 const page = {
   id: "shop-home",
   seoTitle: "Shop",
@@ -20,7 +24,7 @@ const page = {
       sortOrder: 8,
       carouselVisible: true,
       homeCarouselCaption: "Existing caption",
-      icon: { assetId: "override-icon" },
+      icon: image("override-icon"),
     }],
   },
   vehicles: { eyebrow: "", title: "", lead: "", cta: { label: "", href: "" }, slides: [] },
@@ -32,7 +36,7 @@ function category(id: string, name: string, sortOrder: number, iconAssetId?: str
     draft: {
       id, name, slug: id, description: "", sortOrder, showInMenu: true,
       carousel: [],
-      ...(iconAssetId ? { mainImage: { assetId: iconAssetId } } : {}),
+      ...(iconAssetId ? { mainImage: image(iconAssetId) } : {}),
     },
     savedDraft: null,
     publishedSnapshot: null,
@@ -58,7 +62,7 @@ describe("mergeShopHomeCategories", () => {
         sortOrder: 8,
         carouselVisible: true,
         homeCarouselCaption: "Existing caption",
-        icon: { assetId: "override-icon" },
+        icon: expect.objectContaining({ assetId: "override-icon" }),
       }),
       expect.objectContaining({
         categoryId: "new",
@@ -67,7 +71,7 @@ describe("mergeShopHomeCategories", () => {
         sortOrder: 3,
         carouselVisible: false,
         homeCarouselCaption: "",
-        icon: { assetId: "new-icon" },
+        icon: expect.objectContaining({ assetId: "new-icon" }),
       }),
     ]);
   });
