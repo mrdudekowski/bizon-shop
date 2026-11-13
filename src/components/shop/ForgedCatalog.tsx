@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { WheelModelGrid } from "@/components/catalog/WheelModelGrid";
 import type { CmsWheelModel, CmsWheelType, CmsWheelVariant } from "@/lib/content/types";
+import { responsiveFocalStyle } from "@/lib/content/responsiveFocalPosition";
 import { fetchBrowserPublishedJson, fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
 
 import styles from "./ForgedCatalog.module.css";
@@ -65,6 +66,8 @@ export function ForgedCatalog({
               fill
               priority
               sizes="100vw"
+              className="responsiveFocalImage"
+              style={responsiveFocalStyle(wheelType.imageFocalByViewport, wheelType.imageFocalX, wheelType.imageFocalY)}
             />
           </div>
         ) : null}

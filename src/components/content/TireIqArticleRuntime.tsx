@@ -30,6 +30,9 @@ export function TireIqArticleRuntime({ article: initialArticle }: { article: Cms
     meta={article.publishedAt}
     imageUrl={imageUrl}
     imageAlt={article.title}
+    imageFocalX={article.imageFocalX}
+    imageFocalY={article.imageFocalY}
+    imageFocalByViewport={article.imageFocalByViewport}
     fallbackKey={article.slug}
     backHref="/tire-iq"
     backLabel="Все статьи"

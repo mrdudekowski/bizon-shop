@@ -5,6 +5,7 @@ import type { HomePageContent, PageContentByKey, ShopHomePageContent } from "./p
 import { fetchPublishedJson, isStaticBuild, PublishedApiError, publishedApiEnabled } from "./publishedClient";
 import type { PageForm } from "@/components/forms/ConfiguredForm";
 import type { SiteProfile } from "./siteProfile";
+import type { ResponsiveFocalMap } from "./types";
 
 export type PublishedStubOverlay = {
   documents?: { url: string; title: string }[];
@@ -12,7 +13,7 @@ export type PublishedStubOverlay = {
   features?: { id: string; title: string; text: string }[];
   sections?: { id: string; heading: string; body: string }[];
   notice?: { body: string } | null;
-  proof?: { imageUrl?: string | null; imageAlt?: string; imageFocalX?: number; imageFocalY?: number; title: string; text: string } | null;
+  proof?: { imageUrl?: string | null; imageAlt?: string; imageFocalX?: number; imageFocalY?: number; imageFocalByViewport?: ResponsiveFocalMap; title: string; text: string } | null;
   cta?: { label: string; href: string; secondaryLabel?: string; secondaryHref?: string } | null;
   footerContact?: {
     phone?: string;
@@ -38,6 +39,7 @@ export type PublishedStubOverlay = {
     imageAlt?: string;
     imageFocalX?: number;
     imageFocalY?: number;
+    imageFocalByViewport?: ResponsiveFocalMap;
   };
 };
 

@@ -107,18 +107,34 @@ export type ShopHomeCarouselSlide = {
   title: string;
   href: string;
   imageUrl: string | null;
+  focalX?: number;
+  focalY?: number;
+  focalByViewport?: import("./types").ResponsiveFocalMap;
 };
 
-function shopCategoryCarouselImage(
+function shopCategoryCarouselPlacement(
   category: CmsShopCategory,
-  tileCarouselImageUrl?: string,
-): string | null {
-  return (
-    tileCarouselImageUrl ||
-    category.carousel?.find((frame) => frame.imageUrl)?.imageUrl ||
-    category.imageUrl ||
-    null
-  );
+  tile?: ShopCatalogTile,
+): { imageUrl: string | null; focalX?: number; focalY?: number; focalByViewport?: import("./types").ResponsiveFocalMap } {
+  if (tile?.carouselImageUrl) return {
+    imageUrl: tile.carouselImageUrl,
+    ...(tile.carouselImageFocalX !== undefined ? { focalX: tile.carouselImageFocalX } : {}),
+    ...(tile.carouselImageFocalY !== undefined ? { focalY: tile.carouselImageFocalY } : {}),
+    ...(tile.carouselImageFocalByViewport ? { focalByViewport: tile.carouselImageFocalByViewport } : {}),
+  };
+  const frame = category.carousel?.find((candidate) => candidate.imageUrl);
+  if (frame?.imageUrl) return {
+    imageUrl: frame.imageUrl,
+    ...(frame.imageFocalX !== undefined ? { focalX: frame.imageFocalX } : {}),
+    ...(frame.imageFocalY !== undefined ? { focalY: frame.imageFocalY } : {}),
+    ...(frame.imageFocalByViewport ? { focalByViewport: frame.imageFocalByViewport } : {}),
+  };
+  return {
+    imageUrl: category.imageUrl ?? null,
+    ...(category.imageFocalX !== undefined ? { focalX: category.imageFocalX } : {}),
+    ...(category.imageFocalY !== undefined ? { focalY: category.imageFocalY } : {}),
+    ...(category.imageFocalByViewport ? { focalByViewport: category.imageFocalByViewport } : {}),
+  };
 }
 
 export function shopHomeCarouselSlides(
@@ -131,12 +147,12 @@ export function shopHomeCarouselSlides(
       (tile?.carouselVisible ?? (tiles && tiles.length > 0 ? (category.carousel?.length ?? 0) > 0 : category.showInMenu)),
     )
     .map(({ category, tile }) => {
-      const imageUrl = shopCategoryCarouselImage(category, tile?.carouselImageUrl);
+      const image = shopCategoryCarouselPlacement(category, tile);
       return {
         id: category.slug,
         title: tile?.title || category.name,
         href: `${ROUTES.shop}/${category.slug}`,
-        imageUrl,
+        ...image,
       };
     });
 }

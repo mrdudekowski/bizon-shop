@@ -51,12 +51,23 @@ export function WheelModelStage({
     return () => controller.abort();
   }, [initialModel.id, initialModel.slug, initialWheelType.slug]);
 
-  const gallery = [
-    model.imageUrl,
-    ...model.gallery.map((image) => image.url),
-  ].filter(
-    (url, index, values): url is string => Boolean(url) && values.indexOf(url) === index,
-  );
+  const gallery: string[] = [];
+  const galleryFocals: ({ focalX?: number; focalY?: number; focalByViewport?: CmsWheelModel["imageFocalByViewport"] } | null)[] = [];
+  const addGalleryImage = (url: string | null | undefined, focal: typeof galleryFocals[number]) => {
+    if (!url || gallery.includes(url)) return;
+    gallery.push(url);
+    galleryFocals.push(focal);
+  };
+  addGalleryImage(model.imageUrl, model.imageUrl ? {
+    focalX: model.imageFocalX,
+    focalY: model.imageFocalY,
+    focalByViewport: model.imageFocalByViewport,
+  } : null);
+  model.gallery.forEach((image) => addGalleryImage(image.url, {
+    focalX: image.focalX,
+    focalY: image.focalY,
+    focalByViewport: image.focalByViewport,
+  }));
   const evidenceDocuments = (model.documents ?? []).filter(
     (document) => Boolean(document.url?.trim() && document.title?.trim()),
   );
@@ -85,6 +96,7 @@ export function WheelModelStage({
         <section className={styles.productStage} aria-label={model.name}>
           <CatalogProductGallery
             images={gallery}
+            imageFocals={galleryFocals}
             fallbackKey={model.slug}
             alt={`${model.name} — диск BIZON`}
           />

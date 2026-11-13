@@ -1,4 +1,5 @@
 import Image from "next/image";
+import type { CSSProperties } from "react";
 
 import { hasCatalogImage, resolveCatalogImageSrc } from "@/constants/images";
 
@@ -10,6 +11,7 @@ type CatalogImageProps = {
   sizes?: string;
   priority?: boolean;
   fallbackKey?: string;
+  style?: CSSProperties;
 };
 
 export function CatalogImage({
@@ -20,6 +22,7 @@ export function CatalogImage({
   sizes,
   priority = false,
   fallbackKey,
+  style,
 }: CatalogImageProps) {
   const resolved = resolveCatalogImageSrc(src, fallbackKey);
   const isPlaceholder = !hasCatalogImage(src, fallbackKey);
@@ -36,6 +39,7 @@ export function CatalogImage({
         className={classes}
         sizes={sizes ?? "100vw"}
         priority={priority}
+        style={style}
       />
     );
   }
@@ -49,6 +53,7 @@ export function CatalogImage({
       className={classes}
       sizes={sizes ?? "(max-width: 768px) 100vw, 33vw"}
       priority={priority}
+      style={style}
     />
   );
 }

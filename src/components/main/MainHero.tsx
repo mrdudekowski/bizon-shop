@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import type { HomeHeroContent } from "@/lib/content/pages/types";
+import { responsiveFocalStyle } from "@/lib/content/responsiveFocalPosition";
 
 import styles from "./MainHome.module.css";
 
@@ -31,7 +32,8 @@ export function MainHero({ content }: { content: HomeHeroContent }) {
             fill
             priority
             sizes="100vw"
-            style={{ objectPosition: `${(hero.imageFocalX ?? 0.5) * 100}% ${(hero.imageFocalY ?? 0.5) * 100}%` }}
+            className="responsiveFocalImage"
+            style={responsiveFocalStyle(hero.imageFocalByViewport, hero.imageFocalX, hero.imageFocalY)}
           />
         ) : null}
       </div>

@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { PageHero, type PageHeroBreadcrumb } from "@/components/content/PageHero";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+import { responsiveFocalStyle } from "@/lib/content/responsiveFocalPosition";
+import type { ResponsiveFocalMap } from "@/lib/content/types";
 
 import styles from "./ArticleLayout.module.css";
 
@@ -16,6 +18,9 @@ type ArticleLayoutProps = {
   aside?: ReactNode;
   imageUrl?: string | null;
   imageAlt: string;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: ResponsiveFocalMap;
   fallbackKey: string;
   backHref: string;
   backLabel: string;
@@ -31,6 +36,9 @@ export function ArticleLayout({
   aside,
   imageUrl,
   imageAlt,
+  imageFocalX,
+  imageFocalY,
+  imageFocalByViewport,
   fallbackKey,
   backHref,
   backLabel,
@@ -54,6 +62,8 @@ export function ArticleLayout({
                 alt={imageAlt}
                 fill
                 sizes="(max-width: 767px) 100vw, 70vw"
+                className="responsiveFocalImage"
+                style={responsiveFocalStyle(imageFocalByViewport, imageFocalX, imageFocalY)}
               />
             </div>
           ) : null}

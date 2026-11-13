@@ -438,6 +438,15 @@ test("Shop variant media survives CMS save, publish, API reload, and public read
     const picker = page.getByRole("dialog", { name: "Выбрать изображение" });
     await picker.getByLabel("Поиск по имени").fill(variantAsset!.name);
     await picker.getByRole("button", { name: "Выбрать " + variantAsset!.name, exact: true }).click();
+    const moveFocal = async (device: "Desktop" | "Планшет" | "Мобильный", viewport: "desktop" | "tablet" | "mobile", key: "ArrowLeft" | "ArrowRight" | "ArrowUp" | "ArrowDown") => {
+      await variantField.getByRole("button", { name: device, exact: true }).click();
+      const point = variantField.getByRole("button", { name: new RegExp(`Точка фокуса \\(${viewport}\\)`) });
+      await point.focus();
+      await page.keyboard.press(key);
+    };
+    await moveFocal("Desktop", "desktop", "ArrowRight");
+    await moveFocal("Планшет", "tablet", "ArrowUp");
+    await moveFocal("Мобильный", "mobile", "ArrowLeft");
     await page.getByRole("button", { name: "Сохранить", exact: true }).click();
     await expect(page.getByText("Черновик сохранён", { exact: true })).toBeVisible();
 
@@ -446,7 +455,17 @@ test("Shop variant media survives CMS save, publish, API reload, and public read
     expect(saved.savedDraft.variants[0]?.oldPrice).toBe(2200);
     expect(saved.savedDraft.variants[0]?.configuration).toBe("Long range");
     expect(saved.savedDraft.variants[1]?.configuration).toBe("Standard");
-    expect(saved.savedDraft.variants[0]?.image).toMatchObject({ assetId: variantAsset!.id, alt: "" });
+    expect(saved.savedDraft.variants[0]?.image).toMatchObject({
+      assetId: variantAsset!.id,
+      alt: "",
+      focalX: 0.51,
+      focalY: 0.5,
+      focalByViewport: {
+        desktop: { x: 0.51, y: 0.5 },
+        tablet: { x: 0.5, y: 0.49 },
+        mobile: { x: 0.49, y: 0.5 },
+      },
+    });
     const afterSaveAssets = await adminCall<MediaAsset[]>(request, "listAssets");
     expect(afterSaveAssets.find((item) => item.id === variantAsset!.id)?.usedBy.some((use) => use.includes("Черновик: shop-products"))).toBe(true);
 
@@ -460,8 +479,13 @@ test("Shop variant media survives CMS save, publish, API reload, and public read
     expect(reread.publishedSnapshot.variants[1]?.configuration).toBe("Standard");
     expect(reread.publishedSnapshot.variants[0]?.image).toMatchObject({
       assetId: variantAsset!.id,
-      focalX: 0.5,
+      focalX: 0.51,
       focalY: 0.5,
+      focalByViewport: {
+        desktop: { x: 0.51, y: 0.5 },
+        tablet: { x: 0.5, y: 0.49 },
+        mobile: { x: 0.49, y: 0.5 },
+      },
       crop: { x: 0, y: 0, width: 1, height: 1 },
     });
     const afterPublishAssets = await adminCall<MediaAsset[]>(request, "listAssets");
@@ -471,7 +495,7 @@ test("Shop variant media survives CMS save, publish, API reload, and public read
 
     const publicResponse = await request.get(config.apiUrl + "/v1/shop/products/" + encodeURIComponent(slug));
     expect(publicResponse.status()).toBe(200);
-    const publicProduct = await publicResponse.json() as { price?: number; oldPrice?: number; variants?: Array<{ color?: string; configuration?: string; price?: number; oldPrice?: number; images?: string[] }> };
+    const publicProduct = await publicResponse.json() as { price?: number; oldPrice?: number; variants?: Array<{ color?: string; configuration?: string; price?: number; oldPrice?: number; images?: string[]; imageFocalX?: number; imageFocalY?: number; imageFocalByViewport?: Record<string, { x: number; y: number }> }> };
     expect(publicProduct).toMatchObject({ price: 2000, oldPrice: 2500 });
     expect(publicProduct.variants?.find((variant) => variant.color === "Красный")).toMatchObject({
       color: "Красный",
@@ -479,6 +503,13 @@ test("Shop variant media survives CMS save, publish, API reload, and public read
       price: 1800,
       oldPrice: 2200,
       images: [variantAsset!.dataUrl],
+      imageFocalX: 0.51,
+      imageFocalY: 0.5,
+      imageFocalByViewport: {
+        desktop: { x: 0.51, y: 0.5 },
+        tablet: { x: 0.5, y: 0.49 },
+        mobile: { x: 0.49, y: 0.5 },
+      },
     });
     expect(publicProduct.variants?.find((variant) => variant.color === "Синий")).toMatchObject({
       color: "Синий",

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import type { HomeShopCarouselItem } from "@/lib/content/homeShopCarousel";
+import { responsiveFocalStyle } from "@/lib/content/responsiveFocalPosition";
 import styles from "./HomeShopIconCarousel.module.css";
 
 const ITEM_INTERVAL_MS = 4000;
@@ -49,24 +50,26 @@ export function HomeShopIconCarousel({ items }: { items: HomeShopCarouselItem[] 
       <div className={styles.iconTile} data-home-shop-icon-tile="" role="img" aria-label={activeItem.title}>
         <Image
           key={activeItem.id}
-          className={`${styles.icon} ${incomingItem ? styles.iconExit : ""}`}
+          className={`${styles.icon} responsiveFocalImage ${incomingItem ? styles.iconExit : ""}`}
           src={activeItem.iconUrl}
           alt=""
           aria-hidden
           width={96}
           height={96}
           unoptimized
+          style={responsiveFocalStyle(activeItem.iconFocalByViewport, activeItem.iconFocalX, activeItem.iconFocalY)}
           data-home-shop-icon={incomingItem ? "outgoing" : "current"}
         />
         {incomingItem ? <Image
           key={incomingItem.id}
-          className={`${styles.icon} ${styles.iconEnter}`}
+          className={`${styles.icon} responsiveFocalImage ${styles.iconEnter}`}
           src={incomingItem.iconUrl}
           alt=""
           aria-hidden
           width={96}
           height={96}
           unoptimized
+          style={responsiveFocalStyle(incomingItem.iconFocalByViewport, incomingItem.iconFocalX, incomingItem.iconFocalY)}
           data-home-shop-icon="incoming"
           onAnimationEnd={() => finishTransition(transitionIndex)}
         /> : null}

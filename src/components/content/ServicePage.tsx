@@ -16,6 +16,7 @@ import { ContactRequest } from "@/components/forms/ContactRequest";
 import { ROUTES } from "@/constants/navigation";
 
 import styles from "./ServicePage.module.css";
+import { responsiveFocalStyle } from "@/lib/content/responsiveFocalPosition";
 
 export const FORM_SOURCE_BY_PAGE: Record<string, ConfiguredSourceForm | undefined> = {
   "become-a-supplier": "supplier",
@@ -125,7 +126,7 @@ export function ServicePage({
   const activeDescription = runtimePageKey ? livePage?.hero.lead ?? description : description;
   const activeKicker = runtimePageKey ? livePage?.hero.eyebrow ?? kicker : kicker;
   const activeMedia = runtimePageKey && livePage?.hero.imageUrl
-    ? { src: livePage.hero.imageUrl, alt: livePage.hero.imageAlt ?? "", focalX: livePage.hero.imageFocalX, focalY: livePage.hero.imageFocalY }
+    ? { src: livePage.hero.imageUrl, alt: livePage.hero.imageAlt ?? "", focalX: livePage.hero.imageFocalX, focalY: livePage.hero.imageFocalY, focalByViewport: livePage.hero.imageFocalByViewport }
     : runtimePageKey ? undefined : media;
   const activeDocuments = runtimePageKey ? livePage?.documents ?? [] : documents;
   const resolvedNotice = activeEditorial?.notice !== undefined ? activeEditorial.notice?.body : notice;
@@ -186,7 +187,7 @@ export function ServicePage({
         {resolvedProof ? (
           <section className={styles.proof} aria-labelledby={resolvedProof.title.trim() ? "service-proof-heading" : undefined} data-evidence-source="service-proof">
             {resolvedProof.src ? <div className={styles.proofMedia}>
-              <Image src={resolvedProof.src} alt={resolvedProof.alt} fill sizes="(max-width: 767px) 100vw, 48vw" style={{ objectPosition: `${(resolvedProof.focalX ?? 0.5) * 100}% ${(resolvedProof.focalY ?? 0.5) * 100}%` }} />
+              <Image src={resolvedProof.src} alt={resolvedProof.alt} fill sizes="(max-width: 767px) 100vw, 48vw" className="responsiveFocalImage" style={responsiveFocalStyle(resolvedProof.focalByViewport, resolvedProof.focalX, resolvedProof.focalY)} />
             </div> : null}
             <div className={styles.proofCopy}>
               {resolvedProof.title.trim() ? <h2 id="service-proof-heading">{resolvedProof.title}</h2> : null}

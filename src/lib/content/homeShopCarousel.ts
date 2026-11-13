@@ -1,4 +1,5 @@
 import type { ShopHomePageContent } from "./pages/types";
+import type { ResponsiveFocalMap } from "./types";
 import { shopCategoryCarouselIconUrl } from "./shopCategoryPresentation";
 
 export type HomeShopCarouselItem = {
@@ -7,6 +8,9 @@ export type HomeShopCarouselItem = {
   caption: string;
   iconUrl: string;
   iconAlt: string;
+  iconFocalX?: number;
+  iconFocalY?: number;
+  iconFocalByViewport?: ResponsiveFocalMap;
 };
 
 const DISK_ICON_URL = "/images/shop/category-icons/tire.svg";
@@ -25,6 +29,9 @@ export function buildHomeShopCarouselItems(shopHome: ShopHomePageContent): HomeS
         caption: tile.homeCarouselCaption!.trim(),
         iconUrl,
         iconAlt: tile.iconAlt?.trim() || tile.title,
+        ...(tile.iconFocalX !== undefined ? { iconFocalX: tile.iconFocalX } : {}),
+        ...(tile.iconFocalY !== undefined ? { iconFocalY: tile.iconFocalY } : {}),
+        ...(tile.iconFocalByViewport ? { iconFocalByViewport: tile.iconFocalByViewport } : {}),
       }];
     });
 

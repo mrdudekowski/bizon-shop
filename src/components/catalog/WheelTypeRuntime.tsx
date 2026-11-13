@@ -40,7 +40,7 @@ export function WheelTypeRuntime({ type: initialType, models: initialModels, var
     <PageHeader title={type.name} description={type.shortDescription || type.description} breadcrumbs={[
       { href: "/", label: "Главная" }, { href: "/shop", label: "Магазин" }, { href: typeBasePath, label: type.name },
     ]} />
-    <WheelTypeCover imageUrl={type.imageUrl} name={type.name} />
+    <WheelTypeCover imageUrl={type.imageUrl} name={type.name} imageFocalX={type.imageFocalX} imageFocalY={type.imageFocalY} imageFocalByViewport={type.imageFocalByViewport} />
     {type.shortDescription && type.description ? <p className="section-description">{type.description}</p> : null}
     {models.length ? <WheelModelGrid models={models} variants={variants} typeBasePath={typeBasePath} /> : <p className="section-description">Модели этого типа скоро появятся.</p>}
     <p className="mt-8"><Link href="/shop" className="btn-glass inline-flex"><SiteArrow direction="left" /> Магазин</Link></p>

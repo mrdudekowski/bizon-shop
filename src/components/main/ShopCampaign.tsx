@@ -7,6 +7,7 @@ import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { shopCampaignFrames, type ShopCampaignFrame } from "@/lib/content/pages/shopCampaignFrames";
 import type { HomeShopCarouselItem } from "@/lib/content/homeShopCarousel";
 import type { HomeShopCampaignContent } from "@/lib/content/pages/types";
+import { responsiveFocalStyle } from "@/lib/content/responsiveFocalPosition";
 
 import { HOME_SHOP_ZONE_SECTION_ID } from "./homeShopZone";
 import { HomeShopIconCarousel } from "./HomeShopIconCarousel";
@@ -22,7 +23,8 @@ function ShopCampaignBackground({ frame }: { frame?: ShopCampaignFrame }) {
         fill
         sizes="100vw"
         priority={false}
-        style={{ objectPosition: `${(frame.imageFocalX ?? 0.5) * 100}% ${(frame.imageFocalY ?? 0.5) * 100}%` }}
+        className="responsiveFocalImage"
+        style={responsiveFocalStyle(frame.imageFocalByViewport, frame.imageFocalX, frame.imageFocalY)}
       />
     </div>
   );

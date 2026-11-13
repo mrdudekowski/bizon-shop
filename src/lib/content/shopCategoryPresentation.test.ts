@@ -156,7 +156,7 @@ describe("shopCategoryPresentation", () => {
 
   it("keeps Shop tile overrides and derives categories missing from the saved tile list", () => {
     const tiles = [
-      { categoryId: "1", categorySlug: "pritsepy", title: "Прицепы BIZON", visible: true, sortOrder: 0, iconUrl: "/page/icon.svg", carouselVisible: true, carouselImageUrl: "/page/trailer-slide.jpg" },
+      { categoryId: "1", categorySlug: "pritsepy", title: "Прицепы BIZON", visible: true, sortOrder: 0, iconUrl: "/page/icon.svg", carouselVisible: true, carouselImageUrl: "/page/trailer-slide.jpg", carouselImageFocalX: 0.2, carouselImageFocalY: 0.8, carouselImageFocalByViewport: { mobile: { x: 0.7, y: 0.3 } } },
       { categoryId: "2", categorySlug: "hidden", title: "Скрыто", visible: true, sortOrder: 1, carouselVisible: true },
       { categoryId: "3", categorySlug: "outdoor", title: "Скрытая плитка", visible: false, sortOrder: 2, carouselVisible: false },
     ];
@@ -167,7 +167,7 @@ describe("shopCategoryPresentation", () => {
       { slug: "accessories", title: "Комфорт в автомобиле", href: "/shop/accessories", iconUrl: "/images/shop/category-icons/car_seat-black.svg" },
     ]);
     expect(shopHomeCarouselSlides(categories, tiles)).toEqual([
-      { id: "pritsepy", title: "Прицепы BIZON", href: "/shop/pritsepy", imageUrl: "/page/trailer-slide.jpg" },
+      { id: "pritsepy", title: "Прицепы BIZON", href: "/shop/pritsepy", imageUrl: "/page/trailer-slide.jpg", focalX: 0.2, focalY: 0.8, focalByViewport: { mobile: { x: 0.7, y: 0.3 } } },
       { id: "hidden", title: "Скрыто", href: "/shop/hidden", imageUrl: null },
     ]);
   });
