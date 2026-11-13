@@ -47,7 +47,7 @@
 
 .caption {
   display: grid;
-  align-content: center;
+  align-content: end;
   grid-area: 1 / 1;
   justify-self: center;
   width: 100%;
@@ -56,8 +56,8 @@
   min-height: 0;
   margin: 0;
   color: var(--color-on-dark-subtle);
-  font-size: var(--type-body);
-  line-height: var(--leading-body);
+  font-size: inherit;
+  line-height: inherit;
   text-align: center;
   text-wrap: balance;
 }
@@ -65,9 +65,12 @@
 .captionSlot {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(3.2em, auto);
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  font-size: var(--type-body);
+  line-height: var(--leading-body);
 }
 
 .captionExit {
@@ -114,5 +117,6 @@
 
 @media (max-width: 639px) {
   .iconTile { width: clamp(6.5rem, 28vw, 8rem); }
-  .caption { max-width: 22rem; font-size: var(--type-small); }
+  .captionSlot { font-size: var(--type-small); }
+  .caption { max-width: 22rem; }
 }
