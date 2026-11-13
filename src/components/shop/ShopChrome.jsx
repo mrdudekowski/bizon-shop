@@ -30,12 +30,15 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
   const [mobile, setMobile] = useState(false);
   const [veryWide, setVeryWide] = useState(false);
   const rootRef = useRef(null);
-  const categoryMarksRef = useRef(null);
+  const mobileCategoryMarksRef = useRef(null);
+  const wideCategoryMarksRef = useRef(null);
   const mobileCatalogToggleRef = useRef(null);
   const wideCatalogToggleRef = useRef(null);
   const { tone } = useAdaptiveChrome("data-shop-chrome-tone", "dark");
   const mobileMarks = categoryMarks.filter((mark) => mark.iconUrl || shopCategoryIconUrl(mark.slug));
-  const showCategoryMarks = (mobile || veryWide) && iconsOpen;
+  const showMobileCategoryMarks = mobile && iconsOpen;
+  const showWideCategoryMarks = veryWide && iconsOpen;
+  const showCategoryMarks = showMobileCategoryMarks || showWideCategoryMarks;
 
   useEffect(() => {
     const mobileQuery = window.matchMedia("(max-width: 767px)");
@@ -73,6 +76,36 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
     ) : mark.label;
   }
 
+  function renderCategoryMarks(ref, id, className, isVisible) {
+    return (
+      <span
+        ref={ref}
+        id={id}
+        className={className}
+        aria-hidden={isVisible ? undefined : true}
+        data-open={isVisible ? "true" : "false"}
+        style={{
+          "--mark-count": mobileMarks.length,
+          "--marks-width": `${Math.max(0, mobileMarks.length * 36 - 4)}px`,
+        }}
+      >
+        {mobileMarks.map((mark, index) => (
+          <Link
+            key={mark.href}
+            href={mark.href}
+            aria-label={mark.label}
+            data-tooltip={mark.label}
+            tabIndex={isVisible ? undefined : -1}
+            onClick={() => setIconsOpen(false)}
+            style={{ "--mark-index": index }}
+          >
+            {renderMarkIcon(mark)}
+          </Link>
+        ))}
+      </span>
+    );
+  }
+
   useEffect(() => {
     if (!iconsOpen) return undefined;
     const restoreCatalogFocus = () => {
@@ -80,7 +113,10 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
       toggle?.focus();
     };
     const closeFromScroll = () => {
-      if (categoryMarksRef.current?.contains(document.activeElement)) restoreCatalogFocus();
+      if (
+        mobileCategoryMarksRef.current?.contains(document.activeElement)
+        || wideCategoryMarksRef.current?.contains(document.activeElement)
+      ) restoreCatalogFocus();
       setIconsOpen(false);
     };
     const closeFromPointer = (event) => {
@@ -124,28 +160,12 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
           >
             <ChromeWordmark />
           </Link>
-          <span
-            ref={categoryMarksRef}
-            id="shop-category-marks"
-            className={styles.categoryMarks}
-            aria-hidden={showCategoryMarks ? undefined : true}
-          >
-            {mobileMarks.map((mark, index) => {
-              return (
-                <Link
-                  key={mark.href}
-                  href={mark.href}
-                  aria-label={mark.label}
-                  data-tooltip={mark.label}
-                  tabIndex={showCategoryMarks ? undefined : -1}
-                  onClick={() => setIconsOpen(false)}
-                  style={{ "--mark-index": index }}
-                >
-                  {renderMarkIcon(mark)}
-                </Link>
-              );
-            })}
-          </span>
+          {renderCategoryMarks(
+            mobileCategoryMarksRef,
+            "shop-mobile-category-marks",
+            `${styles.categoryMarks} ${styles.mobileCategoryMarks}`,
+            showMobileCategoryMarks,
+          )}
         </span>
       )}
       startNavigation={
@@ -160,7 +180,7 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
             ref={wideCatalogToggleRef}
             data-shop-catalog-toggle
             aria-expanded={iconsOpen}
-            aria-controls="shop-category-marks"
+            aria-controls="shop-wide-category-marks"
             aria-label={iconsOpen ? "Скрыть категории магазина" : "Открыть каталог магазина"}
             onClick={() => setIconsOpen((open) => !open)}
           >
@@ -171,6 +191,12 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
             <ChromeNavIcon name="disk" />
             <span>Диски</span>
           </Link>
+          {renderCategoryMarks(
+            wideCategoryMarksRef,
+            "shop-wide-category-marks",
+            `${styles.categoryMarks} ${styles.wideCategoryMarks}`,
+            showWideCategoryMarks,
+          )}
         </>
       }
       navigation={
@@ -198,6 +224,7 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
             className={styles.mobileCatalogToggle}
             ref={mobileCatalogToggleRef}
             aria-expanded={iconsOpen}
+            aria-controls="shop-mobile-category-marks"
             aria-label={iconsOpen ? "Скрыть категории" : "Категории"}
             onClick={() => setIconsOpen((open) => !open)}
           >

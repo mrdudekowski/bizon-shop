@@ -5,7 +5,9 @@
   bottom: max(12px, env(safe-area-inset-bottom, 0px));
   left: 0;
   display: none;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, max-content);
+  justify-content: center;
+  column-gap: clamp(16px, 4vw, 28px);
   width: min(calc(100% - 24px), 1440px);
   max-width: min(calc(100% - 24px), 1440px);
   min-width: 0;
