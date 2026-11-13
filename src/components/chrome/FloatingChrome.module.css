@@ -30,7 +30,7 @@
   max-width: 100%;
   min-width: 0;
   border: 0;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-pill, 999px);
   position: relative;
   isolation: isolate;
   overflow: hidden;
