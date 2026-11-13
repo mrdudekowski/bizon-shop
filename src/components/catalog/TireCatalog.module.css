@@ -311,6 +311,10 @@
   min-width: 0;
 }
 
+.modelGrid :global(.catalog-card__media) {
+  aspect-ratio: 1 / 1;
+}
+
 .wheelBrand {
   font-weight: 800;
 }
