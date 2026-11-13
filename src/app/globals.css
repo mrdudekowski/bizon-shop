@@ -17,6 +17,15 @@ img {
   -webkit-user-drag: none;
 }
 
+.bizon-word-emphasis {
+  font: inherit !important;
+  font-weight: 700 !important;
+  color: inherit !important;
+  letter-spacing: inherit !important;
+  text-decoration: inherit !important;
+  text-transform: inherit !important;
+}
+
 /* BIZON visual tokens — canonical SSOT for public UI. */
 :root {
   /* Coral — action, primary CTA */
