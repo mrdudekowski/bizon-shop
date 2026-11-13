@@ -108,12 +108,19 @@ export function TireModelStage({
     (document) => Boolean(document.url?.trim() && document.title?.trim()),
   );
   const variantLabels = tireVariantLabels(variants);
+  const brandedName = model.name.match(/^(BIZON)\s+(.+)$/i);
+  const title = brandedName ? (
+    <>
+      <strong className={styles.modelTitleBrand}>{brandedName[1]}</strong>{" "}
+      <span className={styles.modelCode}>{brandedName[2]}</span>
+    </>
+  ) : model.name;
 
   return (
     <div className={styles.modelPage} data-main-chrome-tone="light">
       <div className={`${styles.pageInner} ${styles.pageInnerBeforeAdvantages}`}>
         <PageHeader
-          title={model.name}
+          title={title}
           description={model.descriptionShort}
           breadcrumbs={breadcrumbs}
         />
