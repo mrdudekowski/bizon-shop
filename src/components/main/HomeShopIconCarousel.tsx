@@ -5,7 +5,7 @@ import Image from "next/image";
 import type { HomeShopCarouselItem } from "@/lib/content/homeShopCarousel";
 import styles from "./HomeShopIconCarousel.module.css";
 
-const ITEM_INTERVAL_MS = 6000;
+const ITEM_INTERVAL_MS = 4000;
 
 export function HomeShopIconCarousel({ items }: { items: HomeShopCarouselItem[] }) {
   const [activeIndex, setActiveIndex] = useState(0);

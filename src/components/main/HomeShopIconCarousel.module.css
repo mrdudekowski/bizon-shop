@@ -38,11 +38,11 @@
 }
 
 .iconExit {
-  animation: icon-slide-out 480ms cubic-bezier(.2,.75,.25,1) both;
+  animation: icon-slide-out 360ms cubic-bezier(.2,.75,.25,1) both;
 }
 
 .iconEnter {
-  animation: icon-slide-in 480ms cubic-bezier(.2,.75,.25,1) both;
+  animation: icon-slide-in 360ms cubic-bezier(.2,.75,.25,1) both;
 }
 
 .caption {
@@ -71,11 +71,11 @@
 }
 
 .captionExit {
-  animation: caption-fade-out 120ms ease-out both;
+  animation: caption-fade-out 90ms ease-out both;
 }
 
 .captionEnter {
-  animation: caption-fade-in 360ms ease 120ms both;
+  animation: caption-fade-in 270ms ease 90ms both;
 }
 
 .carousel[data-reduced-motion="true"] .iconExit,
