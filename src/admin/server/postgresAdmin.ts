@@ -405,7 +405,8 @@ function wrap<T>(id: string, draft: T, status: string, publishedBody: T | null):
 
 async function present<T>(collection: string, id: string, mapped: T, status: string): Promise<EntityRecord<T>> {
   const positionRows = await query(
-    `SELECT placement_path AS path, media_id::text AS "assetId", focal_x AS "focalX", focal_y AS "focalY"
+    `SELECT placement_path AS path, media_id::text AS "assetId", focal_x AS "focalX", focal_y AS "focalY",
+            focal_by_viewport AS "focalByViewport"
      FROM cms_image_focal_positions WHERE collection = $1 AND doc_id = $2`,
     [collection, id],
   );
@@ -1113,7 +1114,8 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
 }
 
 async function publishStatus(table: string, id: string, status: "published" | "archived" | "draft") {
-  await query(`UPDATE ${table} SET status=$2, published_at=CASE WHEN $2='published' THEN COALESCE(published_at, now()) ELSE published_at END, updated_at=now() WHERE id=$1`, [Number(id), status]);
+  const publishedAt = status === "published" ? "COALESCE(published_at, now())" : "published_at";
+  await query(`UPDATE ${table} SET status=$2, published_at=${publishedAt}, updated_at=now() WHERE id=$1`, [Number(id), status]);
 }
 
 export function createPostgresAdminClient(account: AuthenticatedAccount): AdminClient {

@@ -1,6 +1,7 @@
 import { lexicalToHtml, normalizeImageUrl, toFiniteNumber } from "./mapTire";
 
 type WheelTypeRow = {
+  id?: string | number;
   name: string;
   slug: string;
   description: string | null;
@@ -9,6 +10,9 @@ type WheelTypeRow = {
   image_url: string | null;
   seo_seo_title?: string | null;
   seo_seo_description?: string | null;
+  image_focal_x?: number | null;
+  image_focal_y?: number | null;
+  image_focal_by_viewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>> | null;
 };
 
 type WheelModelRow = {
@@ -29,12 +33,18 @@ type WheelModelRow = {
   wheel_type_name: string;
   seo_seo_title?: string | null;
   seo_seo_description?: string | null;
+  image_focal_x?: number | null;
+  image_focal_y?: number | null;
+  image_focal_by_viewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>> | null;
 };
 
 export type CmsWheelGalleryImage = {
   url: string;
   alt: string;
   label: string;
+  focalX?: number;
+  focalY?: number;
+  focalByViewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>>;
 };
 
 export type CmsWheelType = {
@@ -44,6 +54,9 @@ export type CmsWheelType = {
   shortDescription: string;
   sortOrder: number;
   imageUrl: string | null;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>>;
   seoTitle?: string;
   seoDescription?: string;
 };
@@ -62,6 +75,9 @@ export type CmsWheelModel = {
   descriptionShort: string;
   descriptionLong: string;
   imageUrl: string | null;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>>;
   gallery: CmsWheelGalleryImage[];
   available: boolean;
   showInMenu: boolean;
@@ -138,19 +154,28 @@ export function mapWheelType(row: WheelTypeRow): CmsWheelType {
     shortDescription: row.short_description ?? "",
     sortOrder: sortOrder(row.sort_order),
     imageUrl: normalizeImageUrl(row.image_url),
+    ...(typeof row.image_focal_x === "number" ? { imageFocalX: row.image_focal_x } : {}),
+    ...(typeof row.image_focal_y === "number" ? { imageFocalY: row.image_focal_y } : {}),
+    ...(row.image_focal_by_viewport ? { imageFocalByViewport: row.image_focal_by_viewport } : {}),
     ...(optionalText(row.seo_seo_title) ? { seoTitle: row.seo_seo_title ?? undefined } : {}),
     ...(optionalText(row.seo_seo_description) ? { seoDescription: row.seo_seo_description ?? undefined } : {}),
   };
 }
 
 export function mapWheelGallery(
-  rows: { image_url?: unknown; image_alt?: unknown }[],
+  rows: { image_url?: unknown; image_alt?: unknown; image_focal_x?: unknown; image_focal_y?: unknown; image_focal_by_viewport?: unknown }[],
 ): CmsWheelGalleryImage[] {
   return rows.flatMap((row) => {
     const url = normalizeImageUrl(typeof row.image_url === "string" ? row.image_url : null);
     if (!url) return [];
     const alt = typeof row.image_alt === "string" ? row.image_alt : "";
-    return [{ url, alt, label: alt }];
+    const focalByViewport = row.image_focal_by_viewport && typeof row.image_focal_by_viewport === "object" && !Array.isArray(row.image_focal_by_viewport)
+      ? row.image_focal_by_viewport as Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>> : undefined;
+    return [{ url, alt, label: alt,
+      ...(typeof row.image_focal_x === "number" ? { focalX: row.image_focal_x } : {}),
+      ...(typeof row.image_focal_y === "number" ? { focalY: row.image_focal_y } : {}),
+      ...(focalByViewport ? { focalByViewport } : {}),
+    }];
   });
 }
 
@@ -176,6 +201,9 @@ export function mapWheelModel(
     descriptionShort: row.short_description ?? "",
     descriptionLong: lexicalToHtml(row.full_description),
     imageUrl: normalizeImageUrl(imageUrl),
+    ...(typeof row.image_focal_x === "number" ? { imageFocalX: row.image_focal_x } : {}),
+    ...(typeof row.image_focal_y === "number" ? { imageFocalY: row.image_focal_y } : {}),
+    ...(row.image_focal_by_viewport ? { imageFocalByViewport: row.image_focal_by_viewport } : {}),
     gallery,
     documents,
     available: row.available === true,

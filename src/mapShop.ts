@@ -10,6 +10,9 @@ type ShopCategoryRow = {
   image_url: string | null;
   seo_seo_title?: string | null;
   seo_seo_description?: string | null;
+  image_focal_x?: number | null;
+  image_focal_y?: number | null;
+  image_focal_by_viewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>> | null;
 };
 
 type ShopVariantRow = {
@@ -51,6 +54,9 @@ type ShopProductRow = {
 export type CmsShopCategoryCarouselFrame = {
   title: string;
   imageUrl: string | null;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>>;
 };
 
 export type CmsShopCategory = {
@@ -59,6 +65,9 @@ export type CmsShopCategory = {
   name: string;
   description: string;
   imageUrl: string | null;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>>;
   showInMenu: boolean;
   sortOrder: number;
   seoTitle?: string;
@@ -77,6 +86,15 @@ export type CmsProductVariant = {
   priceOnRequest: boolean;
   available: boolean;
   images: string[];
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>>;
+};
+
+export type CmsImageFocal = {
+  focalX?: number;
+  focalY?: number;
+  focalByViewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>>;
 };
 
 export type CmsProductSpec = {
@@ -99,7 +117,11 @@ export type CmsProduct = {
   descriptionShort: string;
   descriptionLong: string;
   imageUrl: string | null;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>>;
   gallery: string[];
+  galleryFocals?: (CmsImageFocal | null)[];
   price?: number;
   oldPrice?: number;
   priceOnRequest: boolean;
@@ -122,7 +144,7 @@ function sortOrder(value: unknown): number {
 
 export function mapShopCategory(
   row: ShopCategoryRow,
-  slides: { title?: string | null; image_url?: string | null }[] = [],
+  slides: { media_id?: string | null; title?: string | null; image_url?: string | null; image_focal_x?: number; image_focal_y?: number; image_focal_by_viewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>> | null }[] = [],
 ): CmsShopCategory {
   return {
     id: String(row.id),
@@ -130,6 +152,9 @@ export function mapShopCategory(
     name: row.name,
     description: row.description ?? "",
     imageUrl: normalizeImageUrl(row.image_url),
+    ...(typeof row.image_focal_x === "number" ? { imageFocalX: row.image_focal_x } : {}),
+    ...(typeof row.image_focal_y === "number" ? { imageFocalY: row.image_focal_y } : {}),
+    ...(row.image_focal_by_viewport ? { imageFocalByViewport: row.image_focal_by_viewport } : {}),
     showInMenu: row.show_in_menu === true,
     sortOrder: sortOrder(row.sort_order),
     ...(optionalText(row.seo_seo_title) ? { seoTitle: row.seo_seo_title ?? undefined } : {}),
@@ -137,11 +162,14 @@ export function mapShopCategory(
     carousel: slides.slice(0, 1).map((slide) => ({
       title: slide.title ?? "",
       imageUrl: normalizeImageUrl(slide.image_url),
+      ...(typeof slide.image_focal_x === "number" ? { imageFocalX: slide.image_focal_x } : {}),
+      ...(typeof slide.image_focal_y === "number" ? { imageFocalY: slide.image_focal_y } : {}),
+      ...(slide.image_focal_by_viewport ? { imageFocalByViewport: slide.image_focal_by_viewport } : {}),
     })),
   };
 }
 
-export function mapShopVariant(row: ShopVariantRow, images: string[] = []): CmsProductVariant {
+export function mapShopVariant(row: ShopVariantRow, images: string[] = [], focal?: { x?: number; y?: number; byViewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>> }): CmsProductVariant {
   const price = toFiniteNumber(row.price);
   const oldPrice = toFiniteNumber(row.old_price);
   return {
@@ -155,6 +183,9 @@ export function mapShopVariant(row: ShopVariantRow, images: string[] = []): CmsP
     priceOnRequest: price === undefined || row.price_on_request === true,
     available: row.available !== false,
     images: images.filter((image) => !image.startsWith("data:")),
+    ...(typeof focal?.x === "number" ? { imageFocalX: focal.x } : {}),
+    ...(typeof focal?.y === "number" ? { imageFocalY: focal.y } : {}),
+    ...(focal?.byViewport ? { imageFocalByViewport: focal.byViewport } : {}),
   };
 }
 
@@ -173,6 +204,8 @@ export function mapShopProduct(
   imageUrl: string | null | undefined,
   gallery: string[],
   variants: CmsProductVariant[],
+  mainFocal?: { x?: number; y?: number; byViewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>> },
+  galleryFocals?: CmsProduct["galleryFocals"],
 ): CmsProduct {
   const price = toFiniteNumber(row.price);
   const oldPrice = toFiniteNumber(row.old_price);
@@ -192,7 +225,11 @@ export function mapShopProduct(
     descriptionShort: row.short_description ?? "",
     descriptionLong: lexicalToHtml(row.full_description),
     imageUrl: normalizeImageUrl(imageUrl),
+    ...(typeof mainFocal?.x === "number" ? { imageFocalX: mainFocal.x } : {}),
+    ...(typeof mainFocal?.y === "number" ? { imageFocalY: mainFocal.y } : {}),
+    ...(mainFocal?.byViewport ? { imageFocalByViewport: mainFocal.byViewport } : {}),
     gallery: gallery.filter((url) => !url.startsWith("data:")),
+    ...(galleryFocals ? { galleryFocals } : {}),
     ...(price !== undefined ? { price } : {}),
     ...(oldPrice !== undefined ? { oldPrice } : {}),
     priceOnRequest: price === undefined || row.price_on_request === true,

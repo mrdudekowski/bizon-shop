@@ -94,6 +94,17 @@ describe("diffDraft", () => {
     expect(image?.after).toMatchObject({ kind: "image", assetId: "asset-2", previewUrl: "data:new" });
     expect(diffDraft(before, tireModel({ mainImage: { ...placement } }), "tire-model")).toEqual([]);
   });
+
+  it.each([
+    ["desktop", { x: 0.9, y: 0.1 }],
+    ["tablet", { x: 0.1, y: 0.9 }],
+    ["mobile", { x: 0.8, y: 0.3 }],
+  ] as const)("marks a %s focal edit as a content change", (viewport, point) => {
+    const before = tireModel({ mainImage: { ...placement, focalByViewport: {} } });
+    const after = tireModel({ mainImage: { ...placement, focalByViewport: { [viewport]: point } } });
+
+    expect(diffDraft(before, after, "tire-model").map((change) => change.path)).toEqual(["mainImage"]);
+  });
 });
 
 describe("field catalog coverage", () => {

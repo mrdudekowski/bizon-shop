@@ -34,18 +34,81 @@ export type ReadDatabase = {
   withReadSnapshot?<T>(run: (snapshot: ReadDatabase) => Promise<T>): Promise<T>;
 };
 
-async function readPageImageFocals(db: ReadDatabase, id: unknown): Promise<Map<string, { x: number; y: number }>> {
+type PublicFocalByViewport = Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>>;
+type StoredFocal = { placementPath: string; mediaId: string | null; x: number; y: number; byViewport?: PublicFocalByViewport };
+
+function parseFocalByViewport(value: unknown): PublicFocalByViewport | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const result: PublicFocalByViewport = {};
+  for (const viewport of ["desktop", "tablet", "mobile"] as const) {
+    const point = (value as Record<string, unknown>)[viewport];
+    if (!point || typeof point !== "object" || Array.isArray(point)) continue;
+    const { x, y } = point as { x?: unknown; y?: unknown };
+    if (typeof x !== "number" || !Number.isFinite(x) || typeof y !== "number" || !Number.isFinite(y)) continue;
+    result[viewport] = { x: Math.min(1, Math.max(0, x)), y: Math.min(1, Math.max(0, y)) };
+  }
+  return Object.keys(result).length ? result : undefined;
+}
+
+async function readImageFocals(db: ReadDatabase, collection: string, id: unknown): Promise<Map<string, StoredFocal>> {
   const rows = await db.query(
-    `SELECT placement_path, focal_x, focal_y FROM cms_image_focal_positions
-     WHERE collection = 'pages' AND doc_id = $1`,
-    [String(id)],
+    `SELECT placement_path, media_id::text AS media_id, focal_x, focal_y, focal_by_viewport FROM cms_image_focal_positions
+     WHERE collection = $1 AND doc_id = $2`,
+    [collection, String(id)],
   );
   return new Map(rows.flatMap((row) => typeof row.placement_path === "string"
     ? [[row.placement_path, {
+        placementPath: row.placement_path,
+        mediaId: row.media_id === null || row.media_id === undefined ? null : String(row.media_id),
         x: typeof row.focal_x === "number" ? row.focal_x : 0.5,
         y: typeof row.focal_y === "number" ? row.focal_y : 0.5,
+        ...(parseFocalByViewport(row.focal_by_viewport) ? { byViewport: parseFocalByViewport(row.focal_by_viewport) } : {}),
       }] as const]
     : []));
+}
+
+const readPageImageFocals = (db: ReadDatabase, id: unknown) => readImageFocals(db, "pages", id);
+
+function focalMatchesAsset(focal: StoredFocal | undefined, assetId: unknown): focal is StoredFocal {
+  return Boolean(focal && focal.mediaId && assetId !== null && assetId !== undefined && focal.mediaId === String(assetId));
+}
+
+function publicImageFocal(focal: StoredFocal | undefined, assetId: unknown) {
+  return focalMatchesAsset(focal, assetId) ? {
+    focalX: focal.x,
+    focalY: focal.y,
+    ...(focal.byViewport ? { focalByViewport: focal.byViewport } : {}),
+  } : undefined;
+}
+
+function shopCarouselFocalPath(categoryId: unknown): string {
+  const encoded = encodeURIComponent(String(categoryId)).replaceAll(".", "%2E");
+  return `catalog.tiles.@categoryId=${encoded}.carouselImage`;
+}
+
+function shopIconFocalPath(categoryId: unknown): string {
+  const encoded = encodeURIComponent(String(categoryId)).replaceAll(".", "%2E");
+  return `catalog.tiles.@categoryId=${encoded}.icon`;
+}
+
+function productVariantFocalPath(variantId: unknown): string {
+  const encoded = encodeURIComponent(String(variantId)).replaceAll(".", "%2E");
+  return `variants.@variantId=${encoded}.image`;
+}
+
+async function readGalleryAssets(db: ReadDatabase, table: keyof typeof GALLERY_TABLES, parentId: unknown, path: string) {
+  const legacyFocalColumns = table === "products_variants_rels" ? ", rels.focal_x, rels.focal_y" : "";
+  const rows = await db.query(
+    `SELECT rels.media_id::text AS media_id, media.url AS image_url${legacyFocalColumns}
+     FROM ${table} AS rels JOIN media ON media.id = rels.media_id
+     WHERE rels.parent_id = $1 AND rels.path = $2
+     ORDER BY rels."order", rels.id`,
+    [parentId, path],
+  );
+  return rows.flatMap((row) => {
+    const url = normalizeImageUrl(typeof row.image_url === "string" ? row.image_url : null);
+    return url ? [{ mediaId: String(row.media_id), url, focalX: row.focal_x, focalY: row.focal_y }] : [];
+  });
 }
 
 export const PUBLIC_STUB_PAGE_KEYS = [
@@ -123,7 +186,15 @@ export async function readTireTypes(db: ReadDatabase): Promise<CmsTireType[]> {
     ORDER BY tire_types.sort_order, tire_types.id
   `);
 
-  return tireTypeRows.map((tireTypeRow) => mapTireType(tireTypeRow as Parameters<typeof mapTireType>[0]));
+  return Promise.all(tireTypeRows.map(async (tireTypeRow) => {
+    const focals = await readImageFocals(db, "tire-directions", tireTypeRow.id);
+    const focalRow = focals.get("mainImage");
+    const focal = focalMatchesAsset(focalRow, tireTypeRow.cover_image_id) ? focalRow : undefined;
+    return mapTireType({
+      ...tireTypeRow,
+      ...(focal ? { image_focal_x: focal.x, image_focal_y: focal.y, image_focal_by_viewport: focal.byViewport } : {}),
+    } as Parameters<typeof mapTireType>[0]);
+  }));
 }
 
 export async function readTireModelsByType(
@@ -147,7 +218,7 @@ export async function readTireModelsByType(
 
   return Promise.all(
     modelRows.map(async (modelRow) => {
-      const [axleRows, featureRows, gallery, applicationRows, documents] = await Promise.all([
+      const [axleRows, featureRows, gallery, applicationRows, documents, focals] = await Promise.all([
         db.query("SELECT value FROM tire_models_positions WHERE parent_id = $1", [modelRow.id]),
         db.query(
           `
@@ -158,10 +229,13 @@ export async function readTireModelsByType(
           `,
           [modelRow.id],
         ),
-        readGalleryUrls(db, "tire_models_rels", modelRow.id),
+        readGalleryAssets(db, "tire_models_rels", modelRow.id, "gallery"),
         db.query("SELECT value FROM tire_models_application_types WHERE parent_id = $1", [modelRow.id]),
         readPublishedDocuments(db, "tire-model", modelRow.id),
+        readImageFocals(db, "tire-models", modelRow.id),
       ]);
+      const galleryFocals = gallery.map((asset, index) => publicImageFocal(focals.get(`gallery.${index}`), asset.mediaId) ?? null);
+      const mainFocal = publicImageFocal(focals.get("mainImage"), modelRow.main_image_id);
 
       return mapTireModel({
         row: modelRow as Parameters<typeof mapTireModel>[0]["row"],
@@ -170,7 +244,9 @@ export async function readTireModelsByType(
           name: modelRow.tire_type_name as string,
         },
         imageUrl: typeof modelRow.image_url === "string" ? modelRow.image_url : null,
-        gallery,
+        gallery: gallery.map((asset) => asset.url),
+        imageFocal: mainFocal ? { x: mainFocal.focalX!, y: mainFocal.focalY!, byViewport: mainFocal.focalByViewport } : undefined,
+        galleryFocals,
         advantages: featureRows.map(({ key, title, description }) => ({ key, title, description })),
         selectionAxles: readStringColumn(axleRows, "value"),
         applicationTypes: readStringColumn(applicationRows, "value"),
@@ -204,7 +280,7 @@ export async function readTireModel(
     return null;
   }
 
-  const [axleRows, featureRows, gallery, applicationRows, documents] = await Promise.all([
+  const [axleRows, featureRows, gallery, applicationRows, documents, focals] = await Promise.all([
     db.query("SELECT value FROM tire_models_positions WHERE parent_id = $1", [modelRow.id]),
     db.query(
       `
@@ -215,10 +291,13 @@ export async function readTireModel(
       `,
       [modelRow.id],
     ),
-    readGalleryUrls(db, "tire_models_rels", modelRow.id),
+    readGalleryAssets(db, "tire_models_rels", modelRow.id, "gallery"),
     db.query("SELECT value FROM tire_models_application_types WHERE parent_id = $1", [modelRow.id]),
     readPublishedDocuments(db, "tire-model", modelRow.id),
+    readImageFocals(db, "tire-models", modelRow.id),
   ]);
+  const galleryFocals = gallery.map((asset, index) => publicImageFocal(focals.get(`gallery.${index}`), asset.mediaId) ?? null);
+  const mainFocal = publicImageFocal(focals.get("mainImage"), modelRow.main_image_id);
 
   return mapTireModel({
     row: modelRow as Parameters<typeof mapTireModel>[0]["row"],
@@ -227,7 +306,9 @@ export async function readTireModel(
       name: modelRow.tire_type_name as string,
     },
     imageUrl: typeof modelRow.image_url === "string" ? modelRow.image_url : null,
-    gallery,
+    gallery: gallery.map((asset) => asset.url),
+    imageFocal: mainFocal ? { x: mainFocal.focalX!, y: mainFocal.focalY!, byViewport: mainFocal.focalByViewport } : undefined,
+    galleryFocals,
     advantages: featureRows.map(({ key, title, description }) => ({ key, title, description })),
     selectionAxles: readStringColumn(axleRows, "value"),
     applicationTypes: readStringColumn(applicationRows, "value"),
@@ -259,19 +340,19 @@ export async function readHomePatch(db: ReadDatabase): Promise<HomePatch | null>
     SELECT pages.seo_seo_title, pages.seo_seo_description, pages.home_hero_eyebrow, pages.home_hero_title,
       pages.home_hero_lead, pages.home_hero_primary_cta_label, pages.home_hero_primary_cta_href,
       pages.home_hero_secondary_cta_label, pages.home_hero_secondary_cta_href, pages.home_hero_metric_label,
-      pages.home_hero_metric_text, pages.home_hero_image_alt, hero_media.url AS home_hero_image_url,
+      pages.home_hero_metric_text, pages.home_hero_image_alt, pages.home_hero_image_id::text AS home_hero_image_media_id, hero_media.url AS home_hero_image_url,
       pages.home_shop_campaign_eyebrow, pages.home_shop_campaign_title, pages.home_shop_campaign_lead,
       pages.home_shop_campaign_image_alt, pages.home_shop_campaign_cta_label, pages.home_shop_campaign_cta_href,
-      campaign_media.url AS home_shop_campaign_image_url,
+      pages.home_shop_campaign_image_id::text AS home_shop_campaign_image_media_id, campaign_media.url AS home_shop_campaign_image_url,
       pages.home_directions_eyebrow, pages.home_directions_title, pages.home_directions_lead,
       pages.home_expertise_eyebrow, pages.home_expertise_title, pages.home_expertise_lead,
       pages.home_expertise_image_alt, pages.home_expertise_cta_label, pages.home_expertise_cta_href,
-      expertise_media.url AS home_expertise_image_url,
+      pages.home_expertise_image_id::text AS home_expertise_image_media_id, expertise_media.url AS home_expertise_image_url,
       pages.home_branding_eyebrow, pages.home_branding_title, pages.home_branding_lead,
       pages.home_branding_cta_label, pages.home_branding_cta_href,
       pages.home_branding_before_caption, pages.home_branding_after_caption,
-      pages.home_branding_before_image_alt, before_media.url AS home_branding_before_image_url,
-      pages.home_branding_after_image_alt, after_media.url AS home_branding_after_image_url
+      pages.home_branding_before_image_alt, pages.home_branding_before_image_id::text AS home_branding_before_image_media_id, before_media.url AS home_branding_before_image_url,
+        pages.home_branding_after_image_alt, pages.home_branding_after_image_id::text AS home_branding_after_image_media_id, after_media.url AS home_branding_after_image_url
     FROM pages
     LEFT JOIN media AS hero_media ON hero_media.id = pages.home_hero_image_id
     LEFT JOIN media AS campaign_media ON campaign_media.id = pages.home_shop_campaign_image_id
@@ -283,17 +364,18 @@ export async function readHomePatch(db: ReadDatabase): Promise<HomePatch | null>
 
   if (!homeRow) return null;
   const focals = await readPageImageFocals(db, "home");
-  const withFocal = (key: string, x: string, y: string) => {
+  const withFocal = (key: string, x: string, y: string, viewport: string, assetId: unknown) => {
     const focal = focals.get(key);
-    return focal ? { [x]: focal.x, [y]: focal.y } : {};
+    if (!focalMatchesAsset(focal, assetId)) return {};
+    return { [x]: focal.x, [y]: focal.y, ...(focal.byViewport ? { [viewport]: focal.byViewport } : {}) };
   };
   const home = mapHomePatch({
     ...homeRow,
-    ...withFocal("hero.image", "home_hero_image_focal_x", "home_hero_image_focal_y"),
-    ...withFocal("shopCampaign.image", "home_shop_campaign_image_focal_x", "home_shop_campaign_image_focal_y"),
-    ...withFocal("expertise.image", "home_expertise_image_focal_x", "home_expertise_image_focal_y"),
-    ...withFocal("branding.beforeImage", "home_branding_before_image_focal_x", "home_branding_before_image_focal_y"),
-    ...withFocal("branding.afterImage", "home_branding_after_image_focal_x", "home_branding_after_image_focal_y"),
+    ...withFocal("hero.image", "home_hero_image_focal_x", "home_hero_image_focal_y", "home_hero_image_focal_by_viewport", homeRow.home_hero_image_media_id),
+    ...withFocal("shopCampaign.image", "home_shop_campaign_image_focal_x", "home_shop_campaign_image_focal_y", "home_shop_campaign_image_focal_by_viewport", homeRow.home_shop_campaign_image_media_id),
+    ...withFocal("expertise.image", "home_expertise_image_focal_x", "home_expertise_image_focal_y", "home_expertise_image_focal_by_viewport", homeRow.home_expertise_image_media_id),
+    ...withFocal("branding.beforeImage", "home_branding_before_image_focal_x", "home_branding_before_image_focal_y", "home_branding_before_image_focal_by_viewport", homeRow.home_branding_before_image_media_id),
+    ...withFocal("branding.afterImage", "home_branding_after_image_focal_x", "home_branding_after_image_focal_y", "home_branding_after_image_focal_by_viewport", homeRow.home_branding_after_image_media_id),
   } as Parameters<typeof mapHomePatch>[0]);
   const frames = (await readPublishedShopCampaignFrames(db)) ?? [];
   if (frames.length > 0) home.shopCampaign = { ...home.shopCampaign, frames };
@@ -337,7 +419,7 @@ export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch
   `);
   if (!row) return null;
   const parentId = row.id;
-  const [carousel, catalogTiles, vehicles, orderSteps] = await Promise.all([
+  const [carousel, catalogTiles, vehicles, orderSteps, focals] = await Promise.all([
     db.query(
       `
         SELECT slides.id, slides.kicker, slides.title, slides.action, slides.href, slides.alt,
@@ -353,7 +435,8 @@ export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch
     db.query(
       `SELECT tiles.category_id, categories.slug AS category_slug, tiles.title, tiles.visible,
         tiles._order AS sort_order, COALESCE(icon.url, legacy_image.url) AS icon_url,
-        carousel.url AS carousel_image_url, tiles.icon_alt,
+        carousel.url AS carousel_image_url, tiles.carousel_image_media_id::text AS carousel_image_media_id,
+        COALESCE(tiles.icon_media_id, tiles.image_media_id)::text AS icon_media_id, tiles.icon_alt,
         tiles.carousel_image_alt, tiles.carousel_visible,
         tiles.home_carousel_caption
        FROM pages_shop_catalog_tiles tiles
@@ -384,13 +467,36 @@ export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch
       `,
       [parentId],
     ),
+    readPageImageFocals(db, "shop-home"),
   ]);
+  const catalogTilesWithFocals = catalogTiles.map((tile, index) => {
+    const stable = focals.get(shopCarouselFocalPath(tile.category_id));
+    const legacy = focals.get(`catalog.tiles.${index}.carouselImage`);
+    const focal = focalMatchesAsset(stable, tile.carousel_image_media_id)
+      ? stable
+      : focalMatchesAsset(legacy, tile.carousel_image_media_id) ? legacy : undefined;
+    const iconPosition = focals.get(shopIconFocalPath(tile.category_id));
+    const iconFocal = focalMatchesAsset(iconPosition, tile.icon_media_id) ? iconPosition : undefined;
+    return focal || iconFocal ? {
+      ...tile,
+      ...(iconFocal ? {
+        icon_focal_x: iconFocal.x,
+        icon_focal_y: iconFocal.y,
+        ...(iconFocal.byViewport ? { icon_focal_by_viewport: iconFocal.byViewport } : {}),
+      } : {}),
+      ...(focal ? {
+      carousel_image_focal_x: focal.x,
+      carousel_image_focal_y: focal.y,
+      ...(focal.byViewport ? { carousel_image_focal_by_viewport: focal.byViewport } : {}),
+      } : {}),
+    } : tile;
+  });
   return mapShopHomePatch({
     row: row as Parameters<typeof mapShopHomePatch>[0]["row"],
     carousel: carousel as Parameters<typeof mapShopHomePatch>[0]["carousel"],
     vehicles: vehicles as Parameters<typeof mapShopHomePatch>[0]["vehicles"],
     orderSteps,
-    catalogTiles: catalogTiles as Parameters<typeof mapShopHomePatch>[0]["catalogTiles"],
+    catalogTiles: catalogTilesWithFocals as Parameters<typeof mapShopHomePatch>[0]["catalogTiles"],
   });
 }
 
@@ -405,7 +511,17 @@ export async function readArticles(db: ReadDatabase): Promise<CmsArticle[]> {
     ORDER BY COALESCE(tire_iq_articles.menu_order, 0), tire_iq_articles.published_at DESC NULLS LAST, tire_iq_articles.id
   `);
 
-  return articleRows.map((articleRow) => mapArticle(articleRow as Parameters<typeof mapArticle>[0]));
+  return Promise.all(articleRows.map((articleRow) => mapPublishedArticle(db, articleRow)));
+}
+
+async function mapPublishedArticle(db: ReadDatabase, row: Record<string, unknown>): Promise<CmsArticle> {
+  const focals = await readImageFocals(db, "materials", `article-${row.id}`);
+  const focalRow = focals.get("image");
+  const focal = focalMatchesAsset(focalRow, row.featured_image_id) ? focalRow : undefined;
+  return mapArticle({
+    ...row,
+    ...(focal ? { image_focal_x: focal.x, image_focal_y: focal.y, image_focal_by_viewport: focal.byViewport } : {}),
+  } as Parameters<typeof mapArticle>[0]);
 }
 
 export async function readArticleBySlug(
@@ -424,7 +540,7 @@ export async function readArticleBySlug(
     [slug],
   );
 
-  return articleRow ? mapArticle(articleRow as Parameters<typeof mapArticle>[0]) : null;
+  return articleRow ? mapPublishedArticle(db, articleRow) : null;
 }
 
 const STUB_PAGE_KEYS = new Set<string>(PUBLIC_STUB_PAGE_KEYS);
@@ -435,6 +551,7 @@ export async function readStubPatch(db: ReadDatabase, key: string): Promise<Stub
     `
       SELECT pages.id, pages.stub_hero_configured, pages.editorial_heading_configured, pages.editorial_features_configured, pages.editorial_sections_configured, pages.editorial_notice_configured, pages.editorial_proof_configured, pages.editorial_cta_configured, pages.editorial_configured, pages.editorial_features_heading, pages.editorial_notice, pages.editorial_proof_title, pages.editorial_proof_text, pages.editorial_proof_image_alt, pages.editorial_cta_label, pages.editorial_cta_href, pages.editorial_secondary_label, pages.editorial_secondary_href, proof_media.url AS editorial_proof_image_url, pages.seo_seo_title, pages.seo_seo_description, pages.stub_hero_eyebrow, pages.stub_hero_title,
         pages.stub_hero_lead, pages.stub_hero_image_alt, media.url AS stub_hero_image_url,
+        pages.stub_hero_image_id::text AS stub_hero_image_media_id, pages.editorial_proof_image_id::text AS editorial_proof_image_media_id,
         pages.footer_phone, pages.footer_email, pages.footer_address,
         pages.footer_telegram, pages.footer_whatsapp, pages.footer_max, pages.footer_vk, pages.footer_instagram
       FROM pages
@@ -445,12 +562,7 @@ export async function readStubPatch(db: ReadDatabase, key: string): Promise<Stub
     [key],
   );
   if (!row) return null;
-  const focalRows = await db.query(
-    `SELECT placement_path, focal_x, focal_y FROM cms_image_focal_positions
-     WHERE collection = 'pages' AND doc_id = $1`,
-    [key],
-  );
-  const focalByPath = new Map(focalRows.map((position) => [String(position.placement_path), position]));
+  const focalByPath = await readPageImageFocals(db, key);
   const heroFocal = focalByPath.get("hero.image");
   const proofFocal = focalByPath.get("proof.image");
   const features = row.editorial_configured ? await db.query(`SELECT id, title, text FROM pages_editorial_features WHERE _parent_id = $1 ORDER BY _order, id`, [row.id]) : [];
@@ -462,10 +574,16 @@ export async function readStubPatch(db: ReadDatabase, key: string): Promise<Stub
     ...row,
     site_profile: siteProfile,
     page_form: pageForm ?? undefined,
-    stub_hero_image_focal_x: typeof heroFocal?.focal_x === "number" ? heroFocal.focal_x : null,
-    stub_hero_image_focal_y: typeof heroFocal?.focal_y === "number" ? heroFocal.focal_y : null,
-    editorial_proof_image_focal_x: typeof proofFocal?.focal_x === "number" ? proofFocal.focal_x : null,
-    editorial_proof_image_focal_y: typeof proofFocal?.focal_y === "number" ? proofFocal.focal_y : null,
+    ...(focalMatchesAsset(heroFocal, row.stub_hero_image_media_id) ? {
+      stub_hero_image_focal_x: heroFocal.x,
+      stub_hero_image_focal_y: heroFocal.y,
+      stub_hero_image_focal_by_viewport: heroFocal.byViewport,
+    } : {}),
+    ...(focalMatchesAsset(proofFocal, row.editorial_proof_image_media_id) ? {
+      editorial_proof_image_focal_x: proofFocal.x,
+      editorial_proof_image_focal_y: proofFocal.y,
+      editorial_proof_image_focal_by_viewport: proofFocal.byViewport,
+    } : {}),
     features,
     sections,
     documents,
@@ -478,7 +596,7 @@ export async function readStubPatch(db: ReadDatabase, key: string): Promise<Stub
 async function readWheelGallery(db: ReadDatabase, parentId: unknown) {
   const rows = await db.query(
     `
-      SELECT media.url AS image_url, media.alt AS image_alt
+      SELECT rels.media_id::text AS media_id, media.url AS image_url, media.alt AS image_alt
       FROM wheel_models_rels AS rels
       JOIN media ON media.id = rels.media_id
       WHERE rels.parent_id = $1 AND rels.path = 'gallery'
@@ -486,7 +604,7 @@ async function readWheelGallery(db: ReadDatabase, parentId: unknown) {
     `,
     [parentId],
   );
-  return mapWheelGallery(rows);
+  return rows;
 }
 
 export async function readWheelTypes(db: ReadDatabase): Promise<CmsWheelType[]> {
@@ -497,7 +615,15 @@ export async function readWheelTypes(db: ReadDatabase): Promise<CmsWheelType[]> 
     WHERE wheel_types.status = 'published'
     ORDER BY wheel_types.sort_order, wheel_types.name
   `);
-  return rows.map((row) => mapWheelType(row as Parameters<typeof mapWheelType>[0]));
+  return Promise.all(rows.map(async (row) => {
+    const focals = await readImageFocals(db, "wheel-types", row.id);
+    const focalRow = focals.get("mainImage");
+    const focal = focalMatchesAsset(focalRow, row.cover_image_id) ? focalRow : undefined;
+    return mapWheelType({
+      ...row,
+      ...(focal ? { image_focal_x: focal.x, image_focal_y: focal.y, image_focal_by_viewport: focal.byViewport } : {}),
+    } as Parameters<typeof mapWheelType>[0]);
+  }));
 }
 
 async function readWheelModelRows(db: ReadDatabase, typeSlug: string, modelSlug?: string) {
@@ -522,12 +648,21 @@ async function readWheelModelRows(db: ReadDatabase, typeSlug: string, modelSlug?
 }
 
 async function mapPublishedWheelModel(db: ReadDatabase, row: Record<string, unknown>) {
-  const [gallery, documents] = await Promise.all([
+  const [galleryRows, documents, focals] = await Promise.all([
     readWheelGallery(db, row.id),
     readPublishedDocuments(db, "wheel-model", row.id),
+    readImageFocals(db, "wheel-models", row.id),
   ]);
+  const gallery = mapWheelGallery(galleryRows.map((asset, index) => {
+    const focal = publicImageFocal(focals.get(`gallery.${index}`), asset.media_id);
+    return {
+      ...asset,
+      ...(focal ? { image_focal_x: focal.focalX, image_focal_y: focal.focalY, image_focal_by_viewport: focal.focalByViewport } : {}),
+    };
+  }));
+  const mainFocal = publicImageFocal(focals.get("mainImage"), row.main_image_id);
   return mapWheelModel(
-    row as Parameters<typeof mapWheelModel>[0],
+    { ...row, ...(mainFocal ? { image_focal_x: mainFocal.focalX, image_focal_y: mainFocal.focalY, image_focal_by_viewport: mainFocal.focalByViewport } : {}) } as Parameters<typeof mapWheelModel>[0],
     typeof row.image_url === "string" ? row.image_url : null,
     gallery,
     documents,
@@ -597,21 +732,37 @@ export async function readShopCategories(db: ReadDatabase): Promise<CmsShopCateg
     ORDER BY shop_categories.sort_order, shop_categories.name
   `);
   const slides = await db.query(`
-    SELECT slides.shop_category_id, slides.title, media.url AS image_url
+    SELECT slides.shop_category_id, slides.image_id::text AS media_id, slides.title, media.url AS image_url
     FROM shop_category_carousel slides
     LEFT JOIN media ON media.id = slides.image_id
     ORDER BY slides.sort_order, slides.id
   `);
-  const slidesByCategory = new Map<string, { title?: string | null; image_url?: string | null }[]>();
+  const slidesByCategory = new Map<string, { media_id?: string | null; title?: string | null; image_url?: string | null }[]>();
   for (const slide of slides) {
     const categoryId = String(slide.shop_category_id);
     const frames = slidesByCategory.get(categoryId) ?? [];
     if (frames.length < 1) frames.push(slide);
     slidesByCategory.set(categoryId, frames);
   }
-  return rows.map((row) =>
-    mapShopCategory(row as Parameters<typeof mapShopCategory>[0], slidesByCategory.get(String(row.id)) ?? []),
-  );
+  return Promise.all(rows.map(async (row) => {
+    const focals = await readImageFocals(db, "shop-categories", row.id);
+    const mainFocal = publicImageFocal(focals.get("mainImage"), row.cover_image_id);
+    const categorySlides = slidesByCategory.get(String(row.id)) ?? [];
+    const carouselFocal = categorySlides[0]
+      ? publicImageFocal(focals.get("carousel.0.image"), categorySlides[0].media_id)
+      : undefined;
+    return mapShopCategory({
+      ...row,
+      ...(mainFocal ? { image_focal_x: mainFocal.focalX, image_focal_y: mainFocal.focalY, image_focal_by_viewport: mainFocal.focalByViewport } : {}),
+    } as Parameters<typeof mapShopCategory>[0], categorySlides.map((slide, index) => ({
+      ...slide,
+      ...(index === 0 && carouselFocal ? {
+        image_focal_x: carouselFocal.focalX,
+        image_focal_y: carouselFocal.focalY,
+        image_focal_by_viewport: carouselFocal.focalByViewport,
+      } : {}),
+    })));
+  }));
 }
 
 async function readShopProductRows(db: ReadDatabase, slug?: string, categorySlug?: string) {
@@ -645,23 +796,48 @@ async function readShopProductRows(db: ReadDatabase, slug?: string, categorySlug
 }
 
 async function mapPublishedShopProduct(db: ReadDatabase, row: Record<string, unknown>) {
-  const [variantRows, gallery] = await Promise.all([
+  const [variantRows, gallery, focals] = await Promise.all([
     db.query(
       "SELECT * FROM products_variants WHERE _parent_id = $1 ORDER BY _order, id",
       [row.id],
     ),
-    readGalleryUrls(db, "products_rels", row.id),
+    readGalleryAssets(db, "products_rels", row.id, "gallery"),
+    readImageFocals(db, "shop-products", row.id),
   ]);
+  const mainFocalRow = focals.get("mainImage");
+  const mainFocal = focalMatchesAsset(mainFocalRow, row.main_image_id)
+    ? { x: mainFocalRow.x, y: mainFocalRow.y, byViewport: mainFocalRow.byViewport }
+    : undefined;
+  const galleryFocals = gallery.map((asset, index) => {
+    const saved = focals.get(`gallery.${index}`);
+    return focalMatchesAsset(saved, asset.mediaId) ? {
+      focalX: saved.x,
+      focalY: saved.y,
+      ...(saved.byViewport ? { focalByViewport: saved.byViewport } : {}),
+    } : null;
+  });
   return mapShopProduct(
     row as Parameters<typeof mapShopProduct>[0],
     typeof row.image_url === "string" ? row.image_url : null,
-    gallery,
-    await Promise.all(variantRows.map(async (variant) =>
-      mapShopVariant(
+    gallery.map((asset) => asset.url),
+    await Promise.all(variantRows.map(async (variant) => {
+      const assets = await readGalleryAssets(db, "products_variants_rels", variant.id, "image");
+      const focal = focals.get(productVariantFocalPath(variant.id));
+      const firstAsset = assets[0];
+      const matchingFocal = focalMatchesAsset(focal, firstAsset?.mediaId) ? focal : undefined;
+      return mapShopVariant(
         variant as Parameters<typeof mapShopVariant>[0],
-        await readGalleryUrls(db, "products_variants_rels", variant.id, "image"),
-      ),
-    )),
+        assets.map((asset) => asset.url),
+        matchingFocal
+          ? { x: matchingFocal.x, y: matchingFocal.y, byViewport: matchingFocal.byViewport }
+        : {
+          x: typeof firstAsset?.focalX === "number" ? firstAsset.focalX : undefined,
+          y: typeof firstAsset?.focalY === "number" ? firstAsset.focalY : undefined,
+        },
+      );
+    })),
+    mainFocal,
+    galleryFocals,
   );
 }
 

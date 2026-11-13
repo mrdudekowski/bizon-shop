@@ -18,6 +18,7 @@ type HomeRow = {
   home_hero_image_alt?: string | null;
   home_hero_image_focal_x?: number | null;
   home_hero_image_focal_y?: number | null;
+  home_hero_image_focal_by_viewport?: FocalByViewport | null;
   home_shop_campaign_eyebrow?: string | null;
   home_shop_campaign_title?: string | null;
   home_shop_campaign_lead?: string | null;
@@ -25,6 +26,7 @@ type HomeRow = {
   home_shop_campaign_image_alt?: string | null;
   home_shop_campaign_image_focal_x?: number | null;
   home_shop_campaign_image_focal_y?: number | null;
+  home_shop_campaign_image_focal_by_viewport?: FocalByViewport | null;
   home_shop_campaign_cta_label?: string | null;
   home_shop_campaign_cta_href?: string | null;
   home_directions_eyebrow?: string | null;
@@ -48,13 +50,18 @@ type HomeRow = {
   home_branding_before_image_focal_y?: number | null;
   home_branding_after_image_focal_x?: number | null;
   home_branding_after_image_focal_y?: number | null;
+  home_branding_before_image_focal_by_viewport?: FocalByViewport | null;
+  home_branding_after_image_focal_by_viewport?: FocalByViewport | null;
   home_expertise_image_url?: string | null;
   home_expertise_image_alt?: string | null;
   home_expertise_image_focal_x?: number | null;
   home_expertise_image_focal_y?: number | null;
+  home_expertise_image_focal_by_viewport?: FocalByViewport | null;
   home_expertise_cta_label?: string | null;
   home_expertise_cta_href?: string | null;
 };
+
+export type FocalByViewport = Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>>;
 
 type HomeCta = {
   label?: string;
@@ -76,6 +83,7 @@ export type HomePatch = {
     imageAlt?: string;
     imageFocalX?: number;
     imageFocalY?: number;
+    imageFocalByViewport?: FocalByViewport;
   };
   shopCampaign?: {
     eyebrow?: string;
@@ -85,12 +93,13 @@ export type HomePatch = {
     imageAlt?: string;
     imageFocalX?: number;
     imageFocalY?: number;
-    frames?: { imageUrl: string; imageAlt: string; imageFocalX?: number; imageFocalY?: number }[];
+    imageFocalByViewport?: FocalByViewport;
+    frames?: { imageUrl: string; imageAlt: string; imageFocalX?: number; imageFocalY?: number; imageFocalByViewport?: FocalByViewport }[];
     cta?: HomeCta;
   };
   directions?: { eyebrow?: string; title?: string; lead?: string };
-  expertise?: { eyebrow?: string; title?: string; lead?: string; imageUrl?: string | null; imageAlt?: string; imageFocalX?: number; imageFocalY?: number; cta?: HomeCta };
-  branding?: { eyebrow?: string; title?: string; lead?: string; cta?: HomeCta; beforeCaption?: string; afterCaption?: string; beforeImageUrl?: string | null; beforeImageAlt?: string; beforeImageFocalX?: number; beforeImageFocalY?: number; afterImageUrl?: string | null; afterImageAlt?: string; afterImageFocalX?: number; afterImageFocalY?: number };
+  expertise?: { eyebrow?: string; title?: string; lead?: string; imageUrl?: string | null; imageAlt?: string; imageFocalX?: number; imageFocalY?: number; imageFocalByViewport?: FocalByViewport; cta?: HomeCta };
+  branding?: { eyebrow?: string; title?: string; lead?: string; cta?: HomeCta; beforeCaption?: string; afterCaption?: string; beforeImageUrl?: string | null; beforeImageAlt?: string; beforeImageFocalX?: number; beforeImageFocalY?: number; beforeImageFocalByViewport?: FocalByViewport; afterImageUrl?: string | null; afterImageAlt?: string; afterImageFocalX?: number; afterImageFocalY?: number; afterImageFocalByViewport?: FocalByViewport };
 };
 
 function publicImageUrl(value: string | null | undefined): string | undefined {
@@ -146,6 +155,7 @@ export function mapHomePatch(row: HomeRow): HomePatch {
         ...(nonEmptyString(row.home_expertise_image_alt ?? null) ? { imageAlt: row.home_expertise_image_alt! } : {}),
         ...(typeof row.home_expertise_image_focal_x === "number" ? { imageFocalX: row.home_expertise_image_focal_x } : {}),
         ...(typeof row.home_expertise_image_focal_y === "number" ? { imageFocalY: row.home_expertise_image_focal_y } : {}),
+        ...(row.home_expertise_image_focal_by_viewport ? { imageFocalByViewport: row.home_expertise_image_focal_by_viewport } : {}),
         ...(expertiseCta ? { cta: expertiseCta } : {}) }
     : undefined;
   const branding = mapHomeBranding(row);
@@ -165,6 +175,7 @@ export function mapHomePatch(row: HomeRow): HomePatch {
       ...(configuredString(row.home_hero_image_alt) !== undefined ? { imageAlt: row.home_hero_image_alt! } : {}),
       ...(typeof row.home_hero_image_focal_x === "number" ? { imageFocalX: row.home_hero_image_focal_x } : {}),
       ...(typeof row.home_hero_image_focal_y === "number" ? { imageFocalY: row.home_hero_image_focal_y } : {}),
+      ...(row.home_hero_image_focal_by_viewport ? { imageFocalByViewport: row.home_hero_image_focal_by_viewport } : {}),
     },
     ...(shopCampaign ? { shopCampaign } : {}),
     ...(directions ? { directions } : {}),
@@ -201,10 +212,12 @@ function mapHomeBranding(row: HomeRow): NonNullable<HomePatch["branding"]> | und
     ...(configuredString(row.home_branding_before_image_alt) !== undefined ? { beforeImageAlt: row.home_branding_before_image_alt! } : {}),
     ...(typeof row.home_branding_before_image_focal_x === "number" ? { beforeImageFocalX: row.home_branding_before_image_focal_x } : {}),
     ...(typeof row.home_branding_before_image_focal_y === "number" ? { beforeImageFocalY: row.home_branding_before_image_focal_y } : {}),
+    ...(row.home_branding_before_image_focal_by_viewport ? { beforeImageFocalByViewport: row.home_branding_before_image_focal_by_viewport } : {}),
     ...(afterImageUrl !== undefined ? { afterImageUrl } : {}),
     ...(configuredString(row.home_branding_after_image_alt) !== undefined ? { afterImageAlt: row.home_branding_after_image_alt! } : {}),
     ...(typeof row.home_branding_after_image_focal_x === "number" ? { afterImageFocalX: row.home_branding_after_image_focal_x } : {}),
     ...(typeof row.home_branding_after_image_focal_y === "number" ? { afterImageFocalY: row.home_branding_after_image_focal_y } : {}),
+    ...(row.home_branding_after_image_focal_by_viewport ? { afterImageFocalByViewport: row.home_branding_after_image_focal_by_viewport } : {}),
   };
   return Object.keys(mapped).length ? mapped : undefined;
 }
@@ -222,6 +235,7 @@ function mapHomeShopCampaign(row: HomeRow): HomePatch["shopCampaign"] | undefine
     ...(configuredString(row.home_shop_campaign_image_alt) !== undefined ? { imageAlt: row.home_shop_campaign_image_alt! } : {}),
     ...(typeof row.home_shop_campaign_image_focal_x === "number" ? { imageFocalX: row.home_shop_campaign_image_focal_x } : {}),
     ...(typeof row.home_shop_campaign_image_focal_y === "number" ? { imageFocalY: row.home_shop_campaign_image_focal_y } : {}),
+    ...(row.home_shop_campaign_image_focal_by_viewport ? { imageFocalByViewport: row.home_shop_campaign_image_focal_by_viewport } : {}),
     ...(cta ? { cta } : {}),
   };
   return Object.keys(campaign).length > 0 ? campaign : undefined;
@@ -237,7 +251,7 @@ export function publishedShopCampaignFrames(
   if (!Array.isArray(frames)) return [];
   return frames.flatMap((frame) => {
     if (!frame || typeof frame !== "object") return [];
-    const placement = frame as { assetId?: unknown; alt?: unknown; focalX?: unknown; focalY?: unknown };
+    const placement = frame as { assetId?: unknown; alt?: unknown; focalX?: unknown; focalY?: unknown; focalByViewport?: unknown };
     const assetId = typeof placement.assetId === "string" ? placement.assetId : "";
     const imageUrl = mediaById.get(assetId);
     if (!imageUrl) return [];
@@ -246,8 +260,13 @@ export function publishedShopCampaignFrames(
       imageAlt: typeof placement.alt === "string" ? placement.alt : "",
       ...(typeof placement.focalX === "number" ? { imageFocalX: placement.focalX } : {}),
       ...(typeof placement.focalY === "number" ? { imageFocalY: placement.focalY } : {}),
+      ...(isFocalByViewport(placement.focalByViewport) ? { imageFocalByViewport: placement.focalByViewport } : {}),
     }];
   });
+}
+
+function isFocalByViewport(value: unknown): value is FocalByViewport {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 export type StubPatch = {
@@ -256,7 +275,7 @@ export type StubPatch = {
   sections?: { id: string; heading: string; body: string }[];
   documents?: { url: string; title: string }[];
   notice?: { body: string } | null;
-  proof?: { imageUrl: string | null; imageAlt: string; imageFocalX?: number; imageFocalY?: number; title: string; text: string } | null;
+  proof?: { imageUrl: string | null; imageAlt: string; imageFocalX?: number; imageFocalY?: number; imageFocalByViewport?: FocalByViewport; title: string; text: string } | null;
   cta?: { label: string; href: string; secondaryLabel?: string; secondaryHref?: string } | null;
   footerContact?: {
     phone?: string;
@@ -284,6 +303,7 @@ export type StubPatch = {
     imageAlt?: string;
     imageFocalX?: number;
     imageFocalY?: number;
+    imageFocalByViewport?: FocalByViewport;
   };
 };
 
@@ -304,6 +324,7 @@ type StubRow = {
   editorial_proof_image_alt?: string | null;
   editorial_proof_image_focal_x?: number | null;
   editorial_proof_image_focal_y?: number | null;
+  editorial_proof_image_focal_by_viewport?: FocalByViewport | null;
   editorial_cta_label?: string | null;
   editorial_cta_href?: string | null;
   editorial_secondary_label?: string | null;
@@ -320,6 +341,7 @@ type StubRow = {
   stub_hero_image_alt: string | null;
   stub_hero_image_focal_x?: number | null;
   stub_hero_image_focal_y?: number | null;
+  stub_hero_image_focal_by_viewport?: FocalByViewport | null;
   footer_phone?: string | null;
   footer_email?: string | null;
   footer_address?: string | null;
@@ -342,6 +364,7 @@ export function mapStubPatch(row: StubRow): StubPatch {
         imageAlt: row.stub_hero_image_alt ?? "",
         ...(typeof row.stub_hero_image_focal_x === "number" ? { imageFocalX: row.stub_hero_image_focal_x } : {}),
         ...(typeof row.stub_hero_image_focal_y === "number" ? { imageFocalY: row.stub_hero_image_focal_y } : {}),
+        ...(row.stub_hero_image_focal_by_viewport ? { imageFocalByViewport: row.stub_hero_image_focal_by_viewport } : {}),
       }
     : {
         ...(nonEmptyString(row.stub_hero_eyebrow) ? { eyebrow: nonEmptyString(row.stub_hero_eyebrow) } : {}),
@@ -351,6 +374,7 @@ export function mapStubPatch(row: StubRow): StubPatch {
         ...(nonEmptyString(row.stub_hero_image_alt) ? { imageAlt: nonEmptyString(row.stub_hero_image_alt) } : {}),
         ...(typeof row.stub_hero_image_focal_x === "number" ? { imageFocalX: row.stub_hero_image_focal_x } : {}),
         ...(typeof row.stub_hero_image_focal_y === "number" ? { imageFocalY: row.stub_hero_image_focal_y } : {}),
+        ...(row.stub_hero_image_focal_by_viewport ? { imageFocalByViewport: row.stub_hero_image_focal_by_viewport } : {}),
       };
   const footerContact = {
     ...(nonEmptyString(row.footer_phone ?? null) ? { phone: nonEmptyString(row.footer_phone ?? null)! } : {}),
@@ -372,7 +396,7 @@ export function mapStubPatch(row: StubRow): StubPatch {
       ...(row.editorial_features_configured ? { features: row.features ?? [] } : {}),
       ...(row.editorial_sections_configured ? { sections: row.sections ?? [] } : {}),
       ...(row.editorial_notice_configured ? { notice: row.editorial_notice ? { body: row.editorial_notice } : null } : {}),
-      ...(row.editorial_proof_configured ? { proof: row.editorial_proof_title || row.editorial_proof_text || row.editorial_proof_image_url ? { imageUrl: publicImageUrl(row.editorial_proof_image_url) ?? null, imageAlt: row.editorial_proof_image_alt ?? "", ...(typeof row.editorial_proof_image_focal_x === "number" ? { imageFocalX: row.editorial_proof_image_focal_x } : {}), ...(typeof row.editorial_proof_image_focal_y === "number" ? { imageFocalY: row.editorial_proof_image_focal_y } : {}), title: row.editorial_proof_title ?? "", text: row.editorial_proof_text ?? "" } : null } : {}),
+      ...(row.editorial_proof_configured ? { proof: row.editorial_proof_title || row.editorial_proof_text || row.editorial_proof_image_url ? { imageUrl: publicImageUrl(row.editorial_proof_image_url) ?? null, imageAlt: row.editorial_proof_image_alt ?? "", ...(typeof row.editorial_proof_image_focal_x === "number" ? { imageFocalX: row.editorial_proof_image_focal_x } : {}), ...(typeof row.editorial_proof_image_focal_y === "number" ? { imageFocalY: row.editorial_proof_image_focal_y } : {}), ...(row.editorial_proof_image_focal_by_viewport ? { imageFocalByViewport: row.editorial_proof_image_focal_by_viewport } : {}), title: row.editorial_proof_title ?? "", text: row.editorial_proof_text ?? "" } : null } : {}),
       ...(row.editorial_cta_configured ? { cta: row.editorial_cta_label && row.editorial_cta_href ? { label: row.editorial_cta_label, href: row.editorial_cta_href, secondaryLabel: row.editorial_secondary_label ?? "", secondaryHref: row.editorial_secondary_href ?? "" } : null } : {}),
     } : {}),
     ...(configuredString(row.seo_seo_title) !== undefined ? { seoTitle: row.seo_seo_title! } : {}),
@@ -452,8 +476,15 @@ export type ShopHomePatch = {
       visible: boolean;
       sortOrder: number;
       iconUrl?: string;
+      iconFocalX?: number;
+      iconFocalY?: number;
+      iconFocalByViewport?: FocalByViewport;
       imageUrl?: string;
       carouselImageUrl?: string;
+      carouselImageMediaId?: string;
+      carouselImageFocalX?: number;
+      carouselImageFocalY?: number;
+      carouselImageFocalByViewport?: FocalByViewport;
       carouselVisible: boolean;
       homeCarouselCaption?: string;
       iconAlt?: string;
@@ -485,7 +516,15 @@ export function mapShopHomePatch(input: {
     visible: boolean;
     sort_order: string | number;
     icon_url?: string | null;
+    icon_media_id?: string | number | null;
+    icon_focal_x?: number | null;
+    icon_focal_y?: number | null;
+    icon_focal_by_viewport?: FocalByViewport | null;
     carousel_image_url?: string | null;
+    carousel_image_media_id?: string | number | null;
+    carousel_image_focal_x?: number | null;
+    carousel_image_focal_y?: number | null;
+    carousel_image_focal_by_viewport?: FocalByViewport | null;
     carousel_image_alt?: string | null;
     carousel_visible?: boolean;
     home_carousel_caption?: string | null;
@@ -564,7 +603,14 @@ export function mapShopHomePatch(input: {
         visible: tile.visible,
         sortOrder: Number(tile.sort_order) || 0,
         ...(publicImageUrl(tile.icon_url) ? { iconUrl: publicImageUrl(tile.icon_url) } : {}),
+        ...(typeof tile.icon_focal_x === "number" ? { iconFocalX: tile.icon_focal_x } : {}),
+        ...(typeof tile.icon_focal_y === "number" ? { iconFocalY: tile.icon_focal_y } : {}),
+        ...(tile.icon_focal_by_viewport ? { iconFocalByViewport: tile.icon_focal_by_viewport } : {}),
         ...(publicImageUrl(tile.carousel_image_url) ? { carouselImageUrl: publicImageUrl(tile.carousel_image_url) } : {}),
+        ...(tile.carousel_image_media_id !== null && tile.carousel_image_media_id !== undefined ? { carouselImageMediaId: String(tile.carousel_image_media_id) } : {}),
+        ...(typeof tile.carousel_image_focal_x === "number" ? { carouselImageFocalX: tile.carousel_image_focal_x } : {}),
+        ...(typeof tile.carousel_image_focal_y === "number" ? { carouselImageFocalY: tile.carousel_image_focal_y } : {}),
+        ...(tile.carousel_image_focal_by_viewport ? { carouselImageFocalByViewport: tile.carousel_image_focal_by_viewport } : {}),
         carouselVisible: tile.carousel_visible === true,
         ...(isConfiguredText(tile.home_carousel_caption) ? { homeCarouselCaption: tile.home_carousel_caption } : {}),
         ...(optionalText(tile.icon_alt) ? { iconAlt: optionalText(tile.icon_alt) } : {}),

@@ -243,6 +243,7 @@ async function currentAccount(req: http.IncomingMessage): Promise<AuthenticatedA
 async function handleRequest(
   req: http.IncomingMessage,
   res: http.ServerResponse,
+  requestId: string,
 ): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", URL_BASE);
@@ -401,7 +402,7 @@ async function handleRequest(
         return;
       }
       const body = (await readJson(req)) as { method?: string; args?: unknown[] };
-      const outcome = await dispatchAdminCall(body, account);
+      const outcome = await dispatchAdminCall(body, account, requestId);
       if (outcome.body.ok && isSiteAffectingPublicationMethod(body.method)) {
         let expectedRevision: string | null = null;
         try {
@@ -982,7 +983,7 @@ const servers = LISTEN_HOSTS.map(() =>
         contentRevision: res.getHeader("x-content-revision")?.toString() ?? null,
       })));
     });
-    void handleRequest(req, res);
+    void handleRequest(req, res, requestId);
   }),
 );
 

@@ -4,7 +4,7 @@ import { homeShopCarouselCopyMigration } from "./0038-home-shop-carousel-copy";
 
 describe("homepage Shop carousel copy migration", () => {
   it("registers the disk and category caption columns and seeds approved copy", () => {
-    expect(MIGRATIONS.at(-1)).toBe(homeShopCarouselCopyMigration);
+    expect(MIGRATIONS).toContain(homeShopCarouselCopyMigration);
     expect(homeShopCarouselCopyMigration.version).toBe("202611120038");
     expect(homeShopCarouselCopyMigration.sql).toContain("shop_home_disk_carousel_caption");
     expect(homeShopCarouselCopyMigration.sql).toContain("home_carousel_caption");

@@ -1,4 +1,9 @@
-import { AdminClientError, adminCodeFromDatabaseError, adminErrorStatus } from "./admin/client/errors";
+import {
+  AdminClientError,
+  adminCodeFromDatabaseError,
+  adminErrorStatus,
+  databaseErrorDiagnostics,
+} from "./admin/client/errors";
 import type { AdminClient } from "./admin/client/adminClient";
 import type { AuthenticatedAccount } from "./admin/server/adminAuth";
 import { createPostgresAdminClient } from "./admin/server/postgresAdmin";
@@ -11,6 +16,7 @@ type AdminCall = {
 export async function dispatchAdminCall(
   body: AdminCall,
   account: AuthenticatedAccount,
+  requestId: string,
 ): Promise<{
   status: number;
   body: { ok: boolean; result?: unknown; code?: string };
@@ -29,12 +35,14 @@ export async function dispatchAdminCall(
   } catch (error) {
     if (!(error instanceof AdminClientError)) {
       const databaseCode = adminCodeFromDatabaseError(error);
+      const databaseError = databaseErrorDiagnostics(error);
       const code = databaseCode ?? "internal_error";
       console.error(JSON.stringify({
         event: "admin.action_failed",
         method,
+        requestId,
         errorClass: error instanceof Error ? error.name : "unknown",
-        ...(databaseCode ? { databaseCode: (error as { code: string }).code } : {}),
+        ...(databaseError ? { databaseError } : {}),
       }));
       return { status: adminErrorStatus(code), body: { ok: false, code } };
     }

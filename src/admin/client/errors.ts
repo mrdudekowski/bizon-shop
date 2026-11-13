@@ -12,6 +12,7 @@ export type AdminErrorCode =
   | "storage_unavailable"
   | "database_unavailable"
   | "database_save_failed"
+  | "database_write_failed"
   | "internal_error"
   | "network"
   | "cannot_disable_self"
@@ -31,18 +32,39 @@ export function adminErrorStatus(code: AdminErrorCode): number {
   if (code === "forbidden") return 403;
   if (code === "conflict") return 409;
   if (code === "storage_unavailable" || code === "database_unavailable" || code === "media_cleanup_pending") return 503;
-  if (code === "database_save_failed" || code === "internal_error") return 500;
+  if (code === "database_save_failed" || code === "database_write_failed" || code === "internal_error") return 500;
   return 400;
 }
 
-export function adminCodeFromDatabaseError(error: unknown): AdminErrorCode | null {
+export type DatabaseErrorDiagnostics = {
+  code: string;
+  schema?: string;
+  table?: string;
+  column?: string;
+  constraint?: string;
+};
+
+export function databaseErrorDiagnostics(error: unknown): DatabaseErrorDiagnostics | null {
   if (error == null || typeof error !== "object" || !("code" in error)) return null;
   const code = error.code;
   if (typeof code !== "string" || !/^[0-9A-Z]{5}$/.test(code)) return null;
+
+  const diagnostics: DatabaseErrorDiagnostics = { code };
+  for (const field of ["schema", "table", "column", "constraint"] as const) {
+    const value = Reflect.get(error, field);
+    if (typeof value === "string") diagnostics[field] = value;
+  }
+  return diagnostics;
+}
+
+export function adminCodeFromDatabaseError(error: unknown): AdminErrorCode | null {
+  const diagnostics = databaseErrorDiagnostics(error);
+  if (diagnostics == null) return null;
+  const { code } = diagnostics;
   if (code.startsWith("08") || ["53300", "57P01", "57P02", "57P03", "40P01"].includes(code)) {
     return "database_unavailable";
   }
-  if (code === "23502") return "database_save_failed";
+  if (code === "23502") return "database_write_failed";
   if (["23503", "23505", "23514", "23P01", "40001"].includes(code)) return "conflict";
   return null;
 }

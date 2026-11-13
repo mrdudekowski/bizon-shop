@@ -23,6 +23,8 @@ type TireModelInput = {
   tireType: TireTypeReference;
   imageUrl?: string | null;
   gallery: unknown[];
+  imageFocal?: { x: number; y: number; byViewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>> };
+  galleryFocals?: ({ focalX?: number; focalY?: number; focalByViewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>> } | null)[];
   advantages: unknown[];
   selectionAxles?: string[];
   applicationTypes?: string[];
@@ -30,6 +32,7 @@ type TireModelInput = {
 };
 
 type TireTypeRow = {
+  id?: string | number;
   name: string;
   slug: string;
   description: string | null;
@@ -39,6 +42,9 @@ type TireTypeRow = {
   image_url: string | null;
   seo_seo_title?: string | null;
   seo_seo_description?: string | null;
+  image_focal_x?: number | null;
+  image_focal_y?: number | null;
+  image_focal_by_viewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>> | null;
 };
 
 type TireVariantRow = {
@@ -78,6 +84,9 @@ export type CmsTireType = {
   sortOrder: number;
   showInMenu: boolean;
   imageUrl: string | null;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>>;
   seoTitle?: string;
   seoDescription?: string;
 };
@@ -93,7 +102,11 @@ export type CmsTireModel = {
   descriptionShort: string;
   descriptionLong: string;
   imageUrl: string | null;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>>;
   gallery: unknown[];
+  galleryFocals?: ({ focalX?: number; focalY?: number; focalByViewport?: Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>> } | null)[];
   advantages: unknown[];
   selectionAxles: string[];
   applicationTypes: string[];
@@ -174,6 +187,9 @@ export function mapTireType(row: TireTypeRow): CmsTireType {
     sortOrder: toFiniteNumber(row.sort_order) ?? 0,
     showInMenu: row.show_in_menu,
     imageUrl: normalizeImageUrl(row.image_url),
+    ...(typeof row.image_focal_x === "number" ? { imageFocalX: row.image_focal_x } : {}),
+    ...(typeof row.image_focal_y === "number" ? { imageFocalY: row.image_focal_y } : {}),
+    ...(row.image_focal_by_viewport ? { imageFocalByViewport: row.image_focal_by_viewport } : {}),
     ...(row.seo_seo_title?.trim() ? { seoTitle: row.seo_seo_title.trim() } : {}),
     ...(row.seo_seo_description?.trim() ? { seoDescription: row.seo_seo_description.trim() } : {}),
   };
@@ -193,7 +209,9 @@ export function mapTireModel(input: TireModelInput): CmsTireModel {
     descriptionShort: row.short_description,
     descriptionLong: lexicalToHtml(row.full_description),
     imageUrl: normalizeImageUrl(input.imageUrl),
+    ...(input.imageFocal ? { imageFocalX: input.imageFocal.x, imageFocalY: input.imageFocal.y, ...(input.imageFocal.byViewport ? { imageFocalByViewport: input.imageFocal.byViewport } : {}) } : {}),
     gallery: input.gallery,
+    ...(input.galleryFocals ? { galleryFocals: input.galleryFocals } : {}),
     advantages: input.advantages,
     selectionAxles: input.selectionAxles ?? [],
     applicationTypes: input.applicationTypes ?? [],

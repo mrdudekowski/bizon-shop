@@ -10,6 +10,7 @@ import {
   readTireTypes,
   readTireVariants,
   readWheelModel,
+  readWheelTypes,
   readStubPatch,
 } from "./publishedRead";
 
@@ -32,9 +33,11 @@ function createRecordingDb(respond: (sql: string, params?: unknown[]) => Record<
 describe("published catalog readers", () => {
   it("reads only published tire types without retired selector relations", async () => {
     const { db, calls } = createRecordingDb((sql) => {
+      if (sql.includes("cms_image_focal_positions")) return [{ placement_path: "mainImage", media_id: "11", focal_x: 0.4, focal_y: 0.6, focal_by_viewport: { mobile: { x: 0.25, y: 0.75 } } }];
       return [
         {
           id: 1,
+          cover_image_id: 11,
           name: "TBR",
           slug: "tbr",
           description: "Грузовые",
@@ -48,23 +51,36 @@ describe("published catalog readers", () => {
 
     const types = await readTireTypes(db);
     expect(types).toMatchObject([
-      { slug: "tbr", name: "TBR", imageUrl: "/media/tbr.jpg" },
+      { slug: "tbr", name: "TBR", imageUrl: "/media/tbr.jpg", imageFocalX: 0.4, imageFocalByViewport: { mobile: { x: 0.25, y: 0.75 } } },
     ]);
     expect(types[0]).not.toHaveProperty("vehicleTypes");
     expect(types[0]).not.toHaveProperty("conditions");
     expect(calls[0].sql).toContain("FROM tire_types");
     expect(calls[0].sql).toContain("LEFT JOIN media");
     expect(calls[0].sql).toContain("status = 'published'");
-    expect(calls).toHaveLength(1);
+    expect(calls).toHaveLength(2);
+  });
+
+  it("reads a wheel type focal map from its matching cover placement", async () => {
+    const { db } = createRecordingDb((sql) => sql.includes("cms_image_focal_positions")
+      ? [{ placement_path: "mainImage", media_id: "12", focal_x: 0.45, focal_y: 0.55, focal_by_viewport: { tablet: { x: 0.3, y: 0.7 } } }]
+      : [{ id: 2, cover_image_id: 12, name: "Кованые", slug: "forged", image_url: "/media/wheel-type.webp", description: "", short_description: "" }]);
+    await expect(readWheelTypes(db)).resolves.toMatchObject([
+      { slug: "forged", imageFocalX: 0.45, imageFocalByViewport: { tablet: { x: 0.3, y: 0.7 } } },
+    ]);
   });
 
   it("returns a published model with axles and ordered advantages", async () => {
     const { db, calls } = createRecordingDb((sql) => {
+      if (sql.includes("cms_image_focal_positions")) return [
+        { placement_path: "mainImage", media_id: "98", focal_x: 0.25, focal_y: 0.75, focal_by_viewport: { mobile: { x: 0.8, y: 0.2 } } },
+        { placement_path: "gallery.0", media_id: "99", focal_x: 0.4, focal_y: 0.6, focal_by_viewport: { tablet: { x: 0.55, y: 0.45 } } },
+      ];
       if (sql.includes("FROM tire_models_positions")) return [{ value: "drive" }];
       if (sql.includes("FROM tire_models_features")) {
         return [{ key: "handling", title: "Управление", description: "Держит колею" }];
       }
-      if (sql.includes("tire_models_rels")) return [{ image_url: "/media/gallery.jpg" }];
+      if (sql.includes("tire_models_rels")) return [{ media_id: "99", image_url: "/media/gallery.jpg" }];
       if (sql.includes("FROM tire_models_application_types")) return [{ value: "long_haul" }];
       if (sql.includes("cms_document_links")) return [{ url: "/media/spec.pdf", title: "Спецификация" }];
       return [
@@ -79,6 +95,7 @@ describe("published catalog readers", () => {
           tire_type_slug: "tbr",
           tire_type_name: "TBR",
           image_url: "/media/dsr188.jpg",
+          main_image_id: 98,
         },
       ];
     });
@@ -87,6 +104,8 @@ describe("published catalog readers", () => {
       id: "24",
       tireTypeSlug: "tbr",
       gallery: ["/media/gallery.jpg"],
+      imageFocalByViewport: { mobile: { x: 0.8, y: 0.2 } },
+      galleryFocals: [{ focalX: 0.4, focalY: 0.6, focalByViewport: { tablet: { x: 0.55, y: 0.45 } } }],
       selectionAxles: ["drive"],
       advantages: [{ key: "handling" }],
       applicationTypes: ["long_haul"],
@@ -243,8 +262,12 @@ describe("published content readers", () => {
 
   it("reads published articles and returns null for an absent draft slug", async () => {
     const publishedAt = new Date("2026-01-01T00:00:00.000Z");
-    const list = createRecordingDb(() => [
-      {
+    const list = createRecordingDb((sql) => sql.includes("cms_image_focal_positions") ? [{
+      placement_path: "image", media_id: "89", focal_x: 0.3, focal_y: 0.7,
+      focal_by_viewport: { tablet: { x: 0.5, y: 0.4 } },
+    }] : [{
+      id: 15,
+      featured_image_id: 89,
         title: "Тест",
         slug: "test",
         excerpt: "Кратко",
@@ -253,11 +276,10 @@ describe("published content readers", () => {
         image_url: "/media/test.jpg",
         show_in_menu: true,
         menu_order: 1,
-      },
-    ]);
+      }]);
     const missing = createRecordingDb(() => []);
 
-    await expect(readArticles(list.db)).resolves.toMatchObject([{ slug: "test" }]);
+    await expect(readArticles(list.db)).resolves.toMatchObject([{ slug: "test", imageFocalX: 0.3, imageFocalY: 0.7, imageFocalByViewport: { tablet: { x: 0.5, y: 0.4 } } }]);
     await expect(readArticleBySlug(missing.db, "draft-article")).resolves.toBeNull();
     expect(list.calls[0].sql).toContain("FROM tire_iq_articles");
     expect(list.calls[0].sql).toContain("LEFT JOIN media");
@@ -310,10 +332,14 @@ describe("published content readers", () => {
 
   it("reads a published shop product with html description and numeric variant price", async () => {
     const { db, calls } = createRecordingDb((sql) => {
+      if (sql.includes("cms_image_focal_positions")) return [
+        { placement_path: "mainImage", media_id: "40", focal_x: 0.25, focal_y: 0.65, focal_by_viewport: { mobile: { x: 0.7, y: 0.3 } } },
+        { placement_path: "gallery.0", media_id: "41", focal_x: 0.4, focal_y: 0.6, focal_by_viewport: { tablet: { x: 0.55, y: 0.45 } } },
+      ];
       if (sql.includes("products_variants")) {
         return [{ id: "sku-1", sku: "SKU", price: "1200.00", price_on_request: false, available: true }];
       }
-      if (sql.includes("products_rels")) return [{ image_url: "/media/product.jpg" }];
+      if (sql.includes("products_rels")) return [{ media_id: "41", image_url: "/media/product.jpg" }];
       return [
         {
           id: 8,
@@ -325,6 +351,7 @@ describe("published content readers", () => {
           price_on_request: false,
           available: true,
           category_slug: "valves",
+          main_image_id: 40,
           image_url: "/media/valve.jpg",
         },
       ];
@@ -336,18 +363,25 @@ describe("published content readers", () => {
       descriptionLong: "<p>Полное описание</p>",
       price: 900.5,
       gallery: ["/media/product.jpg"],
+      imageFocalX: 0.25,
+      imageFocalY: 0.65,
+      imageFocalByViewport: { mobile: { x: 0.7, y: 0.3 } },
+      galleryFocals: [{ focalX: 0.4, focalY: 0.6, focalByViewport: { tablet: { x: 0.55, y: 0.45 } } }],
       variants: [{ id: "sku-1", price: 1200, priceOnRequest: false }],
     });
     expect(calls[0].sql).toContain("products.status = 'published'");
     expect(calls[0].params).toEqual(["valve"]);
+    expect(calls.find((call) => call.sql.includes("FROM products_rels"))?.sql).not.toContain("rels.focal_x");
+    expect(calls.find((call) => call.sql.includes("FROM products_variants_rels"))?.sql).toContain("rels.focal_x");
   });
 
   it("publishes the selected variant image to the public color gallery", async () => {
     const { db } = createRecordingDb((sql) => {
+      if (sql.includes("cms_image_focal_positions")) return [{ placement_path: "variants.@variantId=sku-red.image", media_id: "57", focal_x: 0.2, focal_y: 0.8, focal_by_viewport: { desktop: { x: 0.2, y: 0.8 }, mobile: { x: 0.75, y: 0.25 } } }];
       if (sql.includes("FROM products_variants WHERE")) {
         return [{ id: "sku-red", sku: "RED-1", color: "Красный", size: "M", price: "1200", old_price: "1400", price_on_request: false, available: true }];
       }
-      if (sql.includes("products_variants_rels")) return [{ image_url: "https://cdn.example/red.jpg" }];
+      if (sql.includes("products_variants_rels")) return [{ media_id: "57", image_url: "https://cdn.example/red.jpg", focal_x: 0.5, focal_y: 0.5 }];
       if (sql.includes("products_rels")) return [];
       return [{
         id: 8,
@@ -366,7 +400,7 @@ describe("published content readers", () => {
 
     await expect(readShopProductBySlug(db, "case")).resolves.toMatchObject({
       oldPrice: 1500,
-      variants: [{ id: "sku-red", color: "Красный", oldPrice: 1400, images: ["https://cdn.example/red.jpg"] }],
+      variants: [{ id: "sku-red", color: "Красный", oldPrice: 1400, images: ["https://cdn.example/red.jpg"], imageFocalX: 0.2, imageFocalY: 0.8, imageFocalByViewport: { mobile: { x: 0.75, y: 0.25 } } }],
     });
   });
 
@@ -452,14 +486,47 @@ describe("published content readers", () => {
     expect(tileQuery?.sql).toContain("categories.status = 'published'");
     expect(tileQuery?.sql).toContain("categories.slug AS category_slug");
   });
+
+  it("attaches focal data to Shop catalog tiles only when category and media identity match", async () => {
+    const { db } = createRecordingDb((sql) => {
+      if (sql.includes("cms_image_focal_positions")) return [{
+        placement_path: "catalog.tiles.@categoryId=8.carouselImage",
+        media_id: "501",
+        focal_x: 0.24,
+        focal_y: 0.66,
+        focal_by_viewport: { desktop: { x: 0.24, y: 0.66 }, mobile: { x: 0.8, y: 0.2 } },
+      }, {
+        placement_path: "catalog.tiles.@categoryId=8.icon",
+        media_id: "900",
+        focal_x: 0.35,
+        focal_y: 0.55,
+        focal_by_viewport: { tablet: { x: 0.6, y: 0.4 } },
+      }];
+      if (sql.includes("FROM pages_shop_catalog_tiles")) return [
+        { category_id: 8, category_slug: "wheels", title: "Диски", visible: true, sort_order: 1, icon_url: "/media/wheels.svg", icon_media_id: "900", carousel_image_url: "/media/disk.png", carousel_image_media_id: "501", carousel_visible: true },
+        { category_id: 9, category_slug: "trailers", title: "Прицепы", visible: true, sort_order: 2, carousel_image_url: "/media/trailer.png", carousel_image_media_id: "502", carousel_visible: true },
+      ];
+      if (sql.includes("FROM pages_shop_category_carousel") || sql.includes("FROM pages_shop_vehicles_slides") || sql.includes("FROM pages_shop_order_steps")) return [];
+      return [{ id: 3 }];
+    });
+
+    await expect(readShopHomePatch(db)).resolves.toMatchObject({
+      catalog: { tiles: [
+        { categoryId: "8", carouselImageFocalX: 0.24, carouselImageFocalY: 0.66, carouselImageFocalByViewport: { mobile: { x: 0.8, y: 0.2 } }, iconFocalX: 0.35, iconFocalY: 0.55, iconFocalByViewport: { tablet: { x: 0.6, y: 0.4 } } },
+        { categoryId: "9" },
+      ] },
+    });
+    const { catalog } = (await readShopHomePatch(db))!;
+    expect(catalog?.tiles[1]).not.toHaveProperty("carouselImageFocalByViewport");
+  });
 });
 
 describe("published page focal positions", () => {
   it("returns homepage image positions from CMS placement metadata", async () => {
     const { db } = createRecordingDb((sql) => {
       if (sql.includes("cms_image_focal_positions")) return [
-        { placement_path: "hero.image", focal_x: 0.18, focal_y: 0.73 },
-        { placement_path: "expertise.image", focal_x: 0.62, focal_y: 0.31 },
+        { placement_path: "hero.image", media_id: "100", focal_x: 0.18, focal_y: 0.73, focal_by_viewport: { desktop: { x: 0.18, y: 0.73 }, mobile: { x: 0.77, y: 0.22 } } },
+        { placement_path: "expertise.image", media_id: "101", focal_x: 0.62, focal_y: 0.31, focal_by_viewport: { tablet: { x: 0.6, y: 0.3 } } },
       ];
       if (sql.includes("FROM pages") && sql.includes("home_hero_eyebrow")) return [{
         seo_seo_title: null,
@@ -474,27 +541,29 @@ describe("published page focal positions", () => {
         home_hero_metric_label: "",
         home_hero_metric_text: "",
         home_hero_image_url: "/hero.webp",
+        home_hero_image_media_id: "100",
         home_hero_image_alt: "",
         home_expertise_eyebrow: "",
         home_expertise_title: "",
         home_expertise_lead: "",
         home_expertise_image_url: "/expertise.webp",
+        home_expertise_image_media_id: "101",
         home_expertise_image_alt: "",
       }];
       return [];
     });
 
     await expect(readHomePatch(db)).resolves.toMatchObject({
-      hero: { imageFocalX: 0.18, imageFocalY: 0.73 },
-      expertise: { imageFocalX: 0.62, imageFocalY: 0.31 },
+      hero: { imageFocalX: 0.18, imageFocalY: 0.73, imageFocalByViewport: { mobile: { x: 0.77, y: 0.22 } } },
+      expertise: { imageFocalX: 0.62, imageFocalY: 0.31, imageFocalByViewport: { tablet: { x: 0.6, y: 0.3 } } },
     });
   });
 
   it("reads persisted hero and proof positions for the public page endpoint", async () => {
     const { db } = createRecordingDb((sql) => {
       if (sql.includes("cms_image_focal_positions")) return [
-        { placement_path: "hero.image", focal_x: 0.2, focal_y: 0.8 },
-        { placement_path: "proof.image", focal_x: 0.3, focal_y: 0.7 },
+        { placement_path: "hero.image", media_id: "200", focal_x: 0.2, focal_y: 0.8, focal_by_viewport: { mobile: { x: 0.25, y: 0.75 } } },
+        { placement_path: "proof.image", media_id: "201", focal_x: 0.3, focal_y: 0.7, focal_by_viewport: { tablet: { x: 0.35, y: 0.65 } } },
       ];
       if (sql.includes("cms_document_links")) return [];
       if (sql.includes("pages_editorial_features") || sql.includes("pages_editorial_sections")) return [];
@@ -506,11 +575,13 @@ describe("published page focal positions", () => {
         stub_hero_lead: "",
         stub_hero_image_alt: "",
         stub_hero_image_url: "/branding.webp",
+        stub_hero_image_media_id: "200",
         editorial_configured: true,
         editorial_proof_configured: true,
         editorial_proof_title: "Proof",
         editorial_proof_text: "",
         editorial_proof_image_url: "/proof.webp",
+        editorial_proof_image_media_id: "201",
         editorial_proof_image_alt: "",
         seo_seo_title: null,
         seo_seo_description: null,
@@ -518,8 +589,8 @@ describe("published page focal positions", () => {
     });
 
     await expect(readStubPatch(db, "branding")).resolves.toMatchObject({
-      hero: { imageFocalX: 0.2, imageFocalY: 0.8 },
-      proof: { imageFocalX: 0.3, imageFocalY: 0.7 },
+      hero: { imageFocalX: 0.2, imageFocalY: 0.8, imageFocalByViewport: { mobile: { x: 0.25, y: 0.75 } } },
+      proof: { imageFocalX: 0.3, imageFocalY: 0.7, imageFocalByViewport: { tablet: { x: 0.35, y: 0.65 } } },
     });
   });
 });

@@ -12,8 +12,9 @@ function block(start: string, end: string): string {
 
 describe("first published_at write", () => {
   it("sets the timestamp once and leaves it unchanged when hiding or unpublishing", () => {
-    expect(block("async function publishStatus", "export function createPostgresAdminClient"))
-      .toMatch(/published_at\s*=\s*CASE\s+WHEN\s+\$2\s*=\s*'published'\s+THEN\s+COALESCE\(published_at,\s*now\(\)\)\s+ELSE\s+published_at\s+END/i);
+    const sourceBlock = block("async function publishStatus", "export function createPostgresAdminClient");
+    expect(sourceBlock).toMatch(/const publishedAt = status === "published" \? "COALESCE\(published_at, now\(\)\)" : "published_at"/);
+    expect(sourceBlock).toContain("SET status=$2, published_at=${publishedAt}");
   });
 
   it.each([
