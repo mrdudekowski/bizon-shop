@@ -16,7 +16,7 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  default: ({ alt, src }: { alt: string; src: string }) => createElement("img", { alt, src }),
+  default: ({ alt, src, ...props }: { alt: string; src: string; [key: string]: unknown }) => createElement("img", { alt, src, ...props }),
 }));
 
 vi.mock("@/hooks/useCart", () => ({
@@ -35,6 +35,10 @@ const product: CmsProduct = {
   descriptionShort: "Коротко",
   descriptionLong: "Длинно",
   gallery: ["https://example.com/a.jpg", "https://example.com/b.jpg"],
+  imageUrl: "https://example.com/cover.jpg",
+  imageFocalX: 0.3,
+  imageFocalY: 0.6,
+  imageFocalByViewport: { desktop: { x: 0.2, y: 0.8 }, mobile: { x: 0.75, y: 0.25 } },
   priceOnRequest: true,
   available: true,
   variants: [],
@@ -54,5 +58,13 @@ describe("ShopProductConfigurator pin control", () => {
 
     const css = readFileSync(new URL("./ShopProductConfigurator.module.css", import.meta.url), "utf8");
     expect(declaredCursor(css, "mainImage")).toBe("pointer");
+  });
+
+  it("renders published responsive focal values on the corresponding cover image", () => {
+    const html = renderToStaticMarkup(createElement(ShopProductConfigurator, { product }));
+    expect(html).toContain('class="responsiveFocalImage"');
+    expect(html).toContain("--focal-desktop:20% 80%");
+    expect(html).toContain("--focal-tablet:30% 60%");
+    expect(html).toContain("--focal-mobile:75% 25%");
   });
 });

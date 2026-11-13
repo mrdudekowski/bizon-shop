@@ -9,6 +9,7 @@ import { carouselSwipeStep } from "@/components/catalog/carouselSwipe";
 import styles from "@/components/catalog/ModelAdvantagesCarousel.module.css";
 import mobileStyles from "./ShopCategoryCarousel.module.css";
 import type { ShopHomeCarouselSlide } from "@/lib/content/shopCategoryPresentation";
+import { responsiveFocalStyle } from "@/lib/content/responsiveFocalPosition";
 
 export function ShopCategoryCarousel({
   slides,
@@ -121,7 +122,7 @@ export function ShopCategoryCarousel({
           >
             {slide.imageUrl ? (
               <div className={styles.media}>
-                <Image src={slide.imageUrl} alt="" fill sizes="100vw" priority={index === 0} />
+                <Image src={slide.imageUrl} alt="" fill sizes="100vw" priority={index === 0} className="responsiveFocalImage" style={responsiveFocalStyle(slide.focalByViewport, slide.focalX, slide.focalY)} />
               </div>
             ) : (
               <div className={styles.mediaFallback} aria-hidden="true" />

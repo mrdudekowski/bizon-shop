@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
 
 import { splitPercent } from "./brandingSplit";
+import { responsiveFocalStyle } from "@/lib/content/responsiveFocalPosition";
+import type { ResponsiveFocalMap } from "@/lib/content/types";
 import styles from "./MainHome.module.css";
 
 export function BrandingCompare({
@@ -13,8 +15,10 @@ export function BrandingCompare({
   afterImageAlt,
   beforeImageFocalX,
   beforeImageFocalY,
+  beforeImageFocalByViewport,
   afterImageFocalX,
   afterImageFocalY,
+  afterImageFocalByViewport,
 }: {
   beforeImageUrl: string | null;
   beforeImageAlt: string;
@@ -22,8 +26,10 @@ export function BrandingCompare({
   afterImageAlt: string;
   beforeImageFocalX?: number;
   beforeImageFocalY?: number;
+  beforeImageFocalByViewport?: ResponsiveFocalMap;
   afterImageFocalX?: number;
   afterImageFocalY?: number;
+  afterImageFocalByViewport?: ResponsiveFocalMap;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const rangeRef = useRef<HTMLInputElement>(null);
@@ -57,10 +63,10 @@ export function BrandingCompare({
       onPointerMove={onPointerMove}
     >
       <div className={styles.brandingLayer} aria-hidden="true">
-        <Image src={beforeImageUrl} alt={beforeImageAlt} fill sizes="100vw" style={{ objectPosition: `${(beforeImageFocalX ?? 0.5) * 100}% ${(beforeImageFocalY ?? 0.5) * 100}%` }} />
+        <Image src={beforeImageUrl} alt={beforeImageAlt} fill sizes="100vw" className="responsiveFocalImage" style={responsiveFocalStyle(beforeImageFocalByViewport, beforeImageFocalX, beforeImageFocalY)} />
       </div>
       <div className={styles.brandingLayerAfter} aria-hidden="true">
-        <Image src={afterImageUrl} alt={afterImageAlt} fill sizes="100vw" style={{ objectPosition: `${(afterImageFocalX ?? 0.5) * 100}% ${(afterImageFocalY ?? 0.5) * 100}%` }} />
+        <Image src={afterImageUrl} alt={afterImageAlt} fill sizes="100vw" className="responsiveFocalImage" style={responsiveFocalStyle(afterImageFocalByViewport, afterImageFocalX, afterImageFocalY)} />
       </div>
       <div className={styles.brandingHandle} aria-hidden="true">
         <span className={styles.brandingHandleKnob}>

@@ -9,6 +9,6 @@ describe("PageHero CMS image focus", () => {
       title: "Брендирование",
       media: { src: "/branding.webp", alt: "", focalX: 0.2, focalY: 0.8 },
     }));
-    expect(html).toContain("object-position:20% 80%");
+    expect(html).toContain("--focal-desktop:20% 80%");
   });
 });

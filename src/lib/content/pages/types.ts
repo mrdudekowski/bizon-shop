@@ -1,5 +1,6 @@
 import type { PageKey } from "./keys";
 import type { ShopCampaignFrame } from "./shopCampaignFrames";
+import type { ResponsiveFocalMap } from "../types";
 
 export type PageCta = {
   label: string;
@@ -17,6 +18,7 @@ export type HomeHeroContent = PageShell & {
   imageAlt: string;
   imageFocalX?: number;
   imageFocalY?: number;
+  imageFocalByViewport?: ResponsiveFocalMap;
   primaryCta: PageCta;
   secondaryCta: PageCta;
   metricLabel: string;
@@ -28,6 +30,7 @@ export type HomeShopCampaignContent = PageShell & {
   imageAlt: string;
   imageFocalX?: number;
   imageFocalY?: number;
+  imageFocalByViewport?: ResponsiveFocalMap;
   frames: ShopCampaignFrame[];
   cta: PageCta;
 };
@@ -37,6 +40,7 @@ export type HomeExpertiseContent = PageShell & {
   imageAlt: string;
   imageFocalX?: number;
   imageFocalY?: number;
+  imageFocalByViewport?: ResponsiveFocalMap;
   cta: PageCta;
 };
 
@@ -48,10 +52,12 @@ export type HomeBrandingContent = PageShell & {
   beforeImageAlt: string;
   beforeImageFocalX?: number;
   beforeImageFocalY?: number;
+  beforeImageFocalByViewport?: ResponsiveFocalMap;
   afterImageUrl: string | null;
   afterImageAlt: string;
   afterImageFocalX?: number;
   afterImageFocalY?: number;
+  afterImageFocalByViewport?: ResponsiveFocalMap;
 };
 
 export type HomePageContent = {
@@ -102,7 +108,14 @@ export type ShopCatalogTile = {
   carouselVisible: boolean;
   homeCarouselCaption?: string;
   iconUrl?: string;
+  iconFocalX?: number;
+  iconFocalY?: number;
+  iconFocalByViewport?: ResponsiveFocalMap;
   carouselImageUrl?: string;
+  carouselImageMediaId?: string;
+  carouselImageFocalX?: number;
+  carouselImageFocalY?: number;
+  carouselImageFocalByViewport?: ResponsiveFocalMap;
   iconAlt?: string;
   carouselImageAlt?: string;
 };
@@ -143,6 +156,7 @@ export type StubMarketingPageContent = {
     imageAlt: string;
     imageFocalX?: number;
     imageFocalY?: number;
+    imageFocalByViewport?: ResponsiveFocalMap;
   };
 };
 

@@ -101,9 +101,19 @@ export function TireModelStage({
     .map((value) => AXLE_OPTIONS.find((option) => option.value === value)?.label)
     .filter(Boolean);
   const contactHref = `/contact?model=${encodeURIComponent(model.slug)}&type=${encodeURIComponent(model.tireTypeSlug)}`;
-  const gallery = [model.imageUrl, ...model.gallery].filter(
-    (url, index, values): url is string => Boolean(url) && values.indexOf(url) === index,
-  );
+  const gallery: string[] = [];
+  const galleryFocals: (NonNullable<typeof model.galleryFocals>[number])[] = [];
+  const addGalleryImage = (url: string | null | undefined, focal: NonNullable<typeof model.galleryFocals>[number]) => {
+    if (!url || gallery.includes(url)) return;
+    gallery.push(url);
+    galleryFocals.push(focal);
+  };
+  addGalleryImage(model.imageUrl, model.imageUrl ? {
+    focalX: model.imageFocalX,
+    focalY: model.imageFocalY,
+    focalByViewport: model.imageFocalByViewport,
+  } : null);
+  model.gallery.forEach((url, index) => addGalleryImage(url, model.galleryFocals?.[index] ?? null));
   const evidenceDocuments = model.documents.filter(
     (document) => Boolean(document.url?.trim() && document.title?.trim()),
   );
@@ -121,6 +131,7 @@ export function TireModelStage({
         <section className={styles.productStage} aria-label={model.name}>
           <CatalogProductGallery
             images={gallery}
+            imageFocals={galleryFocals}
             fallbackKey={model.slug}
             alt={`${model.name} — грузовая шина`}
             applications={applications}

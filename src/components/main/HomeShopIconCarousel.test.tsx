@@ -52,6 +52,14 @@ describe("HomeShopIconCarousel", () => {
     expect(host.querySelector("button, a")).toBeNull();
   });
 
+  it("applies published responsive focal coordinates to uploaded category icons", async () => {
+    await renderCarousel(false, [{ ...items[0], iconFocalX: 0.2, iconFocalY: 0.8, iconFocalByViewport: { mobile: { x: 0.75, y: 0.25 } } }]);
+    const icon = host.querySelector("img[data-home-shop-icon='current']");
+    expect(icon?.classList.contains("responsiveFocalImage")).toBe(true);
+    expect(icon?.getAttribute("style")).toContain("--focal-desktop: 20% 80%");
+    expect(icon?.getAttribute("style")).toContain("--focal-mobile: 75% 25%");
+  });
+
   it("advances automatically and wraps to the first item without manual controls", async () => {
     vi.useFakeTimers();
     await renderCarousel();

@@ -56,8 +56,8 @@ describe("buildHomeShopCarouselItems", () => {
 
   it("uses the latest published icon and caption from the Shop tile", () => {
     const items = buildHomeShopCarouselItems(shopHome([
-      { categoryId: "3", categorySlug: "outdoor", title: "Кемпинг", visible: true, sortOrder: 1, carouselVisible: true, homeCarouselCaption: "Обновлено", iconUrl: "/new.svg" },
+      { categoryId: "3", categorySlug: "outdoor", title: "Кемпинг", visible: true, sortOrder: 1, carouselVisible: true, homeCarouselCaption: "Обновлено", iconUrl: "/new.svg", iconFocalX: 0.25, iconFocalY: 0.7, iconFocalByViewport: { mobile: { x: 0.8, y: 0.2 } } },
     ]));
-    expect(items[1]).toMatchObject({ caption: "Обновлено", iconUrl: "/new.svg" });
+    expect(items[1]).toMatchObject({ caption: "Обновлено", iconUrl: "/new.svg", iconFocalX: 0.25, iconFocalY: 0.7, iconFocalByViewport: { mobile: { x: 0.8, y: 0.2 } } });
   });
 });

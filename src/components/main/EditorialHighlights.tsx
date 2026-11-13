@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import type { HomeExpertiseContent } from "@/lib/content/pages/types";
+import { responsiveFocalStyle } from "@/lib/content/responsiveFocalPosition";
 
 import styles from "./MainHome.module.css";
 
@@ -12,9 +13,9 @@ export function EditorialHighlights({ content }: { content: HomeExpertiseContent
       <div className={styles.expertiseBanner}>
         {content.imageUrl ? (
           <Image
-            className={styles.expertiseBannerImage}
+            className={`${styles.expertiseBannerImage} responsiveFocalImage`}
             src={content.imageUrl}
-            style={{ objectPosition: `${(content.imageFocalX ?? 0.5) * 100}% ${(content.imageFocalY ?? 0.5) * 100}%` }}
+            style={responsiveFocalStyle(content.imageFocalByViewport, content.imageFocalX, content.imageFocalY)}
             alt={content.imageAlt}
             fill
             sizes="100vw"

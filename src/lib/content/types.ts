@@ -4,6 +4,8 @@ import type {
   CatalogAxle,
 } from "@/lib/selection/options";
 
+export type ResponsiveFocalMap = Partial<Record<"desktop" | "tablet" | "mobile", { x: number; y: number }>>;
+
 export type CmsProductSpec = {
   label: string;
   value: string;
@@ -24,7 +26,11 @@ export type CmsProduct = {
   descriptionShort: string;
   descriptionLong: string;
   imageUrl?: string | null;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: ResponsiveFocalMap;
   gallery: string[];
+  galleryFocals?: (CmsImageFocal | null)[];
   price?: number;
   oldPrice?: number;
   priceOnRequest: boolean;
@@ -35,6 +41,12 @@ export type CmsProduct = {
   seoTitle?: string;
   seoDescription?: string;
   variants: CmsProductVariant[];
+};
+
+export type CmsImageFocal = {
+  focalX?: number;
+  focalY?: number;
+  focalByViewport?: ResponsiveFocalMap;
 };
 
 export type CmsProductVariant = {
@@ -48,11 +60,17 @@ export type CmsProductVariant = {
   priceOnRequest: boolean;
   available: boolean;
   images: string[];
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: ResponsiveFocalMap;
 };
 
 export type CmsShopCategoryCarouselFrame = {
   title: string;
   imageUrl?: string | null;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: ResponsiveFocalMap;
 };
 
 export type CmsShopCategory = {
@@ -60,6 +78,9 @@ export type CmsShopCategory = {
   name: string;
   description: string;
   imageUrl?: string | null;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: ResponsiveFocalMap;
   showInMenu: boolean;
   sortOrder: number;
   seoTitle?: string;
@@ -75,6 +96,9 @@ export type CmsTireType = {
   sortOrder: number;
   showInMenu: boolean;
   imageUrl?: string | null;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: ResponsiveFocalMap;
   seoTitle?: string;
   seoDescription?: string;
 };
@@ -101,10 +125,14 @@ export type CmsTireModel = {
   descriptionShort: string;
   descriptionLong: string;
   imageUrl?: string | null;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: ResponsiveFocalMap;
   application?: string;
   axlePosition?: string;
   treadType?: string;
   gallery: string[];
+  galleryFocals?: (CmsImageFocal | null)[];
   advantages: CmsTireAdvantage[];
   documents: CmsTireDocument[];
   selectionAxles: CatalogAxle[];
@@ -149,6 +177,9 @@ export type CmsArticle = {
   /** HTML string or future rich-text JSON — render with LexicalContent on detail pages. */
   content: unknown;
   imageUrl?: string | null;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: ResponsiveFocalMap;
   imageConfigured?: boolean;
   showInMenu: boolean;
   menuOrder: number;
@@ -167,6 +198,9 @@ export type CmsWheelType = {
   shortDescription: string;
   sortOrder: number;
   imageUrl?: string | null;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: ResponsiveFocalMap;
   seoTitle?: string;
   seoDescription?: string;
 };
@@ -175,6 +209,9 @@ export type CmsWheelGalleryImage = {
   url: string;
   alt: string;
   label: string;
+  focalX?: number;
+  focalY?: number;
+  focalByViewport?: ResponsiveFocalMap;
 };
 
 export type CmsWheelModel = {
@@ -191,6 +228,9 @@ export type CmsWheelModel = {
   descriptionShort: string;
   descriptionLong: string;
   imageUrl?: string | null;
+  imageFocalX?: number;
+  imageFocalY?: number;
+  imageFocalByViewport?: ResponsiveFocalMap;
   gallery: CmsWheelGalleryImage[];
   documents?: { url: string; title: string }[];
   available?: boolean;

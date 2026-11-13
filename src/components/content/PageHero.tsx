@@ -3,6 +3,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import styles from "./PageHero.module.css";
+import { responsiveFocalStyle } from "@/lib/content/responsiveFocalPosition";
+import type { ResponsiveFocalMap } from "@/lib/content/types";
 
 export type PageHeroBreadcrumb = {
   href: string;
@@ -14,6 +16,7 @@ export type PageHeroMedia = {
   alt: string;
   focalX?: number;
   focalY?: number;
+  focalByViewport?: ResponsiveFocalMap;
 };
 
 type PageHeroProps = {
@@ -44,7 +47,8 @@ export function PageHero({
       fill
       sizes={banner ? "100vw" : "(max-width: 767px) 100vw, 42vw"}
       priority={Boolean(banner)}
-      style={{ objectPosition: `${(media.focalX ?? 0.5) * 100}% ${(media.focalY ?? 0.5) * 100}%` }}
+      className="responsiveFocalImage"
+      style={responsiveFocalStyle(media.focalByViewport, media.focalX, media.focalY)}
     />
   ) : null;
 

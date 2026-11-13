@@ -4,11 +4,14 @@ import { useRef, useState, type PointerEvent } from "react";
 
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { marketplaceShown } from "@/components/catalog/marketplaceGallery";
+import type { CmsImageFocal } from "@/lib/content/types";
+import { responsiveFocalStyle } from "@/lib/content/responsiveFocalPosition";
 
 import styles from "./TireCatalog.module.css";
 
 type CatalogProductGalleryProps = {
   images: string[];
+  imageFocals?: (CmsImageFocal | null)[];
   alt: string;
   fallbackKey: string;
   applications?: { name: string; icon: string }[];
@@ -16,6 +19,7 @@ type CatalogProductGalleryProps = {
 
 export function CatalogProductGallery({
   images,
+  imageFocals,
   alt,
   fallbackKey,
   applications = [],
@@ -26,6 +30,7 @@ export function CatalogProductGallery({
   const didSwipe = useRef(false);
   const shown = marketplaceShown(pinned, hovered);
   const current = images[shown] ?? images[0];
+  const currentFocal = imageFocals?.[shown];
   const canSwitch = images.length > 1;
 
   function pin(index: number) {
@@ -70,6 +75,8 @@ export function CatalogProductGallery({
             fill
             priority
             sizes="(max-width: 899px) 100vw, 58vw"
+            className="responsiveFocalImage"
+            style={responsiveFocalStyle(currentFocal?.focalByViewport, currentFocal?.focalX, currentFocal?.focalY)}
           />
         </button>
         {applications.length > 0 ? (

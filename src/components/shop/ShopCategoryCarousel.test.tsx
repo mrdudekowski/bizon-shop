@@ -11,7 +11,7 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const REDUCE_MOTION = "(prefers-reduced-motion: reduce)";
 
 const slides: ShopHomeCarouselSlide[] = [
-  { id: "oils", title: "Масла", href: "/shop/oils", imageUrl: "/oils.jpg" },
+  { id: "oils", title: "Масла", href: "/shop/oils", imageUrl: "/oils.jpg", focalX: 0.2, focalY: 0.8, focalByViewport: { mobile: { x: 0.7, y: 0.3 } } },
   { id: "trailers", title: "Прицепы", href: "/shop/trailers", imageUrl: "/trailers.jpg" },
   { id: "comfort", title: "Комфорт", href: "/shop/comfort", imageUrl: "/comfort.jpg" },
 ];
@@ -57,6 +57,14 @@ describe("ShopCategoryCarousel", () => {
     });
     host?.remove();
     vi.useRealTimers();
+  });
+
+  it("renders responsive focal coordinates for the active category image", async () => {
+    await renderCarousel(slides, undefined, true);
+    const image = activeArticle(host).querySelector("img");
+    expect(image?.classList.contains("responsiveFocalImage")).toBe(true);
+    expect(image?.style.getPropertyValue("--focal-desktop")).toBe("20% 80%");
+    expect(image?.style.getPropertyValue("--focal-mobile")).toBe("70% 30%");
   });
 
   async function renderCarousel(

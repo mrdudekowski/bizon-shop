@@ -14,6 +14,7 @@ import { cartItemKey, requestOpenCart } from "@/lib/cart/cartStorage";
 import type { CmsProduct, CmsProductVariant } from "@/lib/content/types";
 import { fetchBrowserPublishedJson } from "@/lib/content/browserPublishedClient";
 import { shopProductBreadcrumbs } from "@/lib/seo/structuredData";
+import { responsiveFocalStyle } from "@/lib/content/responsiveFocalPosition";
 import type { RequestItemInput } from "@/types/requestItem";
 import styles from "./ShopProductConfigurator.module.css";
 
@@ -154,6 +155,11 @@ export function ShopProductConfigurator({ product: initialProduct }: ShopProduct
   }, [resolvedGallery]);
   const shown = marketplaceShown(pinned, hovered);
   const currentImage = resolvedGallery[shown] ?? resolvedGallery[0];
+  const focusedVariant = selectedVariant?.images.includes(currentImage) ? selectedVariant : null;
+  const galleryFocalIndex = product.gallery.indexOf(currentImage);
+  const currentBaseFocal = currentImage === product.imageUrl
+    ? { focalX: product.imageFocalX, focalY: product.imageFocalY, focalByViewport: product.imageFocalByViewport }
+    : galleryFocalIndex >= 0 ? product.galleryFocals?.[galleryFocalIndex] ?? undefined : undefined;
   const canSwitch = resolvedGallery.length > 1;
   function pin(index: number) {
     setPinned(index);
@@ -256,6 +262,10 @@ export function ShopProductConfigurator({ product: initialProduct }: ShopProduct
               fill
               priority
               sizes="(max-width: 900px) 100vw, 62vw"
+              className="responsiveFocalImage"
+              style={focusedVariant
+                ? responsiveFocalStyle(focusedVariant.imageFocalByViewport, focusedVariant.imageFocalX, focusedVariant.imageFocalY)
+                : responsiveFocalStyle(currentBaseFocal?.focalByViewport, currentBaseFocal?.focalX, currentBaseFocal?.focalY)}
             />
           </button>
           {canSwitch ? (

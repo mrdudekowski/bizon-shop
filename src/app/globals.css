@@ -2184,3 +2184,18 @@ textarea.field-input {
     @apply bg-background text-foreground;
   }
 }
+img.responsiveFocalImage {
+  object-position: var(--focal-desktop, 50% 50%);
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  img.responsiveFocalImage {
+    object-position: var(--focal-tablet, 50% 50%);
+  }
+}
+
+@media (max-width: 767px) {
+  img.responsiveFocalImage {
+    object-position: var(--focal-mobile, 50% 50%);
+  }
+}

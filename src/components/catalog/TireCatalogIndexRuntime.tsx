@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
+import { responsiveFocalStyle } from "@/lib/content/responsiveFocalPosition";
 import { fetchBrowserTireCatalog } from "@/lib/catalog/browserTireCatalog";
 import type { TireCatalogReadModel } from "@/lib/catalog/tireReadModel";
 import styles from "@/components/catalog/TireCatalog.module.css";
@@ -27,7 +28,7 @@ export function TireCatalogIndexRuntime({ initialCatalog }: { initialCatalog: Ti
           key={direction.slug}
           aria-label={`${direction.name}. ${direction.shortDescription || direction.description}`}
         >
-          <CatalogImage src={direction.imageUrl} fallbackKey={direction.slug} alt="" fill sizes="(max-width: 767px) 100vw, 50vw" />
+          <CatalogImage src={direction.imageUrl} fallbackKey={direction.slug} alt="" fill sizes="(max-width: 767px) 100vw, 50vw" className="responsiveFocalImage" style={responsiveFocalStyle(direction.imageFocalByViewport, direction.imageFocalX, direction.imageFocalY)} />
           <span className={styles.directionScrim} aria-hidden="true" />
           <span className={styles.directionBody}>
             <h2 className={styles.directionTitle}>{direction.slug.toUpperCase()}</h2>

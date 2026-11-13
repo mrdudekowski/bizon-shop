@@ -1,7 +1,7 @@
 import type { PublishedStubOverlay } from "@/lib/content/getPageContent";
 import type { ServiceCta } from "./ServicePage";
 
-type ServiceProof = { src?: string; alt: string; focalX?: number; focalY?: number; title: string; text: string };
+type ServiceProof = { src?: string; alt: string; focalX?: number; focalY?: number; focalByViewport?: import("@/lib/content/types").ResponsiveFocalMap; title: string; text: string };
 
 export function resolveServicePageProof(
   editorial: Pick<PublishedStubOverlay, "proof"> | null | undefined,
@@ -15,6 +15,7 @@ export function resolveServicePageProof(
     alt: proof.imageAlt ?? "",
     ...(proof.imageFocalX !== undefined ? { focalX: proof.imageFocalX } : {}),
     ...(proof.imageFocalY !== undefined ? { focalY: proof.imageFocalY } : {}),
+    ...(proof.imageFocalByViewport ? { focalByViewport: proof.imageFocalByViewport } : {}),
     title: proof.title,
     text: proof.text,
   };
