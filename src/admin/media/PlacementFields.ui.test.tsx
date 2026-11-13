@@ -200,4 +200,44 @@ describe("PlacementFields upload flow", () => {
     const productShot = await screen.findByLabelText("Предпросмотр фото и точки фокуса");
     expect(productShot.hasAttribute("data-page-frame")).toBe(false);
   });
+
+  it("edits desktop, tablet, and mobile focal points independently without uploading media", async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    mockState.client = { listAssets: vi.fn().mockResolvedValue([{ id: "asset-original", dataUrl: "/media/hero.png" }]) };
+    const { rerender } = render(createElement(PlacementFields, {
+      label: "Фото",
+      frame: PAGE_IMAGE_FRAMES.homeHero,
+      value: { ...originalPlacement, focalX: 0.2, focalY: 0.3 },
+      onChange,
+    }));
+    const focus = await screen.findByRole("button", { name: /Точка фокуса \(desktop\)/ });
+    focus.focus();
+    await user.keyboard("{ArrowRight}");
+    const updatedPlacement = onChange.mock.lastCall?.[0]!;
+    expect(updatedPlacement.focalX).toBeCloseTo(0.21);
+    expect(updatedPlacement.focalY).toBe(0.3);
+    expect(updatedPlacement.focalByViewport).toEqual({
+      desktop: { x: expect.closeTo(0.21), y: 0.3 },
+      tablet: { x: 0.2, y: 0.3 },
+      mobile: { x: 0.2, y: 0.3 },
+    });
+    rerender(createElement(PlacementFields, { label: "Фото", frame: PAGE_IMAGE_FRAMES.homeHero, value: updatedPlacement, onChange }));
+    await user.click(screen.getByRole("button", { name: "Планшет" }));
+    const tabletFocus = screen.getByRole("button", { name: /Точка фокуса \(tablet\)/ });
+    tabletFocus.focus();
+    await user.keyboard("{ArrowUp}");
+    const tabletPlacement = onChange.mock.lastCall?.[0]!;
+    expect(tabletPlacement.focalByViewport).toMatchObject({ desktop: { x: expect.closeTo(0.21), y: 0.3 }, tablet: { x: 0.2, y: expect.closeTo(0.29) }, mobile: { x: 0.2, y: 0.3 } });
+    rerender(createElement(PlacementFields, { label: "Фото", frame: PAGE_IMAGE_FRAMES.homeHero, value: tabletPlacement, onChange }));
+    await user.click(screen.getByRole("button", { name: "Мобильный" }));
+    const mobileFocus = screen.getByRole("button", { name: /Точка фокуса \(mobile\)/ });
+    mobileFocus.focus();
+    await user.keyboard("{ArrowDown}");
+    const mobilePlacement = onChange.mock.lastCall?.[0]!;
+    expect(mobilePlacement.focalByViewport).toMatchObject({ desktop: { x: expect.closeTo(0.21), y: 0.3 }, tablet: { x: 0.2, y: expect.closeTo(0.29) }, mobile: { x: 0.2, y: expect.closeTo(0.31) } });
+    expect(screen.getByRole("img", { name: "Фото" }).getAttribute("src")).toContain("hero.png");
+    expect(mockState.client.replaceAsset).toBeUndefined();
+    expect(mockState.client.createAsset).toBeUndefined();
+  });
 });

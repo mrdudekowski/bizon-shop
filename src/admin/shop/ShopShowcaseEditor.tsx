@@ -6,6 +6,7 @@ import { actionErrorText, DOCUMENT_STATUS } from "@/admin/client/actionFeedback"
 import { moveItemInList } from "@/admin/domain/catalogSort";
 import type { EntityRecord, ImagePlacement, ShopHomePageDraft } from "@/admin/domain/types";
 import { PlacementFields } from "@/admin/media/PlacementFields";
+import { PAGE_IMAGE_FRAMES } from "@/admin/pages/pageImageFrame";
 import { SHOP_CATEGORY_ICON_UPLOAD_TYPES } from "@/admin/media/uploadLibraryFile";
 import { DocumentReviewFooter } from "@/admin/ui/DocumentReviewFooter";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
@@ -109,7 +110,7 @@ export function ShopShowcaseEditor() {
               <label className={styles.check}><input type="checkbox" checked={tile.carouselVisible} onChange={(e) => patchTile(tile.categoryId, (row) => ({ ...row, carouselVisible: e.target.checked }))} /> Показывать в карусели</label>
             </div>
           </div>
-          <PlacementFields label="Фото для карусели" value={tile.carouselImage} onChange={(image) => patchPlacement(tile.categoryId, "carouselImage", image)} />
+          <PlacementFields label="Фото для карусели" frame={PAGE_IMAGE_FRAMES.shopCategoryCarousel} value={tile.carouselImage} onChange={(image) => patchPlacement(tile.categoryId, "carouselImage", image)} />
         </article>)}
       </section> : null}
       {panel === "tiles" ? <section className={styles.list} aria-label="Плитки категорий">

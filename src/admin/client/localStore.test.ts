@@ -48,6 +48,31 @@ describe("createLocalAdminClient", () => {
     expect(saved.publishedSnapshot).toBeNull();
   });
 
+  it("persists and clamps each responsive focal point in the local draft", async () => {
+    const storage = memory();
+    const client = createLocalAdminClient(storage);
+    const created = await client.createTireModel({ name: "LH01", directionId: "dir-long-haul" });
+    const saved = await client.saveTireModel(created.id, {
+      ...publishable(created.draft),
+      mainImage: {
+        ...publishable(created.draft).mainImage!,
+        focalByViewport: {
+          desktop: { x: 0.2, y: 0.8 },
+          tablet: { x: -0.4, y: 1.4 },
+          mobile: { x: 0.6, y: 0.3 },
+        },
+      },
+    });
+
+    expect(saved.savedDraft?.mainImage?.focalByViewport).toEqual({
+      desktop: { x: 0.2, y: 0.8 },
+      tablet: { x: 0, y: 1 },
+      mobile: { x: 0.6, y: 0.3 },
+    });
+    const reloaded = await createLocalAdminClient(storage).getTireModel(created.id);
+    expect(reloaded.savedDraft?.mainImage?.focalByViewport).toEqual(saved.savedDraft?.mainImage?.focalByViewport);
+  });
+
   it("refuses to publish an unsaved draft", async () => {
     const client = createLocalAdminClient(memory());
     const created = await client.createTireModel({ name: "LH01", directionId: "dir-long-haul" });

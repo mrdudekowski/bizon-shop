@@ -7,13 +7,14 @@ import {
   wheelTypePublishBlockers,
 } from "@/admin/domain/publishRules";
 import { isValidSlug, slugifyTitle } from "@/admin/domain/slug";
-import { isPageEntryDecisionTarget, PAGE_KEYS } from "@/admin/domain/types";
+import { FOCAL_VIEWPORTS, isPageEntryDecisionTarget, PAGE_KEYS } from "@/admin/domain/types";
 import type {
   AdminSession,
   AdminUser,
   ChangeSet,
   ChangeEntry,
   DocumentStatus,
+  FocalViewport,
   ImagePlacement,
   MediaAsset,
   ShopCategoryDraft,
@@ -80,10 +81,17 @@ function clamp01(value: number): number {
 }
 
 function clampPlacement(placement: ImagePlacement): ImagePlacement {
+  const focalByViewport = placement.focalByViewport === undefined
+    ? undefined
+    : Object.fromEntries(FOCAL_VIEWPORTS.flatMap((viewport) => {
+      const point = placement.focalByViewport?.[viewport];
+      return point == null ? [] : [[viewport, { x: clamp01(point.x), y: clamp01(point.y) }]];
+    })) as NonNullable<ImagePlacement["focalByViewport"]>;
   return {
     ...placement,
     focalX: clamp01(placement.focalX),
     focalY: clamp01(placement.focalY),
+    ...(focalByViewport === undefined ? {} : { focalByViewport }),
     crop: {
       x: clamp01(placement.crop.x),
       y: clamp01(placement.crop.y),

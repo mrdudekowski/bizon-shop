@@ -17,7 +17,7 @@ function looksLikePlacement(value: unknown): value is ImagePlacement {
 
 function imageKey(value: ImagePlacement): string {
   const crop = value.crop;
-  return `${value.assetId}|${value.focalX}|${value.focalY}|${crop.x}|${crop.y}|${crop.width}|${crop.height}`;
+  return `${value.assetId}|${value.focalX}|${value.focalY}|${crop.x}|${crop.y}|${crop.width}|${crop.height}|${JSON.stringify(value.focalByViewport ?? {})}`;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

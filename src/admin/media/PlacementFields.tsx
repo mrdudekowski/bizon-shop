@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
-import type { ImagePlacement, MediaListItem } from "@/admin/domain/types";
+import type { FocalViewport, ImagePlacement, MediaListItem } from "@/admin/domain/types";
+import { FOCAL_VIEWPORTS } from "@/admin/domain/types";
+import { resolveFocalPoint, setFocalPoint } from "@/admin/domain/focalPosition";
 import { resolveMediaPreviewUrl } from "@/admin/domain/catalogPreviewUrl";
 import { browserAdminClient } from "@/admin/client/localStore";
 import { MediaPicker } from "./MediaPicker";
@@ -8,11 +10,16 @@ import { uploadErrorText } from "./uploadError";
 import { AdminClientError } from "@/admin/client/errors";
 import { mediaMimeFromFile } from "./mediaMime";
 import { IMAGE_UPLOAD_TYPES, acceptAttribute, uploadLibraryFile } from "./uploadLibraryFile";
-import { focalObjectPosition, type PageImageFrame } from "@/admin/pages/pageImageFrame";
+import { focalObjectPosition, previewAspectRatio, type PageImageFrame } from "@/admin/pages/pageImageFrame";
 import frameStyles from "@/admin/pages/pageImageFrame.module.css";
 import styles from "./PlacementFields.module.css";
 function emptyPlacement(assetId: string): ImagePlacement { return { assetId, alt: "", focalX: .5, focalY: .5, crop: { x: 0, y: 0, width: 1, height: 1 } }; }
 function clamp(value: number) { return Math.min(1, Math.max(0, value)); }
+function ViewportIcon({ viewport }: { viewport: FocalViewport }) {
+  if (viewport === "desktop") return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="1.8" /><path d="M8 21h8M12 17v4" /></svg>;
+  if (viewport === "tablet") return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="2" /><path d="M11 18.5h2" /></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2" /><path d="M11 18.5h2" /></svg>;
+}
 async function uploadImageFile(file: File, allowedTypes: readonly string[], current?: ImagePlacement): Promise<ImagePlacement> {
   const mimeType = mediaMimeFromFile(file);
   if (!allowedTypes.includes(mimeType)) throw new AdminClientError("publish_blocked");
@@ -47,6 +54,7 @@ type Props = {
   frame?: PageImageFrame;
 };
 export function PlacementFields({ value, onChange, label = "Фото", thumbs, previewSrc, previewSurface = "default", uploadMode = "replace", allowedMimeTypes = IMAGE_UPLOAD_TYPES, showFocus = true, frame }: Props) {
+  const [viewport, setViewport] = useState<FocalViewport>("desktop");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -135,7 +143,8 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
   function pointAt(event: ReactPointerEvent) {
     if (!focusEnabled || !value || !previewRef.current) return;
     const bounds = previewRef.current.getBoundingClientRect();
-    patch({ focalX: clamp((event.clientX - bounds.left) / bounds.width), focalY: clamp((event.clientY - bounds.top) / bounds.height) });
+    const point = { x: clamp((event.clientX - bounds.left) / bounds.width), y: clamp((event.clientY - bounds.top) / bounds.height) };
+    onChange(setFocalPoint(value, viewport, point));
   }
   function dragFocus(event: ReactPointerEvent<HTMLButtonElement>) {
     if (!showFocus || !value) return;
@@ -151,12 +160,19 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
     if (!value) return;
     const step = event.shiftKey ? .05 : .01;
     const delta = ({ ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] } as const)[event.key as "ArrowLeft" | "ArrowRight" | "ArrowUp" | "ArrowDown"];
-    if (delta) { event.preventDefault(); patch({ focalX: clamp(value.focalX + delta[0]), focalY: clamp(value.focalY + delta[1]) }); }
+    if (delta) {
+      event.preventDefault();
+      const current = resolveFocalPoint(value, viewport);
+      onChange(setFocalPoint(value, viewport, { x: clamp(current.x + delta[0]), y: clamp(current.y + delta[1]) }));
+    }
   }
   const focusEnabled = showFocus && frame?.usesFocal !== false;
-  const placementStyle = value ? ({ "--focus-x": `${value.focalX * 100}%`, "--focus-y": `${value.focalY * 100}%` } as React.CSSProperties) : undefined;
+  const activePoint = value ? resolveFocalPoint(value, viewport) : { x: 0.5, y: 0.5 };
+  const placementStyle = value ? ({ "--focus-x": `${activePoint.x * 100}%`, "--focus-y": `${activePoint.y * 100}%` } as React.CSSProperties) : undefined;
+  const aspectRatio = previewAspectRatio(frame?.id, viewport);
+  const previewSizeStyle = { aspectRatio, width: `${Math.min(320, Math.round(240 * aspectRatio))}px` } as React.CSSProperties;
   const focalStyle = frame?.usesFocal
-    ? ({ "--frame-position": focalObjectPosition(value?.focalX, value?.focalY) } as React.CSSProperties)
+    ? ({ "--frame-position": focalObjectPosition(activePoint.x, activePoint.y) } as React.CSSProperties)
     : undefined;
   const displayUrl = previewSrc || previewUrl;
   const replaceLabel = value ? (
@@ -187,9 +203,9 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
         <div className={styles.stage}>
           <div className={styles.previewColumn}>
             <div className={`${styles.previewFrame} ${frame ? frameStyles.host : ""}`}>
-              <div ref={previewRef} className={`${styles.previewShot} ${frame ? frameStyles.shot : ""} ${previewSurface === "dark" ? styles.previewShotDark : ""}`} data-page-frame={frame?.id} style={focusEnabled ? placementStyle : undefined} aria-label="Предпросмотр фото и точки фокуса">
+              <div ref={previewRef} className={`${styles.previewShot} ${frame ? frameStyles.shot : ""} ${previewSurface === "dark" ? styles.previewShotDark : ""}`} data-page-frame={frame?.id} data-preview-viewport={viewport} style={{ ...previewSizeStyle, ...(focusEnabled ? placementStyle : {}) }} aria-label="Предпросмотр фото и точки фокуса">
                 <img className={frame ? `${styles.preview} ${frameStyles.image}` : styles.preview} style={focalStyle} src={displayUrl} alt={value?.alt || label} />
-                {focusEnabled && value ? <button className={styles.focusPoint} style={placementStyle} type="button" aria-label="Точка фокуса: перетащите кружок; стрелки на клавиатуре" onPointerDown={dragFocus} onPointerMove={moveDrag} onKeyDown={moveFocus} /> : null}
+                {focusEnabled && value ? <button className={styles.focusPoint} style={placementStyle} type="button" aria-label={`Точка фокуса (${viewport}): перетащите кружок; стрелки на клавиатуре`} onPointerDown={dragFocus} onPointerMove={moveDrag} onKeyDown={moveFocus} /> : null}
               </div>
             </div>
           </div>
@@ -203,6 +219,11 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
                 </button>
               </> : null}
               {focusEnabled ? <p className={styles.caption}>Перетащите кружок, чтобы сдвинуть кадр на карточке.</p> : null}
+              {focusEnabled ? <div className={styles.viewportControls} role="group" aria-label="Устройство для настройки кадра">
+                {FOCAL_VIEWPORTS.map((mode) => <button key={mode} type="button" className={viewport === mode ? styles.viewportActive : styles.viewportButton} aria-label={mode === "desktop" ? "Desktop" : mode === "tablet" ? "Планшет" : "Мобильный"} aria-pressed={viewport === mode} onClick={() => setViewport(mode)}>
+                  <ViewportIcon viewport={mode} />
+                </button>)}
+              </div> : null}
               <label>Подпись к фото<input value={value.alt} onChange={(event) => patch({ alt: event.target.value })} /></label>
               <button type="button" className="ghost" onClick={() => { onChange(undefined); setPreviewUrl(null); }}>Убрать фото</button>
             </div>

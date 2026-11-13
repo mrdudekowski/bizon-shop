@@ -3,6 +3,14 @@
 
 import type { CatalogAxle } from "./options";
 
+export const FOCAL_VIEWPORTS = ["desktop", "tablet", "mobile"] as const;
+
+export type FocalViewport = (typeof FOCAL_VIEWPORTS)[number];
+
+export type FocalPoint = { x: number; y: number };
+
+export type FocalByViewport = Partial<Record<FocalViewport, FocalPoint>>;
+
 export type ImagePlacement = {
   assetId: string;
   /** Temporary uploaded file that will replace this asset after publication. */
@@ -10,6 +18,7 @@ export type ImagePlacement = {
   alt: string;
   focalX: number;
   focalY: number;
+  focalByViewport?: FocalByViewport;
   crop: { x: number; y: number; width: number; height: number };
 };
 

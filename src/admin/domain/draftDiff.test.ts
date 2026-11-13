@@ -95,6 +95,21 @@ describe("diffDraft", () => {
     expect(diffDraft(before, tireModel({ mainImage: { ...placement } }), "tire-model")).toEqual([]);
   });
 
+  it.each([
+    ["desktop", { x: 0.9, y: 0.1 }],
+    ["tablet", { x: 0.1, y: 0.9 }],
+    ["mobile", { x: 0.8, y: 0.3 }],
+  ] as const)("marks a %s focal edit as a content change", (viewport, point) => {
+    const before = tireModel({ mainImage: { ...placement, focalByViewport: {} } });
+    const after = tireModel({ mainImage: { ...placement, focalByViewport: { [viewport]: point } } });
+    const changes = diffDraft(before, after, "tire-model");
+
+    expect(changes).toHaveLength(1);
+    expect(changes[0].path).toBe("mainImage");
+    expect(changes[0].before.kind).toBe("image");
+    expect(changes[0].after.kind).toBe("image");
+  });
+
   it("resolves a site-relative media preview in the publication diff", () => {
     const changes = diffDraft(null, tireModel(), "tire-model", [
       { id: "asset-1", dataUrl: "/images/premium/highway-fleet-portrait.png" },
