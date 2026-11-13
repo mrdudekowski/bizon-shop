@@ -311,6 +311,14 @@
   min-width: 0;
 }
 
+.wheelBrand {
+  font-weight: 800;
+}
+
+.wheelModelName {
+  color: var(--bizon-coral-500);
+}
+
 .modelCard {
   min-width: 0;
   overflow: hidden;

@@ -1274,6 +1274,10 @@ h1.section-title {
     color var(--transition-fast);
 }
 
+.catalog-card--arrow-end .catalog-card__arrow {
+  justify-self: end;
+}
+
 .catalog-card:hover .catalog-card__arrow {
   background: var(--bizon-black);
   color: var(--bizon-white);

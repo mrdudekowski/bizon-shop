@@ -109,20 +109,31 @@ export function WheelModelGrid({
 
       {visibleModels.length > 0 ? (
         <div className={`${styles.modelGrid} w-full max-w-full min-w-0`}>
-          {visibleModels.map((model) => (
-            <CatalogCard
-              key={model.id}
-              href={`${typeBasePath}/${model.slug}`}
-              title={model.name}
-              description={model.descriptionShort}
-              meta={[model.series?.trim(), model.designStyle?.trim()].filter(Boolean).join(" · ") || null}
-              imageUrl={model.imageUrl}
-              imageAlt={`${model.name} — диск BIZON`}
-              mediaKey={model.slug}
-              mediaFit="contain"
-              disableShopHoverRing
-            />
-          ))}
+          {visibleModels.map((model) => {
+            const brandedName = model.name.match(/^(BIZON)\s+(.+)$/i);
+            const title = brandedName ? (
+              <>
+                <strong className={styles.wheelBrand}>{brandedName[1]}</strong>{" "}
+                <span className={styles.wheelModelName}>{brandedName[2]}</span>
+              </>
+            ) : model.name;
+
+            return (
+              <CatalogCard
+                key={model.id}
+                href={`${typeBasePath}/${model.slug}`}
+                title={title}
+                description={model.descriptionShort}
+                meta={[model.series?.trim(), model.designStyle?.trim()].filter(Boolean).join(" · ") || null}
+                imageUrl={model.imageUrl}
+                imageAlt={`${model.name} — диск BIZON`}
+                mediaKey={model.slug}
+                mediaFit="cover"
+                disableShopHoverRing
+                arrowPlacement="end"
+              />
+            );
+          })}
         </div>
       ) : (
         <div className={styles.emptyState}>

@@ -102,7 +102,10 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
                     <span className={styles.modelMedia}><Image src={model.imageUrl!} alt={model.name} fill sizes="(max-width: 767px) 100vw, 28rem" /></span>
                     <span className={styles.modelContent}>
                       <span className={styles.modelStatus}>Изготавливается под заказ</span>
-                      <strong>{model.name}</strong>
+                      <strong className={styles.modelTitle}>
+                        <span className={styles.modelBrand}>BIZON</span>
+                        <span className={styles.modelName}>{model.name.replace(/^BIZON\s+/i, "")}</span>
+                      </strong>
                       <span>{[model.designStyle, model.series].filter(Boolean).join(" · ")}</span>
                     </span>
                     <span className={styles.modelArrow} aria-hidden="true"><SiteArrow direction="ne" /></span>

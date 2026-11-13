@@ -247,6 +247,24 @@
   letter-spacing: var(--tracking-display);
 }
 
+.modelTitle {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.3em;
+}
+
+.modelBrand {
+  font-weight: 800;
+}
+
+.modelName {
+  color: var(--bizon-coral-500);
+  font-size: 0.62em;
+  font-weight: 650;
+}
+
 .modelContent > span:last-child {
   color: var(--color-on-dark-subtle);
   line-height: 1.45;

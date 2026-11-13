@@ -13,11 +13,12 @@ export function CatalogCard({
   mediaKey = undefined,
   mediaFit = "cover",
   disableShopHoverRing = false,
+  arrowPlacement = "start",
 }) {
   const alt = imageAlt ?? title;
 
   return (
-    <article className={`card-base info-card catalog-card${disableShopHoverRing ? " catalog-card--no-shop-hover-ring" : ""}`}>
+    <article className={`card-base info-card catalog-card${disableShopHoverRing ? " catalog-card--no-shop-hover-ring" : ""}${arrowPlacement === "end" ? " catalog-card--arrow-end" : ""}`}>
       <div className={`catalog-card__media${mediaFit === "contain" ? " catalog-card__media--contain" : ""}`}>
         <CatalogImage
           src={imageUrl}
