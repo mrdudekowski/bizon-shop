@@ -47,7 +47,7 @@
 
 .caption {
   display: grid;
-  align-content: end;
+  align-content: start;
   grid-area: 1 / 1;
   justify-self: center;
   width: 100%;
