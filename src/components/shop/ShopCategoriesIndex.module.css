@@ -198,12 +198,18 @@
   max-width: 100%;
   min-width: 0;
   height: 100%;
-  object-fit: contain;
-  transition: filter var(--transition-fast);
+  background-color: var(--bizon-black);
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  transition: background-color var(--transition-fast);
 }
 
 .card:hover .icon {
-  filter: brightness(0) saturate(100%) invert(39%) sepia(90%) saturate(1690%) hue-rotate(340deg) brightness(92%) contrast(93%);
+  background-color: var(--bizon-coral-500);
 }
 
 .iconFallback {

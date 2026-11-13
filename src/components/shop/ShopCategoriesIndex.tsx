@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 
 import { ShopCategoryCarousel } from "@/components/shop/ShopCategoryCarousel";
@@ -78,7 +77,10 @@ export function ShopCategoriesIndex({
                   <Link className={styles.card} href={category.href} key={category.slug} aria-label={category.title}>
                     <span className={styles.iconFrame} aria-hidden="true">
                       {iconUrl ? (
-                        <Image className={styles.icon} src={iconUrl} alt="" width={128} height={128} unoptimized />
+                        <span
+                          className={styles.icon}
+                          style={{ maskImage: `url("${iconUrl}")`, WebkitMaskImage: `url("${iconUrl}")` }}
+                        />
                       ) : (
                         <span className={styles.iconFallback}>{category.title.trim().charAt(0) || "?"}</span>
                       )}
