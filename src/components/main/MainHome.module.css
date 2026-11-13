@@ -584,7 +584,7 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   justify-items: start;
   align-content: center;
   gap: clamp(1rem, 2vw, 1.5rem);
@@ -623,10 +623,8 @@
   line-height: 1.55;
 }
 .expertiseCta {
-  grid-column: 2;
-  grid-row: 1 / span 3;
-  align-self: center;
-  justify-self: end;
+  justify-self: start;
+  align-self: start;
 }
 .expertiseBannerMark {
   position: absolute;
@@ -1167,6 +1165,7 @@
     margin-top: 0.85rem;
   }
   .expertiseCta {
+    align-self: center;
     margin: 1rem 0 0;
   }
   .expertiseBannerLead { max-width: 22rem; }
