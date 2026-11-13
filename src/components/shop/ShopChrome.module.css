@@ -48,6 +48,10 @@
   display: inline-flex;
 }
 
+.homeBrand {
+  font-weight: 700;
+}
+
 .categoryIcon,
 .categoryMarks svg {
   display: block;
@@ -78,7 +82,7 @@
 .wordmarkLink {
   grid-area: 1 / 1;
   opacity: 1;
-  transition: opacity 260ms ease;
+  transition: opacity 360ms ease;
   transition-delay: calc((var(--mark-count) - 1) * 55ms);
 }
 

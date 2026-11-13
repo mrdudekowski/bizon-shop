@@ -200,6 +200,11 @@
   color: var(--chrome-hover-color);
 }
 
+.utility :global(a[data-shop-home-link]:hover),
+.utility :global(a[data-shop-home-link]:focus-visible) {
+  color: var(--bizon-coral-500);
+}
+
 .action :global(.cart-button) {
   width: 44px;
   height: 44px;

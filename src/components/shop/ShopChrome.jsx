@@ -211,9 +211,9 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
         </>
       }
       utility={(
-        <Link href="/" onClick={() => setIconsOpen(false)}>
+        <Link data-shop-home-link href="/" onClick={() => setIconsOpen(false)}>
           <span className={styles.desktopHomeIcon}><ChromeNavIcon name="home" /></span>
-          <span>BIZON</span>
+          <span className={styles.homeBrand}>BIZON</span>
           <SiteArrow direction="ne" className={styles.compactHomeArrow} />
         </Link>
       )}
