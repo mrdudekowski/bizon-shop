@@ -214,7 +214,8 @@ describe("PlacementFields upload flow", () => {
     const focus = await screen.findByRole("button", { name: /Точка фокуса \(desktop\)/ });
     focus.focus();
     await user.keyboard("{ArrowRight}");
-    const updatedPlacement = onChange.mock.lastCall?.[0]!;
+    const updatedPlacement = onChange.mock.lastCall?.[0];
+    if (updatedPlacement == null) throw new Error("Expected the desktop focus change to update the placement");
     expect(updatedPlacement.focalX).toBeCloseTo(0.21);
     expect(updatedPlacement.focalY).toBe(0.3);
     expect(updatedPlacement.focalByViewport).toEqual({
@@ -227,14 +228,16 @@ describe("PlacementFields upload flow", () => {
     const tabletFocus = screen.getByRole("button", { name: /Точка фокуса \(tablet\)/ });
     tabletFocus.focus();
     await user.keyboard("{ArrowUp}");
-    const tabletPlacement = onChange.mock.lastCall?.[0]!;
+    const tabletPlacement = onChange.mock.lastCall?.[0];
+    if (tabletPlacement == null) throw new Error("Expected the tablet focus change to update the placement");
     expect(tabletPlacement.focalByViewport).toMatchObject({ desktop: { x: expect.closeTo(0.21), y: 0.3 }, tablet: { x: 0.2, y: expect.closeTo(0.29) }, mobile: { x: 0.2, y: 0.3 } });
     rerender(createElement(PlacementFields, { label: "Фото", frame: PAGE_IMAGE_FRAMES.homeHero, value: tabletPlacement, onChange }));
     await user.click(screen.getByRole("button", { name: "Мобильный" }));
     const mobileFocus = screen.getByRole("button", { name: /Точка фокуса \(mobile\)/ });
     mobileFocus.focus();
     await user.keyboard("{ArrowDown}");
-    const mobilePlacement = onChange.mock.lastCall?.[0]!;
+    const mobilePlacement = onChange.mock.lastCall?.[0];
+    if (mobilePlacement == null) throw new Error("Expected the mobile focus change to update the placement");
     expect(mobilePlacement.focalByViewport).toMatchObject({ desktop: { x: expect.closeTo(0.21), y: 0.3 }, tablet: { x: 0.2, y: expect.closeTo(0.29) }, mobile: { x: 0.2, y: expect.closeTo(0.31) } });
     expect(screen.getByRole("img", { name: "Фото" }).getAttribute("src")).toContain("hero.png");
     expect(mockState.client.replaceAsset).toBeUndefined();
