@@ -2,18 +2,23 @@ import {
   Fragment,
   jsx as reactJsx,
   jsxs as reactJsxs,
-  jsxDEV as reactJsxDEV,
 } from "react/jsx-runtime";
-import { cloneElement, isValidElement } from "react";
+import { jsxDEV as reactJsxDEV } from "react/jsx-dev-runtime";
+import { cloneElement, isValidElement, type CSSProperties, type ReactNode } from "react";
 import { BizonText } from "./scope";
 
 export { Fragment };
 export type { JSX } from "react/jsx-runtime";
 
 type JSXType = Parameters<typeof reactJsx>[0];
-type JSXProps = Record<string, any> & { children?: unknown };
+type JSXProps = Record<string, unknown> & {
+  children?: ReactNode;
+  className?: string;
+  hidden?: boolean;
+  style?: CSSProperties;
+};
 
-function mapVisibleChildren(children: unknown): unknown {
+function mapVisibleChildren(children: ReactNode): ReactNode {
   if (typeof children === "string") {
     return reactJsx(BizonText, { value: children });
   }
@@ -21,7 +26,7 @@ function mapVisibleChildren(children: unknown): unknown {
   return children;
 }
 
-function stripEmphasis(children: unknown): unknown {
+function stripEmphasis(children: ReactNode): ReactNode {
   if (Array.isArray(children)) return children.map(stripEmphasis);
   if (!isValidElement(children)) return children;
 
@@ -29,7 +34,7 @@ function stripEmphasis(children: unknown): unknown {
     return (children.props as { value: string }).value;
   }
 
-  const props = children.props as { children?: unknown };
+  const props = children.props as { children?: ReactNode };
   if (!("children" in props)) return children;
   return cloneElement(children, undefined, stripEmphasis(props.children));
 }

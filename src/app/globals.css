@@ -136,7 +136,7 @@ img {
   --chrome-bar-height: 84px;
   --type-index: clamp(2rem, 3vw, 2.75rem);
   --header-height: calc(var(--chrome-inset-top) + var(--chrome-bar-height));
-  --container-max: 1600px;
+  --container-max: clamp(1600px, 88vw, 2400px);
   --content-max: 1180px;
   --page-gutter: 20px;
   --home-feature-inset: 24px;
