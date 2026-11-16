@@ -5,7 +5,7 @@ import {
 } from "react/jsx-runtime";
 import { jsxDEV as reactJsxDEV } from "react/jsx-dev-runtime";
 import { cloneElement, isValidElement, type CSSProperties, type ReactNode } from "react";
-import { BizonText } from "./scope";
+import { BizonText, findBizonTextTokens } from "./scope";
 
 export { Fragment };
 export type { JSX } from "react/jsx-runtime";
@@ -27,15 +27,14 @@ function mapVisibleChildren(children: ReactNode, key = "bizon-text"): ReactNode 
 }
 
 function emphasizeExistingStrongText(value: string, keyPrefix: string): ReactNode {
-  const expression = /(?<![\p{L}\p{N}_])BIZON(?![\p{L}\p{N}_])/giu;
   const output: ReactNode[] = [];
   let previousIndex = 0;
 
-  for (const match of value.matchAll(expression)) {
-    const index = match.index ?? 0;
+  for (const match of findBizonTextTokens(value)) {
+    const index = match.index;
     if (index > previousIndex) output.push(value.slice(previousIndex, index));
-    output.push(reactJsx("span", { className: "bizon-word-emphasis", children: "BIZON" }, `${keyPrefix}-${index}`));
-    previousIndex = index + match[0].length;
+    output.push(reactJsx("span", { className: "bizon-word-emphasis", children: match.text.toUpperCase() }, `${keyPrefix}-${index}`));
+    previousIndex = index + match.text.length;
   }
 
   if (previousIndex === 0) return value;

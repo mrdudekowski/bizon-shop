@@ -1,3 +1,5 @@
+import { findBizonTextTokens } from "@/lib/bizon-jsx/scope";
+
 type LexicalContentProps = {
   data: unknown;
   className?: string;
@@ -8,11 +10,15 @@ function isHtmlString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-const BIZON_TOKEN = /(?<![\p{L}\p{N}_])BIZON(?![\p{L}\p{N}_])/giu;
-
 function emphasizeText(value: string, alreadyBold = false): string {
   const tag = alreadyBold ? "span" : "strong";
-  return value.replace(BIZON_TOKEN, () => `<${tag} class="bizon-word-emphasis">BIZON</${tag}>`);
+  let output = "";
+  let previousIndex = 0;
+  for (const token of findBizonTextTokens(value)) {
+    output += `${value.slice(previousIndex, token.index)}<${tag} class="bizon-word-emphasis">${token.text.toUpperCase()}</${tag}>`;
+    previousIndex = token.index + token.text.length;
+  }
+  return output + value.slice(previousIndex);
 }
 
 /** Transform HTML text nodes only; preserve tags and attributes verbatim. */
