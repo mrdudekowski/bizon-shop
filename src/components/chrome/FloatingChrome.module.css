@@ -2,7 +2,7 @@
   --chrome-bg: rgba(248, 249, 248, 0.88);
   --chrome-border: rgba(28, 28, 28, 0.14);
   --chrome-color: var(--bizon-neutral-900);
-  --chrome-hover-color: var(--bizon-coral-600);
+  --chrome-hover-color: var(--bizon-coral-500);
   position: sticky;
   top: var(--chrome-inset-top, 12px);
   z-index: var(--z-index-header);
@@ -18,7 +18,7 @@
   --chrome-bg: rgba(16, 19, 19, 0.68);
   --chrome-border: rgba(255, 255, 255, 0.25);
   --chrome-color: rgba(255, 255, 255, 0.92);
-  --chrome-hover-color: var(--bizon-coral-300);
+  --chrome-hover-color: var(--bizon-coral-500);
 }
 
 .bar {
