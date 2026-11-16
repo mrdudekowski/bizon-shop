@@ -231,12 +231,12 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
           {shopItems.length > 0 && <CartItemsGroup title="Товары BIZON Shop" items={shopItems} onRemove={cart.removeItem} onQuantityChange={cart.setQuantity} />}
 
           <ContactRequest notice="Форма заявки скоро появится!" className="max-w-3xl">
-          <form className="card-base info-card form-card max-w-3xl" onSubmit={handleSubmit}>
+          <form className={`card-base info-card form-card max-w-3xl ${styles.checkoutForm}`} onSubmit={handleSubmit}>
             <h2 className="info-card-title">Контакты для {requestLabel}</h2>
             <p className="info-card-text">Специалист проверит совместимость, уточнит конфигурацию и только затем подтвердит стоимость.</p>
             <input type="text" name={HONEYPOT_FIELD} tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute left-[-9999px] h-0 w-0 opacity-0" />
             <div className={styles.checkoutGrid}>
-              <label className={styles.fullWidth}>
+              <label className={styles.compactField}>
                 <span className="field-label">Тип клиента</span>
                 <CustomSelect className="field-input" name="clientType" value={clientType} onValueChange={(value) => setClientType(value === "company" ? "company" : "individual")} options={[
                   { value: "individual", label: "Физическое лицо" },
@@ -247,7 +247,7 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
               <label><span className="field-label">Телефон</span><input className="field-input" name="phone" type="tel" required autoComplete="tel" inputMode="tel" /></label>
               <label><span className="field-label">Email — необязательно</span><input className="field-input" name="email" type="email" autoComplete="email" spellCheck={false} /></label>
               <label><span className="field-label">Город или регион</span><input className="field-input" name="city" required autoComplete="address-level2" /></label>
-              <label className={styles.fullWidth}>
+              <label className={styles.compactField}>
                 <span className="field-label">Предпочтительный способ связи</span>
                 <CustomSelect className="field-input" name="preferredContact" defaultValue="phone" options={[
                   { value: "phone", label: "Телефон" },
@@ -271,7 +271,7 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
                 <span>Я согласен на обработку персональных данных в соответствии с <Link href="/privacy-policy">политикой конфиденциальности</Link>.</span>
               </label>
             </div>
-            <button className="btn-accent" type="submit" disabled={status === "loading"}>
+            <button className={`btn-accent ${styles.submitButton}`} type="submit" disabled={status === "loading"}>
               {status === "loading" ? "Отправка…" : `Отправить ${requestLabel}`}
             </button>
             {message && <p className={`${styles.status} ${status === "error" ? styles.statusError : ""}`} role="status" aria-live="polite">{message}</p>}

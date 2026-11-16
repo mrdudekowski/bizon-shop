@@ -131,8 +131,28 @@
   gap: 16px;
 }
 
+.checkoutForm {
+  width: 100%;
+  max-width: 42rem;
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.compactField {
+  grid-column: 1 / -1;
+  width: min(100%, 32rem);
+  max-width: 100%;
+  min-width: 0;
+}
+
 .fullWidth {
   grid-column: 1 / -1;
+}
+
+.submitButton {
+  justify-self: start;
+  width: min(100%, 24rem);
+  max-width: 100%;
 }
 
 .consent {
@@ -175,6 +195,10 @@
   }
 
   .fullWidth {
+    grid-column: auto;
+  }
+
+  .compactField {
     grid-column: auto;
   }
 }
