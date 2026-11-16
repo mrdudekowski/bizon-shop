@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import { AdminClientError } from "./errors";
 import { createLocalAdminClient, type AdminStorage } from "./localStore";
-import type { AdminUser, TireModelDraft } from "@/admin/domain/types";
+import type { AdminUser, PageDraft, PageKey, StubPageDraft, TireModelDraft } from "@/admin/domain/types";
+
+const SERVICE_PAGE_TWINS: readonly (readonly [PageKey, PageKey])[] = [
+  ["delivery", "shop-delivery"],
+  ["payment", "shop-payment"],
+  ["warranty", "shop-warranty"],
+  ["become-a-supplier", "shop-become-a-supplier"],
+];
 
 function memory(initialValue: string | null = null): AdminStorage {
   let value = initialValue;
@@ -28,7 +35,70 @@ function publishable(draft: TireModelDraft): TireModelDraft {
   };
 }
 
+function asStubPage(draft: PageDraft): StubPageDraft {
+  if (draft.id === "home" || draft.id === "shop-home") throw new Error("Expected a service page");
+  return draft;
+}
+
 describe("createLocalAdminClient", () => {
+  it("edits and publishes all service page twins independently in local memory", async () => {
+    for (const [bizonKey, shopKey] of SERVICE_PAGE_TWINS) {
+      const client = createLocalAdminClient(memory());
+      const initialBizon = asStubPage((await client.getPage(bizonKey)).draft);
+      const initialShop = asStubPage((await client.getPage(shopKey)).draft);
+      const bizonContent = {
+        ...initialBizon,
+        seoTitle: `Локальная BIZON: ${bizonKey}`,
+        hero: {
+          ...initialBizon.hero,
+          title: `BIZON ${bizonKey}`,
+          image: {
+            assetId: `local-test-${bizonKey}`,
+            alt: `Локальное изображение ${bizonKey}`,
+            focalX: 0.5,
+            focalY: 0.5,
+            crop: { x: 0, y: 0, width: 1, height: 1 },
+          },
+        },
+        sections: [{ id: "local-test", heading: "BIZON", body: bizonKey }],
+      };
+      const shopContent = {
+        ...initialShop,
+        seoTitle: `Локальная SHOP: ${shopKey}`,
+        hero: {
+          ...initialShop.hero,
+          title: `SHOP ${shopKey}`,
+          image: {
+            assetId: `local-test-${shopKey}`,
+            alt: `Локальное изображение ${shopKey}`,
+            focalX: 0.5,
+            focalY: 0.5,
+            crop: { x: 0, y: 0, width: 1, height: 1 },
+          },
+        },
+        sections: [{ id: "local-test", heading: "SHOP", body: shopKey }],
+      };
+
+      await client.savePage(bizonKey, bizonContent);
+      await client.publishPage(bizonKey);
+      const shopAfterBizonPublish = await client.getPage(shopKey);
+      expect(shopAfterBizonPublish.draft).toEqual(initialShop);
+      expect(shopAfterBizonPublish.savedDraft).toEqual(initialShop);
+      expect(shopAfterBizonPublish.publishedSnapshot).toBeNull();
+
+      await client.savePage(shopKey, shopContent);
+      await client.publishPage(shopKey);
+      const bizonAfterShopPublish = await client.getPage(bizonKey);
+      const shopAfterShopPublish = await client.getPage(shopKey);
+      const publishedBizon = bizonAfterShopPublish.publishedSnapshot && asStubPage(bizonAfterShopPublish.publishedSnapshot);
+      const publishedShop = shopAfterShopPublish.publishedSnapshot && asStubPage(shopAfterShopPublish.publishedSnapshot);
+      expect(publishedBizon).toEqual(bizonContent);
+      expect(publishedShop).toEqual(shopContent);
+      expect(publishedBizon?.hero.title).not.toBe(publishedShop?.hero.title);
+      expect(publishedBizon?.sections).not.toEqual(publishedShop?.sections);
+    }
+  });
+
   it("creates an unpublished model and rejects a duplicate slug", async () => {
     const client = createLocalAdminClient(memory());
     const created = await client.createTireModel({ name: "Bizon Long Haul", directionId: "dir-long-haul" });
