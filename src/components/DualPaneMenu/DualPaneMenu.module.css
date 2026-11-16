@@ -380,6 +380,10 @@
   letter-spacing: var(--tracking-body);
 }
 
+.galleryCard[data-tire] .galleryTitle strong {
+  font-family: var(--font-display);
+}
+
 .galleryMedia {
   position: relative;
   display: block;

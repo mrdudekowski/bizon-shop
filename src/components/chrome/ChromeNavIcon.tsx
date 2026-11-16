@@ -1,6 +1,6 @@
 import styles from "./ChromeNavIcon.module.css";
 
-export type ChromeNavIconName = "catalog" | "compass" | "disk" | "delivery" | "home";
+export type ChromeNavIconName = "catalog" | "compass" | "disk" | "delivery" | "home" | "tire";
 
 type ChromeNavIconProps = {
   name: ChromeNavIconName;

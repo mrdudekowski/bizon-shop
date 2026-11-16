@@ -57,9 +57,9 @@ export function buildMainDualPaneMenuSections(input: {
       label: "Bizon Shop",
       pane: "list",
       items: [
-        { id: "shop-home", title: "Магазин BIZON", href: ROUTES.shop, description: "Диски и аксессуары" },
-        { id: "shop-wheels", title: "Кованые диски", href: `${ROUTES.shop}/wheels/forged`, description: "Диски BIZON Forged под заказ" },
-        { id: "shop-categories", title: "Все категории", href: ROUTES.shopCategories, description: "Аксессуары и сопутствующие товары" },
+        { id: "shop-home", title: "Магазин BIZON", href: ROUTES.shop, navIcon: "home", description: "Диски и аксессуары" },
+        { id: "shop-wheels", title: "Кованые диски", href: `${ROUTES.shop}/wheels/forged`, navIcon: "tire", description: "Диски BIZON Forged под заказ" },
+        { id: "shop-categories", title: "Все категории", href: ROUTES.shopCategories, navIcon: "catalog", description: "Аксессуары и сопутствующие товары" },
       ],
     },
     {

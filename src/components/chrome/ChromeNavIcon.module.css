@@ -37,3 +37,8 @@
   -webkit-mask-image: url("/icons/mobile-nav/home.svg");
   mask-image: url("/icons/mobile-nav/home.svg");
 }
+
+.icon[data-icon="tire"] {
+  -webkit-mask-image: url("/icons/mobile-nav/tire.svg");
+  mask-image: url("/icons/mobile-nav/tire.svg");
+}

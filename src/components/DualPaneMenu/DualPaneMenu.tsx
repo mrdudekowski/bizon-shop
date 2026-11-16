@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AdvantageIcons } from "@/components/catalog/AdvantageIcons";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
+import { ChromeNavIcon } from "@/components/chrome/ChromeNavIcon";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { ChromeWordmark } from "@/components/chrome/FloatingChrome";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
@@ -144,6 +145,7 @@ function ListPane({
               aria-current={isCurrentLink(item.href) ? "page" : undefined}
               onClick={onNavigate}
             >
+              {item.navIcon ? <ChromeNavIcon name={item.navIcon} /> : null}
               {item.iconUrl ? (
                 <Image className={styles.listIcon} src={item.iconUrl} alt="" width={40} height={40} unoptimized />
               ) : null}
