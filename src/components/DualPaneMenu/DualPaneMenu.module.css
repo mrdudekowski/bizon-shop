@@ -108,6 +108,10 @@
   max-width: 5.5rem;
 }
 
+.menuOverlay :global(.bizon-word-emphasis) {
+  font-weight: 800 !important;
+}
+
 .closeButtonMobile {
   display: none;
   border: none;
