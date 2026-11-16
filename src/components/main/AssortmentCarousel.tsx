@@ -51,7 +51,7 @@ export function AssortmentCarousel({ models }: { models: TireCatalogModel[] }) {
                 <strong>
                   {brandedName ? (
                     <>
-                      <span>{brandedName[1]}</span>{" "}
+                      <span className={styles.assortmentBrand}>{brandedName[1]}</span>{" "}
                       <span className={styles.assortmentModelName}>{brandedName[2]}</span>
                     </>
                   ) : model.name}
