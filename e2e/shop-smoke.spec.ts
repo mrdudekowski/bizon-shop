@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const SHOP_ROUTES = [
   "/shop",
@@ -10,6 +10,21 @@ const SHOP_ROUTES = [
   "/shop/delivery-and-returns",
   "/cart",
 ] as const;
+
+async function waitForScrollToSettle(page: Page) {
+  await page.evaluate(() => new Promise<void>((resolve) => {
+    let timer = window.setTimeout(finish, 250);
+    function finish() {
+      window.removeEventListener("scroll", restartTimer);
+      resolve();
+    }
+    function restartTimer() {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(finish, 250);
+    }
+    window.addEventListener("scroll", restartTimer, { passive: true });
+  }));
+}
 
 test("supplier proof heading does not create horizontal page overflow", async ({ page }) => {
   const response = await page.goto("/become-a-supplier", { waitUntil: "domcontentloaded" });
@@ -86,6 +101,29 @@ test("desktop shop navbar distributes catalog and wheels links symmetrically", a
   await expect(nav.getByRole("link", { name: "Диски", exact: true })).toHaveAttribute("href", "/shop/wheels/forged/");
   await expect(nav.getByRole("link", { name: "Заявка", exact: true })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Возврат", exact: true })).toBeVisible();
+});
+
+test("wide shop catalog can reopen during the tail of the scroll that closed it", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop-1440", "Very-wide navigation only");
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto("/shop", { waitUntil: "domcontentloaded" });
+  await waitForScrollToSettle(page);
+
+  const catalogToggle = page.locator("button[data-shop-catalog-toggle]");
+  await expect(catalogToggle).toBeVisible();
+  await catalogToggle.click();
+  await expect(catalogToggle).toHaveAttribute("aria-expanded", "true");
+
+  await page.mouse.wheel(0, 800);
+  await expect(catalogToggle).toHaveAttribute("aria-expanded", "false");
+
+  await catalogToggle.click();
+  await expect(catalogToggle).toHaveAttribute("aria-expanded", "true");
+  await waitForScrollToSettle(page);
+  await expect(catalogToggle).toHaveAttribute("aria-expanded", "true");
+
+  await page.mouse.wheel(0, 800);
+  await expect(catalogToggle).toHaveAttribute("aria-expanded", "false");
 });
 
 test("shop burger exposes wheel selection and links to the Shop cart", async ({ page }) => {

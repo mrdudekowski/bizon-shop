@@ -14,6 +14,8 @@ import { shopCategoryCarouselIconUrl, shopCategoryIconUrl } from "@/lib/content/
 
 import styles from "./ShopChrome.module.css";
 
+const SCROLL_IDLE_MS = 250;
+
 function CatalogGridIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -34,6 +36,9 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
   const wideCategoryMarksRef = useRef(null);
   const mobileCatalogToggleRef = useRef(null);
   const wideCatalogToggleRef = useRef(null);
+  const lastScrollAtRef = useRef(null);
+  const scrollGapBeforeEventRef = useRef(null);
+  const ignoreActiveScrollRef = useRef(false);
   const { tone } = useAdaptiveChrome("data-shop-chrome-tone", "dark");
   const mobileMarks = categoryMarks.filter((mark) => mark.iconUrl || shopCategoryIconUrl(mark.slug));
   const showMobileCategoryMarks = mobile && iconsOpen;
@@ -60,6 +65,19 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
   useEffect(() => {
     if (menuOpen) setIconsOpen(false);
   }, [menuOpen]);
+
+  useEffect(() => {
+    const trackScrollActivity = () => {
+      const now = performance.now();
+      const previousScrollAt = lastScrollAtRef.current;
+      scrollGapBeforeEventRef.current = previousScrollAt === null
+        ? Number.POSITIVE_INFINITY
+        : now - previousScrollAt;
+      lastScrollAtRef.current = now;
+    };
+    window.addEventListener("scroll", trackScrollActivity, { passive: true });
+    return () => window.removeEventListener("scroll", trackScrollActivity);
+  }, []);
 
   function renderMarkIcon(mark) {
     const icon = mark.iconUrl || (tone === "dark" ? shopCategoryCarouselIconUrl(mark.slug) : shopCategoryIconUrl(mark.slug));
@@ -106,6 +124,16 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
     );
   }
 
+  function toggleCatalog() {
+    const shouldOpen = !iconsOpen;
+    if (shouldOpen) {
+      const lastScrollAt = lastScrollAtRef.current;
+      ignoreActiveScrollRef.current = lastScrollAt !== null
+        && performance.now() - lastScrollAt < SCROLL_IDLE_MS;
+    }
+    setIconsOpen(shouldOpen);
+  }
+
   useEffect(() => {
     if (!iconsOpen) return undefined;
     const restoreCatalogFocus = () => {
@@ -113,6 +141,11 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
       toggle?.focus();
     };
     const closeFromScroll = () => {
+      if (
+        ignoreActiveScrollRef.current
+        && (scrollGapBeforeEventRef.current ?? Number.POSITIVE_INFINITY) < SCROLL_IDLE_MS
+      ) return;
+      ignoreActiveScrollRef.current = false;
       if (
         mobileCategoryMarksRef.current?.contains(document.activeElement)
         || wideCategoryMarksRef.current?.contains(document.activeElement)
@@ -182,7 +215,7 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
             aria-expanded={iconsOpen}
             aria-controls="shop-wide-category-marks"
             aria-label={iconsOpen ? "Скрыть категории магазина" : "Открыть каталог магазина"}
-            onClick={() => setIconsOpen((open) => !open)}
+            onClick={toggleCatalog}
           >
             <ChromeNavIcon name="catalog" />
             <span>Каталог</span>
@@ -226,7 +259,7 @@ export function ShopChrome({ menuOpen, onMenuToggle, cartCount, onCartOpen, cate
             aria-expanded={iconsOpen}
             aria-controls="shop-mobile-category-marks"
             aria-label={iconsOpen ? "Скрыть категории" : "Категории"}
-            onClick={() => setIconsOpen((open) => !open)}
+            onClick={toggleCatalog}
           >
             <CatalogGridIcon />
             <span>Каталог</span>
