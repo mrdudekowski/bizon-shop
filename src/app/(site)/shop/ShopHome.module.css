@@ -319,6 +319,7 @@
 
 .orderSteps article > span {
   color: var(--bizon-coral-500);
+  font-family: var(--font-display);
   font-size: var(--type-index);
   font-weight: 700;
   letter-spacing: var(--tracking-kicker);
