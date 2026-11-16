@@ -364,6 +364,11 @@
   letter-spacing: var(--tracking-display);
 }
 
+.galleryModelName {
+  color: var(--color-accent-coral);
+  font-family: var(--font-display);
+}
+
 .galleryMeta {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
