@@ -474,6 +474,7 @@
 }
 .assortmentModelName {
   color: var(--color-accent-coral);
+  font-family: var(--font-display);
 }
 .assortmentApplicationBadges {
   position: absolute;
