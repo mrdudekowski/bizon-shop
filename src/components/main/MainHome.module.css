@@ -1149,6 +1149,7 @@
     --home-section-lead: 3rem;
     --home-section-gap: 3rem;
   }
+  .brandingCaptions { font-size: clamp(0.54rem, 2.2vw, 0.62rem); }
   .assortmentIntro h2 { font-size: clamp(2rem, 9.5vw, 3.25rem); }
   .expertiseBanner::before {
     background: linear-gradient(90deg, rgba(5, 7, 7, .82), rgba(5, 7, 7, .34)), linear-gradient(0deg, rgba(5, 7, 7, .76), rgba(5, 7, 7, .08) 78%);
