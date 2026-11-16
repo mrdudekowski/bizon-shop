@@ -121,7 +121,7 @@ export function ShopCategoryCarousel({
             aria-hidden={slideHidden}
           >
             {slide.imageUrl ? (
-              <div className={styles.media}>
+              <div className={`${styles.media} ${mobileStyles.categoryMedia}`}>
                 <Image src={slide.imageUrl} alt="" fill sizes="100vw" priority={index === 0} className="responsiveFocalImage" style={responsiveFocalStyle(slide.focalByViewport, slide.focalX, slide.focalY)} />
               </div>
             ) : (

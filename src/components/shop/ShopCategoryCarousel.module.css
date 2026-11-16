@@ -1,4 +1,10 @@
 @media (max-width: 767px) {
+  .categoryMedia :global(img.responsiveFocalImage) {
+    object-position: var(--focal-mobile, 50% 50%);
+  }
+}
+
+@media (max-width: 767px) {
   .mobileControls > div:last-child {
     display: none;
   }
