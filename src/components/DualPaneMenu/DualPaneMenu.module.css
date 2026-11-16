@@ -258,6 +258,10 @@
   text-transform: uppercase;
 }
 
+.menuOverlay[data-menu-context="main"][data-active-section="shop"] .listCopy > span:first-child {
+  font-size: 0.95rem;
+}
+
 .backButton {
   display: none;
   align-items: center;
