@@ -136,7 +136,7 @@ export function buildShopDualPaneMenuSections(input: {
     },
     {
       id: "buyers",
-      label: "Покупателям",
+      label: "О компании",
       pane: "list",
       items: [
         { id: "shop-delivery", title: "Доставка", href: ROUTES.shopDelivery },
