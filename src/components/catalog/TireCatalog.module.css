@@ -332,6 +332,20 @@
   transition: transform var(--transition-premium), box-shadow var(--transition-premium), border-color var(--transition-premium);
 }
 
+.modelCardLink {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.modelCardLink:focus-visible .modelCard {
+  outline: var(--focus-outline);
+  outline-offset: 3px;
+}
+
 .modelCard[hidden] {
   display: none;
 }
@@ -364,8 +378,8 @@
 .modelCode { color: var(--color-accent-coral); font-size: 0.8em; font-weight: 500; }
 .modelDescription { min-height: 3em; margin: 0; color: var(--color-muted); line-height: 1.5; }
 .modelFooter { display: flex; justify-content: space-between; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border); font-size: 0.8125rem; }
-.modelFooter > span { color: var(--color-muted); }
-.modelFooter a { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 40px; height: 40px; border: 1px solid var(--color-border); border-radius: var(--radius-circle); color: var(--color-foreground); background: var(--color-surface); }
+.modelFooter > span:first-child { color: var(--color-muted); }
+.modelFooterAction { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 40px; height: 40px; border: 1px solid var(--color-border); border-radius: var(--radius-circle); color: var(--color-foreground); background: var(--color-surface); }
 
 .emptyState {
   display: grid;

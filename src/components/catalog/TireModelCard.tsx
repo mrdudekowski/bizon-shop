@@ -8,7 +8,7 @@ import { AXLE_OPTIONS } from "@/lib/selection/options";
 
 import styles from "./TireCatalog.module.css";
 
-export function TireModelCard({ model }: { model: TireCatalogModel }) {
+export function TireModelCard({ model, linkWholeCard = false }: { model: TireCatalogModel; linkWholeCard?: boolean }) {
   const application = getModelApplicationLabels(model).join(" · ");
   const axles = model.selectionAxles
     .map((value) => AXLE_OPTIONS.find((option) => option.value === value)?.label)
@@ -17,8 +17,14 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
   const sizeSummary = model.sizes.slice(0, 2).join(" · ");
   const additionalSizes = Math.max(model.sizes.length - 2, 0);
   const brandedName = model.name.match(/^(BIZON)\s+(.+)$/i);
+  const title = brandedName ? (
+    <>
+      <strong className={styles.modelTitleBrand}>{brandedName[1]}</strong>{" "}
+      <span className={styles.modelCode}>{brandedName[2]}</span>
+    </>
+  ) : model.name;
 
-  return (
+  const card = (
     <article
       className={styles.modelCard}
       data-tire-model-card
@@ -26,15 +32,27 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
       data-axles={model.selectionAxles.join("|")}
       data-sizes={model.sizes.map((size) => size.trim().toLocaleLowerCase("ru-RU")).join("|")}
     >
-      <Link className={styles.modelMedia} href={model.href} aria-label={`Открыть модель ${model.name}`}>
-        <CatalogImage
-          src={model.imageUrl}
-          fallbackKey={model.slug}
-          alt={`${model.name} — грузовая шина`}
-          fill
-          sizes="(max-width: 767px) 100vw, (max-width: 1199px) 50vw, 33vw"
-        />
-      </Link>
+      {linkWholeCard ? (
+        <span className={styles.modelMedia}>
+          <CatalogImage
+            src={model.imageUrl}
+            fallbackKey={model.slug}
+            alt={`${model.name} — грузовая шина`}
+            fill
+            sizes="(max-width: 767px) 100vw, (max-width: 1199px) 50vw, 33vw"
+          />
+        </span>
+      ) : (
+        <Link className={styles.modelMedia} href={model.href} aria-label={`Открыть модель ${model.name}`}>
+          <CatalogImage
+            src={model.imageUrl}
+            fallbackKey={model.slug}
+            alt={`${model.name} — грузовая шина`}
+            fill
+            sizes="(max-width: 767px) 100vw, (max-width: 1199px) 50vw, 33vw"
+          />
+        </Link>
+      )}
       <div className={styles.modelBody}>
         <div className={styles.modelMeta}>
           <span>{application || "Применение не указано"}</span>
@@ -43,14 +61,7 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
         <div>
           <p className={styles.modelBrand}>{model.brand}</p>
           <h2 className={styles.modelTitle}>
-            <Link href={model.href}>
-              {brandedName ? (
-                <>
-                  <strong className={styles.modelTitleBrand}>{brandedName[1]}</strong>{" "}
-                  <span className={styles.modelCode}>{brandedName[2]}</span>
-                </>
-              ) : model.name}
-            </Link>
+            {linkWholeCard ? title : <Link href={model.href}>{title}</Link>}
           </h2>
         </div>
         <p className={styles.modelDescription}>{model.descriptionShort}</p>
@@ -60,9 +71,19 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
               ? `${sizeSummary}${additionalSizes ? ` +${additionalSizes}` : ""}`
               : "Размер — по запросу"}
           </span>
-          <Link href={model.href} aria-label={`Открыть параметры ${model.name}`}><SiteArrow direction="ne" /></Link>
+          {linkWholeCard ? (
+            <span className={styles.modelFooterAction} aria-hidden="true"><SiteArrow direction="ne" /></span>
+          ) : (
+            <Link className={styles.modelFooterAction} href={model.href} aria-label={`Открыть параметры ${model.name}`}><SiteArrow direction="ne" /></Link>
+          )}
         </div>
       </div>
     </article>
   );
+
+  return linkWholeCard ? (
+    <Link className={styles.modelCardLink} href={model.href} aria-label={`Открыть модель ${model.name}`}>
+      {card}
+    </Link>
+  ) : card;
 }

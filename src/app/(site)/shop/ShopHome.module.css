@@ -243,7 +243,8 @@
 }
 
 .modelContent strong {
-  font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  font-weight: 620;
   letter-spacing: var(--tracking-display);
 }
 
@@ -261,8 +262,8 @@
 
 .modelName {
   color: var(--bizon-coral-500);
-  font-size: 0.62em;
-  font-weight: 650;
+  font-size: 1em;
+  font-weight: inherit;
 }
 
 .modelContent > span:last-child {
