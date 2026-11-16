@@ -18,11 +18,11 @@ type JSXProps = Record<string, unknown> & {
   style?: CSSProperties;
 };
 
-function mapVisibleChildren(children: ReactNode): ReactNode {
+function mapVisibleChildren(children: ReactNode, key = "bizon-text"): ReactNode {
   if (typeof children === "string") {
-    return reactJsx(BizonText, { value: children });
+    return reactJsx(BizonText, { value: children }, key);
   }
-  if (Array.isArray(children)) return children.map(mapVisibleChildren);
+  if (Array.isArray(children)) return children.map((child, index) => mapVisibleChildren(child, `${key}-${index}`));
   return children;
 }
 

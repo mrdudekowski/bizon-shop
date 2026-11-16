@@ -35,6 +35,29 @@ const nextConfig = {
       ".mjs": [".mts", ".mjs"],
     };
 
+    const sourceDirectory = `${path.resolve(__dirname, "src")}${path.sep}`;
+    const formatterDirectory = `${path.resolve(__dirname, "src/lib/bizon-jsx")}${path.sep}`;
+    webpackConfig.plugins.push({
+      apply(compiler) {
+        compiler.hooks.normalModuleFactory.tap("BizonJsxRuntime", (normalModuleFactory) => {
+          normalModuleFactory.hooks.beforeResolve.tap("BizonJsxRuntime", (resolveData) => {
+            if (!resolveData || !["react/jsx-runtime", "react/jsx-dev-runtime"].includes(resolveData.request)) {
+              return;
+            }
+
+            const issuerDirectory = `${path.resolve(resolveData.context)}${path.sep}`;
+            if (!issuerDirectory.startsWith(sourceDirectory) || issuerDirectory.startsWith(formatterDirectory)) {
+              return;
+            }
+
+            resolveData.request = resolveData.request.endsWith("jsx-dev-runtime")
+              ? "@/lib/bizon-jsx/jsx-dev-runtime"
+              : "@/lib/bizon-jsx/jsx-runtime";
+          });
+        });
+      },
+    });
+
     return webpackConfig;
   },
   turbopack: {
