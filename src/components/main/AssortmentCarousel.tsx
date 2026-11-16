@@ -3,7 +3,7 @@
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { LoopedStrip } from "@/components/catalog/LoopedStrip";
-import { cardSubtitle, formatAxleLabels } from "@/lib/catalog/featuredAssortment";
+import { formatAxleLabels } from "@/lib/catalog/featuredAssortment";
 import { getModelApplicationCategories } from "@/lib/catalog/tireCategories";
 import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
 import Link from "next/link";
@@ -17,11 +17,8 @@ export function AssortmentCarousel({ models }: { models: TireCatalogModel[] }) {
     <LoopedStrip count={models.length} label="Ключевые модели шин" tone="light">
       {(index) => {
         const model = models[index];
+        const brandedName = model.name.match(/^(BIZON)\s+(.+)$/i);
         const applications = getModelApplicationCategories(model);
-        const subtitle = cardSubtitle(model);
-        const remainingSubtitle = applications.length > 0 && model.selectionAxles.length !== 1
-          ? ""
-          : subtitle;
 
         return (
           <Link className={styles.assortmentCard} href={model.href}>
@@ -51,10 +48,14 @@ export function AssortmentCarousel({ models }: { models: TireCatalogModel[] }) {
             </span>
             <span className={styles.assortmentCardHead}>
               <span>
-                <strong>{model.name}</strong>
-                <span className={styles.assortmentStatus}>
-                  {remainingSubtitle}
-                </span>
+                <strong>
+                  {brandedName ? (
+                    <>
+                      <span>{brandedName[1]}</span>{" "}
+                      <span className={styles.assortmentModelName}>{brandedName[2]}</span>
+                    </>
+                  ) : model.name}
+                </strong>
               </span>
               <span className={styles.assortmentArrow} aria-hidden="true">
                 <SiteArrow />

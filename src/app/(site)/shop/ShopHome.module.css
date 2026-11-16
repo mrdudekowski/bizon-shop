@@ -235,7 +235,7 @@
 }
 
 .modelStatus {
-  color: var(--bizon-coral-500);
+  color: #fff;
   font-size: var(--type-kicker);
   font-weight: 700;
   letter-spacing: var(--tracking-label);

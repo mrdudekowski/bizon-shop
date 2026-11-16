@@ -463,13 +463,8 @@
   letter-spacing: var(--tracking-body);
   text-transform: uppercase;
 }
-.assortmentStatus {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 0.82rem;
-  font-weight: 400;
+.assortmentModelName {
+  color: var(--bizon-coral-500);
 }
 .assortmentApplicationBadges {
   position: absolute;
