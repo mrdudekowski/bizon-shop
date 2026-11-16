@@ -25,6 +25,7 @@ import type {
 } from "@/admin/domain/types";
 import { ProductPhotoFields } from "@/admin/media/PlacementFields";
 import { DocumentFields } from "@/admin/media/DocumentFields";
+import { AvailabilityToggle } from "@/admin/ui/AvailabilityToggle";
 import type { PublishBlockerHint } from "@/admin/ui/documentTabs";
 
 const BLOCKER_TEXT: Record<string, PublishBlockerHint> = {
@@ -306,14 +307,10 @@ export function TireModelEditor({ id }: { id: string }) {
           Полное описание
           <textarea value={draft.descriptionLong} onChange={(event) => patch({ descriptionLong: event.target.value })} />
         </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={draft.available !== false}
-            onChange={(event) => patch({ available: event.target.checked })}
-          />
-          В наличии
-        </label>
+        <AvailabilityToggle
+          available={draft.available !== false}
+          onChange={(available) => patch({ available })}
+        />
       </section>
       <section>
         <h2>Характеристики</h2>

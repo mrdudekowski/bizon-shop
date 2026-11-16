@@ -19,6 +19,7 @@ import type {
 } from "@/admin/domain/types";
 import { ProductPhotoFields } from "@/admin/media/PlacementFields";
 import { DocumentFields } from "@/admin/media/DocumentFields";
+import { AvailabilityToggle } from "@/admin/ui/AvailabilityToggle";
 import type { PublishBlockerHint } from "@/admin/ui/documentTabs";
 
 import styles from "./WheelDocument.module.css";
@@ -193,14 +194,10 @@ export function WheelModelEditor({ id }: { id: string }) {
             onChange={(event) => patch({ descriptionShort: event.target.value })}
           />
         </label>
-        <label className={styles.check}>
-          <input
-            type="checkbox"
-            checked={Boolean(draft.available)}
-            onChange={(event) => patch({ available: event.target.checked })}
-          />
-          В наличии
-        </label>
+        <AvailabilityToggle
+          available={Boolean(draft.available)}
+          onChange={(available) => patch({ available })}
+        />
         <label className={styles.check}>
           <input
             type="checkbox"

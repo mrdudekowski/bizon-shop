@@ -1,0 +1,45 @@
+.field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.options {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.option {
+  min-height: 40px;
+  padding: 0 14px;
+  border-color: transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.option:hover:not([aria-pressed="true"]) {
+  background: var(--surface);
+}
+
+.option[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--ink);
+}
