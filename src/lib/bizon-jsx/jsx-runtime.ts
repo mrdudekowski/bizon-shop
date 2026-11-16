@@ -55,20 +55,30 @@ function stripEmphasis(children: ReactNode, keyPrefix = "bizon-strong"): ReactNo
   return cloneElement(children, undefined, stripEmphasis(props.children, keyPrefix));
 }
 
-function prepare(type: JSXType, props: JSXProps | null): JSXProps | null {
-  if (!props) return props;
-
-  if (typeof type !== "string") return props;
-
-  const tag = type.toLowerCase();
-  const suppressSubtree =
-    ["b", "strong", "script", "style", "textarea", "template", "svg", "noscript"].includes(tag) ||
+function isSuppressedByProps(props: JSXProps) {
+  return (
     props.hidden === true ||
     props["aria-hidden"] === true ||
     props["aria-hidden"] === "true" ||
     props.style?.display === "none" ||
     props.style?.visibility === "hidden" ||
-    /(^|\s)(sr-only|screen-reader-only|visually-hidden|visuallyHidden)(\s|$)/i.test(String(props.className ?? ""));
+    /(^|\s)(sr-only|screen-reader-only|visually-hidden|visuallyHidden)(\s|$)/i.test(String(props.className ?? ""))
+  );
+}
+
+function prepare(type: JSXType, props: JSXProps | null): JSXProps | null {
+  if (!props) return props;
+
+  if (typeof type !== "string") {
+    if (isSuppressedByProps(props)) return props;
+    const children = mapVisibleChildren(props.children);
+    return children === props.children ? props : { ...props, children };
+  }
+
+  const tag = type.toLowerCase();
+  const suppressSubtree =
+    ["b", "strong", "script", "style", "textarea", "template", "svg", "noscript"].includes(tag) ||
+    isSuppressedByProps(props);
 
   const children = mapVisibleChildren(props.children);
   if (suppressSubtree) {

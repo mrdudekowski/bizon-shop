@@ -19,11 +19,20 @@ img {
 
 .bizon-word-emphasis {
   font: inherit !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
   color: inherit !important;
   letter-spacing: inherit !important;
   text-decoration: inherit !important;
   text-transform: uppercase !important;
+}
+
+h1 .bizon-word-emphasis,
+h2 .bizon-word-emphasis,
+h3 .bizon-word-emphasis,
+h4 .bizon-word-emphasis,
+h5 .bizon-word-emphasis,
+h6 .bizon-word-emphasis {
+  font-weight: 800 !important;
 }
 
 /* BIZON visual tokens — canonical SSOT for public UI. */

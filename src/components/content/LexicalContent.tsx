@@ -70,13 +70,12 @@ export function emphasizeBizonHtml(value: string): string {
     const closing = Boolean(parsed[1]);
     const tag = parsed[2].toLowerCase();
     const isVoid = voidTags.has(tag) || /\/\s*>$/.test(rawTag);
-    const markedFooter = tag === "footer" && /\bdata-site-footer(?:\s|=|>)/i.test(rawTag);
     const hiddenMarkup =
       /\shidden(?:\s|=|>)/i.test(rawTag) ||
       /\saria-hidden\s*=\s*(['"])true\1/i.test(rawTag) ||
       /\sstyle\s*=\s*(['"])[^'"]*(?:display\s*:\s*none|visibility\s*:\s*hidden)[^'"]*\1/i.test(rawTag) ||
       /\bclass\s*=\s*(['"])[^'"]*(?:sr-only|screen-reader-only|visually-hidden|visuallyHidden)[^'"]*\1/i.test(rawTag);
-    const suppress = ["script", "style", "textarea", "title", "template", "svg", "noscript", "b", "strong"].includes(tag) || markedFooter || hiddenMarkup;
+    const suppress = ["script", "style", "textarea", "title", "template", "svg", "noscript", "b", "strong"].includes(tag) || hiddenMarkup;
 
     if (closing) {
       const index = elementStack.map((element) => element.tag).lastIndexOf(tag);
