@@ -461,11 +461,12 @@
   display: flex;
   min-width: 0;
   align-items: baseline;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.3em;
-  font-size: var(--type-subtitle);
+  font-size: clamp(1rem, 1.4vw, 1.35rem);
   font-weight: 580;
   letter-spacing: var(--tracking-display);
+  white-space: nowrap;
 }
 .assortmentBrand {
   font-weight: 800;
