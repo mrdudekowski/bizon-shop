@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { AdvantageIcons } from "@/components/catalog/AdvantageIcons";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+import { ChromeWordmark } from "@/components/chrome/FloatingChrome";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { DualPaneItem, DualPaneMenuData, DualPaneSection } from "@/lib/content/dualPaneMenuTypes";
 import styles from "./DualPaneMenu.module.css";
@@ -274,6 +275,7 @@ export function DualPaneMenu({
       aria-hidden={!isOpen}
       inert={isOpen ? undefined : true}
       data-menu-context={context}
+      data-active-section={activeSection?.id ?? undefined}
       data-mobile-view={mobileView}
       data-has-section={activeSection ? "true" : "false"}
     >
@@ -293,8 +295,9 @@ export function DualPaneMenu({
               href={homeHref}
               onClick={handleLinkNavigate}
               translate="no"
+              aria-label={`${homeLabel} — на главную`}
             >
-              {homeLabel}
+              <ChromeWordmark />
             </Link>
             <button
               className={styles.closeButtonMobile}

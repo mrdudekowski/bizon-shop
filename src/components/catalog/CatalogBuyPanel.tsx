@@ -122,6 +122,12 @@ export function CatalogBuyPanel({
       </div>
 
       <div className={`${styles.actions} action-row`}>
+        <span
+          className="availability-badge"
+          data-status={(available ?? selected?.available ?? true) ? "in-stock" : "on-order"}
+        >
+          {(available ?? selected?.available ?? true) ? "В наличии" : "Под заказ"}
+        </span>
         {canAdd ? (
           <AddToCartButton
             cartKind="bizon"
@@ -134,12 +140,6 @@ export function CatalogBuyPanel({
             Добавить в корзину
           </button>
         )}
-        <span
-          className="availability-badge"
-          data-status={(available ?? selected?.available ?? true) ? "in-stock" : "on-order"}
-        >
-          {(available ?? selected?.available ?? true) ? "В наличии" : "Под заказ"}
-        </span>
       </div>
       {!canAdd && (
         <p className={styles.hint}>Сначала выберите размер</p>

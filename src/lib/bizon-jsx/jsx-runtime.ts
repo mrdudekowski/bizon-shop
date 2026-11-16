@@ -26,17 +26,34 @@ function mapVisibleChildren(children: ReactNode, key = "bizon-text"): ReactNode 
   return children;
 }
 
-function stripEmphasis(children: ReactNode): ReactNode {
-  if (Array.isArray(children)) return children.map(stripEmphasis);
+function emphasizeExistingStrongText(value: string, keyPrefix: string): ReactNode {
+  const expression = /(?<![\p{L}\p{N}_])BIZON(?![\p{L}\p{N}_])/giu;
+  const output: ReactNode[] = [];
+  let previousIndex = 0;
+
+  for (const match of value.matchAll(expression)) {
+    const index = match.index ?? 0;
+    if (index > previousIndex) output.push(value.slice(previousIndex, index));
+    output.push(reactJsx("span", { className: "bizon-word-emphasis", children: "BIZON" }, `${keyPrefix}-${index}`));
+    previousIndex = index + match[0].length;
+  }
+
+  if (previousIndex === 0) return value;
+  if (previousIndex < value.length) output.push(value.slice(previousIndex));
+  return output;
+}
+
+function stripEmphasis(children: ReactNode, keyPrefix = "bizon-strong"): ReactNode {
+  if (Array.isArray(children)) return children.map((child, index) => stripEmphasis(child, `${keyPrefix}-${index}`));
   if (!isValidElement(children)) return children;
 
   if (children.type === BizonText) {
-    return (children.props as { value: string }).value;
+    return emphasizeExistingStrongText((children.props as { value: string }).value, keyPrefix);
   }
 
   const props = children.props as { children?: ReactNode };
   if (!("children" in props)) return children;
-  return cloneElement(children, undefined, stripEmphasis(props.children));
+  return cloneElement(children, undefined, stripEmphasis(props.children, keyPrefix));
 }
 
 function prepare(type: JSXType, props: JSXProps | null): JSXProps | null {
@@ -57,10 +74,6 @@ function prepare(type: JSXType, props: JSXProps | null): JSXProps | null {
   const children = mapVisibleChildren(props.children);
   if (suppressSubtree) {
     if (["script", "style", "textarea", "title", "template", "noscript"].includes(tag)) return props;
-    return { ...props, children: stripEmphasis(children) };
-  }
-
-  if (tag === "footer" && "data-site-footer" in props) {
     return { ...props, children: stripEmphasis(children) };
   }
 

@@ -534,7 +534,7 @@
 .documents a span:last-child { display: inline-flex; align-items: center; gap: 0.3em; color: var(--color-link); font-size: .75rem; font-weight: 700; }
 
 .finalCta { display: flex; justify-content: space-between; align-items: center; gap: 2rem; margin-top: var(--section-space); padding: clamp(2rem, 5vw, 4rem); border-radius: var(--radius-card); background: var(--color-surface-muted); }
-.finalCta a { min-height: 52px; padding: 0.9rem 1.4rem; font-size: 1rem; }
+.finalCta a { min-height: 52px; padding: 0.9rem 1.4rem; font-size: 1rem; text-align: center; }
 .finalCta h2 { max-width: 17ch; }
 .finalCtaActions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
 

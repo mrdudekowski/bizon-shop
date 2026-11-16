@@ -10,8 +10,9 @@ function isHtmlString(value: unknown): value is string {
 
 const BIZON_TOKEN = /(?<![\p{L}\p{N}_])BIZON(?![\p{L}\p{N}_])/giu;
 
-function emphasizeText(value: string): string {
-  return value.replace(BIZON_TOKEN, (match) => `<strong class="bizon-word-emphasis">${match}</strong>`);
+function emphasizeText(value: string, alreadyBold = false): string {
+  const tag = alreadyBold ? "span" : "strong";
+  return value.replace(BIZON_TOKEN, () => `<${tag} class="bizon-word-emphasis">BIZON</${tag}>`);
 }
 
 /** Transform HTML text nodes only; preserve tags and attributes verbatim. */
@@ -32,8 +33,11 @@ export function emphasizeBizonHtml(value: string): string {
 
     const tagStart = value.indexOf("<", cursor);
     const textEnd = tagStart === -1 ? value.length : tagStart;
-    if (!elementStack.some((element) => element.suppressed)) output += emphasizeText(value.slice(cursor, textEnd));
-    else output += value.slice(cursor, textEnd);
+    const emphasisContext = elementStack.some((element) => element.tag === "b" || element.tag === "strong");
+    const hiddenContext = elementStack.some((element) => element.suppressed && element.tag !== "b" && element.tag !== "strong");
+    if (!hiddenContext && (!elementStack.some((element) => element.suppressed) || emphasisContext)) {
+      output += emphasizeText(value.slice(cursor, textEnd), emphasisContext);
+    } else output += value.slice(cursor, textEnd);
     if (tagStart === -1) break;
 
     let tagEnd = tagStart + 1;
