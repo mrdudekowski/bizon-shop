@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BrandModelName } from "@/components/BrandModelName/BrandModelName";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { getModelApplicationLabels, getModelApplicationValues } from "@/lib/catalog/tireCategories";
@@ -16,7 +17,6 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
     .join(" · ");
   const sizeSummary = model.sizes.slice(0, 2).join(" · ");
   const additionalSizes = Math.max(model.sizes.length - 2, 0);
-  const brandedName = model.name.match(/^(BIZON)\s+(.+)$/i);
 
   return (
     <article
@@ -44,12 +44,7 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
           <p className={styles.modelBrand}>{model.brand}</p>
           <h2 className={styles.modelTitle}>
             <Link href={model.href}>
-              {brandedName ? (
-                <>
-                  <strong className={styles.modelTitleBrand}>{brandedName[1]}</strong>{" "}
-                  <span className={styles.modelCode}>{brandedName[2]}</span>
-                </>
-              ) : model.name}
+              <BrandModelName name={model.name} />
             </Link>
           </h2>
         </div>

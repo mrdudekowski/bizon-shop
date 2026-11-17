@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AdvantageIcons } from "@/components/catalog/AdvantageIcons";
+import { BrandModelName } from "@/components/BrandModelName/BrandModelName";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { ChromeNavIcon } from "@/components/chrome/ChromeNavIcon";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
@@ -56,7 +57,6 @@ function GalleryPane({
         {items.map((item) => {
           const cutout = isHeroCutout(item.imageUrl);
           const tireCard = Array.isArray(item.advantages);
-          const brandedTireTitle = tireCard ? item.title.match(/^(BIZON)\s+(.+)$/i) : null;
           return (
           <li key={item.id}>
             <Link
@@ -68,12 +68,7 @@ function GalleryPane({
               {tireCard ? (
                 <span className={styles.galleryMeta}>
                   <span className={styles.galleryTitle}>
-                    {brandedTireTitle ? (
-                      <>
-                        <strong>{brandedTireTitle[1]}</strong>{" "}
-                        <span className={styles.galleryModelName}>{brandedTireTitle[2]}</span>
-                      </>
-                    ) : item.title}
+                    <BrandModelName name={item.title} />
                   </span>
                   <AdvantageIcons
                     advantages={item.advantages ?? []}
@@ -82,7 +77,9 @@ function GalleryPane({
                   />
                 </span>
               ) : (
-                <span className={styles.galleryTitle}>{item.title}</span>
+                <span className={styles.galleryTitle}>
+                  <BrandModelName name={item.title} />
+                </span>
               )}
               <span className={styles.galleryMedia} data-cutout={cutout ? "" : undefined}>
                 {cutout && item.imageUrl ? (

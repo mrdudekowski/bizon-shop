@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { BrandModelName } from "@/components/BrandModelName/BrandModelName";
 import { CatalogCard } from "@/components/catalog/CatalogCard";
 import { MobileFilterSheet } from "@/components/catalog/MobileFilterSheet";
 import { CustomSelect } from "@/components/ui/CustomSelect";
@@ -110,19 +111,11 @@ export function WheelModelGrid({
       {visibleModels.length > 0 ? (
         <div className={`${styles.modelGrid} w-full max-w-full min-w-0`}>
           {visibleModels.map((model) => {
-            const brandedName = model.name.match(/^(BIZON)\s+(.+)$/i);
-            const title = brandedName ? (
-              <>
-                <strong className={styles.wheelBrand}>{brandedName[1]}</strong>{" "}
-                <span className={styles.wheelModelName}>{brandedName[2]}</span>
-              </>
-            ) : model.name;
-
             return (
               <CatalogCard
                 key={model.id}
                 href={`${typeBasePath}/${model.slug}`}
-                title={title}
+                title={<BrandModelName name={model.name} />}
                 description={model.descriptionShort}
                 meta={[model.series?.trim(), model.designStyle?.trim()].filter(Boolean).join(" · ") || null}
                 imageUrl={model.imageUrl}

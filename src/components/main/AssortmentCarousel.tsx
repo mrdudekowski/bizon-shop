@@ -1,6 +1,7 @@
 "use client";
 
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+import { BrandModelName } from "@/components/BrandModelName/BrandModelName";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { LoopedStrip } from "@/components/catalog/LoopedStrip";
 import { formatAxleLabels } from "@/lib/catalog/featuredAssortment";
@@ -17,7 +18,6 @@ export function AssortmentCarousel({ models }: { models: TireCatalogModel[] }) {
     <LoopedStrip count={models.length} label="Ключевые модели шин" tone="light">
       {(index) => {
         const model = models[index];
-        const brandedName = model.name.match(/^(BIZON)\s+(.+)$/i);
         const applications = getModelApplicationCategories(model);
 
         return (
@@ -49,12 +49,7 @@ export function AssortmentCarousel({ models }: { models: TireCatalogModel[] }) {
             <span className={styles.assortmentCardHead}>
               <span>
                 <strong>
-                  {brandedName ? (
-                    <>
-                      <span className={styles.assortmentBrand}>{brandedName[1]}</span>{" "}
-                      <span className={styles.assortmentModelName}>{brandedName[2]}</span>
-                    </>
-                  ) : model.name}
+                  <BrandModelName name={model.name} />
                 </strong>
               </span>
               <span className={styles.assortmentArrow} aria-hidden="true">

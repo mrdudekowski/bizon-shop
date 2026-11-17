@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+import { BrandModelName } from "@/components/BrandModelName/BrandModelName";
 import { LoopedStrip } from "@/components/catalog/LoopedStrip";
 import { ShopCategoryShowcase } from "@/components/shop/ShopCategoryShowcase";
 import { ShopOrderSteps } from "./ShopOrderSteps";
@@ -103,8 +104,7 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
                     <span className={styles.modelContent}>
                       <span className={styles.modelStatus}>Изготавливается под заказ</span>
                       <strong className={styles.modelTitle}>
-                        <span className={styles.modelBrand}>BIZON</span>
-                        <span className={styles.modelName}>{model.name.replace(/^BIZON\s+/i, "")}</span>
+                        <BrandModelName name={model.name} />
                       </strong>
                       <span>{[model.designStyle, model.series].filter(Boolean).join(" · ")}</span>
                     </span>

@@ -256,18 +256,6 @@
   gap: 0.3em;
 }
 
-.modelBrand {
-  font-family: var(--font-display);
-  font-weight: 800;
-}
-
-.modelName {
-  color: var(--bizon-coral-500);
-  font-family: var(--font-display);
-  font-size: 1em;
-  font-weight: inherit;
-}
-
 .modelContent > span:last-child {
   color: var(--color-on-dark-subtle);
   line-height: 1.45;

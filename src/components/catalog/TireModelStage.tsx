@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { AdvantageIcons } from "@/components/catalog/AdvantageIcons";
 import { CatalogBuyPanel } from "@/components/catalog/CatalogBuyPanel";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
+import { BrandModelName } from "@/components/BrandModelName/BrandModelName";
 import { LexicalContent } from "@/components/content/LexicalContent";
 import { ResponsiveDisclosure } from "@/components/content/ResponsiveDisclosure";
 import { CatalogProductGallery } from "@/components/catalog/CatalogProductGallery";
@@ -118,13 +119,7 @@ export function TireModelStage({
     (document) => Boolean(document.url?.trim() && document.title?.trim()),
   );
   const variantLabels = tireVariantLabels(variants);
-  const brandedName = model.name.match(/^(BIZON)\s+(.+)$/i);
-  const title = brandedName ? (
-    <>
-      <strong className={styles.modelTitleBrand}>{brandedName[1]}</strong>{" "}
-      <span className={styles.modelCode}>{brandedName[2]}</span>
-    </>
-  ) : model.name;
+  const title = <BrandModelName name={model.name} />;
 
   return (
     <div className={styles.modelPage} data-main-chrome-tone="light">

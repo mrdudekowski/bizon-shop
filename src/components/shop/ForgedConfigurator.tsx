@@ -1,6 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
+import { BrandModelName } from "@/components/BrandModelName/BrandModelName";
 import { requestOpenCart } from "@/lib/cart/cartStorage";
 import { useCart } from "@/hooks/useCart";
 import styles from "./ForgedConfigurator.module.css";
@@ -67,7 +68,7 @@ export function ForgedConfigurator({ model }: { model: ForgedConfiguratorModel }
       <div className={styles.formHead}>
         <div>
           <p>Конфигурация для расчёта</p>
-          <h3>{model.name}</h3>
+          <h3><BrandModelName name={model.name} /></h3>
         </div>
         <span>Цена и совместимость подтверждаются специалистом</span>
       </div>

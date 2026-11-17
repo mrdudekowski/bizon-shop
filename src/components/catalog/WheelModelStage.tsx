@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BrandModelName } from "@/components/BrandModelName/BrandModelName";
 import { WheelOrderPanel } from "@/components/catalog/WheelOrderPanel";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { CatalogProductGallery } from "@/components/catalog/CatalogProductGallery";
@@ -71,13 +72,7 @@ export function WheelModelStage({
   const evidenceDocuments = (model.documents ?? []).filter(
     (document) => Boolean(document.url?.trim() && document.title?.trim()),
   );
-  const brandedName = model.name.match(/^(BIZON)\s+(.+)$/i);
-  const title = brandedName ? (
-    <>
-      <strong className={styles.wheelBrand}>{brandedName[1]}</strong>{" "}
-      <span className={styles.wheelModelName}>{brandedName[2]}</span>
-    </>
-  ) : model.name;
+  const title = <BrandModelName name={model.name} />;
 
   return (
     <div className={styles.modelPage} data-main-chrome-tone="light" data-shop-chrome-tone="light">

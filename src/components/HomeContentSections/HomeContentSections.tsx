@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { CatalogCard } from "@/components/catalog/CatalogCard";
+import { BrandModelName } from "@/components/BrandModelName/BrandModelName";
 import { PREMIUM_MEDIA } from "@/constants/images";
 import type { CmsArticle, CmsTireModel } from "@/lib/content/types";
 import { getModelApplicationCategories, getModelApplicationLabels } from "@/lib/catalog/tireCategories";
@@ -46,7 +47,7 @@ export function HomeContentSections({ tbrModels, articles }: HomeContentSections
               <CatalogCard
                 key={model.id}
                 href={getModelHref(model)}
-                title={model.name}
+                title={<BrandModelName name={model.name} />}
                 description={model.descriptionShort}
                 meta={getModelApplicationLabels(model).join(" · ") || model.tireTypeName}
                 imageUrl={model.imageUrl}

@@ -468,14 +468,6 @@
   letter-spacing: var(--tracking-display);
   white-space: nowrap;
 }
-.assortmentBrand {
-  font-family: var(--font-display);
-  font-weight: 800;
-}
-.assortmentModelName {
-  color: var(--color-accent-coral);
-  font-family: var(--font-display);
-}
 .assortmentApplicationBadges {
   position: absolute;
   bottom: 12px;

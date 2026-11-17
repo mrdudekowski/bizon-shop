@@ -76,4 +76,34 @@ describe("DualPaneMenu focus transfer", () => {
     expect(document.activeElement?.textContent).toContain("Назад");
     expect(document.activeElement?.closest("[inert]")).toBeNull();
   });
+
+  it("formats wheel model names in the Shop burger gallery", async () => {
+    window.matchMedia = vi.fn((query: string) => ({
+      media: query,
+      matches: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })) as unknown as typeof window.matchMedia;
+
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    const shopMenu = {
+      defaultSectionId: "models",
+      sections: [{
+        id: "models",
+        label: "Модели дисков",
+        pane: "gallery" as const,
+        items: [{ id: "ember", title: "BIZON Ember", href: "/shop/wheels/forged/ember" }],
+      }],
+    };
+    const props = { onClose: vi.fn(), menu: shopMenu, context: "shop" as const };
+
+    await act(async () => root.render(createElement(DualPaneMenu, { ...props, isOpen: false })));
+    await act(async () => root.render(createElement(DualPaneMenu, { ...props, isOpen: true })));
+
+    const title = host.querySelector('a[href="/shop/wheels/forged/ember"]');
+    expect(title?.querySelector("[data-brand]")?.textContent).toBe("BIZON");
+    expect(title?.querySelector("[data-model]")?.textContent).toBe("Ember");
+  });
 });

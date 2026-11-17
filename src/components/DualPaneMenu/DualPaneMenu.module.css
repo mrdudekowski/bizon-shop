@@ -364,11 +364,6 @@
   letter-spacing: var(--tracking-display);
 }
 
-.galleryModelName {
-  color: var(--color-accent-coral);
-  font-family: var(--font-display);
-}
-
 .galleryMeta {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -383,10 +378,6 @@
   font-size: 0.95rem;
   line-height: 1.2;
   letter-spacing: var(--tracking-body);
-}
-
-.galleryCard[data-tire] .galleryTitle strong {
-  font-family: var(--font-display);
 }
 
 .galleryMedia {
