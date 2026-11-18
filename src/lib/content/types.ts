@@ -177,6 +177,7 @@ export type CmsArticle = {
   /** HTML string or future rich-text JSON — render with LexicalContent on detail pages. */
   content: unknown;
   imageUrl?: string | null;
+  imageAlt?: string;
   imageFocalX?: number;
   imageFocalY?: number;
   imageFocalByViewport?: ResponsiveFocalMap;

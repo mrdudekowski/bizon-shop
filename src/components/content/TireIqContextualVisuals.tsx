@@ -4,7 +4,6 @@ import styles from "./TireIqContextualVisuals.module.css";
 
 const VISUALS_BY_ARTICLE: Record<string, { primary: string; comparison?: string[] }> = {
   "cold-inflation-pressure-check": { primary: "VIS-21", comparison: ["VIS-20", "VIS-22"] },
-  "axle-role-in-tire-selection": { primary: "VIS-32", comparison: ["VIS-12", "VIS-13", "VIS-14"] },
   "uneven-tread-wear-first-checks": { primary: "VIS-33" },
   "how-to-read-tire-size-marking": { primary: "VIS-10" },
   "load-and-inflation-engineering-relationship": { primary: "VIS-30", comparison: ["VIS-32"] },
@@ -27,16 +26,15 @@ export function TireIqContextualVisuals({ slug }: { slug: string }) {
 
   return (
     <section className={styles.section} aria-labelledby="article-visuals-heading">
-      <p className={styles.kicker}>Визуальный разбор</p>
-      <h2 id="article-visuals-heading">Одна идея — один визуальный якорь</h2>
-      <p className={styles.description}>Основное изображение объясняет центральную мысль статьи. Сравнительные материалы добавлены только там, где они показывают изменение режима или альтернативу.</p>
+      <p className={styles.kicker}>Иллюстрации</p>
+      <h2 id="article-visuals-heading">Визуальные материалы</h2>
       <div className={styles.grid}>
         {visuals.map((visual) => visual && (
           <figure className={styles.figure} key={visual.id}>
             <div className={styles.media}>
               <img src={visual.web} alt={visual.title} loading="lazy" width={1600} height={900} />
             </div>
-            <figcaption><span>{visual.id}</span>{visual.title}</figcaption>
+            <figcaption>{visual.title}</figcaption>
           </figure>
         ))}
       </div>

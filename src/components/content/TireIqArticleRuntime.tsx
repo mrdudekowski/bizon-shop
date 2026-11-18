@@ -9,6 +9,13 @@ import { fetchBrowserPublishedJson } from "@/lib/content/browserPublishedClient"
 import { resolveTireIqArticleCover } from "@/lib/content/tireIqVisuals";
 import { tireIqBreadcrumbs } from "@/lib/seo/structuredData";
 
+function formatTireIqDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+  return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(date);
+}
+
 export function TireIqArticleRuntime({ article: initialArticle }: { article: CmsArticle }) {
   const [article, setArticle] = useState(initialArticle);
   useEffect(() => {
@@ -27,9 +34,9 @@ export function TireIqArticleRuntime({ article: initialArticle }: { article: Cms
     title={article.title}
     description={article.excerpt}
     breadcrumbs={tireIqBreadcrumbs(article)}
-    meta={article.publishedAt}
+    meta={formatTireIqDate(article.publishedAt)}
     imageUrl={imageUrl}
-    imageAlt={article.title}
+    imageAlt={article.imageAlt ?? ""}
     imageFocalX={article.imageFocalX}
     imageFocalY={article.imageFocalY}
     imageFocalByViewport={article.imageFocalByViewport}

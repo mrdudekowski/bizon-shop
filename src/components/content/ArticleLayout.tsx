@@ -73,16 +73,6 @@ export function ArticleLayout({
           </div>
         </div>
         <article className={styles.article}>{children}</article>
-        <section className={styles.modelContext} aria-labelledby="article-model-context-heading">
-          <p className={styles.meta}>Текущий контур BIZON</p>
-          <h2 id="article-model-context-heading">Модели для дальнейшей проверки</h2>
-          <p>Эти три опубликованные TBR-модели доступны для просмотра. Совместимость проверяется по размеру, оси, нагрузке и условиям эксплуатации.</p>
-          <div className={styles.modelLinks}>
-            <Link href="/models/tbr/dsr158" className="btn-secondary">DSR158</Link>
-            <Link href="/models/tbr/dsr177" className="btn-secondary">DSR177</Link>
-            <Link href="/models/tbr/dsr188" className="btn-secondary">DSR188</Link>
-          </div>
-        </section>
         <section className={styles.nextStep} aria-labelledby="article-next-step-heading">
           <p className={styles.meta}>Следующий шаг</p>
           <h2 id="article-next-step-heading">Переведите знания в задачу</h2>

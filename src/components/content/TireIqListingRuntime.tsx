@@ -7,6 +7,18 @@ import { fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient"
 import { resolveTireIqArticleCover } from "@/lib/content/tireIqVisuals";
 import type { ReactNode } from "react";
 
+function formatTireIqDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
 export function TireIqListingRuntime({ articles: initialArticles, beforeContent }: {
   articles: CmsArticle[];
   beforeContent: ReactNode;
@@ -35,11 +47,11 @@ export function TireIqListingRuntime({ articles: initialArticles, beforeContent 
         href: `/tire-iq/${article.slug}`,
         title: article.title,
         description: article.excerpt,
-        meta: article.publishedAt,
+        meta: formatTireIqDate(article.publishedAt),
         taxonomy: article.taxonomy,
         imageUrl,
         showImage: imageUrl !== null,
-        imageAlt: article.title,
+        imageAlt: article.imageAlt ?? "",
         fallbackKey: article.slug,
       };
     })}

@@ -22,7 +22,15 @@ function mapVisibleChildren(children: ReactNode, key = "bizon-text"): ReactNode 
   if (typeof children === "string") {
     return reactJsx(BizonText, { value: children }, key);
   }
-  if (Array.isArray(children)) return children.map((child, index) => mapVisibleChildren(child, `${key}-${index}`));
+  if (Array.isArray(children)) {
+    return children.map((child, index) => {
+      const childKey = `${key}-${index}`;
+      const mappedChild = mapVisibleChildren(child, childKey);
+      return isValidElement(mappedChild) && mappedChild.key == null
+        ? cloneElement(mappedChild, { key: childKey })
+        : mappedChild;
+    });
+  }
   return children;
 }
 
