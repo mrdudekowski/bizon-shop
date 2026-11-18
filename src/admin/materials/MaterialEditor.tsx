@@ -15,6 +15,8 @@ import { browserAdminClient } from "@/admin/client/localStore";
 import { articlePublishBlockers } from "@/admin/domain/publishRules";
 import type { ArticleDraft, EntityRecord } from "@/admin/domain/types";
 import { TIRE_IQ_TAXONOMY } from "@/admin/domain/tireIqTaxonomy";
+import { normalizeArticleBody } from "@/admin/domain/articleBody";
+import { ArticleBodyEditor } from "@/admin/materials/ArticleBodyEditor";
 import { PlacementFields } from "@/admin/media/PlacementFields";
 import type { PublishBlockerHint } from "@/admin/ui/documentTabs";
 
@@ -126,10 +128,7 @@ export function MaterialEditor({ id }: { id: string }) {
           Анонс
           <textarea value={draft.excerpt} onChange={(event) => patch({ excerpt: event.target.value })} />
         </label>
-        <label>
-          Текст
-          <textarea value={draft.body} onChange={(event) => patch({ body: event.target.value })} />
-        </label>
+        <ArticleBodyEditor value={normalizeArticleBody(draft.body)} onChange={(body) => patch({ body })} disabled={saving || publishing} />
         <label>
           <input type="checkbox" checked={draft.showInMenu} onChange={(event) => patch({ showInMenu: event.target.checked })} />
           Показывать в меню

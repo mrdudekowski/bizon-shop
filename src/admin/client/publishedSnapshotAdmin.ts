@@ -1,6 +1,7 @@
 import { AdminClientError } from "@/admin/client/errors";
 import type { AdminClient } from "@/admin/client/adminClient";
 import type { CatalogAxle } from "@/admin/domain/options";
+import { normalizeArticleBody } from "@/admin/domain/articleBody";
 import type {
   AdminSession,
   ArticleDraft,
@@ -459,7 +460,7 @@ export function publishedSnapshotReads(snapshot: unknown): SnapshotReads {
       title: text(article.title),
       slug: text(article.slug),
       excerpt: text(article.excerpt),
-      body: text(article.content),
+      body: normalizeArticleBody(article.content),
       image: placement(article.imageUrl),
       imageConfigured: article.imageConfigured === true,
       gallery: [],

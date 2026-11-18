@@ -2,6 +2,7 @@
 // Код сайта сюда не импортируется.
 
 import type { CatalogAxle } from "./options";
+import type { ArticleBodyDocument } from "./articleBody";
 
 export const FOCAL_VIEWPORTS = ["desktop", "tablet", "mobile"] as const;
 
@@ -518,7 +519,7 @@ export type ArticleDraft = {
   title: string;
   slug: string;
   excerpt: string;
-  body: string;
+  body: ArticleBodyDocument | string;
   image?: ImagePlacement | null;
   imageConfigured: boolean;
   gallery: ImagePlacement[];

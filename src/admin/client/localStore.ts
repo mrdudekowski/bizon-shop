@@ -7,6 +7,7 @@ import {
   wheelTypePublishBlockers,
 } from "@/admin/domain/publishRules";
 import { isValidSlug, slugifyTitle } from "@/admin/domain/slug";
+import { emptyArticleBody } from "@/admin/domain/articleBody";
 import { FOCAL_VIEWPORTS, isPageEntryDecisionTarget, PAGE_KEYS } from "@/admin/domain/types";
 import type {
   AdminSession,
@@ -1495,7 +1496,7 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
         title: input.title.trim(),
         slug,
         excerpt: "",
-        body: "",
+        body: emptyArticleBody(),
         imageConfigured: false,
         gallery: [],
         showInMenu: false,
