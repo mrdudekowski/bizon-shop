@@ -541,6 +541,11 @@
   .catalogPage .pageInner { min-height: 0; align-content: start; }
   .filters { display: none; }
   .filters, .modelGrid, .directionGrid, .documents { grid-template-columns: minmax(0, 1fr); }
+  .modelGrid :global(.catalog-card__media) { aspect-ratio: 1.1 / 1; }
+  .modelGrid :global(.catalog-card__body) { min-height: 0; gap: 0.5rem; padding: 1rem 1.125rem 0.75rem; }
+  .modelGrid :global(.catalog-card__body > .mb-2) { margin-bottom: 0; }
+  .modelGrid :global(.catalog-card__body > h2) { margin-top: 1rem; }
+  .modelGrid :global(.catalog-card__body > .info-card-text) { font-size: 1rem; line-height: 1.45; }
   .productPanel { display: flex; flex-direction: column; }
   .productPanel > .eyebrow { order: 0; }
   .productPanel > .productFacts { order: 1; }
