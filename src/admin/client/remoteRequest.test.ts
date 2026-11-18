@@ -57,6 +57,7 @@ describe("remote admin client", () => {
     await browserAdminClient().listPages();
 
     expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:4000/v1/admin");
+    expect(fetchMock.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
   });
   it("sends the last loaded saved draft with remote saves", async () => {
     vi.stubEnv("NEXT_PUBLIC_ADMIN_API_URL", "https://admin.example.test/");

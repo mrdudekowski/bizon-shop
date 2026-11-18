@@ -1872,7 +1872,11 @@ function remoteAdminClient(): AdminClient {
     if (!adminApi) throw new AdminClientError("network");
     let response: Response;
     try {
-      response = await fetch(`${adminApi}${path}`, { ...init, credentials: "include" });
+      response = await fetch(`${adminApi}${path}`, {
+        ...init,
+        credentials: "include",
+        signal: init.signal ?? AbortSignal.timeout(12_000),
+      });
     } catch {
       throw new AdminClientError("network");
     }
