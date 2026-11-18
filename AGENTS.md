@@ -400,3 +400,122 @@ When generating or modifying CSS for layout components:
 **Last Updated:** 2024-01-27  
 **Source:** Diagnostic analysis of carousel overflow issue in bizon_tires project  
 **Status:** Active - enforce in all CSS development
+
+---
+
+# Project-wide engineering and AI-agent workflow
+
+These rules apply to the public site in the repository root, frontend-cms, backend-app, their tests, and documentation. Read these rules before work in any of the three Git repositories. Preserve the existing CSS requirements above.
+
+## 1. Establish the current state before acting
+
+- Identify the target application, its package scripts, data boundaries, and relevant project instructions before changing files.
+- Inspect branch and working-tree status in every affected Git repository. Treat pre-existing modified, staged, and untracked files as user-owned. Do not overwrite, reset, clean, or include them in a change unless explicitly asked.
+- Read the owning implementation and tests. Historical plans, audit notes, commit messages, and agent summaries are context, not proof of current behavior.
+- State the scope, expected behavior, allowed files/systems, and verification criteria before implementation. If the user requested investigation only, do not make product changes.
+
+## 2. Trace behavior across system boundaries
+
+For behavior that crosses applications, trace the same entity and value through the actual path:
+
+~~~text
+CMS/browser → API contract → backend authorization/business logic
+→ database or object storage → published read/snapshot
+→ public build/runtime → visitor-visible result
+~~~
+
+- Identify the source of truth for drafts, saved state, published state, and generated output separately.
+- Do not treat a CMS success message, HTTP 200, passing unit test, successful build, or deploy request as proof that the final public result is correct.
+- For CMS work, verify both access control and the backend operation. Hiding a button is not authorization.
+- Preserve explicit boundaries: PostgreSQL is accessed by backend-app; browser clients call the intended API; media bytes and media metadata have separate storage responsibilities; published reads must use the published contract.
+- Do not duplicate business rules, formatters, permission decisions, or data mappings across applications without a documented reason and a parity test.
+
+## 3. Use evidence and label uncertainty
+
+Classify conclusions as:
+
+- **Confirmed:** supported by a current test, trace, request/response, database/API read, or source behavior.
+- **Hypothesis:** plausible explanation awaiting a discriminating check.
+- **Requirement decision:** expected product behavior that must be taken from an agreed contract, not inferred from the current implementation.
+- **Blocked / not run:** the environment, credentials, schema, or safe test data was unavailable.
+
+For bugs, record the user steps, expected and actual result, first layer where values diverge, and a reproducible command or trace when available. Never describe a blocked or unrun check as passing.
+
+## 4. Treat failing tests as evidence to classify, not as cleanup targets
+
+- Never delete, disable, skip, weaken, or rewrite a failing test solely to make the suite green.
+- Classify each failure before changing product or test code: product defect, stale assertion/selector, fixture or contract mismatch, test harness/environment failure, flaky test, or duplicate coverage.
+- Confirm the intended behavior before deciding whether the implementation or assertion is wrong.
+- A test can be removed only after proving its contract is obsolete or fully covered elsewhere; document the evidence and replacement coverage.
+- Every skip needs a named reason, a scope (for example, a required disposable API), and a condition for restoring coverage. Do not accept silent permanent skips.
+- Prefer behavior and accessibility assertions over source-text matching, brittle markup snapshots, and selectors tied to implementation details.
+- A regression test should fail on the original defect, pass after the fix, and protect the user-visible contract.
+
+## 5. Test at the smallest useful level, then verify the critical path
+
+- Use unit tests for isolated rules, component tests for UI states, API/contract tests for boundary formats and permissions, integration tests for real database/storage behavior, and E2E for critical user journeys.
+- Do not use E2E as a substitute for fast lower-level tests. Do not claim an end-to-end result from unit or build checks.
+- For each change, run the narrowest test that distinguishes the hypothesis, then relevant neighboring regressions and the agreed suite.
+- When behavior crosses CMS, backend, database, media, deployment, or public site, include at least one test at the real boundary that could fail independently.
+- Keep test names, assertions, fixtures, and their real coverage aligned. A test count is not a coverage argument.
+
+## 6. Protect data and external systems
+
+- Use disposable test databases and isolated local object-storage buckets for write, publish, upload, replacement, and deletion tests.
+- Before any test that writes data, verify the database identity, schema readiness, storage endpoint, bucket, and test account. Fail closed if any check is uncertain.
+- Never point test or seed commands at production. Do not run migrations against shared, staging, or production data unless the task explicitly authorizes that exact action.
+- Keep external credentials on the backend. Tests should block external HTTP requests unless a named, controlled test dependency is explicitly required.
+- Make cleanup reliable after success and failure. Prefer unique test records and idempotent setup/cleanup.
+- Model external calls with clear timeout, retry, idempotency, and failure behavior. A user-facing success should correspond to a durable system state.
+
+## 7. Keep API, data, and migration contracts compatible
+
+- For changes to an entity, enumerate its readers and writers, status transitions, permissions, relations, and public representation.
+- Validate inputs at the server boundary; client-side validation is helpful UX, not data protection.
+- Keep database migrations additive and compatible with the rollout sequence where practical. Document prerequisites, backfill, readiness, and recovery.
+- Do not assume an empty Docker PostgreSQL database contains the Bizon baseline schema. Verify the documented baseline before migrations or integration tests.
+- Keep publication atomic where the product contract requires it. Verify rollback/partial failure behavior and the revision returned to the public site.
+
+## 8. Build a safe test harness for integration and E2E
+
+A reliable harness must define the application processes, disposable dependencies, baseline schema/seed data, credentials, ports, readiness checks, external-network fences, test records, cleanup, and useful failure artifacts. The harness must be reproducible from documented commands on a clean machine.
+
+For CMS E2E, cover the critical vertical path: authenticate → check permissions → edit/save → reload and read back → publish → verify published API/revision → verify public output. Add media storage checks when the scenario changes media.
+
+Mocks and fixtures are useful, but they must match the current API contract. Keep at least one integration check for critical boundaries that mocks cannot prove. Label what a fixture build does and does not prove.
+
+## 9. Debug systematically; do not guess at the first matching file
+
+1. Reproduce the smallest failing user scenario.
+2. Capture inputs, environment, request IDs, logs, and current data.
+3. Follow one value through each boundary and find the first divergence.
+4. State one hypothesis and the observation that would disprove it.
+5. Add or run a focused test that distinguishes that hypothesis.
+6. Make the smallest change at the confirmed owning layer.
+7. Run the focused test, relevant regressions, and the end-to-end path when available.
+8. Report unresolved uncertainty rather than hiding it with retries or broad refactors.
+
+For flaky tests, inspect trace and timing, remove shared mutable state, wait for specific observable conditions, and track recurrence. Retries may provide diagnostic signal but are not the fix.
+
+## 10. Delegate agents through bounded, non-overlapping tasks
+
+- Give each agent a named question or deliverable, relevant files and boundaries, allowed actions, acceptance criteria, and required evidence.
+- Use read-only investigation first when the root cause or contract is uncertain.
+- Parallelize independent investigations or file areas. Do not assign concurrent edits to the same component, migration, fixture, or test data.
+- Name one owner to reconcile findings, decide the contract, integrate changes, and inspect every diff.
+- Agent completion reports must include files changed, commands run, exact results, environment, limitations, and remaining risks. Do not rely on a claim such as “looks good.”
+
+## 11. Definition of done
+
+A change is ready for review when:
+
+- The requirement and acceptance criteria are unambiguous.
+- The root cause or design decision is supported by evidence.
+- The diff is limited to the approved scope and preserves unrelated work.
+- Tests cover the changed behavior and relevant neighboring contracts.
+- Commands and results are recorded as PASS, FAIL, BLOCKED, or NOT RUN, with environment and reasons.
+- Data, migration, security, accessibility, responsive behavior, and external-service risks were considered where relevant.
+- User-visible flows were checked at the appropriate test level.
+- Documentation and remaining uncertainty are explicit.
+
+Never use “all tests pass,” “fully verified,” or “production-ready” unless the exact scope and evidence support that statement.
