@@ -50,10 +50,7 @@ test("main footer uses the shared shell with main content", async ({ page }, tes
 
   const footer = page.locator('[data-site-footer="main"]');
   await expect(footer).toHaveCount(1);
-  await expect(footer.getByRole("link", { name: "Каталог шин" }).first()).toHaveAttribute("href", "/models/");
-  if (testInfo.project.name === "mobile-390") {
-    await footer.locator("summary").filter({ hasText: "Сервисы" }).click();
-  }
+  await expect(footer.getByRole("link", { name: "Выбери шины BIZON" })).toHaveAttribute("href", "/models/");
   await expect(footer.getByRole("link", { name: "BIZON Shop" })).toHaveAttribute("href", "/shop/");
   await expect(footer.getByRole("link", { name: "Подбор" })).toHaveCount(0);
 });

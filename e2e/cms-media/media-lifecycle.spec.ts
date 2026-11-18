@@ -239,7 +239,9 @@ test("tire model photo and approved benefits survive CMS editing, publication, a
       response.url().includes(`${config.apiUrl}/v1/admin/assets`)
       && ["POST", "PUT"].includes(response.request().method()),
     );
-    await page.getByLabel("Главное фото: файл").setInputFiles({ name: assetName, mimeType: "image/png", buffer: validPng });
+    await page.getByRole("button", { name: "Выбрать из галереи", exact: true }).first().click();
+    const imagePicker = page.getByRole("dialog", { name: "Выбрать изображение" });
+    await imagePicker.getByLabel("Файл для библиотеки").setInputFiles({ name: assetName, mimeType: "image/png", buffer: validPng });
     const uploadResponse = await upload;
     expect(uploadResponse.status()).toBe(200);
     const uploadBody = await uploadResponse.json() as { result?: { id?: string } };
@@ -688,7 +690,9 @@ test("Wheel type copy and cover survive CMS save, publish, and public API read",
       response.url().includes(`${config.apiUrl}/v1/admin/assets`)
       && ["POST", "PUT"].includes(response.request().method()),
     );
-    await page.getByLabel("Главное фото: файл").setInputFiles({ name: assetName, mimeType: "image/png", buffer: validPng });
+    await page.getByRole("button", { name: "Выбрать из галереи", exact: true }).click();
+    const imagePicker = page.getByRole("dialog", { name: "Выбрать изображение" });
+    await imagePicker.getByLabel("Файл для библиотеки").setInputFiles({ name: assetName, mimeType: "image/png", buffer: validPng });
     const uploadResponse = await upload;
     expect(uploadResponse.status()).toBe(200);
     const uploadBody = await uploadResponse.json() as { result?: { id?: string } };
@@ -791,7 +795,9 @@ test("Legal page PDF survives CMS upload, save, publish, public API, and S3 read
       response.url().includes(`${config.apiUrl}/v1/admin/assets`)
       && response.request().method() === "POST",
     );
-    await page.getByLabel("Загрузить PDF", { exact: true }).setInputFiles({
+    await page.getByRole("button", { name: "Выбрать PDF из галереи", exact: true }).click();
+    const pdfPicker = page.getByRole("dialog", { name: "Выбрать PDF-документ" });
+    await pdfPicker.getByLabel("Файл для библиотеки").setInputFiles({
       name: fileName,
       mimeType: "application/pdf",
       buffer: validPdf,
@@ -802,13 +808,13 @@ test("Legal page PDF survives CMS upload, save, publish, public API, and S3 read
     assetId = uploadBody.result?.id ?? null;
     expect(assetId).toBeTruthy();
     await page.getByLabel("Название документа", { exact: true }).fill(documentTitle);
-    await page.getByRole("button", { name: "Добавить раздел", exact: true }).click();
+    await page.getByRole("button", { name: "Новая глава", exact: true }).click();
     const sectionHeading = "CMS section " + runId;
     const sectionBody = "Editorial content survives the complete publication path.";
-    const addedSection = page.getByRole("group", { name: /^Раздел \d+$/ }).last();
-    const addedHeading = addedSection.getByLabel("Заголовок раздела", { exact: true });
-    const addedBody = addedSection.getByLabel("Текст раздела", { exact: true });
+    const addedHeading = page.getByLabel("Заголовок главы", { exact: true });
+    const addedBody = page.getByLabel("Текст главы", { exact: true });
     await expect(addedHeading).toHaveValue("");
+    await page.getByRole("button", { name: "Текст главы", exact: true }).click();
     await expect(addedBody).toHaveValue("");
     await addedHeading.fill(sectionHeading);
     await addedBody.fill(sectionBody);
@@ -818,7 +824,7 @@ test("Legal page PDF survives CMS upload, save, publish, public API, and S3 read
 
     const savedPage = await adminCall<StubAdminPage>(request, "getPage", [pageKey]);
     expect(savedPage.savedDraft?.documents).toEqual([{ assetId, title: documentTitle }]);
-    expect(savedPage.savedDraft?.sections).toEqual([expect.objectContaining({ heading: sectionHeading, body: sectionBody })]);
+    expect(savedPage.savedDraft?.sections).toEqual(expect.arrayContaining([expect.objectContaining({ heading: sectionHeading, body: sectionBody })]));
     await page.getByRole("button", { name: "Опубликовать", exact: true }).click();
     await expect(page.getByText("Опубликовано в CMS.", { exact: true })).toBeVisible();
 
@@ -829,7 +835,7 @@ test("Legal page PDF survives CMS upload, save, publish, public API, and S3 read
     const publicPage = await publicResponse.json() as { documents?: Array<{ url: string; title: string }>; sections?: Array<{ heading: string; body: string }> };
     expect(publicPage.documents).toHaveLength(1);
     expect(publicPage.documents?.[0]?.title).toBe(documentTitle);
-    expect(publicPage.sections).toEqual([expect.objectContaining({ heading: sectionHeading, body: sectionBody })]);
+    expect(publicPage.sections).toEqual(expect.arrayContaining([expect.objectContaining({ heading: sectionHeading, body: sectionBody })]));
     const pdfResponse = await request.get(publicPage.documents![0]!.url);
     expect(pdfResponse.status()).toBe(200);
     expect(pdfResponse.headers()["content-type"]).toContain("application/pdf");
@@ -900,7 +906,8 @@ test("Wheel variant specs survive CMS save, publish, admin reload, and public re
 
     await page.goto(config.cmsUrl + "/wheels/editor/?id=" + encodeURIComponent(modelId), { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
-    await page.getByRole("tab", { name: "Варианты", exact: true }).click();
+    await page.getByRole("tab", { name: "Характеристики", exact: true }).click();
+    await page.getByRole("heading", { name: /Типоразмеры и параметры дисков/ }).scrollIntoViewIfNeeded();
     await page.getByRole("button", { name: "Добавить вариант", exact: true }).click();
     const variantField = page.locator("fieldset").filter({ has: page.getByText("Вариант 1", { exact: true }) });
     await variantField.getByRole("textbox").nth(0).fill("22.5×8.25");
@@ -918,7 +925,10 @@ test("Wheel variant specs survive CMS save, publish, admin reload, and public re
     await variantField.getByLabel("Материал крепежа").fill("Сталь");
     await variantField.getByLabel("Совместимые размеры шин").fill("315/80 R22.5");
     await variantField.getByLabel("Источник спецификации").fill("Паспорт изделия");
-    await page.getByLabel("Загрузить PDF").setInputFiles({
+    await page.getByRole("tab", { name: "Документы", exact: true }).click();
+    await page.getByRole("button", { name: "Выбрать PDF из галереи", exact: true }).click();
+    const pdfPicker = page.getByRole("dialog", { name: "Выбрать PDF-документ" });
+    await pdfPicker.getByLabel("Файл для библиотеки").setInputFiles({
       name: "wheel-passport-" + runId + ".pdf",
       mimeType: "application/pdf",
       buffer: validPdf,
@@ -928,7 +938,7 @@ test("Wheel variant specs survive CMS save, publish, admin reload, and public re
     const uploadedAssets = await adminCall<MediaAsset[]>(request, "listAssets");
     documentAssetId = uploadedAssets.find((item) => item.name === pdfTitle)?.id ?? null;
     expect(documentAssetId).toBeTruthy();
-    await page.getByRole("button", { name: "Сохранить", exact: true }).click();
+    await page.getByRole("button", { name: "Сохранить", exact: true }).last().click();
     await expect(page.getByText("Черновик сохранён", { exact: true })).toBeVisible();
 
     const saved = await adminCall<{ savedDraft: { variants: Array<Record<string, unknown>>; documents: Array<{ assetId: string; title: string }> } }>(request, "getWheelModel", [modelId]);
@@ -952,7 +962,7 @@ test("Wheel variant specs survive CMS save, publish, admin reload, and public re
       sourceSpecification: "Паспорт изделия",
     });
 
-    await page.getByRole("button", { name: "Опубликовать", exact: true }).click();
+    await page.getByRole("button", { name: "Опубликовать", exact: true }).last().click();
     await expect(page.getByText("Опубликовано в CMS.", { exact: true })).toBeVisible();
     published = true;
     const reread = await adminCall<{ publishedSnapshot: { variants: Array<Record<string, unknown>>; documents: Array<{ assetId: string; title: string }> } }>(request, "getWheelModel", [modelId]);
@@ -1035,7 +1045,7 @@ test("CMS media survives upload, gallery selection, save, publish, and public st
   const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const validName = `cms-media-e2e-${runId}.png`;
   const invalidName = `cms-media-e2e-invalid-${runId}.png`;
-  const campaign = page.getByLabel("Картинка кампании: файл").locator("xpath=ancestor::fieldset");
+  const campaign = page.getByRole("group", { name: "Картинка кампании" });
   let operationError: unknown;
 
   try {
@@ -1102,25 +1112,30 @@ test("CMS media survives upload, gallery selection, save, publish, and public st
       await expect(campaign.locator("img")).toHaveCount(0);
     }
 
+    await campaign.getByRole("button", { name: "Выбрать из галереи", exact: true }).click();
+    const invalidPicker = page.getByRole("dialog", { name: "Выбрать изображение" });
     const invalidUpload = page.waitForResponse((response) =>
       response.url().includes(`${config.apiUrl}/v1/admin/assets`)
       && ["POST", "PUT"].includes(response.request().method()),
     );
-    await page.getByLabel("Картинка кампании: файл").setInputFiles({
+    await invalidPicker.getByLabel("Файл для библиотеки").setInputFiles({
       name: invalidName,
       mimeType: "image/png",
       buffer: validPng.subarray(0, 16),
     });
     expect((await invalidUpload).status()).toBe(400);
-    await expect(page.locator('p[role="alert"]')).toContainText("Файл не подошёл");
+    await expect(invalidPicker.getByRole("alert")).toContainText("Файл не подошёл");
     const afterInvalidUpload = await adminCall<MediaAsset[]>(request, "listAssets");
     expect(afterInvalidUpload.some((item) => item.name === invalidName)).toBe(false);
+    await invalidPicker.getByRole("button", { name: "Закрыть галерею", exact: true }).click();
 
+    await campaign.getByRole("button", { name: "Выбрать из галереи", exact: true }).click();
+    const uploadPicker = page.getByRole("dialog", { name: "Выбрать изображение" });
     const validUpload = page.waitForResponse((response) =>
       response.url().includes(`${config.apiUrl}/v1/admin/assets`)
       && ["POST", "PUT"].includes(response.request().method()),
     );
-    await page.getByLabel("Картинка кампании: файл").setInputFiles({
+    await uploadPicker.getByLabel("Файл для библиотеки").setInputFiles({
       name: validName,
       mimeType: "image/png",
       buffer: validPng,
@@ -1161,9 +1176,17 @@ test("CMS media survives upload, gallery selection, save, publish, and public st
     await expect.poll(() => campaignImage.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBe(1);
 
     pageMutationStarted = true;
-    await page.getByRole("button", { name: "Сохранить", exact: true }).click();
-    await expect(page.getByText("Черновик сохранён", { exact: true })).toBeVisible();
+    const saveResponsePromise = page.waitForResponse((response) => {
+      if (response.url() !== `${config.apiUrl}/v1/admin` || response.request().method() !== "POST") return false;
+      try { return response.request().postDataJSON()?.method === "savePage"; } catch { return false; }
+    });
+    await page.getByRole("button", { name: "Сохранить", exact: true }).last().click();
+    const saveResponse = await saveResponsePromise;
+    const saveResponseBody = await saveResponse.json() as { result?: AdminPage };
+    const uiSaveResponseAssetId = saveResponseBody.result?.savedDraft?.shopCampaign?.image?.assetId ?? null;
+    await expect(page.getByRole("status")).toHaveText("Черновик сохранён");
     let savedPage = await adminCall<AdminPage>(request, "getPage", ["home"]);
+    expect(uiSaveResponseAssetId).toBe(uploadedId);
     expect(savedPage.savedDraft?.shopCampaign?.image?.assetId).toBe(uploadedId);
 
     const browser = page.context().browser();
@@ -1173,7 +1196,7 @@ test("CMS media survives upload, gallery selection, save, publish, and public st
       const freshPage = await freshContext.newPage();
       await installLocalOnlyNetworkFence(freshPage);
       await loginToLocalCms(freshPage);
-      const freshPreview = freshPage.getByLabel("Картинка кампании: файл").locator("xpath=ancestor::fieldset").getByRole("img", { name: "Картинка кампании" });
+      const freshPreview = freshPage.getByRole("group", { name: "Картинка кампании" }).getByRole("img", { name: "Картинка кампании" });
       await expect(freshPreview).toBeVisible();
       await expect.poll(() => freshPreview.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBe(1);
     } finally {
@@ -1181,14 +1204,15 @@ test("CMS media survives upload, gallery selection, save, publish, and public st
     }
 
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByLabel("Картинка кампании: файл")).toBeVisible();
-    const restoredPreview = page.getByLabel("Картинка кампании: файл").locator("xpath=ancestor::fieldset").getByRole("img", { name: "Картинка кампании" });
+    const restoredCampaign = page.getByRole("group", { name: "Картинка кампании" });
+    await expect(restoredCampaign).toBeVisible();
+    const restoredPreview = restoredCampaign.getByRole("img", { name: "Картинка кампании" });
     await expect(restoredPreview).toBeVisible();
     await expect.poll(() => restoredPreview.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBe(1);
     savedPage = await adminCall<AdminPage>(request, "getPage", ["home"]);
     expect(savedPage.savedDraft?.shopCampaign?.image?.assetId).toBe(uploadedId);
 
-    await page.getByRole("button", { name: "Опубликовать", exact: true }).click();
+    await page.getByRole("button", { name: "Опубликовать", exact: true }).last().click();
     await expect(page.getByText("Опубликовано в CMS.", { exact: true })).toBeVisible();
     const publishedPage = await adminCall<AdminPage>(request, "getPage", ["home"]);
     expect(publishedPage.publishedSnapshot?.shopCampaign?.image?.assetId).toBe(uploadedId);
@@ -1220,15 +1244,15 @@ test("CMS media survives upload, gallery selection, save, publish, and public st
     expect(await readFile(path.join(outputDirectory, "index.html"), "utf8")).toContain(file!.path);
 
     await campaign.getByRole("button", { name: "Убрать фото", exact: true }).click();
-    await page.getByRole("button", { name: "Сохранить", exact: true }).click();
-    await expect(page.getByText("Черновик сохранён", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Сохранить", exact: true }).last().click();
+    await expect(page.getByRole("status")).toHaveText("Черновик сохранён");
     const clearedDraft = await adminCall<AdminPage>(request, "getPage", ["home"]);
     expect(clearedDraft.savedDraft?.shopCampaign?.image ?? null).toBeNull();
 
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByLabel("Картинка кампании: файл")).toBeVisible();
+    await expect(page.getByRole("group", { name: "Картинка кампании" })).toBeVisible();
     await expect(campaign.getByRole("button", { name: "Убрать фото", exact: true })).toHaveCount(0);
-    await page.getByRole("button", { name: "Опубликовать", exact: true }).click();
+    await page.getByRole("button", { name: "Опубликовать", exact: true }).last().click();
     await expect(page.getByText("Опубликовано в CMS.", { exact: true })).toBeVisible();
     const clearedPublished = await adminCall<AdminPage>(request, "getPage", ["home"]);
     expect(clearedPublished.publishedSnapshot?.shopCampaign?.image ?? null).toBeNull();

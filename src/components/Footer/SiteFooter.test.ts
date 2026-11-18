@@ -13,7 +13,7 @@ describe("SiteFooter navigation", () => {
     const main = renderToStaticMarkup(createElement(SiteFooter, { surface: "main", siteProfile: PLACEHOLDER_SITE_PROFILE }));
     const shop = renderToStaticMarkup(createElement(SiteFooter, { surface: "shop", siteProfile: PLACEHOLDER_SITE_PROFILE }));
 
-    expect(main).toContain("Выбери шины BIZON");
+    expect(hrefForAnchorText(main, "Выбери шины BIZON")).toBe("/models");
     expect(main).not.toContain("Каталог шин");
     expect(main).toContain('href="/delivery"');
     expect(main).toContain("Доставка");
@@ -23,7 +23,7 @@ describe("SiteFooter navigation", () => {
     expect(main).toContain("Гарантия и возврат");
     expect(main).not.toContain("География поставок");
 
-    expect(shop).toContain("Выбрать диски BIZON");
+    expect(hrefForAnchorText(shop, "Выбрать диски BIZON")).toBe("/shop/wheels/forged");
     expect(shop).toContain('href="/shop/wheels/forged"');
     expect(shop).not.toContain('href="/shop#wheels"');
     expect(shop).not.toContain("BIZON Forged");

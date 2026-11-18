@@ -20,7 +20,8 @@ test("catalog filters survive reload and model detail exposes fitment CTA", asyn
   await expect(page).toHaveURL(/\/models\/tbr\/regional\/ci-fixture-tire\/$/);
   await expect(page.getByRole("button", { name: "Добавить в корзину" }).first()).toBeVisible();
   await expect(page.getByLabel("Типоразмер")).toBeVisible();
-  await page.getByLabel("Типоразмер").selectOption({ index: 1 });
+  await page.getByRole("combobox", { name: "Типоразмер" }).click();
+  await page.getByRole("option").nth(1).click();
   await expect(page.getByRole("button", { name: "Добавить в корзину" })).toBeEnabled();
   await page.getByRole("button", { name: "Добавить в корзину" }).click();
   await expect(page.getByRole("dialog", { name: "Корзина" })).toBeVisible();

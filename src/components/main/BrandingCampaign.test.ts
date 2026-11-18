@@ -2,13 +2,18 @@ import { describe, expect, it } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import { BizonText } from "@/lib/bizon-jsx/scope";
 import type { HomeBrandingContent } from "@/lib/content/pages/types";
 import { BrandingCampaign } from "./BrandingCampaign";
 
 function collect(node: unknown): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(collect).join("");
-  if (node && typeof node === "object") return collect((node as { props?: { children?: unknown } }).props?.children);
+  if (node && typeof node === "object") {
+    const element = node as { type?: unknown; props?: { children?: unknown; value?: unknown } };
+    if (element.type === BizonText) return typeof element.props?.value === "string" ? element.props.value : "";
+    return collect(element.props?.children);
+  }
   return "";
 }
 

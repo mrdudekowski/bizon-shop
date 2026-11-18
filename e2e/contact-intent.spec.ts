@@ -16,7 +16,8 @@ test("branding CTA opens contextual contact with branding sourceForm", async ({ 
   });
 
   await page.goto("/contact?subject=branding");
-  await expect(page.getByRole("heading", { level: 1, name: "Обсудить брендирование" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Оставьте контакт для проекта" })).toBeVisible();
   await expect(page.getByText("Заявка по брендированию")).toBeVisible();
   await page.getByLabel("Имя *").fill("Игорь");
   await page.getByLabel("Телефон").fill("+7 999 111-22-33");

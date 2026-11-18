@@ -88,7 +88,7 @@ export function WheelModelGrid({
           <form className={styles.filters} method="get" aria-label="Фильтры каталога дисков">
             {renderFields()}
             <button className="btn-accent" type="submit">Показать модели</button>
-            <Link className={styles.reset} href={typeBasePath}>Сбросить фильтры</Link>
+            <Link className={styles.reset} href={typeBasePath} onClick={() => setFilters({})}>Сбросить фильтры</Link>
           </form>
           <MobileFilterSheet
             title="Параметры диска"
@@ -96,6 +96,7 @@ export function WheelModelGrid({
             activeCount={activeFilterCount}
             applyLabel={`Показать ${formatWheelModelCount(visibleModels.length)}`}
             resetHref={typeBasePath}
+            onReset={() => setFilters({})}
             formLabel="Параметры диска"
           >
             {renderFields()}
@@ -134,7 +135,7 @@ export function WheelModelGrid({
           <h2>По заданным параметрам диски не найдены</h2>
           <p>Измените параметры фильтров или сбросьте их, чтобы посмотреть другие модели.</p>
           <div className={styles.emptyActions}>
-            <Link className="btn-secondary" href={typeBasePath}>Очистить фильтры</Link>
+            <Link className="btn-secondary" href={typeBasePath} onClick={() => setFilters({})}>Очистить фильтры</Link>
           </div>
         </div>
       )}

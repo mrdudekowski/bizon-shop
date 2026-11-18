@@ -101,7 +101,7 @@ describe("EditorialListing topic", () => {
     const emptyTopic = renderListing([pressureArticle], "axles");
     const emptyListing = renderListing([]);
     const listingCss = readFileSync(new URL("./EditorialListing.module.css", import.meta.url), "utf8");
-    const mobileCss = listingCss.split("@media (max-width: 767px)")[1] ?? "";
+    const mobileCss = listingCss.split("@media (max-width: 900px)")[1] ?? "";
 
     expect(coverless).toContain("Роль оси");
     expect(coverless).not.toContain("<img");

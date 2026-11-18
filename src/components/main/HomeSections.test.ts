@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { BizonText } from "@/lib/bizon-jsx/scope";
 import { ShopCampaign } from "./ShopCampaign";
 import { TireDirectionShowcase } from "./TireDirectionShowcase";
 import { EditorialHighlights } from "./EditorialHighlights";
@@ -8,7 +9,9 @@ function collectText(node: unknown): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(collectText).join(" ");
   if (node && typeof node === "object") {
-    return collectText((node as { props?: { children?: unknown } }).props?.children);
+    const element = node as { type?: unknown; props?: { children?: unknown; value?: unknown } };
+    if (element.type === BizonText) return typeof element.props?.value === "string" ? element.props.value : "";
+    return collectText(element.props?.children);
   }
   return "";
 }

@@ -55,6 +55,7 @@ describe("site style tokens", () => {
       lines.forEach((line, index) => {
         if (!/letter-spacing\s*:/.test(line)) return;
         if (/letter-spacing\s*:\s*var\(--tracking-/.test(line)) return;
+        if (/letter-spacing\s*:\s*inherit(?:\s*!important)?\s*;?\s*$/i.test(line)) return;
         leftover.push(`${file.replace(`${SRC}\\`, "").replace(`${SRC}/`, "")}:${index + 1} ${line.trim()}`);
       });
     }

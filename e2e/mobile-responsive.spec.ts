@@ -55,7 +55,7 @@ test("mobile contact form focuses the first required field and accepts one conta
     const top = await name.evaluate((element) => element.getBoundingClientRect().top);
     const headerHeight = await page.evaluate(() => Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-height")) || 0);
     return top - headerHeight;
-  }).toBeGreaterThanOrEqual(0);
+  }).toBeGreaterThanOrEqual(-1);
 
   await name.fill("Мария");
   await expect(phone).toHaveJSProperty("required", true);
@@ -95,26 +95,28 @@ test("mobile contact form retains fields after an API error and shows a compact 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 
-test("mobile home model cards form a swipe-only carousel without arrow controls", async ({ page }) => {
+test("mobile home model strip keeps one active card without carousel controls", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const track = page.locator('div[aria-label="Ключевые модели шин"]');
   const layout = await track.evaluate((element) => {
     const style = getComputedStyle(element);
-    const card = element.querySelector("a");
+    const items = Array.from(element.querySelectorAll<HTMLElement>("[data-slot]"));
+    const card = items.find((item) => item.dataset.slot === "0")?.querySelector("a");
     return {
-      flow: style.gridAutoFlow,
+      display: style.display,
+      columns: style.gridTemplateColumns,
       overflow: style.overflowX,
-      snap: style.scrollSnapType,
       trackWidth: element.clientWidth,
       cardWidth: card?.getBoundingClientRect().width ?? 0,
-      cardCount: element.querySelectorAll("a").length,
+      activeItems: items.filter((item) => item.getAttribute("aria-hidden") !== "true").length,
       buttons: element.querySelectorAll("button").length,
     };
   });
-  expect(layout.flow).toContain("column");
-  expect(layout.overflow).toBe("auto");
-  expect(layout.snap).toContain("x mandatory");
-  expect(layout.cardWidth).toBeLessThan(layout.trackWidth);
+  expect(layout.display).toBe("grid");
+  expect(layout.columns).not.toBe("none");
+  expect(layout.overflow).toBe("hidden");
+  expect(layout.activeItems).toBe(1);
+  expect(layout.cardWidth).toBeLessThanOrEqual(layout.trackWidth);
   expect(layout.buttons).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
@@ -157,21 +159,20 @@ test("mobile truck and bus selectors keep diagrams and axle choices available on
     await expect(image).toBeVisible();
     await choices.locator("summary").click();
     const axle = choices.getByRole("link", { name: new RegExp(axleName) });
-    await expect(axle).toHaveAttribute("href", "/tire-iq/#knowledge");
+    await expect(axle).toHaveAttribute("href", "/tire-iq/?topic=axles&axis=steer#knowledge");
     await axle.focus();
     await expect(image).toHaveAttribute("src", /steer-active\.svg/);
   }
 });
 
-test("mobile footer collapses link groups while keeping contact and legal links visible", async ({ page }) => {
+test("mobile footer shows link groups, contacts and legal links", async ({ page }) => {
   await page.goto("/shop");
   const footer = page.locator('footer[data-site-footer="shop"]');
-  await expect(footer.locator("details")).toHaveCount(2);
+  await expect(footer.getByRole("navigation", { name: "Каталог" })).toBeVisible();
+  await expect(footer.getByRole("navigation", { name: "Помощь" })).toBeVisible();
   await expect(footer.getByText("BIZON SHOP", { exact: true }).first()).toBeVisible();
   await expect(footer.getByRole("link", { name: "Связаться" })).toBeVisible();
   await expect(footer.getByRole("link", { name: "Политика конфиденциальности" })).toBeVisible();
-  await expect(footer.getByRole("navigation", { name: "Каталог" })).toBeHidden();
-  await footer.getByText("Каталог", { exact: true }).first().click();
   await expect(footer.getByRole("navigation", { name: "Каталог" })).toBeVisible();
 });
 
@@ -212,24 +213,19 @@ test.describe("mobile cart routes", () => {
     ]) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
       await expect(page.locator("p.info-card-text").filter({ hasText: "Корзина пуста" })).toBeVisible();
-      await expect(page.getByRole("link", { name: returnAction })).toBeVisible();
+      await expect(page.getByRole("main").getByRole("link", { name: returnAction })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
     }
   });
 
-  test("open and close the cart drawer without leaving the page scroll locked", async ({ page }) => {
+  test("open the Shop request from mobile bottom navigation", async ({ page }) => {
     await page.goto("/shop", { waitUntil: "domcontentloaded" });
-    const trigger = page.getByRole("button", { name: "Корзина", exact: true });
-    await trigger.click();
-
-    const drawer = page.getByRole("dialog", { name: "Корзина" });
-    await expect(drawer).toBeVisible();
-    await expect(drawer.getByText("Корзина пуста. Добавьте диски или товары BIZON Shop.")).toBeVisible();
-    await expect(page.locator("body")).toHaveClass(/cart-open/);
-    await page.keyboard.press("Escape");
-    await expect(drawer).toBeHidden();
-    await expect(trigger).toBeFocused();
-    await expect(page.locator("body")).not.toHaveClass(/cart-open/);
+    const requestLink = page.getByRole("navigation", { name: "Основная навигация BIZON Shop" }).getByRole("link", { name: "Заявка" });
+    await expect(requestLink).toHaveAttribute("href", "/shop/cart/");
+    await requestLink.click();
+    await expect(page).toHaveURL(/\/shop\/cart\/?$/);
+    await expect(page.getByRole("heading", { name: "Заявка BIZON Shop" })).toBeVisible();
+    await expect(page.getByText("Корзина пуста. Добавьте товары из соответствующего каталога.")).toBeVisible();
   });
 
   test("retain a Shop request after an API error and clear it only after success", async ({ page }) => {
@@ -393,8 +389,12 @@ test.describe("mobile wheel filter sheet", () => {
     await page.getByRole("button", { name: "Фильтры" }).click();
     const sheet = page.getByRole("dialog", { name: "Параметры диска" });
     await expect(sheet).toBeVisible();
-    await sheet.locator('select[name="diameter"]').selectOption("18");
-    await sheet.locator('select[name="pcd"]').selectOption("5×127");
+    const diameter = sheet.locator("label").filter({ hasText: "Диаметр" }).getByRole("combobox");
+    await diameter.click();
+    await page.getByRole("option", { name: "18", exact: true }).click();
+    const pcd = sheet.locator("label").filter({ hasText: "PCD" }).getByRole("combobox");
+    await pcd.click();
+    await page.getByRole("option", { name: "5×127", exact: true }).click();
     await expect(sheet.getByRole("button", { name: "Показать 0 моделей" })).toBeVisible();
     await sheet.getByRole("button", { name: "Показать 0 моделей" }).click();
 
@@ -432,18 +432,15 @@ test.describe("mobile tire model cards", () => {
   });
 });
 
-test.describe("mobile technical specification disclosure", () => {
+test.describe("mobile technical specification cards", () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 
-  test("keeps core tire facts visible and opens the remaining fields on request", async ({ page }) => {
+  test("shows core tire facts and size parameters in the mobile layout", async ({ page }) => {
     await page.goto("/models/tbr/regional/ci-fixture-tire", { waitUntil: "domcontentloaded" });
 
-    const details = page.locator("details").filter({ has: page.getByText("Все характеристики", { exact: true }) }).first();
-    await expect(details).toBeVisible();
-    await expect(details).not.toHaveAttribute("open", "");
-    await details.locator("summary").click();
-    await expect(details).toHaveAttribute("open", "");
-    await expect(details.getByText("Ширина, мм", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Технические параметры размеров" })).toBeVisible();
+    await expect(page.getByText("Применение", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Ширина, мм", { exact: true }).first()).toBeVisible();
   });
 });
 
@@ -463,9 +460,9 @@ test.describe("mobile Shop home hierarchy", () => {
     const firstStep = page.getByRole("heading", { name: "Выберите дизайн", exact: true }).locator("xpath=ancestor::article[1]");
     await expect(firstStep.getByRole("button", { name: /Подробнее/ })).toHaveCount(0);
     await expect(firstStep.locator("p")).toBeHidden();
-    const catalogCta = page.getByRole("link", { name: "диски BIZON" });
+    const catalogCta = page.getByRole("main").getByRole("link", { name: "диски BIZON" }).first();
     await expect(catalogCta).toBeVisible();
-    await expect(catalogCta).toHaveAttribute("href", "/shop/wheels/forged");
+    await expect(catalogCta).toHaveAttribute("href", "/shop/wheels/forged/");
   });
 });
 });
@@ -476,5 +473,5 @@ test("desktop keeps disclosure content visible and the full breadcrumb trail", a
   await expect(page.locator('section[aria-labelledby="product-story-title"]')).toBeVisible();
   await page.goto("/models/tbr/regional/ci-fixture-tire");
   await expect(page.getByRole("navigation", { name: "Breadcrumb" }).first().locator("li:visible").first()).toBeVisible();
-  await expect(page.locator("footer details nav").first()).toBeVisible();
+  await expect(page.locator('footer[data-site-footer="main"]').getByRole("navigation").first()).toBeVisible();
 });

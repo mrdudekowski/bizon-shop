@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { BizonText } from "@/lib/bizon-jsx/scope";
 import { MainHero } from "./MainHero";
 
 function findHeadingText(node: unknown): string | null {
@@ -20,7 +21,9 @@ function collectText(node: unknown): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(collectText).join("");
   if (node && typeof node === "object") {
-    return collectText((node as { props?: { children?: unknown } }).props?.children);
+    const element = node as { type?: unknown; props?: { children?: unknown; value?: unknown } };
+    if (element.type === BizonText) return typeof element.props?.value === "string" ? element.props.value : "";
+    return collectText(element.props?.children);
   }
   return "";
 }
@@ -28,7 +31,7 @@ function collectText(node: unknown): string {
 function findLinks(node: unknown): { href: string; label: string }[] {
   if (Array.isArray(node)) return node.flatMap(findLinks);
   if (!node || typeof node !== "object") return [];
-  const element = node as { props?: { href?: unknown; children?: unknown } };
+  const element = node as { type?: unknown; props?: { href?: unknown; children?: unknown } };
   const ownLink = typeof element.props?.href === "string"
     ? [{ href: element.props.href, label: collectText(element.props.children) }]
     : [];

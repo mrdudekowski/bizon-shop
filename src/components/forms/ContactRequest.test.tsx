@@ -1,4 +1,3 @@
-import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
@@ -19,11 +18,11 @@ const profile: SiteProfile = {
 };
 
 const render = (surface: SiteProfile["contactSurface"], notice?: string) =>
-  renderToStaticMarkup(createElement(
-    ContactRequest,
-    { profile: { ...profile, contactSurface: surface }, notice },
-    createElement("form", null, "Заявка"),
-  ));
+  renderToStaticMarkup(
+    <ContactRequest profile={{ ...profile, contactSurface: surface }} notice={notice}>
+      <form>Заявка</form>
+    </ContactRequest>,
+  );
 
 describe("ContactRequest", () => {
   it("keeps the request form until contacts are published as a card", () => {

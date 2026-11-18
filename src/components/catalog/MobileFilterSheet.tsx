@@ -11,6 +11,7 @@ type MobileFilterSheetProps = {
   activeCount: number;
   applyLabel: string;
   resetHref: string;
+  onReset?: () => void;
   formLabel: string;
   children: ReactNode;
 };
@@ -21,6 +22,7 @@ export function MobileFilterSheet({
   activeCount,
   applyLabel,
   resetHref,
+  onReset,
   formLabel,
   children,
 }: MobileFilterSheetProps) {
@@ -112,7 +114,7 @@ export function MobileFilterSheet({
             <form className={styles.form} method="get" aria-label={formLabel}>
               <div className={styles.fields}>{children}</div>
               <footer className={styles.actions}>
-                <Link href={resetHref} className={styles.reset}>Сбросить</Link>
+                <Link href={resetHref} className={styles.reset} onClick={onReset}>Сбросить</Link>
                 <button type="submit" className="btn-accent">{applyLabel}</button>
               </footer>
             </form>

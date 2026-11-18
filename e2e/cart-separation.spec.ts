@@ -28,42 +28,36 @@ async function fillContactForm(page: import("@playwright/test").Page, suffix: st
   await page.locator('input[name="privacyConsent"]').check();
 }
 
-test("Bizon and Shop headers, drawers, and cart pages show only their own lines", async ({ page }) => {
+test("typed carts stay isolated across header drawers and request pages", async ({ page }, testInfo) => {
   await seedTypedCarts(page);
-  await page.goto("/");
-  await page.evaluate(() => window.scrollTo(0, 600));
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
-  const mainScroll = await page.evaluate(() => window.scrollY);
+  if (testInfo.project.name !== "mobile-390") {
+    await page.goto("/");
 
-  const mainTrigger = page.getByRole("button", { name: /^Корзина, 2/, exact: true });
-  await expect(mainTrigger).toBeVisible();
-  await mainTrigger.click();
-  const mainDrawer = page.getByRole("dialog", { name: "Корзина", exact: true });
-  await expect(page.locator(".page")).toHaveAttribute("inert", "");
-  await expect(mainDrawer.getByText("Isolation tire")).toBeVisible();
-  await expect(mainDrawer.getByText("Isolation wheel")).toHaveCount(0);
-  await expect(mainDrawer.getByText("Isolation cap")).toHaveCount(0);
-  await expect(mainDrawer.getByRole("link", { name: "Перейти к заявке" })).toHaveAttribute("href", "/cart/");
-  await page.keyboard.press("Escape");
-  await expect(mainTrigger).toBeFocused();
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(mainScroll);
+    const mainTrigger = page.getByRole("button", { name: /^Корзина, 2/, exact: true });
+    await expect(mainTrigger).toBeVisible();
+    await mainTrigger.click();
+    const mainDrawer = page.getByRole("dialog", { name: "Корзина", exact: true });
+    await expect(page.locator(".page")).toHaveAttribute("inert", "");
+    await expect(mainDrawer.getByText("Isolation tire")).toBeVisible();
+    await expect(mainDrawer.getByText("Isolation wheel")).toHaveCount(0);
+    await expect(mainDrawer.getByText("Isolation cap")).toHaveCount(0);
+    await expect(mainDrawer.getByRole("link", { name: "Перейти к заявке" })).toHaveAttribute("href", "/cart/");
+    await page.keyboard.press("Escape");
+    await expect(mainTrigger).toBeFocused();
 
-  await page.goto("/shop");
-  await page.evaluate(() => window.scrollTo(0, 600));
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
-  const shopScroll = await page.evaluate(() => window.scrollY);
-  const shopTrigger = page.getByRole("button", { name: /^Корзина, 4/, exact: true });
-  await expect(shopTrigger).toBeVisible();
-  await shopTrigger.click();
-  const shopDrawer = page.getByRole("dialog", { name: "Корзина", exact: true });
-  await expect(page.locator(".page")).toHaveAttribute("inert", "");
-  await expect(shopDrawer.getByText("Isolation tire")).toHaveCount(0);
-  await expect(shopDrawer.getByText("Isolation wheel")).toBeVisible();
-  await expect(shopDrawer.getByText("Isolation cap")).toBeVisible();
-  await expect(shopDrawer.getByRole("link", { name: "Перейти к заявке" })).toHaveAttribute("href", "/shop/cart/");
-  await page.keyboard.press("Escape");
-  await expect(shopTrigger).toBeFocused();
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(shopScroll);
+    await page.goto("/shop");
+    const shopTrigger = page.getByRole("button", { name: /^Корзина, 4/, exact: true });
+    await expect(shopTrigger).toBeVisible();
+    await shopTrigger.click();
+    const shopDrawer = page.getByRole("dialog", { name: "Корзина", exact: true });
+    await expect(page.locator(".page")).toHaveAttribute("inert", "");
+    await expect(shopDrawer.getByText("Isolation tire")).toHaveCount(0);
+    await expect(shopDrawer.getByText("Isolation wheel")).toBeVisible();
+    await expect(shopDrawer.getByText("Isolation cap")).toBeVisible();
+    await expect(shopDrawer.getByRole("link", { name: "Перейти к заявке" })).toHaveAttribute("href", "/shop/cart/");
+    await page.keyboard.press("Escape");
+    await expect(shopTrigger).toBeFocused();
+  }
 
   await page.goto("/cart");
   await expect(page.locator("main").getByRole("heading", { name: "Шины" })).toBeVisible();

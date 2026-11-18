@@ -123,11 +123,11 @@ describe("CartPage checkout success", () => {
     document.body.appendChild(host);
     root = createRoot(host);
     await act(async () => {
-      root.render(createElement(
-        SiteProfileProvider,
-        { value: { ...PLACEHOLDER_SITE_PROFILE, contactSurface: "card" } },
-        createElement(CartPage, routes[1]),
-      ));
+      root.render(
+        <SiteProfileProvider value={{ ...PLACEHOLDER_SITE_PROFILE, contactSurface: "card" }}>
+          <CartPage {...routes[1]} />
+        </SiteProfileProvider>,
+      );
     });
 
     const text = host.textContent ?? "";
