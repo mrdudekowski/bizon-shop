@@ -1121,6 +1121,8 @@
   .heroCopy > p:not(.eyebrow) { margin-top: -0.85rem; }
   .heroOverlay { background: linear-gradient(0deg, rgba(0,0,0,.78), rgba(0,0,0,.12) 68%), linear-gradient(180deg, rgba(0,0,0,.28), transparent 30%); }
   .brandingCompare { height: min(68vw, 20rem); }
+  .assortmentCta,
+  .brandingCta { justify-self: center; }
   .brandingCopy h2 { font-size: clamp(1.6rem, 8vw, 2.25rem); }
   .brandingCopy > p { font-size: .9rem; }
   .heroCopy,
