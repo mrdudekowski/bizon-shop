@@ -75,7 +75,7 @@
   line-height: var(--leading-display);
   letter-spacing: var(--tracking-display);
   text-wrap: balance;
-  overflow-wrap: normal;
+  overflow-wrap: anywhere;
   word-break: normal;
   hyphens: none;
 }
