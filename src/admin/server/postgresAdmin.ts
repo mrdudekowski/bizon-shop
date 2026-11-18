@@ -68,6 +68,7 @@ import {
 import { assertDraftVersion } from "../domain/draftConcurrency";
 import { publishPackAtomically } from "./publishPackAtomically";
 import { getObjectStore } from "../../storage/objectStore";
+import { articleBodyToLexical, normalizeArticleBody } from "../../articleBody";
 import type { ObjectStore } from "../../storage/objectStore";
 import { assertMediaUploadReady, MediaCleanupRequired, MediaRejected, uploadAndPersistMedia } from "../../storage/putMedia";
 import { hasMediaReference, unlinkStoredMediaReferences, removePendingMediaReplacement } from "../../storage/mediaReferences";
@@ -751,8 +752,8 @@ function mapArticle(row: Row): ArticleDraft {
     title: str(row.title),
     slug: str(row.slug),
     excerpt: str(row.excerpt),
-    body: plainText(row.content),
-    image: placement(row.featured_image_id) ?? null,
+    body: normalizeArticleBody(row.content),
+    image: placement(row.featured_image_id, str(row.featured_image_alt ?? "")) ?? null,
     imageConfigured: row.featured_image_configured === true,
     gallery: [],
     showInMenu: Boolean(row.show_in_menu),
@@ -968,7 +969,7 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
   const modelAvailable = draft.available !== false;
   await client.query(
     `UPDATE tire_models SET name=$2, slug=$3, tire_type_id=$4, short_description=$5, full_description=$6::jsonb,
-      model_code=$7, show_in_menu=$8, menu_order=$9, status=$10, published_at=CASE WHEN $10='published' THEN COALESCE(published_at, now()) ELSE published_at END, main_image_id=$11,
+      model_code=$7, show_in_menu=$8, menu_order=$9, status=$10::enum_tire_models_status, published_at=CASE WHEN $10::enum_tire_models_status='published' THEN COALESCE(published_at, now()) ELSE published_at END, main_image_id=$11,
       tread_type=$12, series=COALESCE(NULLIF($13, ''), series), available=$14,
       seo_seo_title=$15, seo_seo_description=$16, updated_at=now()
      WHERE id=$1`,
@@ -1048,7 +1049,7 @@ async function writeTireModel(client: PoolClient, draft: TireModelDraft, status:
           rim_diameter=$8, rim_diameter_in=$9, load_index=$10, load_index_single=$11, load_index_dual=$12,
           speed_index=$13, ply_rating=$14, ply_rating_pr=$15, overall_diameter=$16, overall_diameter_mm=$17,
           section_width=$18, section_width_mm=$19, tread_depth_mm=$20, pressure_single_kpa=$21, pressure_dual_kpa=$22,
-          max_load_single_kg=$23, max_load_dual_kg=$24, recommended_rim=$25, standard_rim_in=$26, sort_order=$27, status=$28, published_at=CASE WHEN $28='published' THEN COALESCE(published_at, now()) ELSE published_at END,
+          max_load_single_kg=$23, max_load_dual_kg=$24, recommended_rim=$25, standard_rim_in=$26, sort_order=$27, status=$28::enum_tire_variants_status, published_at=CASE WHEN $28::enum_tire_variants_status='published' THEN COALESCE(published_at, now()) ELSE published_at END,
           updated_at=now()
          WHERE id=$1`,
         [sizeId, ...fields],
@@ -1916,7 +1917,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
             variant.compatibleTireSizes || null,
             variant.price ?? null,
             variant.priceOnRequest,
-            wheelAvailable,
+            variant.available !== false,
           ];
           const columns = `size_label, sku, diameter, width, bolt_holes, pcd, pcd_mm, offset_e_t, center_bore, load_rating, weight, color, finish, fastener_type, fastener_material, source_specification, compatible_tire_sizes, price, price_on_request, available`;
           if (variantId == null) {
@@ -2480,8 +2481,8 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       await applyPendingMediaReplacements(draft);
       const rawId = id.slice("article-".length);
       await query(
-        "UPDATE tire_iq_articles SET title=$2, slug=$3, excerpt=$4, content=$5::jsonb, featured_image_id=$6, featured_image_configured=$7, show_in_menu=$8, menu_order=$9, status='published', published_at=COALESCE(published_at, now()), updated_at=now() WHERE id=$1",
-        [Number(rawId), draft.title, draft.slug, draft.excerpt, JSON.stringify(lexical(draft.body)), draft.image ? Number(draft.image.assetId) : null, draft.imageConfigured, draft.showInMenu, draft.menuOrder],
+        "UPDATE tire_iq_articles SET title=$2, slug=$3, excerpt=$4, content=$5::jsonb, featured_image_id=$6, featured_image_alt=$7, featured_image_configured=$8, show_in_menu=$9, menu_order=$10, status='published', published_at=COALESCE(published_at, now()), updated_at=now() WHERE id=$1",
+        [Number(rawId), draft.title, draft.slug, draft.excerpt, JSON.stringify(articleBodyToLexical(draft.body)), draft.image ? Number(draft.image.assetId) : null, draft.image?.alt ?? null, draft.imageConfigured, draft.showInMenu, draft.menuOrder],
       );
       const allowedTaxonomy = new Set(["selection", "wear", "pressure", "load", "axles", "quarry", "construction", "tco", "diagnostics"]);
       const taxonomy = [...new Set(Array.isArray(draft.taxonomy) ? draft.taxonomy : [])]

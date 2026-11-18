@@ -86,6 +86,20 @@ export const mediaUsageSql = `
       'tire_iq_articles|featured_image_id|' || tire_iq_articles.id::text
     FROM tire_iq_articles WHERE featured_image_id = ANY($1::int[])
     UNION ALL
+    SELECT (block.value->>'assetId')::int,
+      'tire_iq_articles|body_image|' || tire_iq_articles.id::text || '|' || block.ordinality::text,
+      'tire-iq', 'Tire IQ', 'articles', 'Статьи', 'article.body-image', 'Статья → изображение в тексте',
+      CASE WHEN tire_iq_articles.status = 'published' THEN 'published' ELSE 'hidden' END,
+      false, NULL::text, false, NULL::text
+    FROM tire_iq_articles
+      CROSS JOIN LATERAL jsonb_array_elements(
+        CASE WHEN jsonb_typeof(tire_iq_articles.content->'root'->'children') = 'array'
+          THEN tire_iq_articles.content->'root'->'children' ELSE '[]'::jsonb END
+      ) WITH ORDINALITY AS block(value, ordinality)
+    WHERE block.value->>'type' = 'articleImage'
+      AND block.value->>'assetId' ~ '^[0-9]+$'
+      AND (block.value->>'assetId')::int = ANY($1::int[])
+    UNION ALL
     SELECT (to_jsonb(pages)->>slot.column_name)::int, 'pages|' || slot.column_name || '|' || pages.id::text, 'site', 'Сайт', pages.key::text,
       CASE pages.key WHEN 'home' THEN 'Главная' WHEN 'shop-home' THEN 'Главная Bizon Shop' ELSE pages.key::text END,
       slot.placement_key, slot.placement_label,

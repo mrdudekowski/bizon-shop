@@ -6,6 +6,7 @@ import type {
   WheelModelDraft,
   WheelTypeDraft,
 } from "./types";
+import { articleBodyHasText } from "../../articleBody";
 
 function hasPrice(size: TireModelDraft["sizes"][number]): boolean {
   return size.priceOnRequest || typeof size.price === "number";
@@ -115,10 +116,10 @@ export function shopProductPublishBlockers(product: ShopProductDraft, parentExis
   return blockers;
 }
 
-export function articlePublishBlockers(draft: { title: string; slug: string; body: string }): string[] {
+export function articlePublishBlockers(draft: { title: string; slug: string; body: unknown }): string[] {
   const blockers: string[] = [];
   if (draft.title.trim().length === 0) blockers.push("title");
   if (draft.slug.trim().length === 0) blockers.push("slug");
-  if (draft.body.trim().length === 0) blockers.push("body");
+  if (!articleBodyHasText(draft.body)) blockers.push("body");
   return blockers;
 }

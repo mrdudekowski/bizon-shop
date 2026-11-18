@@ -98,6 +98,13 @@ export async function unlinkStoredMediaReferences(query: MediaReferenceQuery, id
   for (const [table, column] of columnsToClear) {
     await query(`UPDATE ${table} SET ${column} = NULL WHERE ${column} = $1`, [mediaId]);
   }
+  const articleRows = await query("SELECT id, content FROM tire_iq_articles FOR UPDATE");
+  for (const row of articleRows) {
+    if (!hasMediaReference(row.content, id)) continue;
+    await query("UPDATE tire_iq_articles SET content = $2::jsonb WHERE id = $1", [
+      Number(row.id), JSON.stringify(unlinkMediaReferences(row.content, id)),
+    ]);
+  }
   for (const table of ["tire_models_rels", "wheel_models_rels", "products_rels", "products_variants_rels"]) {
     await query(`DELETE FROM ${table} WHERE media_id = $1`, [mediaId]);
   }

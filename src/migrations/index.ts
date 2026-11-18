@@ -28,6 +28,7 @@ import { pageSeoTitlesMigration } from "./0036-page-seo-titles";
 import { contactSurfaceMigration } from "./0037-contact-surface";
 import { homeShopCarouselCopyMigration } from "./0038-home-shop-carousel-copy";
 import { responsiveImageFocalPositionsMigration } from "./0039-responsive-image-focal-positions";
+import { articleImageAltMigration } from "./0040-article-image-alt";
 import type { Migration } from "../migrationRunner";
 import { cmsEditorSchemaMigration } from "./0001-cms-editor-schema";
 import { shopCategoryCarouselMigration } from "./0002-shop-category-carousel";
@@ -79,6 +80,7 @@ export const MIGRATIONS: readonly Migration[] = [
   contactSurfaceMigration,
   homeShopCarouselCopyMigration,
   responsiveImageFocalPositionsMigration,
+  articleImageAltMigration,
 ];
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.at(-1)?.version ?? "0";

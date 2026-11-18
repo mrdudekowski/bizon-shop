@@ -1,6 +1,7 @@
 import { isPageFormKey, loadPageForm } from "./content/pageForm";
 import { readSiteProfile } from "./content/siteProfile";
 import { mapArticle, type CmsArticle } from "./mapArticle";
+import { articleBodyMediaIds, normalizeArticleBody } from "./articleBody";
 import { mapHomePatch, mapShopHomePatch, mapStubPatch, publishedShopCampaignFrames, type HomePatch, type ShopHomePatch, type StubPatch } from "./mapPage";
 import {
   mapShopCategory,
@@ -503,6 +504,7 @@ export async function readShopHomePatch(db: ReadDatabase): Promise<ShopHomePatch
 export async function readArticles(db: ReadDatabase): Promise<CmsArticle[]> {
   const articleRows = await db.query(`
     SELECT tire_iq_articles.*, media.url AS image_url,
+      COALESCE(tire_iq_articles.featured_image_alt, media.alt, '') AS image_alt,
       ARRAY(SELECT taxonomy.value FROM tire_iq_articles_taxonomy taxonomy
         WHERE taxonomy.parent_id = tire_iq_articles.id ORDER BY taxonomy."order") AS taxonomy
     FROM tire_iq_articles
@@ -515,11 +517,17 @@ export async function readArticles(db: ReadDatabase): Promise<CmsArticle[]> {
 }
 
 async function mapPublishedArticle(db: ReadDatabase, row: Record<string, unknown>): Promise<CmsArticle> {
+  const mediaIds = articleBodyMediaIds(normalizeArticleBody(row.content));
+  const mediaRows = mediaIds.length
+    ? await db.query("SELECT id, url FROM media WHERE id = ANY($1::int[])", [mediaIds.map(Number)])
+    : [];
+  const bodyMedia = Object.fromEntries(mediaRows.map((media) => [String(media.id), String(media.url ?? "")]));
   const focals = await readImageFocals(db, "materials", `article-${row.id}`);
   const focalRow = focals.get("image");
   const focal = focalMatchesAsset(focalRow, row.featured_image_id) ? focalRow : undefined;
   return mapArticle({
     ...row,
+    body_media: bodyMedia,
     ...(focal ? { image_focal_x: focal.x, image_focal_y: focal.y, image_focal_by_viewport: focal.byViewport } : {}),
   } as Parameters<typeof mapArticle>[0]);
 }
@@ -531,6 +539,7 @@ export async function readArticleBySlug(
   const [articleRow] = await db.query(
     `
       SELECT tire_iq_articles.*, media.url AS image_url,
+        COALESCE(tire_iq_articles.featured_image_alt, media.alt, '') AS image_alt,
         ARRAY(SELECT taxonomy.value FROM tire_iq_articles_taxonomy taxonomy
           WHERE taxonomy.parent_id = tire_iq_articles.id ORDER BY taxonomy."order") AS taxonomy
       FROM tire_iq_articles
