@@ -147,6 +147,59 @@ test("shop homepage keeps forged wheels, published categories and vehicle storie
   await expect(page.locator('[data-shop-section="vehicles"]')).toHaveAttribute("data-shop-chrome-tone", "light");
 });
 
+test("shop canvas transitions from black to the existing light shade and back before the footer", async ({ page }) => {
+  await page.goto("/shop", { waitUntil: "domcontentloaded" });
+
+  const sampleAtCenter = async (selector: string) => {
+    await page.locator(selector).evaluate((element) => {
+      document.documentElement.style.scrollBehavior = "auto";
+      const rect = element.getBoundingClientRect();
+      window.scrollTo({ top: window.scrollY + rect.top + (rect.height - window.innerHeight) / 2, behavior: "instant" });
+    });
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    return page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  };
+
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(0, 0, 0)");
+  const sectionBackgrounds = await page.locator("main.main--shop section").evaluateAll(
+    (sections) => sections.map((section) => getComputedStyle(section).backgroundColor),
+  );
+  expect(sectionBackgrounds).toEqual(Array(4).fill("rgba(0, 0, 0, 0)"));
+  expect(await page.locator("main.main--shop [data-canvas-page]").evaluate((element) => getComputedStyle(element).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
+  expect(await sampleAtCenter("#categories")).toBe("rgb(0, 0, 0)");
+  expect(await sampleAtCenter('[data-shop-section="vehicles"]')).toBe("rgb(245, 245, 245)");
+  expect(await sampleAtCenter('[data-site-footer="shop"]')).toBe("rgb(0, 0, 0)");
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(await page.locator('[data-shop-section="vehicles"]').evaluate((element) => getComputedStyle(element).backgroundColor)).toBe("rgb(245, 245, 245)");
+
+  const widths = await page.evaluate(() => ({
+    viewport: window.innerWidth,
+    client: document.documentElement.clientWidth,
+    document: document.documentElement.scrollWidth,
+  }));
+  expect(widths.client, `client width differs from viewport ${widths.viewport}px`).toBeLessThanOrEqual(widths.viewport);
+  expect(widths.document, `shop page overflows at ${widths.viewport}px`).toBeLessThanOrEqual(widths.viewport + 1);
+});
+
+test("shop canvas rules leave the BIZON home canvas scoped to its existing animation", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop-1440", "Home canvas regression is sampled at one desktop viewport");
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(255, 255, 255)");
+
+  const homeShop = page.locator("#home-shop");
+  await homeShop.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    window.scrollTo({ top: window.scrollY + rect.top + (rect.height - window.innerHeight) / 2, behavior: "instant" });
+  });
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(10, 10, 10)");
+});
+
 test("shop footer uses the shared shell with shop content", async ({ page }, testInfo) => {
   await page.goto("/shop");
 

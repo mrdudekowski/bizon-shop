@@ -1,6 +1,6 @@
 .page {
   margin-top: calc(var(--header-height) * -1);
-  background: var(--color-surface-muted);
+  background: transparent;
   color: var(--color-foreground);
 }
 
@@ -10,7 +10,7 @@
   min-height: 100svh;
   align-items: flex-end;
   overflow: hidden;
-  background: var(--color-surface-inverse);
+  background: transparent;
   color: var(--color-on-dark);
 }
 
@@ -110,7 +110,7 @@
 }
 
 .modelsSection {
-  background: var(--bizon-black);
+  background: transparent;
   color: var(--bizon-white);
   padding: clamp(56px, 6vw, 88px) 0 clamp(64px, 8vw, 112px);
 }
@@ -322,7 +322,7 @@
 }
 
 .categoriesSection {
-  background: var(--bizon-black);
+  background: transparent;
   color: var(--bizon-white);
   padding: 0;
 }
@@ -358,9 +358,17 @@
 }
 
 .vehiclesSection {
-  background: transparent;
+  background: var(--color-surface-muted);
   color: #1c1c1c;
   padding: clamp(88px, 10vw, 160px) var(--page-gutter);
+}
+
+@supports (animation-timeline: view()) and (timeline-scope: --shop-categories-canvas) {
+  @media (prefers-reduced-motion: no-preference) {
+    .vehiclesSection {
+      background: transparent;
+    }
+  }
 }
 
 .vehiclesInner {

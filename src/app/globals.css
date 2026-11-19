@@ -348,6 +348,59 @@ body {
   }
 }
 
+@keyframes shop-canvas-to-light {
+  from {
+    background-color: #000000;
+    --page-canvas: #000000;
+  }
+  to {
+    background-color: var(--color-surface-muted);
+    --page-canvas: var(--color-surface-muted);
+  }
+}
+
+@keyframes shop-canvas-to-dark {
+  from {
+    background-color: var(--color-surface-muted);
+    --page-canvas: var(--color-surface-muted);
+  }
+  to {
+    background-color: #000000;
+    --page-canvas: #000000;
+  }
+}
+
+body:has(main.main--shop) {
+  --page-canvas: #000000;
+}
+
+@supports (animation-timeline: view()) and (timeline-scope: --shop-categories-canvas) {
+  body:has(main.main--shop) {
+    timeline-scope: --shop-categories-canvas, --shop-footer-canvas;
+  }
+
+  main.main--shop #categories {
+    view-timeline-name: --shop-categories-canvas;
+    view-timeline-axis: block;
+  }
+
+  body:has(main.main--shop) [data-site-footer="shop"] {
+    view-timeline-name: --shop-footer-canvas;
+    view-timeline-axis: block;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    body:has(main.main--shop) {
+      animation-name: shop-canvas-to-light, shop-canvas-to-dark;
+      animation-duration: auto, auto;
+      animation-timing-function: linear, linear;
+      animation-fill-mode: forwards, forwards;
+      animation-timeline: --shop-categories-canvas, --shop-footer-canvas;
+      animation-range: exit 0% exit 40%, entry 0% entry 40%;
+    }
+  }
+}
+
 @supports (animation-timeline: view()) {
   body:has(#home-shop) {
     timeline-scope: --home-shop-canvas;
