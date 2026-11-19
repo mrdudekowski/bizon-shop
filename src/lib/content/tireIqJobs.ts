@@ -6,12 +6,13 @@ export type TireIqJob = {
   destination: "catalog" | "knowledge" | "contact";
 };
 
-export type TireIqPrimaryAction = Pick<TireIqJob, "key" | "label" | "href" | "destination">;
+export type TireIqPrimaryAction = Pick<TireIqJob, "key" | "label" | "href" | "destination"> & {
+  emphasis: "primary" | "secondary";
+};
 
 export const TIRE_IQ_PRIMARY_ACTIONS: readonly TireIqPrimaryAction[] = [
-  { key: "selection", label: "Каталог моделей", href: "/models", destination: "catalog" },
-  { key: "understanding", label: "Найти ответ", href: "/tire-iq#knowledge", destination: "knowledge" },
-  { key: "validation", label: "Проверить задачу", href: "/contact", destination: "contact" },
+  { key: "selection", label: "Каталог моделей", href: "/models", destination: "catalog", emphasis: "primary" },
+  { key: "validation", label: "Задать вопрос", href: "/contact", destination: "contact", emphasis: "secondary" },
 ];
 
 export const TIRE_IQ_JOBS: readonly TireIqJob[] = [

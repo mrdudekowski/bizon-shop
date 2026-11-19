@@ -14,7 +14,7 @@ export function TireIqPrimaryActions({ hasKnowledge = true }: { hasKnowledge?: b
       {TIRE_IQ_PRIMARY_ACTIONS.map((action) => (
         <Link
           key={action.key}
-          className="btn-accent"
+          className={action.emphasis === "primary" ? "btn-accent" : "btn-secondary"}
           href={action.destination === "knowledge" && !hasKnowledge ? "/contact" : action.href}
           data-tire-iq-job={action.key}
           data-tire-iq-job-destination={action.destination}
