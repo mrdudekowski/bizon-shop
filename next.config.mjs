@@ -24,6 +24,9 @@ const nextConfig = {
   output: "export",
   trailingSlash: true,
   reactStrictMode: true,
+  experimental: {
+    webpackMemoryOptimizations: true,
+  },
   images: {
     unoptimized: true,
     ...(imageRemotePatterns.length > 0 ? { remotePatterns: imageRemotePatterns } : {}),

@@ -1,0 +1,8 @@
+# Tire IQ production artwork source files; the site renders the WebP exports.
+public/images/tire-iq/production/*-master.png
+public/images/tire-iq/production/*-mobile-check.png
+public/images/tire-iq/production/*-preview.png
+public/images/tire-iq/production/*.svg
+
+# Legacy axle-selector diagrams are no longer used by the public Tire IQ routes.
+public/images/tire-iq/axles/*.svg
