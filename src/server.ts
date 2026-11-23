@@ -73,6 +73,26 @@ const PORT = Number.parseInt(process.env.PORT ?? "4000", 10);
 const CART_SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 const loginThrottle = new LoginThrottle();
 
+function safeRequestErrorDetails(error: unknown): Record<string, string> {
+  if (!error || typeof error !== "object") return { errorName: "UnknownError" };
+  const source = error as Record<string, unknown>;
+  const details: Record<string, string> = {};
+  const safeFields = [
+    ["name", "errorName"],
+    ["code", "errorCode"],
+    ["constraint", "dbConstraint"],
+    ["table", "dbTable"],
+    ["column", "dbColumn"],
+  ] as const;
+  for (const [field, output] of safeFields) {
+    const value = source[field];
+    if (typeof value === "string" && /^[A-Za-z0-9_.:-]{1,100}$/.test(value)) {
+      details[output] = value;
+    }
+  }
+  return details;
+}
+
 function startMediaCleanupWorker(): void {
   let running = false;
   const retry = async () => {
@@ -610,6 +630,7 @@ async function handleRequest(
     return;
   }
   if (method === "POST" && path === "/v1/requests") {
+    let createStage = "rate_limit";
     try {
       const rateLimit = checkRateLimit(`requests:${trustedClientAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"]?.toString())}`);
       if (!rateLimit.allowed) {
@@ -619,6 +640,7 @@ async function handleRequest(
         return;
       }
       let rawBody: unknown;
+      createStage = "read_body";
       try {
         rawBody = await readJson(req);
       } catch (error) {
@@ -630,6 +652,7 @@ async function handleRequest(
         });
         return;
       }
+      createStage = "parse_body";
       const parsed = parseRequestBody(rawBody);
       if (!parsed.ok) {
         sendJson(res, 400, { ok: false, error: parsed.error, message: parsed.message });
@@ -642,6 +665,7 @@ async function handleRequest(
           sendJson(res, 400, { ok: false, error: "honeypot_triggered", message: "Request rejected" });
           return;
         }
+        createStage = "load_configured_form";
         const configuredDatabase = getDatabase();
         const form = await loadPageForm(configuredDatabase, PAGE_KEY_BY_SOURCE_FORM[configuredSource]);
         if (!form) {
@@ -649,6 +673,7 @@ async function handleRequest(
           return;
         }
         const values = stringValues(parsed.body as Record<string, unknown>);
+        createStage = "validate_configured_form";
         const { answers, missing } = answersFromFields(form.fields, values);
         if (missing.length > 0) {
           sendJson(res, 400, { ok: false, error: "missing_required_fields", message: "Please fill the required fields", missing });
@@ -662,10 +687,12 @@ async function handleRequest(
           userAgent: req.headers["user-agent"]?.slice(0, 300),
           attachmentUrl: values.attachmentUrl,
         });
+        createStage = "persist_configured_request";
         const configuredRequestId = await configuredDatabase.transaction((query) => insertRequest({ query }, stored));
         sendJson(res, 201, { ok: true, requestId: configuredRequestId, message: form.successMessage });
         return;
       }
+      createStage = "validate_request";
       const validated = validateRequest(parsed.body);
       if (!validated.ok) {
         sendJson(res, 400, { ok: false, error: validated.error, message: validated.message });
@@ -677,6 +704,7 @@ async function handleRequest(
         sourceIp: trustedAddress,
         userAgent: req.headers["user-agent"],
       }) as StoredRequestInput;
+      createStage = "persist_request";
       const database = getDatabase() as ReadDatabase & {
         transaction<T>(run: (query: ReadDatabase["query"]) => Promise<T>): Promise<T>;
       };
@@ -685,6 +713,14 @@ async function handleRequest(
       );
       sendJson(res, 201, { ok: true, requestId, message: "Заявка принята" });
     } catch (error) {
+      if (!(error instanceof RequestBodyTooLarge)) {
+        console.error(JSON.stringify({
+          event: "request.create_failed",
+          requestId,
+          stage: createStage,
+          ...safeRequestErrorDetails(error),
+        }));
+      }
       sendJson(res, error instanceof RequestBodyTooLarge ? 413 : 502, {
         ok: false,
         ...(error instanceof RequestBodyTooLarge

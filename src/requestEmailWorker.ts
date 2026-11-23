@@ -47,7 +47,12 @@ function retryDelayMs(attempt: number): number {
   return Math.min(6 * 60 * 60_000, 30_000 * 2 ** Math.max(0, attempt - 1));
 }
 
-export async function runRequestEmailWorkerStep(query: Query, transport: Transport, config: Pick<RequestEmailConfig, "from" | "to">, now = new Date()): Promise<number> {
+export async function runRequestEmailWorkerStep(
+  query: Query,
+  transport: Transport,
+  config: Pick<RequestEmailConfig, "from" | "to"> & Partial<Pick<RequestEmailConfig, "host" | "port" | "secure">>,
+  now = new Date(),
+): Promise<number> {
   const leaseUntil = new Date(now.getTime() + LEASE_MS);
   const claimed = await query(
     `WITH expired AS (
@@ -92,7 +97,22 @@ export async function runRequestEmailWorkerStep(query: Query, transport: Transpo
            last_error_code = $4, updated_at = $5 WHERE id = $1`,
         [job.id, final ? "failed_final" : "retry_wait", new Date(now.getTime() + retryDelayMs(attempt)), code, now],
       );
-      console.error(JSON.stringify({ event: "request_email.delivery_failed", requestId, attempt, final, errorCode: code }));
+      const source = error != null && typeof error === "object" ? error as Record<string, unknown> : {};
+      const safeDiagnostic = (value: unknown): string | undefined =>
+        typeof value === "string" && /^[A-Za-z0-9_.:-]{1,100}$/.test(value) ? value : undefined;
+      console.error(JSON.stringify({
+        event: "request_email.delivery_failed",
+        requestId,
+        attempt,
+        final,
+        errorCode: code,
+        errorName: safeDiagnostic(source.name),
+        errorCommand: safeDiagnostic(source.command),
+        errorSyscall: safeDiagnostic(source.syscall),
+        smtpHost: typeof config.host === "string" && /^[A-Za-z0-9.-]{1,253}$/.test(config.host) ? config.host : undefined,
+        smtpPort: config.port,
+        smtpSecure: config.secure,
+      }));
     }
   }
   return claimed.length;
