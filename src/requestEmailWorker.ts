@@ -1,5 +1,6 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { buildRequestEmail, type RequestEmailData, type RequestEmailMessage } from "./requestEmail";
+import { isConfiguredSourceForm, loadPageForm, PAGE_KEY_BY_SOURCE_FORM } from "./content/pageForm";
 
 type Query = (sql: string, params?: unknown[]) => Promise<Record<string, unknown>[]>;
 type Transport = { sendMail(message: RequestEmailMessage & { messageId?: string }): Promise<{ messageId?: string }> };
@@ -10,7 +11,7 @@ const POLL_MS = 15_000;
 const BATCH_SIZE = 10;
 
 export type RequestEmailConfig = {
-  host: string; port: number; secure: boolean; user: string; password: string; from: string; to: string;
+  host: string; port: number; secure: boolean; user: string; password: string; from: string; to: string; siteUrl?: string;
 };
 
 export function requestEmailConfig(env: NodeJS.ProcessEnv = process.env): RequestEmailConfig | null {
@@ -18,7 +19,8 @@ export function requestEmailConfig(env: NodeJS.ProcessEnv = process.env): Reques
   const port = Number(env.SMTP_PORT);
   const to = env.REQUEST_NOTIFICATION_EMAIL_TO;
   if (!host || !user || !password || !from || !to || !Number.isInteger(port) || port < 1 || port > 65535) return null;
-  return { host, port, secure: env.SMTP_SECURE === "true", user, password, from, to };
+  const siteUrl = env.PUBLIC_SITE_URL?.trim();
+  return { host, port, secure: env.SMTP_SECURE === "true", user, password, from, to, ...(siteUrl ? { siteUrl } : {}) };
 }
 
 export function createSmtpTransport(config: RequestEmailConfig): Transporter {
@@ -50,7 +52,7 @@ function retryDelayMs(attempt: number): number {
 export async function runRequestEmailWorkerStep(
   query: Query,
   transport: Transport,
-  config: Pick<RequestEmailConfig, "from" | "to"> & Partial<Pick<RequestEmailConfig, "host" | "port" | "secure">>,
+  config: Pick<RequestEmailConfig, "from" | "to"> & Partial<Pick<RequestEmailConfig, "host" | "port" | "secure" | "siteUrl">>,
   now = new Date(),
 ): Promise<number> {
   const leaseUntil = new Date(now.getTime() + LEASE_MS);
@@ -77,9 +79,29 @@ export async function runRequestEmailWorkerStep(
       const [request] = await query("SELECT * FROM requests WHERE id = $1", [requestId]);
       if (!request) throw Object.assign(new Error("request_missing"), { code: "EENVELOPE" });
       const items = await query("SELECT * FROM requests_items WHERE _parent_id = $1 ORDER BY _order, id", [requestId]);
-      const message = buildRequestEmail({ ...request, items } as RequestEmailData, {
+      const emailData: RequestEmailData = { ...request, items } as RequestEmailData;
+      const rawAnswers = request.form_answers;
+      const hasAnswers = typeof rawAnswers === "string"
+        ? rawAnswers.trim().length > 0
+        : rawAnswers != null && typeof rawAnswers === "object" && !Array.isArray(rawAnswers) && Object.keys(rawAnswers).length > 0;
+      if (hasAnswers && isConfiguredSourceForm(request.source_form)) {
+        try {
+          const form = await loadPageForm({ query }, PAGE_KEY_BY_SOURCE_FORM[request.source_form]);
+          if (form?.fields.length) {
+            emailData.form_answer_labels = Object.fromEntries(form.fields.map(({ id, label }) => [id, label]));
+          }
+        } catch {
+          console.warn(JSON.stringify({
+            event: "request_email.form_labels_unavailable",
+            requestId,
+            sourceForm: request.source_form,
+          }));
+        }
+      }
+      const message = buildRequestEmail(emailData, {
         to: config.to,
         from: config.from,
+        siteUrl: config.siteUrl,
       });
       const domain = config.from.match(/@([^>\s]+)/)?.[1] ?? "bizon.invalid";
       const result = await transport.sendMail({ ...message, messageId: `<request-${requestId}@${domain}>` });
