@@ -19,8 +19,6 @@ export type CmsMediaE2EConfig = {
 };
 
 const loopbackHosts = new Set(["127.0.0.1", "localhost", "::1"]);
-const CMS_URL = "http://127.0.0.1:3002";
-const API_URL = "http://127.0.0.1:4001";
 const PUBLIC_SITE_URL = "http://127.0.0.1:3101";
 const PUBLIC_SITE_ORIGIN_FOR_BUILD = "https://bizon-e2e.local.test";
 
@@ -37,7 +35,8 @@ export function mergeCmsMediaE2EEnvironment(fileValues: unknown, processValues: 
 }
 
 export function loadCmsMediaE2EEnvironment(root = process.cwd(), processValues: ProcessEnv = process.env): ProcessEnv {
-  const filePath = path.join(root, ".cms-media-e2e.local");
+  const filePath = path.resolve(root, processValues.CMS_MEDIA_E2E_ENV_FILE || ".cms-media-e2e.local");
+  if (processValues.CMS_MEDIA_E2E_ENV_FILE && !existsSync(filePath)) throw new Error("CMS_MEDIA_E2E_ENV_FILE does not exist");
   if (!existsSync(filePath)) return mergeCmsMediaE2EEnvironment(null, processValues);
   let fileValues: unknown;
   try {
@@ -66,6 +65,14 @@ function localHttpUrl(value: string, key: string, allowPath: boolean): URL {
   }
   if (!allowPath && url.pathname !== "/") throw new Error(`${key} must not include a path`);
   return url;
+}
+
+function loopbackServiceUrl(env: ProcessEnv, key: string, defaultPort: string): string {
+  const port = env[key] ?? defaultPort;
+  if (!/^[1-9]\d{0,4}$/.test(port) || Number(port) > 65535) {
+    throw new Error(`${key} must be a TCP port between 1 and 65535`);
+  }
+  return new URL(`http://127.0.0.1:${port}`).origin;
 }
 
 export function readCmsMediaE2EConfig(env: ProcessEnv): CmsMediaE2EConfig {
@@ -103,8 +110,8 @@ export function readCmsMediaE2EConfig(env: ProcessEnv): CmsMediaE2EConfig {
   return {
     databaseUri,
     databaseName,
-    cmsUrl: CMS_URL,
-    apiUrl: API_URL,
+    cmsUrl: loopbackServiceUrl(env, "CMS_MEDIA_E2E_CMS_PORT", "3002"),
+    apiUrl: loopbackServiceUrl(env, "CMS_MEDIA_E2E_API_PORT", "4001"),
     publicSiteUrl: PUBLIC_SITE_URL,
     s3Endpoint: endpointUrl.origin,
     s3PublicUrl: publicUrl.href.replace(/\/$/, ""),
@@ -126,7 +133,7 @@ export function createCmsMediaBackendEnv(parent: ProcessEnv, config: CmsMediaE2E
   return {
     ...stripInheritedInfrastructure(parent),
     NODE_ENV: "development",
-    PORT: "4001",
+    PORT: new URL(config.apiUrl).port || "80",
     DATABASE_URI: config.databaseUri,
     CMS_ALLOWED_ORIGINS: config.cmsUrl,
     CORS_ALLOWED_ORIGINS: config.publicSiteUrl,

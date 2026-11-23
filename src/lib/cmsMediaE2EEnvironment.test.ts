@@ -37,7 +37,24 @@ describe("CMS media E2E environment safety", () => {
     });
   });
 
+  it("uses the selected loopback port for both Playwright and the backend", () => {
+    const config = readCmsMediaE2EConfig({ ...validEnvironment, CMS_MEDIA_E2E_API_PORT: "49152" });
+    expect(config.apiUrl).toBe("http://127.0.0.1:49152");
+    expect(createCmsMediaBackendEnv({}, config).PORT).toBe("49152");
+  });
+
+  it("uses the chosen CMS port for browser navigation and authenticated API origins", () => {
+    const config = readCmsMediaE2EConfig({ ...validEnvironment, CMS_MEDIA_E2E_CMS_PORT: "3302" });
+    expect(config.cmsUrl).toBe("http://127.0.0.1:3302");
+    expect(createCmsMediaBackendEnv({}, config).CMS_ALLOWED_ORIGINS).toBe(config.cmsUrl);
+    expect(createCmsMediaFrontendEnv({}, config).NEXT_PUBLIC_ADMIN_API_URL).toBe(config.apiUrl);
+  });
+
   it.each([
+    ["out-of-range CMS port", { CMS_MEDIA_E2E_CMS_PORT: "65536" }],
+    ["non-numeric CMS port", { CMS_MEDIA_E2E_CMS_PORT: "3302/path" }],
+    ["invalid API port", { CMS_MEDIA_E2E_API_PORT: "99999" }],
+    ["non-numeric API port", { CMS_MEDIA_E2E_API_PORT: "4001/path" }],
     ["remote database host", { CMS_MEDIA_E2E_DATABASE_URI: "postgres://user:pass@db.example.com/default_db_e2e" }],
     ["production database name", { CMS_MEDIA_E2E_DATABASE_URI: "postgres://user:pass@127.0.0.1:55434/default_db" }],
     ["remote S3 endpoint", { CMS_MEDIA_E2E_S3_ENDPOINT: "https://s3.twcstorage.ru" }],

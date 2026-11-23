@@ -2,7 +2,6 @@ import { defineConfig } from "@playwright/test";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  createCmsMediaBackendEnv,
   createCmsMediaFrontendEnv,
   loadCmsMediaE2EEnvironment,
   readCmsMediaE2EConfig,
@@ -11,7 +10,7 @@ import {
 const root = path.dirname(fileURLToPath(import.meta.url));
 const e2eEnvironment = loadCmsMediaE2EEnvironment(root);
 const config = readCmsMediaE2EConfig(e2eEnvironment);
-const backendTsx = path.join(root, "backend-app", "node_modules", "tsx", "dist", "cli.mjs");
+const frontendRoot = path.resolve(root, e2eEnvironment.CMS_MEDIA_E2E_FRONTEND_ROOT || "frontend-cms");
 const node = process.execPath;
 
 export default defineConfig({
@@ -33,16 +32,15 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: `"${node}" "${backendTsx}" src/server.ts`,
-      cwd: path.join(root, "backend-app"),
+      command: `"${node}" scripts/e2e/cms-media/startBackend.mjs`,
+      cwd: root,
       url: `${config.apiUrl}/ready`,
       timeout: 60_000,
       reuseExistingServer: false,
-      env: createCmsMediaBackendEnv(e2eEnvironment, config),
     },
     {
-      command: "npm run dev -- --hostname 127.0.0.1 --port 3002",
-      cwd: path.join(root, "frontend-cms"),
+      command: `npm run dev -- --hostname 127.0.0.1 --port ${new URL(config.cmsUrl).port || "80"}`,
+      cwd: frontendRoot,
       url: `${config.cmsUrl}/pages/`,
       timeout: 120_000,
       reuseExistingServer: false,

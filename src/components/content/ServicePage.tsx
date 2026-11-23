@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePublishedStubOverlay } from "@/lib/content/usePublishedStubOverlay";
 import type { PublishedStubOverlay } from "@/lib/content/getPageContent";
+import { pageHeroLayoutForPage } from "@/lib/content/pageHeroMediaContract";
 import { resolveServicePageCta, resolveServicePageProof } from "./servicePageEditorial";
 
 import { PageHero, type PageHeroBreadcrumb, type PageHeroMedia } from "@/components/content/PageHero";
@@ -30,18 +31,6 @@ export const FORM_SOURCE_BY_PAGE: Record<string, ConfiguredSourceForm | undefine
 };
 
 const REQUEST_FORM_PAGE_KEYS = new Set(["contact", ...Object.keys(FORM_SOURCE_BY_PAGE)]);
-
-const BANNER_MEDIA_PAGE_KEYS = new Set([
-  "branding",
-  "become-a-supplier",
-  "shop-become-a-supplier",
-  "delivery",
-  "shop-delivery",
-  "payment",
-  "shop-payment",
-  "warranty",
-  "shop-warranty",
-]);
 
 const LOCKED_CTA_HREF_BY_PAGE: Record<string, string> = {
   payment: ROUTES.cart,
@@ -156,7 +145,7 @@ export function ServicePage({
         description={activeDescription}
         breadcrumbs={breadcrumbs}
         media={activeMedia}
-        mediaLayout={BANNER_MEDIA_PAGE_KEYS.has(runtimePageKey ?? "") ? "banner" : "aside"}
+        mediaLayout={pageHeroLayoutForPage(runtimePageKey ?? "")}
       />
       <div className={styles.body}>
         {resolvedNotice ? <div className={styles.notice}>{resolvedNotice}</div> : null}

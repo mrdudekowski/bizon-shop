@@ -1,0 +1,42 @@
+name: Page hero contract parity
+
+on:
+  push:
+    branches: [main-app]
+  pull_request:
+    branches: [main-app]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Compare public contract with frontend-cms-push
+        run: |
+          git fetch --no-tags --depth=1 origin refs/heads/frontend-cms-push:refs/remotes/origin/frontend-cms-push
+          cms_path=src/admin/pages/pageHeroMediaContract.json
+          public_path=src/lib/content/pageHeroMediaContract.json
+          cms_copy="$RUNNER_TEMP/frontend-cms-push/$cms_path"
+          mkdir -p "$(dirname "$cms_copy")"
+          git show "origin/frontend-cms-push:$cms_path" > "$cms_copy"
+          node --input-type=module - "$public_path" "$cms_copy" <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const [publicPath, cmsPath] = process.argv.slice(2);
+          const read = path => {
+            const bytes = readFileSync(path);
+            try { return { bytes, version: JSON.parse(bytes).version }; }
+            catch { throw new Error(`Invalid contract JSON in ${path}`); }
+          };
+          const a = read(publicPath), b = read(cmsPath);
+          console.log(`${publicPath} v${a.version} and ${cmsPath} v${b.version}`);
+          if (!Number.isInteger(a.version) || a.version < 1 || a.version !== b.version || !a.bytes.equals(b.bytes)) {
+            throw new Error('Page hero contract version or bytes differ');
+          }
+          NODE

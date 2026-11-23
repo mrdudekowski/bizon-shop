@@ -9,6 +9,7 @@
     "build:ci": "node scripts/ciBuildApiFixture.js",
     "test": "vitest run",
     "test:e2e": "npm run build:ci && playwright test",
+    "pretest:e2e:cms-media": "node --input-type=module -e \"import check from './scripts/e2e/cms-media/globalSetup.ts'; await check()\"",
     "test:e2e:cms-media": "playwright test --config playwright.cms-media.config.ts",
     "test:e2e:install": "playwright install chromium firefox webkit",
     "lint": "eslint src next.config.mjs",
