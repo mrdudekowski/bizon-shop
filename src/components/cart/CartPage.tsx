@@ -272,7 +272,7 @@ export function CartPage({ kind, sourceForm, sourcePage, returnLinks, successHre
               </label>
             </div>
             <button className={`btn-accent ${styles.submitButton}`} type="submit" disabled={status === "loading"}>
-              {status === "loading" ? "Отправка…" : `Отправить ${requestLabel}`}
+              {status === "loading" ? "Отправка…" : "Отправить заявку"}
             </button>
             {message && <p className={`${styles.status} ${status === "error" ? styles.statusError : ""}`} role="status" aria-live="polite">{message}</p>}
           </form>
