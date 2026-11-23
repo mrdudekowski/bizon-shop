@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "bannerPageKeys": [
+    "branding",
+    "become-a-supplier",
+    "shop-become-a-supplier",
+    "delivery",
+    "shop-delivery",
+    "payment",
+    "shop-payment",
+    "warranty",
+    "shop-warranty"
+  ],
+  "breakpoints": {
+    "mobileMaxWidthPx": 767,
+    "tabletMinWidthPx": 768,
+    "tabletMaxWidthPx": 1279,
+    "desktopMinWidthPx": 1280,
+    "asideSingleColumnMaxWidthPx": 900
+  },
+  "banner": {
+    "heightVh": 56,
+    "maxHeightSvh": 100,
+    "minHeightRem": 16
+  },
+  "aside": {
+    "mobileHeightVw": 70,
+    "minHeightRem": 16,
+    "heightVw": 32,
+    "maxHeightRem": 26,
+    "desktopColumnFraction": 0.425,
+    "columnGap": {
+      "minRem": 1.5,
+      "widthVw": 4,
+      "maxRem": 3.5
+    },
+    "pageGutterPx": {
+      "mobile": 20,
+      "tablet": 40,
+      "desktop": 64
+    },
+    "containerWidth": {
+      "minPx": 1600,
+      "widthVw": 88,
+      "maxPx": 2400
+    }
+  },
+  "referenceViewports": {
+    "mobile": {
+      "width": 390,
+      "height": 844
+    },
+    "tablet": {
+      "width": 768,
+      "height": 1024
+    },
+    "desktop": {
+      "width": 1440,
+      "height": 1000
+    }
+  }
+}

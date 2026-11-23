@@ -1,11 +1,14 @@
 import { createRequire } from "node:module";
 import path from "node:path";
-import type { FullConfig } from "@playwright/test";
-import { loadCmsMediaE2EEnvironment, readCmsMediaE2EConfig } from "./environment";
+import { loadCmsMediaE2EEnvironment, readCmsMediaE2EConfig } from "./environment.ts";
 
-export default async function globalSetup(_playwrightConfig: FullConfig) {
-  const config = readCmsMediaE2EConfig(loadCmsMediaE2EEnvironment());
-  const backendPackage = path.resolve(process.cwd(), "backend-app", "package.json");
+export default async function globalSetup() {
+  await checkInfrastructure(loadCmsMediaE2EEnvironment());
+}
+
+export async function checkInfrastructure(env: ReturnType<typeof loadCmsMediaE2EEnvironment>) {
+  const config = readCmsMediaE2EConfig(env);
+  const backendPackage = path.resolve(process.cwd(), env.CMS_MEDIA_E2E_BACKEND_ROOT || "backend-app", "package.json");
   const backendRequire = createRequire(backendPackage);
   type PgClient = {
     connect(): Promise<void>;

@@ -273,6 +273,7 @@ async function runBuildWithFixture() {
     env: {
       ...process.env,
       CONTENT_API_URL: url,
+      S3_PUBLIC_URL: `${url}/media`,
       NEXT_PUBLIC_API_URL: url,
       NEXT_PUBLIC_SITE_URL: "https://bizon-ci-fixture.invalid",
     },
