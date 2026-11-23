@@ -61,8 +61,15 @@
 /* Vehicle cards: under 800px min(86vw, 390px) by clamp(300px, 72vw, 420px). Cover, no focal. */
 .shot[data-page-frame="vehicle"] { aspect-ratio: 13 / 14; }
 
-/* PageHero .media is full width under 900px (height at least 16rem) and the right column above that. Focal wins. */
-.shot[data-page-frame="page-hero"] { aspect-ratio: 5 / 2; }
+/* The legacy canvas slot uses its own frame until it supplies the page key. */
+.shot[data-page-frame="page-hero"]:not([data-page-hero-preview]) { aspect-ratio: 5 / 2; }
+
+.shot[data-page-hero-preview] {
+  box-sizing: border-box;
+  border: 0;
+  outline: 1px solid var(--line);
+  outline-offset: -1px;
+}
 
 /* ServicePage .proofMedia is one column under 768px and half the row above it. Focal wins. */
 .shot[data-page-frame="proof"] { aspect-ratio: 5 / 4; }
@@ -81,7 +88,7 @@
 }
 
 @container page-frame (min-width: 900px) {
-  .shot[data-page-frame="page-hero"] { aspect-ratio: 5 / 4; }
+  .shot[data-page-frame="page-hero"]:not([data-page-hero-preview]) { aspect-ratio: 5 / 4; }
 }
 
 @container page-frame (min-width: 1024px) {

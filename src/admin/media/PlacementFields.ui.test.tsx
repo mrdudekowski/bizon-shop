@@ -1,15 +1,18 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createElement } from "react";
+import { createElement, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockState = vi.hoisted(() => ({ client: {} as Record<string, ReturnType<typeof vi.fn>> }));
 vi.mock("@/admin/client/localStore", () => ({ browserAdminClient: () => mockState.client }));
 
 import { PlacementFields, ProductPhotoFields } from "./PlacementFields";
+import type { ImagePlacement } from "@/admin/domain/types";
 import { PAGE_IMAGE_FRAMES } from "@/admin/pages/pageImageFrame";
+import { PageHeroImageFields } from "@/admin/pages/PageHeroImageFields";
+import { pageHeroPreviewGeometry, pageHeroReferenceViewport } from "@/admin/pages/pageHeroPreviewGeometry";
 
 const originalPlacement = {
   assetId: "asset-original",
@@ -119,6 +122,78 @@ describe("PlacementFields upload flow", () => {
     expect(onChange).toHaveBeenLastCalledWith(originalPlacement);
   });
 
+  it("does not cancel an asset-wide replacement when canvas hero selects another library asset", async () => {
+    const cancelAssetReplacement = vi.fn().mockResolvedValue(undefined);
+    mockState.client = { cancelAssetReplacement, listAssets: vi.fn().mockResolvedValue([
+      { id: "asset-original", name: "old.png", mimeType: "image/png", dataUrl: "/media/old.png", usedBy: [], replacementPending: true },
+      { id: "asset-next", name: "next.png", mimeType: "image/png", dataUrl: "/media/next.png", usedBy: [] },
+    ]) };
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(createElement(PageHeroImageFields, {
+      pageKey: "payment",
+      value: originalPlacement,
+      onChange,
+      uploadMode: "new-asset",
+    }));
+
+    await screen.findByRole("img", { name: "Фото" });
+    expect(screen.queryByRole("button", { name: "Отменить замену" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Выбрать из галереи" }));
+    await user.click(await screen.findByRole("button", { name: "Выбрать next.png" }));
+
+    expect(cancelAssetReplacement).not.toHaveBeenCalled();
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ assetId: "asset-next" }));
+  });
+
+  it("preserves replacement management for existing shared new-asset editors", async () => {
+    const cancelAssetReplacement = vi.fn().mockResolvedValue(undefined);
+    mockState.client = { cancelAssetReplacement, listAssets: vi.fn().mockResolvedValue([
+      { id: "asset-original", name: "old.png", mimeType: "image/png", dataUrl: "/media/old.png", usedBy: [], replacementPending: true },
+      { id: "asset-next", name: "next.png", mimeType: "image/png", dataUrl: "/media/next.png", usedBy: [] },
+    ]) };
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(createElement(PlacementFields, {
+      label: "Иконка витрины",
+      value: originalPlacement,
+      onChange,
+      uploadMode: "new-asset",
+    }));
+
+    await screen.findByRole("img", { name: "Фото" });
+    expect(await screen.findByText("Новое фото появится на сайте после публикации.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Отменить замену" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Выбрать из галереи" }));
+    await user.click(await screen.findByRole("button", { name: "Выбрать next.png" }));
+
+    expect(cancelAssetReplacement).toHaveBeenCalledWith("asset-original");
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ assetId: "asset-next" }));
+  });
+
+  it("keeps clear available for a hero placement whose media preview is missing", async () => {
+    const cancelAssetReplacement = vi.fn();
+    const replaceAsset = vi.fn();
+    const createAsset = vi.fn();
+    const onChange = vi.fn();
+    mockState.client = { cancelAssetReplacement, replaceAsset, createAsset, listAssets: vi.fn().mockResolvedValue([]) };
+    const user = userEvent.setup();
+    render(createElement(PlacementFields, {
+      value: originalPlacement,
+      onChange,
+      frame: PAGE_IMAGE_FRAMES.pageHero,
+      pageHeroPreview: { pageKey: "payment" },
+    }));
+
+    await screen.findByRole("button", { name: "Выбрать из галереи" });
+    await user.click(screen.getByRole("button", { name: "Убрать фото" }));
+
+    expect(onChange).toHaveBeenCalledWith(undefined);
+    expect(cancelAssetReplacement).not.toHaveBeenCalled();
+    expect(replaceAsset).not.toHaveBeenCalled();
+    expect(createAsset).not.toHaveBeenCalled();
+  });
+
   it("announces a rejected upload to the user", async () => {
     mockState.client = { createAsset: vi.fn().mockRejectedValue(new Error("storage offline")), listAssets: vi.fn().mockResolvedValue([]) };
     const user = userEvent.setup();
@@ -167,12 +242,10 @@ describe("PlacementFields upload flow", () => {
     expect(onGalleryChange).toHaveBeenCalledWith([expect.objectContaining({ assetId: "asset-spare" })]);
   });
 
-  it("crops a page preview like the guest frame and leaves the product square alone", async () => {
+  it("keeps the existing focal control for frames without a page hero preview and leaves the product square alone", async () => {
     const css = readFileSync("src/admin/pages/pageImageFrame.module.css", "utf8");
     const productCss = readFileSync("src/admin/media/PlacementFields.module.css", "utf8");
     expect(css).toMatch(/object-fit:\s*cover/);
-    expect(css).toMatch(/data-page-frame="page-hero"\]\s*\{\s*aspect-ratio:\s*5\s*\/\s*2/);
-    expect(css).not.toMatch(/data-page-frame="page-hero"\]\s*\{\s*aspect-ratio:\s*1\s*\/\s*1/);
     expect(css).toMatch(/data-page-frame="shop-hero"\] \.image\s*\{\s*object-position:\s*left center/);
     expect(productCss).toMatch(/\.previewShot\s*\{[^}]*aspect-ratio:\s*1\s*\/\s*1/);
 
@@ -199,6 +272,111 @@ describe("PlacementFields upload flow", () => {
     }));
     const productShot = await screen.findByLabelText("Предпросмотр фото и точки фокуса");
     expect(productShot.hasAttribute("data-page-frame")).toBe(false);
+  });
+
+
+  it.each(["delivery", "about"])("uses the contract geometry for %s across devices", async (pageKey) => {
+    mockState.client = { listAssets: vi.fn().mockResolvedValue([]) };
+    const user = userEvent.setup();
+    render(createElement(PlacementFields, {
+      frame: PAGE_IMAGE_FRAMES.pageHero,
+      pageHeroPreview: { pageKey },
+      value: originalPlacement,
+      onChange: vi.fn(),
+      previewSrc: "/media/hero.png",
+    }));
+
+    const shot = screen.getByLabelText("Предпросмотр фото и точки фокуса");
+    for (const [viewport, label] of [
+      ["desktop", "Desktop"],
+      ["tablet", "Планшет"],
+      ["mobile", "Мобильный"],
+    ] as const) {
+      await user.click(screen.getByRole("button", { name: label }));
+      const { width: viewportWidth, height: viewportHeight } = pageHeroReferenceViewport(viewport);
+      const { width, height } = pageHeroPreviewGeometry({ pageKey, viewportWidth, viewportHeight });
+      expect(shot.getAttribute("data-preview-viewport")).toBe(viewport);
+      expect(screen.getByText(`${viewportWidth} × ${viewportHeight} px`)).toBeTruthy();
+      const [ratioWidth, ratioHeight = 1] = shot.style.aspectRatio.split("/").map(Number);
+      expect(ratioWidth / ratioHeight).toBeCloseTo(width / height, 8);
+    }
+  });
+
+  it("moves the page hero image with a captured pointer and preserves the other device crops", async () => {
+    mockState.client = { listAssets: vi.fn().mockResolvedValue([]) };
+    const user = userEvent.setup();
+    class TestPointerEvent extends MouseEvent {
+      readonly pointerId: number;
+      constructor(type: string, init: PointerEventInit) {
+        super(type, init);
+        this.pointerId = init.pointerId ?? 0;
+      }
+    }
+    vi.stubGlobal("PointerEvent", TestPointerEvent);
+
+    const onChange = vi.fn();
+    const initial = {
+      ...originalPlacement,
+      focalX: 0.5,
+      focalY: 0.7,
+      focalByViewport: { tablet: { x: 0.1, y: 0.2 } },
+    };
+    function TestEditor() {
+      const [value, setValue] = useState<ImagePlacement | undefined>(initial);
+      return createElement(PlacementFields, {
+        frame: PAGE_IMAGE_FRAMES.pageHero,
+        pageHeroPreview: { pageKey: "delivery" },
+        value,
+        onChange: (next) => { setValue(next); onChange(next); },
+        previewSrc: "/media/hero.png",
+      });
+    }
+    render(createElement(TestEditor));
+
+    const image = screen.getByRole("img", { name: "Фото" });
+    const drag = screen.getByRole("button", { name: "Положение изображения (desktop)" });
+    const position = () => image.style.getPropertyValue("--frame-position");
+    Object.defineProperties(image, {
+      naturalWidth: { value: 800 },
+      naturalHeight: { value: 200 },
+    });
+    vi.spyOn(image, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 200, 100));
+    vi.spyOn(screen.getByLabelText("Предпросмотр фото и точки фокуса"), "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 200, 100));
+    const setPointerCapture = vi.fn();
+    Object.assign(drag, { setPointerCapture, hasPointerCapture: () => true });
+
+    expect(position()).toBe("50% 70%");
+    fireEvent.pointerDown(drag, { pointerId: 1, button: 0, clientX: 40, clientY: 30 });
+    expect(setPointerCapture).toHaveBeenCalledWith(1);
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.pointerMove(drag, { pointerId: 2, clientX: 100, clientY: 30 });
+    expect(position()).toBe("50% 70%");
+    fireEvent.pointerMove(drag, { pointerId: 1, clientX: 90, clientY: 40 });
+    expect(position()).toBe("25% 70%");
+    fireEvent.pointerCancel(drag, { pointerId: 1 });
+    fireEvent.pointerMove(drag, { pointerId: 1, clientX: 40, clientY: 30 });
+    expect(position()).toBe("25% 70%");
+
+    await user.click(screen.getByRole("button", { name: "Планшет" }));
+    expect(position()).toBe("10% 20%");
+    await user.click(screen.getByRole("button", { name: "Мобильный" }));
+    expect(position()).toBe("50% 70%");
+    const mobile = screen.getByRole("button", { name: "Положение изображения (mobile)" });
+    expect(mobile.getAttribute("aria-describedby")).toBe(screen.getByText(/Перетащите изображение/).id);
+    mobile.focus();
+    const changeCount = onChange.mock.calls.length;
+    await user.keyboard("{ArrowDown}");
+    expect(position()).toBe("50% 70%");
+    expect(onChange).toHaveBeenCalledTimes(changeCount);
+    await user.keyboard("{ArrowRight}");
+    expect(position()).toBe("49% 70%");
+    await user.click(screen.getByRole("button", { name: "Desktop" }));
+    expect(position()).toBe("25% 70%");
+    expect(onChange.mock.lastCall?.[0].focalByViewport).toEqual({
+      desktop: { x: 0.25, y: 0.7 },
+      tablet: { x: 0.1, y: 0.2 },
+      mobile: { x: 0.49, y: 0.7 },
+    });
   });
 
   it("edits desktop, tablet, and mobile focal points independently without uploading media", async () => {

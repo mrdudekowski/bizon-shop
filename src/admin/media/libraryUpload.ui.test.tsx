@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createElement } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const createAsset = vi.hoisted(() => vi.fn());
 vi.mock("@/admin/client/localStore", () => ({
@@ -23,8 +23,25 @@ const deliveryDraft = {
   documents: [],
 };
 
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
 describe("shared library upload", () => {
+  it("keeps the proof image slot's dashed button treatment", () => {
+    const css = readFileSync("src/admin/pages/TextPageCanvas.module.css", "utf8");
+    expect(css).toMatch(/\.imageButton\s*\{[^}]*dashed/);
+    expect(css).toMatch(/\.imageButton\s*\{[^}]*border-radius/);
+  });
+
   it("shows Загрузить in the file modal and sends a header drop through that upload", async () => {
+    const nativeURL = URL;
+    vi.stubGlobal("URL", class extends nativeURL {
+      static createObjectURL = vi.fn(() => "blob:dropped-image");
+      static revokeObjectURL = vi.fn();
+    });
+    vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
     createAsset.mockResolvedValue({ id: "asset-dropped" });
     const onChange = vi.fn();
     const user = userEvent.setup();
@@ -37,18 +54,13 @@ describe("shared library upload", () => {
       onPublish: vi.fn(),
     }));
 
-    await user.click(screen.getByRole("button", { name: "Изображение шапки" }));
     await user.click(screen.getByRole("button", { name: "Выбрать из галереи" }));
     expect(screen.getByRole("button", { name: "Загрузить" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Закрыть галерею" }));
 
-    const css = readFileSync("src/admin/pages/TextPageCanvas.module.css", "utf8");
-    expect(css).toMatch(/\.imageButton\s*\{[^}]*dashed/);
-    expect(css).toMatch(/\.imageButton\s*\{[^}]*border-radius/);
-
-    const slot = screen.getByRole("button", { name: "Изображение шапки" });
-    const dragOver = new Event("dragover", { bubbles: true, cancelable: true });
-    slot.dispatchEvent(dragOver);
-    expect(dragOver.defaultPrevented).toBe(true);
+    const slot = screen.getByRole("group", { name: "Изображение шапки" });
+    expect(fireEvent.dragOver(slot, { dataTransfer: { types: ["Files"] } })).toBe(false);
+    expect(fireEvent.dragOver(slot, { dataTransfer: { types: ["text/plain"] } })).toBe(true);
 
     fireEvent.drop(slot, { dataTransfer: { files: [new File(["pdf"], "policy.pdf", { type: "application/pdf" })] } });
     expect(createAsset).not.toHaveBeenCalled();

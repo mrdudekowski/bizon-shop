@@ -99,6 +99,65 @@ describe("PageEditor conflict recovery", () => {
     }));
   });
 
+  it.each([
+    { pageKey: "delivery", layout: "banner", clearedImage: undefined },
+    { pageKey: "about", layout: "aside", clearedImage: null },
+  ] as const)("saves and clears a hero placement from the common field on $pageKey", async ({ pageKey, layout, clearedImage }) => {
+    const image = {
+      assetId: "asset-page-hero",
+      alt: "Исходная подпись",
+      focalX: 0.5,
+      focalY: 0.7,
+      crop: { x: 0, y: 0, width: 1, height: 1 },
+    };
+    const pageDraft = { ...draft, id: pageKey, hero: { ...draft.hero, image } };
+    const record = { ...pageRecord, id: pageKey, draft: pageDraft, savedDraft: pageDraft, publishedSnapshot: pageDraft };
+    const savePage = vi.fn().mockImplementation(async (_key: string, next: typeof pageDraft) => ({ ...record, draft: next, savedDraft: next }));
+    mockState.client.getPage = vi.fn().mockResolvedValue(record);
+    mockState.client.savePage = savePage;
+    mockState.client.listAssets = vi.fn().mockResolvedValue([
+      { id: image.assetId, name: "hero.png", mimeType: "image/png", dataUrl: "/media/hero.png", usedBy: [] },
+    ]);
+    const user = userEvent.setup();
+    render(createElement(PageEditor, { pageKey }));
+
+    const field = await screen.findByRole("group", { name: "Изображение шапки" });
+    const controls = within(field);
+    await controls.findByRole("img", { name: image.alt });
+    expect(controls.getByLabelText("Предпросмотр фото и точки фокуса").getAttribute("data-page-hero-preview")).toBe(layout);
+    const alt = controls.getByRole("textbox", { name: "Подпись к фото" });
+    await user.clear(alt);
+    await user.type(alt, "Грузовой автомобиль");
+    await user.click(controls.getByRole("button", { name: "Мобильный" }));
+    controls.getByRole("button", { name: "Положение изображения (mobile)" }).focus();
+    await user.keyboard("{ArrowRight}");
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    expect((await screen.findByRole("status")).textContent).toBe("Черновик сохранён");
+    expect(savePage).toHaveBeenNthCalledWith(1, pageKey, expect.objectContaining({
+      hero: {
+        ...pageDraft.hero,
+        image: {
+          ...image,
+          alt: "Грузовой автомобиль",
+          focalByViewport: {
+            desktop: { x: 0.5, y: 0.7 },
+            tablet: { x: 0.5, y: 0.7 },
+            mobile: { x: 0.49, y: 0.7 },
+          },
+        },
+      },
+    }));
+
+    await user.click(controls.getByRole("button", { name: "Убрать фото" }));
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    expect((await screen.findByRole("status")).textContent).toBe("Черновик сохранён");
+    expect(savePage).toHaveBeenNthCalledWith(2, pageKey, expect.objectContaining({
+      hero: { ...pageDraft.hero, image: clearedImage },
+    }));
+  });
+
   it("saves a section that has no heading", async () => {
     const savePage = vi.fn().mockImplementation(async (_key: string, next: typeof draft) => ({ ...pageRecord, draft: next, savedDraft: next }));
     mockState.client.savePage = savePage;
@@ -639,7 +698,7 @@ describe("PageEditor conflict recovery", () => {
     expect(screen.queryByRole("region", { name: "Форма заявки" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Добавить подтверждение" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Добавить кнопки" })).toBeNull();
-    expect(screen.getAllByRole("button", { name: "Изображение шапки" })).toHaveLength(1);
+    expect(screen.getAllByRole("group", { name: "Изображение шапки" })).toHaveLength(1);
     await user.click(screen.getByRole("button", { name: "Новая глава" }));
     await user.type(screen.getByRole("textbox", { name: "Заголовок главы" }), "Маршрут");
     await user.clear(screen.getByRole("textbox", { name: "Заголовок главы" }));
