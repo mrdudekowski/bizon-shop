@@ -161,7 +161,9 @@ export function QuickOrderForm({ item, heading, sourcePage }: QuickOrderFormProp
           items: [
             {
               ...item,
-              quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
+              quantity: Number.isFinite(quantity) && quantity > 0
+                ? Math.min(99999, Math.max(1, Math.round(quantity)))
+                : 1,
             },
           ],
         },
@@ -226,6 +228,8 @@ export function QuickOrderForm({ item, heading, sourcePage }: QuickOrderFormProp
           name="quantity"
           type="number"
           min={1}
+          max={99999}
+          step={1}
           defaultValue={item.quantity ?? 1}
           inputMode="numeric"
           className="field-input"

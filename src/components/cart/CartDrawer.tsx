@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { cartItemKey } from "@/lib/cart/cartStorage";
 import type { CartKind } from "@/lib/cart/cartTypes";
 import { ROUTES } from "@/constants/navigation";
+import { QuantityInput } from "@/components/ui/QuantityInput";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { RequestItemInput } from "@/types/requestItem";
 import styles from "./CartDrawer.module.css";
@@ -122,16 +123,13 @@ export function CartDrawer({
                     ) : null}
                     <label className={styles.quantityLabel}>
                       Кол-во
-                      <input
-                        type="number"
+                      <QuantityInput
                         name={`quantity-${key}`}
                         min={1}
                         max={99999}
                         value={quantity}
-                        onChange={(event) => {
-                          const next = Number(event.target.value);
-                          if (Number.isFinite(next)) onQuantityChange(key, next);
-                        }}
+                        ariaLabel={`Количество ${displayName(item)}`}
+                        onValueChange={(next) => onQuantityChange(key, next)}
                         className={styles.quantityInput}
                       />
                     </label>

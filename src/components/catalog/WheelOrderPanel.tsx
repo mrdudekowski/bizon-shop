@@ -6,6 +6,7 @@ import { useState } from "react";
 import { requestOpenCart } from "@/lib/cart/cartStorage";
 import { useCart } from "@/hooks/useCart";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { QuantityInput } from "@/components/ui/QuantityInput";
 import type { RequestItemInput } from "@/types/requestItem";
 import styles from "./WheelOrderPanel.module.css";
 
@@ -79,7 +80,6 @@ function wheelOrderVariantId(selectedId: string | undefined, fitment: string[], 
 export function WheelOrderPanel({ baseItem, variants, available = false, finish = "", className }: WheelOrderPanelProps) {
   const cart = useCart("shop");
   const [variantId, setVariantId] = useState(variants.length === 1 ? variants[0].id : "");
-  const maxQuantity = baseItem.parentSlug === "forged" ? 8 : 999;
   const [quantity, setQuantity] = useState(baseItem.parentSlug === "forged" ? 4 : 1);
   const [withBeadlock, setWithBeadlock] = useState(false);
   const selected = variants.find((variant) => variant.id === variantId) ?? null;
@@ -168,18 +168,13 @@ export function WheelOrderPanel({ baseItem, variants, available = false, finish 
         </div>
         <label className={styles.quantityField}>
           <span className={styles.label}>Количество дисков</span>
-          <input
+          <QuantityInput
             className={styles.control}
-            type="number"
             min={1}
-            max={maxQuantity}
+            max={99999}
             value={quantity}
-            onChange={(event) => {
-              const next = Number(event.target.value);
-              if (Number.isFinite(next)) {
-                setQuantity(Math.min(maxQuantity, Math.max(1, Math.round(next))));
-              }
-            }}
+            ariaLabel="Количество дисков"
+            onValueChange={setQuantity}
           />
         </label>
       </div>

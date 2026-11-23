@@ -38,7 +38,10 @@ export function ForgedConfigurator({ model }: { model: ForgedConfiguratorModel }
     const currentSize = value(formData, "currentSize");
     const desiredSize = value(formData, "desiredSize");
     const finish = value(formData, "finish");
-    const quantity = Math.min(Math.max(Number(formData.get("quantity")) || 4, 1), 8);
+    const requestedQuantity = Number(formData.get("quantity"));
+    const quantity = Number.isFinite(requestedQuantity)
+      ? Math.min(Math.max(Math.round(requestedQuantity), 1), 99999)
+      : 4;
     const variantLabel = `${vehicle}, ${year}`;
     const notes = [
       `Автомобиль: ${variantLabel}`,
@@ -110,7 +113,7 @@ export function ForgedConfigurator({ model }: { model: ForgedConfiguratorModel }
         </label>
         <label>
           <span>Количество дисков</span>
-          <input name="quantity" type="number" min={1} max={8} defaultValue={4} inputMode="numeric" />
+          <input name="quantity" type="number" min={1} max={99999} step={1} defaultValue={4} inputMode="numeric" />
         </label>
       </div>
 

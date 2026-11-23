@@ -186,7 +186,7 @@ export function ContextualContactForm({
               </label>
               <label>
                 <span>Количество *</span>
-                <input name="quantity" required type="number" min="1" inputMode="numeric" value={values.quantity} onChange={(event) => setValue("quantity", event.target.value)} />
+                <input name="quantity" required type="number" min="1" max="99999" step="1" inputMode="numeric" value={values.quantity} onChange={(event) => setValue("quantity", event.target.value)} />
               </label>
             </>
           ) : null}

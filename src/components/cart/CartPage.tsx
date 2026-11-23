@@ -9,6 +9,7 @@ import type { CartKind } from "@/lib/cart/cartTypes";
 import { TermsLinks } from "@/components/content/TermsLinks";
 import { ContactRequest } from "@/components/forms/ContactRequest";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { QuantityInput } from "@/components/ui/QuantityInput";
 import { REQUEST_TERMS_LINE } from "@/lib/content/termsPages";
 import { submitRequest } from "@/lib/requests/submitRequest";
 import { HONEYPOT_FIELD } from "@/lib/requests/validateRequest";
@@ -81,16 +82,13 @@ function CartItemsGroup({ title, items, onRemove, onQuantityChange }: CartItemsG
               <div className={styles.lineActions}>
                 <label>
                   <span className="sr-only">Количество</span>
-                  <input
+                  <QuantityInput
                     className={styles.quantity}
-                    type="number"
                     min={1}
                     max={99999}
                     value={quantity}
-                    onChange={(event) => {
-                      const next = Number(event.target.value);
-                      if (Number.isFinite(next)) onQuantityChange(key, next);
-                    }}
+                    ariaLabel={`Количество ${displayName(item)}`}
+                    onValueChange={(next) => onQuantityChange(key, next)}
                   />
                 </label>
                 <button className={styles.remove} type="button" onClick={() => onRemove(key)}>

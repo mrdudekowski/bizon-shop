@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { QuantityInput } from "@/components/ui/QuantityInput";
 import type { RequestItemInput } from "@/types/requestItem";
 
 import styles from "./CatalogBuyPanel.module.css";
@@ -97,23 +98,19 @@ export function CatalogBuyPanel({
             >
               −
             </button>
-            <input
+            <QuantityInput
               className={styles.qtyInput}
-              type="number"
               min={1}
-              max={999}
+              max={99999}
               value={quantity}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                if (!Number.isFinite(next)) return;
-                setQuantity(Math.min(999, Math.max(1, Math.round(next))));
-              }}
+              ariaLabel="Количество"
+              onValueChange={setQuantity}
             />
             <button
               type="button"
               className={styles.qtyBtn}
               aria-label="Увеличить количество"
-              onClick={() => setQuantity((value) => Math.min(999, value + 1))}
+              onClick={() => setQuantity((value) => Math.min(99999, value + 1))}
             >
               +
             </button>
