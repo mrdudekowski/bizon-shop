@@ -2811,6 +2811,11 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         };
       });
     },
+    async countNewRequests(): Promise<number> {
+      requirePermission("view_requests");
+      const rows = await query("SELECT COUNT(*)::int AS count FROM requests WHERE status = 'new'");
+      return num(rows[0]?.count) ?? 0;
+    },
     async updateRequestStatus(id: string, status: LeadRequestStatus): Promise<LeadRequestRecord> {
       requirePermission("manage_requests");
       const requestId = numericId(id);

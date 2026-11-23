@@ -12,6 +12,10 @@ describe.each(unauthorizedRoles)("request access for %s", (role) => {
     await expect(client.listRequests()).rejects.toMatchObject({ code: "forbidden" });
   });
 
+  it("rejects new request counts before touching the database", async () => {
+    await expect(client.countNewRequests()).rejects.toMatchObject({ code: "forbidden" });
+  });
+
   it("rejects request status changes before touching the database", async () => {
     await expect(client.updateRequestStatus("1", "closed")).rejects.toMatchObject({ code: "forbidden" });
   });
