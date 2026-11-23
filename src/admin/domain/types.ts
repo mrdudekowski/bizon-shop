@@ -645,6 +645,9 @@ export type LeadRequestRecord = {
   purchaseVolume?: string;
   preferredContact?: string;
   message?: string;
+  formAnswers?: Record<string, string>;
+  attachmentUrl?: string;
+  emailNotificationStatus?: "queued" | "processing" | "retry_wait" | "accepted_by_smtp" | "failed_final";
   sourceForm: string;
   sourcePage?: string;
   createdAt: string;
