@@ -35,6 +35,10 @@ const SOURCE_LABELS: Record<string, string> = {
   product_quick_order: "Быстрый заказ товара",
   hero_cta: "Первый экран (Hero)",
   footer_cta: "Подвал сайта",
+  delivery_quote: "Расчёт доставки",
+  shop_delivery: "Доставка BIZON Shop",
+  shop_warranty: "Гарантия BIZON Shop",
+  shop_supplier: "Поставщик BIZON Shop",
   custom: "Другое",
 };
 
@@ -48,6 +52,10 @@ const SOURCE_FILTER_OPTIONS: readonly { value: string; label: string }[] = [
   { value: "procurement", label: "Запрос по спецификации" },
   { value: "supplier", label: "Стать поставщиком" },
   { value: "warranty", label: "Гарантия" },
+  { value: "delivery_quote", label: "Расчёт доставки" },
+  { value: "shop_delivery", label: "Доставка BIZON Shop" },
+  { value: "shop_warranty", label: "Гарантия BIZON Shop" },
+  { value: "shop_supplier", label: "Поставщик BIZON Shop" },
 ];
 
 function formatSource(sourceForm: string): string {
@@ -57,10 +65,12 @@ function formatSource(sourceForm: string): string {
 export function RequestsList() {
   const session = useAdminSession();
   const canViewRequests = session != null && canEditorPerform(session, "view_requests");
+  const canManageRequests = session != null && canEditorPerform(session, "manage_requests");
   const [requests, setRequests] = useState<LeadRequestRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [busyEmailId, setBusyEmailId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [sourceFilter, setSourceFilter] = useState<string>("");
@@ -87,6 +97,19 @@ export function RequestsList() {
       setError("Не удалось обновить статус заявки.");
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function onRetryEmail(id: string) {
+    setBusyEmailId(id);
+    setError("");
+    try {
+      await browserAdminClient().retryRequestEmailNotification(id);
+      await reload();
+    } catch {
+      setError("Не удалось поставить email-уведомление в очередь повторно.");
+    } finally {
+      setBusyEmailId(null);
     }
   }
 
@@ -257,6 +280,31 @@ export function RequestsList() {
               </dl>
 
               {req.message ? <div className={styles.messageBox}>{req.message}</div> : null}
+
+              {req.formAnswers && Object.keys(req.formAnswers).length > 0 ? (
+                <dl className={styles.answers} aria-label={`Ответы формы заявки #${req.id}`}>
+                  {Object.entries(req.formAnswers).map(([question, answer]) => (
+                    <div key={question}><dt>{question}</dt><dd>{answer}</dd></div>
+                  ))}
+                </dl>
+              ) : null}
+              {req.attachmentUrl ? <p><a href={req.attachmentUrl} target="_blank" rel="noreferrer">Открыть файл заявки</a></p> : null}
+              {req.emailNotificationStatus ? (
+                <div className={styles.emailState}>
+                  <span>Email: {{
+                    queued: "в очереди",
+                    processing: "отправляется",
+                    retry_wait: "ожидает повтора",
+                    accepted_by_smtp: "принято почтовым сервером",
+                    failed_final: "ошибка отправки",
+                  }[req.emailNotificationStatus]}</span>
+                  {req.emailNotificationStatus === "failed_final" && canManageRequests ? (
+                    <button type="button" disabled={busyEmailId === req.id} onClick={() => void onRetryEmail(req.id)}>
+                      {busyEmailId === req.id ? "Ставим в очередь…" : "Повторить email"}
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
 
               {req.items.length > 0 ? (
                 <div className={styles.itemsSection}>

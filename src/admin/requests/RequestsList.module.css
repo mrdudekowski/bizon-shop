@@ -162,6 +162,37 @@
   font-size: 13.5px;
 }
 
+.answers {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin: 0;
+}
+
+.answers div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.answers dt {
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.answers dd {
+  margin: 2px 0 0;
+}
+
+.emailState {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
 .itemsSection {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
