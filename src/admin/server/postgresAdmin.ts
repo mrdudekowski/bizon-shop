@@ -2752,6 +2752,13 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
             "SELECT * FROM requests_items WHERE _parent_id = ANY($1::int[]) ORDER BY _order, id",
             [requestIds],
           );
+      const notificationRows = requestIds.length === 0
+        ? []
+        : await query(
+            "SELECT request_id, status FROM request_email_notifications WHERE request_id = ANY($1::int[])",
+            [requestIds],
+          );
+      const emailStatusByRequest = new Map(notificationRows.map((row) => [str(row.request_id), str(row.status)]));
       const itemsByParent = new Map<string, LeadRequestItem[]>();
       for (const item of itemRows) {
         const parentKey = str(item._parent_id);
@@ -2787,6 +2794,15 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           ...(str(row.purchase_volume) ? { purchaseVolume: str(row.purchase_volume) } : {}),
           ...(str(row.preferred_contact) ? { preferredContact: str(row.preferred_contact) } : {}),
           ...(str(row.message) ? { message: str(row.message) } : {}),
+          ...(row.form_answers != null && typeof row.form_answers === "object" && !Array.isArray(row.form_answers)
+            ? { formAnswers: Object.fromEntries(Object.entries(row.form_answers as Record<string, unknown>).filter((entry): entry is [string, string] => typeof entry[1] === "string")) }
+            : {}),
+          ...(typeof row.attachment_url === "string" && /^https?:\/\//i.test(row.attachment_url)
+            ? { attachmentUrl: row.attachment_url }
+            : {}),
+          ...(emailStatusByRequest.has(id)
+            ? { emailNotificationStatus: emailStatusByRequest.get(id) as LeadRequestRecord["emailNotificationStatus"] }
+            : {}),
           sourceForm: str(row.source_form) || "contact",
           ...(str(row.source_page) ? { sourcePage: str(row.source_page) } : {}),
           createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : str(row.created_at),
@@ -2820,6 +2836,19 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       const found = all.find((item) => item.id === String(requestId));
       if (!found) throw new AdminClientError("not_found");
       return found;
+    },
+    async retryRequestEmailNotification(id: string): Promise<void> {
+      requirePermission("manage_requests");
+      const requestId = numericId(id);
+      if (requestId == null) throw new AdminClientError("not_found");
+      const updated = await query(
+        `UPDATE request_email_notifications SET status = 'queued', attempt_count = 0,
+           manual_retry_count = manual_retry_count + 1, last_manual_retry_at = now(), last_manual_retry_by = $2,
+           next_attempt_at = now(), locked_until = NULL, last_error_code = NULL, updated_at = now()
+         WHERE request_id = $1 AND status = 'failed_final' RETURNING id`,
+        [requestId, session.login],
+      );
+      if (updated.length === 0) throw new AdminClientError("not_found");
     },
     async updateCatalogOrder(entity: OrderableCatalogEntity, orderedIds: string[]): Promise<void> {
       requirePermission(entity === "material" ? "edit_site_pages" : "edit_catalog");
@@ -2876,6 +2905,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         property === "createAsset" ||
         property === "replaceAsset" ||
         property === "updateRequestStatus" ||
+        property === "retryRequestEmailNotification" ||
         !/^(create|save|publish|unpublish|hide|delete|reset|submit|return|cancel|update|assign|set|decide)/.test(property)
       ) {
         return value;

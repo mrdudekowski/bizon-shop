@@ -19,6 +19,9 @@ const SOURCE_FORMS = new Set([
   "cart",
   "hero_cta",
   "footer_cta",
+  "procurement",
+  "tire_cart",
+  "shop_cart",
   "custom",
 ]);
 
@@ -184,5 +187,11 @@ export async function insertRequest(db: ReadDatabase, input: StoredRequestInput)
       await insertRelation(db, requestId, index, "items.catalogVariant", variant.relation, variant.id);
     }
   }
+  await db.query(
+    `INSERT INTO request_email_notifications (request_id, status, created_at, updated_at)
+     VALUES ($1, 'queued', now(), now())
+     ON CONFLICT (request_id) DO NOTHING`,
+    [requestId],
+  );
   return requestId;
 }

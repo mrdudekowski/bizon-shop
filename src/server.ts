@@ -19,6 +19,7 @@ import { checkBackendReadiness } from "./readiness";
 import { createContentRevision, createRequestLogRecord } from "./requestTelemetry";
 import { CART_SESSION_COOKIES, LEGACY_CART_SESSION_COOKIE, deleteCartSession, migratedCartToken, migrateCartSessions, parseCartKind, readCartSession, sanitizeTypedCartItems, saveCartSession } from "./cartSession";
 import { insertRequest, type StoredRequestInput } from "./insertRequest";
+import { startRequestEmailWorker } from "./requestEmailWorker";
 import { AdminClientError, adminCodeFromDatabaseError, adminErrorStatus } from "./admin/client/errors";
 import { LoginThrottle, type LoginAttemptTicket } from "./admin/server/loginThrottle";
 import { createPostgresAdminClient, retryPendingMediaCleanup } from "./admin/server/postgresAdmin";
@@ -996,6 +997,7 @@ prepareAuth().then(
   () => {
     console.log("CMS accounts ready");
     startMediaCleanupWorker();
+    startRequestEmailWorker((sql, params) => getDatabase().query(sql, params));
     servers.forEach((server, index) => {
       const host = LISTEN_HOSTS[index];
       server.on("error", (error: NodeJS.ErrnoException) => {

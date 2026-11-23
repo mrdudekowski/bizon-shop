@@ -15,4 +15,8 @@ describe.each(unauthorizedRoles)("request access for %s", (role) => {
   it("rejects request status changes before touching the database", async () => {
     await expect(client.updateRequestStatus("1", "closed")).rejects.toMatchObject({ code: "forbidden" });
   });
+
+  it("rejects email retries before touching the database", async () => {
+    await expect(client.retryRequestEmailNotification("1")).rejects.toMatchObject({ code: "forbidden" });
+  });
 });
