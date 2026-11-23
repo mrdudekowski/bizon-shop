@@ -38,6 +38,16 @@ The additive migration `202611230001` must be applied before starting this versi
 
 `accepted_by_smtp` means the configured SMTP server accepted the message; it does not prove inbox placement. Tests inject a transport and do not send external email. Do not place SMTP secrets in CMS or public-site variables.
 
+## Request Telegram notifications
+
+Telegram has its own PostgreSQL outbox and backend worker, independent of email. Each accepted request and its Telegram outbox row are committed together. Telegram outages do not block request acceptance or change email delivery status.
+
+Before starting this version, apply every pending backend migration through `202611230003` to the intended database. The Telegram worker remains disabled until backend-only secrets `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are both configured. The bot must have been started by the target user or added to the target group/channel with permission to post. Restart the backend after changing runtime secrets.
+
+Notifications accumulated while Telegram configuration is absent or the service is unavailable remain in the outbox and are not discarded by age. Once configuration and connectivity return, the worker retries the full backlog. `accepted_by_telegram` means Telegram accepted every message part; it does not prove that a person read the message. Longer requests are sent as ordered plain-text parts. Delivery resumes from the last recorded part; a process crash after Telegram acceptance but before the database records progress can duplicate that last part (at-least-once delivery).
+
+Tests use an injected fake HTTP transport and never send messages to Telegram. Do not put Telegram credentials in CMS, public-site variables, source control, logs, or test output. Do not run migration `202611230003` against a shared or production database as part of local implementation.
+
 Browser origins for public routes are configured by `CORS_ALLOWED_ORIGINS`. CMS admin routes use the separate `CMS_ALLOWED_ORIGINS` list. Production must set both lists to the exact intended origins; the development defaults allow the public site on port `3000` and the CMS on port `3001` for their separate route groups.
 
 For static-site freshness checks, set backend `PUBLIC_SITE_URL` to the HTTPS origin serving the public export. After Timeweb reports deployment success, the backend compares the exported `content-revision.json` against the digest captured after the CMS publication.

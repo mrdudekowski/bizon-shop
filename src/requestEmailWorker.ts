@@ -1,6 +1,6 @@
 import nodemailer, { type Transporter } from "nodemailer";
-import { buildRequestEmail, type RequestEmailData, type RequestEmailMessage } from "./requestEmail";
-import { isConfiguredSourceForm, loadPageForm, PAGE_KEY_BY_SOURCE_FORM } from "./content/pageForm";
+import { buildRequestEmail, type RequestEmailMessage } from "./requestEmail";
+import { loadRequestNotificationData } from "./requestNotificationData";
 
 type Query = (sql: string, params?: unknown[]) => Promise<Record<string, unknown>[]>;
 type Transport = { sendMail(message: RequestEmailMessage & { messageId?: string }): Promise<{ messageId?: string }> };
@@ -76,28 +76,8 @@ export async function runRequestEmailWorkerStep(
     const requestId = Number(job.request_id);
     const attempt = Number(job.attempt_count);
     try {
-      const [request] = await query("SELECT * FROM requests WHERE id = $1", [requestId]);
-      if (!request) throw Object.assign(new Error("request_missing"), { code: "EENVELOPE" });
-      const items = await query("SELECT * FROM requests_items WHERE _parent_id = $1 ORDER BY _order, id", [requestId]);
-      const emailData: RequestEmailData = { ...request, items } as RequestEmailData;
-      const rawAnswers = request.form_answers;
-      const hasAnswers = typeof rawAnswers === "string"
-        ? rawAnswers.trim().length > 0
-        : rawAnswers != null && typeof rawAnswers === "object" && !Array.isArray(rawAnswers) && Object.keys(rawAnswers).length > 0;
-      if (hasAnswers && isConfiguredSourceForm(request.source_form)) {
-        try {
-          const form = await loadPageForm({ query }, PAGE_KEY_BY_SOURCE_FORM[request.source_form]);
-          if (form?.fields.length) {
-            emailData.form_answer_labels = Object.fromEntries(form.fields.map(({ id, label }) => [id, label]));
-          }
-        } catch {
-          console.warn(JSON.stringify({
-            event: "request_email.form_labels_unavailable",
-            requestId,
-            sourceForm: request.source_form,
-          }));
-        }
-      }
+      const emailData = await loadRequestNotificationData(query, requestId);
+      if (!emailData) throw Object.assign(new Error("request_missing"), { code: "EENVELOPE" });
       const message = buildRequestEmail(emailData, {
         to: config.to,
         from: config.from,

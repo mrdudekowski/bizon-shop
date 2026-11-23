@@ -28,6 +28,10 @@ describe("insertRequest", () => {
     expect(calls[3].params).toEqual([9, "items.catalogVariant", 0, 45]);
     expect(calls[4].sql).toContain("INSERT INTO request_email_notifications");
     expect(calls[4].params).toEqual([9]);
+    expect(calls[5].sql).toContain("INSERT INTO request_telegram_notifications");
+    expect(calls[5].sql).toContain("ON CONFLICT (request_id) DO NOTHING");
+    expect(calls[5].params).toEqual([9]);
+    expect(calls.indexOf(calls[4])).toBeLessThan(calls.indexOf(calls[5]));
   });
 
   it.each(["procurement", "tire_cart", "shop_cart"])("preserves the %s source", async (sourceForm) => {

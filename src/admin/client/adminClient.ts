@@ -134,6 +134,7 @@ export type AdminClient = {
   countNewRequests(): Promise<number>;
   updateRequestStatus(id: string, status: LeadRequestStatus): Promise<LeadRequestRecord>;
   retryRequestEmailNotification(id: string): Promise<void>;
+  retryRequestTelegramNotification(id: string): Promise<void>;
   updateCatalogOrder(entity: OrderableCatalogEntity, orderedIds: string[]): Promise<void>;
   storageNotice(): Promise<string | null>;
 };

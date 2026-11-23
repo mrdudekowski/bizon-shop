@@ -23,4 +23,8 @@ describe.each(unauthorizedRoles)("request access for %s", (role) => {
   it("rejects email retries before touching the database", async () => {
     await expect(client.retryRequestEmailNotification("1")).rejects.toMatchObject({ code: "forbidden" });
   });
+
+  it("rejects Telegram retries before touching the database", async () => {
+    await expect(client.retryRequestTelegramNotification("1")).rejects.toMatchObject({ code: "forbidden" });
+  });
 });

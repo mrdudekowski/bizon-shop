@@ -316,6 +316,27 @@ export function buildRequestEmail(
   data: RequestEmailData,
   config: { to: string; from: string; siteUrl?: string },
 ): RequestEmailMessage {
+  const rendered = renderRequestNotification(data, config.siteUrl);
+  const email = valueText(data.email);
+
+  return {
+    to: config.to,
+    from: config.from,
+    ...(email ? { replyTo: email } : {}),
+    subject: rendered.title,
+    text: rendered.content,
+    html: rendered.html,
+  };
+}
+
+export function buildRequestNotificationText(
+  data: RequestEmailData,
+  options: { siteUrl?: string } = {},
+): string {
+  return renderRequestNotification(data, options.siteUrl).content;
+}
+
+function renderRequestNotification(data: RequestEmailData, siteUrl?: string): { title: string; content: string; html: string } {
   const source = valueText(data.source_form);
   const message = valueText(data.message);
   const metadata: EmailField[] = [
@@ -345,7 +366,7 @@ export function buildRequestEmail(
   ];
   const sections = [
     ...requestSections.map(sectionText),
-    ...itemSections(data.items ?? [], config.siteUrl).map(itemSectionText),
+    ...itemSections(data.items ?? [], siteUrl).map(itemSectionText),
     ...(tracking.length ? [sectionText({ title: "Источник перехода", fields: tracking })] : []),
   ];
   const id = valueText(data.id);
@@ -353,18 +374,9 @@ export function buildRequestEmail(
   const content = [title, ...sections].join("\n\n");
   const htmlSections = [
     ...requestSections.map((section) => sectionContainerHtml(sectionHtml(section))),
-    ...itemSections(data.items ?? [], config.siteUrl).map((section) => sectionContainerHtml(itemSectionHtml(section))),
+    ...itemSections(data.items ?? [], siteUrl).map((section) => sectionContainerHtml(itemSectionHtml(section))),
     ...(tracking.length ? [sectionContainerHtml(sectionHtml({ title: "Источник перехода", fields: tracking }))] : []),
   ].join("");
   const html = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f1f3f5" style="width:100%;margin:0;padding:24px 10px;background:#f1f3f5;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif"><tr><td align="center"><table role="presentation" width="620" cellpadding="0" cellspacing="0" style="width:100%;max-width:620px;background:#ffffff;border:1px solid #e1e4e8;border-radius:12px;border-collapse:separate"><tr><td style="padding:24px 22px;background:#20242a;border-radius:12px 12px 0 0"><div style="margin-bottom:8px;color:#f05a37;font-size:12px;font-weight:700;letter-spacing:1.5px">BIZON</div><h1 style="margin:0;color:#ffffff;font-size:22px;line-height:1.3">${escapeHtml(title)}</h1></td></tr>${htmlSections}<tr><td style="padding:16px 22px;color:#7b828a;font-size:11px;line-height:1.5">Автоматическое уведомление с сайта Bizon.</td></tr></table></td></tr></table>`;
-  const email = valueText(data.email);
-
-  return {
-    to: config.to,
-    from: config.from,
-    ...(email ? { replyTo: email } : {}),
-    subject: title,
-    text: content,
-    html,
-  };
+  return { title, content, html };
 }

@@ -2759,6 +2759,13 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
             [requestIds],
           );
       const emailStatusByRequest = new Map(notificationRows.map((row) => [str(row.request_id), str(row.status)]));
+      const telegramNotificationRows = requestIds.length === 0
+        ? []
+        : await query(
+            "SELECT request_id, status FROM request_telegram_notifications WHERE request_id = ANY($1::int[])",
+            [requestIds],
+          );
+      const telegramStatusByRequest = new Map(telegramNotificationRows.map((row) => [str(row.request_id), str(row.status)]));
       const itemsByParent = new Map<string, LeadRequestItem[]>();
       for (const item of itemRows) {
         const parentKey = str(item._parent_id);
@@ -2802,6 +2809,9 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
             : {}),
           ...(emailStatusByRequest.has(id)
             ? { emailNotificationStatus: emailStatusByRequest.get(id) as LeadRequestRecord["emailNotificationStatus"] }
+            : {}),
+          ...(telegramStatusByRequest.has(id)
+            ? { telegramNotificationStatus: telegramStatusByRequest.get(id) as LeadRequestRecord["telegramNotificationStatus"] }
             : {}),
           sourceForm: str(row.source_form) || "contact",
           ...(str(row.source_page) ? { sourcePage: str(row.source_page) } : {}),
@@ -2848,6 +2858,19 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       if (requestId == null) throw new AdminClientError("not_found");
       const updated = await query(
         `UPDATE request_email_notifications SET status = 'queued', attempt_count = 0,
+           manual_retry_count = manual_retry_count + 1, last_manual_retry_at = now(), last_manual_retry_by = $2,
+           next_attempt_at = now(), locked_until = NULL, last_error_code = NULL, updated_at = now()
+         WHERE request_id = $1 AND status = 'failed_final' RETURNING id`,
+        [requestId, session.login],
+      );
+      if (updated.length === 0) throw new AdminClientError("not_found");
+    },
+    async retryRequestTelegramNotification(id: string): Promise<void> {
+      requirePermission("manage_requests");
+      const requestId = numericId(id);
+      if (requestId == null) throw new AdminClientError("not_found");
+      const updated = await query(
+        `UPDATE request_telegram_notifications SET status = 'queued', attempt_count = 0,
            manual_retry_count = manual_retry_count + 1, last_manual_retry_at = now(), last_manual_retry_by = $2,
            next_attempt_at = now(), locked_until = NULL, last_error_code = NULL, updated_at = now()
          WHERE request_id = $1 AND status = 'failed_final' RETURNING id`,
@@ -2911,6 +2934,7 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
         property === "replaceAsset" ||
         property === "updateRequestStatus" ||
         property === "retryRequestEmailNotification" ||
+        property === "retryRequestTelegramNotification" ||
         !/^(create|save|publish|unpublish|hide|delete|reset|submit|return|cancel|update|assign|set|decide)/.test(property)
       ) {
         return value;

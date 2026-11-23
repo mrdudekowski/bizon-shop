@@ -193,5 +193,11 @@ export async function insertRequest(db: ReadDatabase, input: StoredRequestInput)
      ON CONFLICT (request_id) DO NOTHING`,
     [requestId],
   );
+  await db.query(
+    `INSERT INTO request_telegram_notifications (request_id, status, created_at, updated_at)
+     VALUES ($1, 'queued', now(), now())
+     ON CONFLICT (request_id) DO NOTHING`,
+    [requestId],
+  );
   return requestId;
 }

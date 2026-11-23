@@ -615,6 +615,7 @@ export type LeadRequestRecord = {
   formAnswers?: Record<string, string>;
   attachmentUrl?: string;
   emailNotificationStatus?: "queued" | "processing" | "retry_wait" | "accepted_by_smtp" | "failed_final";
+  telegramNotificationStatus?: "queued" | "processing" | "retry_wait" | "accepted_by_telegram" | "failed_final";
   sourceForm: string;
   sourcePage?: string;
   createdAt: string;

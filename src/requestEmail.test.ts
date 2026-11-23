@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildRequestEmail } from "./requestEmail";
+import { buildRequestEmail, buildRequestNotificationText } from "./requestEmail";
 import { SOURCE_FORMS } from "./types/requestItem";
 
 const config = { to: "info@bizontop.ru", from: "Bizon <noreply@bizontop.ru>" };
@@ -9,6 +9,38 @@ function occurrences(value: string, search: string): number {
 }
 
 describe("buildRequestEmail", () => {
+  it("uses the shared notification body without changing the email text contract", () => {
+    const data = {
+      id: 421,
+      created_at: "2026-11-23T08:00:00.000Z",
+      source_form: "procurement",
+      source_page: "/contact/",
+      name: "Анна Тест",
+      phone: "+7 900 000-00-00",
+      email: "anna@example.com",
+      city: "Владивосток",
+      company_name: "Bizon Demo",
+      inn: "2500000000",
+      position: "Закупщик",
+      purchase_volume: "12 шин",
+      preferred_contact: "phone",
+      message: "Типоразмер: 12.00R20\nКоличество: 6\nОсь: ведущая\nПроверочный комментарий",
+      form_answers: { contact_name: "Анна Тест", region: "Приморский край", deliveryWindow: "7 дней" },
+      form_answer_labels: { region: "Регион клиента", deliveryWindow: "Срок поставки" },
+      selection_context: { tireSize: "12.00R20", axle: "Ведущая" },
+      attachment_url: "https://files.example.com/spec.pdf",
+      utm_source: "newsletter",
+      utm_medium: "email",
+      utm_campaign: "winter-2026",
+      items: [{ item_type: "tire", item_name: "DSR158", variant_label: "12.00R20", quantity: 6, url: "/models/tbr/dsr158" }],
+    };
+    const siteUrl = "https://www.bizontop.ru/";
+
+    expect(buildRequestNotificationText(data, { siteUrl })).toBe(
+      buildRequestEmail(data, { ...config, siteUrl }).text,
+    );
+  });
+
   it("includes submitted answers and items as text and escaped HTML", () => {
     const email = buildRequestEmail({
       id: 42,
