@@ -6,9 +6,9 @@
   --ink-muted: #697386;
   --line: #e4e7ed;
   --mint: #06e3be;
-  --mint-wash: #d1fef6;
-  --mint-hover: #05b194;
-  --mint-ink: #024e41;
+  --mint-wash: #dafbf5;
+  --mint-hover: #05c1a2;
+  --mint-ink: #023930;
   --action: #e45433;
   --action-hover: #ea7a60;
   --action-ink: #ffffff;
@@ -16,11 +16,7 @@
   --accent-wash: var(--mint-wash);
   --accent-hover: var(--mint-hover);
   --sidebar: #202527;
-  --sidebar-hover: #30363a;
-  --sidebar-muted: #bec5ce;
-  --sidebar-line: #ffffff1a;
   --success: #21834b;
-  --success-wash: #e7f6eb;
   --radius: 8px;
   --control: 44px;
   --space: 24px;
