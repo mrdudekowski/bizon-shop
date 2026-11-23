@@ -132,6 +132,7 @@ export type AdminClient = {
   cancelChangeSet(id: string): Promise<ChangeSet>;
   listRequests(): Promise<LeadRequestRecord[]>;
   updateRequestStatus(id: string, status: LeadRequestStatus): Promise<LeadRequestRecord>;
+  retryRequestEmailNotification(id: string): Promise<void>;
   updateCatalogOrder(entity: OrderableCatalogEntity, orderedIds: string[]): Promise<void>;
   storageNotice(): Promise<string | null>;
 };

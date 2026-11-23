@@ -30,6 +30,14 @@ The migrations in this repository are additive: they assume the existing BIZON c
 - `GET`, `PUT`, `DELETE /v1/cart?kind=bizon|shop` — isolated cart sessions. Bizon and Shop use separate `HttpOnly` cookies (`bizon-site-cart-session-v1` and `bizon-shop-cart-session-v1`); the database stores only token hashes.
 - `POST /v1/cart/migrate` — splits a legacy mixed cart into the two typed sessions while preserving unmapped items for recovery.
 
+## Request email notifications
+
+Accepted requests and their email-outbox row are committed in the same PostgreSQL transaction. The backend worker sends mail asynchronously; SMTP failure never changes the already returned request-accepted response. Delivery state is exposed separately from the CRM request status in the CMS.
+
+The additive migration `202611230001` must be applied before starting this version. The worker stays disabled until all backend-only variables are configured: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`, and `REQUEST_NOTIFICATION_EMAIL_TO`. Confirm the exact Timeweb connection and sender values before enabling delivery. Restart the backend after changing runtime secrets.
+
+`accepted_by_smtp` means the configured SMTP server accepted the message; it does not prove inbox placement. Tests inject a transport and do not send external email. Do not place SMTP secrets in CMS or public-site variables.
+
 Browser origins for public routes are configured by `CORS_ALLOWED_ORIGINS`. CMS admin routes use the separate `CMS_ALLOWED_ORIGINS` list. Production must set both lists to the exact intended origins; the development defaults allow the public site on port `3000` and the CMS on port `3001` for their separate route groups.
 
 For static-site freshness checks, set backend `PUBLIC_SITE_URL` to the HTTPS origin serving the public export. After Timeweb reports deployment success, the backend compares the exported `content-revision.json` against the digest captured after the CMS publication.
