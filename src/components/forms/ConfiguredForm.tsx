@@ -80,7 +80,7 @@ export function ConfiguredForm({
     setStatus("loading");
     setError("");
     try {
-      const result = await submitRequest({ sourceForm, sourcePage: window.location.pathname, body: values });
+      const result = await submitRequest({ sourceForm, formContract: "configured", sourcePage: window.location.pathname, body: values });
       setSuccessMessage(result.message);
       setStatus("success");
     } catch (caught) {

@@ -83,6 +83,7 @@ export function ContextualContactForm({
     try {
       const result = await submitRequest({
         sourceForm: intent.sourceForm,
+        formContract: "standard",
         sourcePage: pathname || "/contact",
         body: {
           name: values.name,

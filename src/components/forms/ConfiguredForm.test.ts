@@ -123,6 +123,10 @@ describe("ConfiguredForm success", () => {
 
     const status = host.querySelector("#configured-form-success");
     expect(submitRequest).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(submitRequest).mock.calls[0]?.[0]).toMatchObject({
+      sourceForm: "supplier",
+      formContract: "configured",
+    });
     expect(status?.getAttribute("role")).toBe("status");
     expect(status?.getAttribute("aria-live")).toBe("polite");
     expect(status?.textContent).toBe("Из ответа сервера.");

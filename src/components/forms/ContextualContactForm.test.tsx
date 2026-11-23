@@ -74,7 +74,7 @@ describe("ContextualContactForm", () => {
       requestId: "req-9",
       message: "Принято",
     });
-    await renderForm();
+    await renderForm({ intent: resolveContactIntent(new URLSearchParams("subject=branding")) });
     await act(async () => {
       setControl(host, "name", "Анна");
       setControl(host, "phone", "+7 900 000-00-00");
@@ -88,6 +88,10 @@ describe("ContextualContactForm", () => {
 
     const status = host.querySelector("#contextual-contact-success");
     expect(submitRequest).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(submitRequest).mock.calls[0]?.[0]).toMatchObject({
+      sourceForm: "branding",
+      formContract: "standard",
+    });
     expect(status?.getAttribute("role")).toBe("status");
     expect(status?.getAttribute("aria-live")).toBe("polite");
     expect(status?.textContent).toContain("Заявка req-9 принята");

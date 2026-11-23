@@ -6,11 +6,12 @@ import { publicApiUrl } from "@/lib/publicApi";
 
 export type SubmitRequestOptions = {
   sourceForm: string;
+  formContract?: "standard" | "configured";
   sourcePage?: string;
   body: Record<string, unknown>;
 };
 
-export async function submitRequest({ sourceForm, sourcePage, body }: SubmitRequestOptions): Promise<ApiRequestSuccess> {
+export async function submitRequest({ sourceForm, formContract, sourcePage, body }: SubmitRequestOptions): Promise<ApiRequestSuccess> {
   const endpoint = publicApiUrl("/v1/requests");
   if (!endpoint) throw new Error("Отправка заявок пока не настроена.");
   const response = await fetch(endpoint, {
@@ -20,6 +21,7 @@ export async function submitRequest({ sourceForm, sourcePage, body }: SubmitRequ
     body: JSON.stringify({
       ...body,
       sourceForm,
+      ...(formContract ? { formContract } : {}),
       sourcePage,
       [HONEYPOT_FIELD]: "",
     }),
