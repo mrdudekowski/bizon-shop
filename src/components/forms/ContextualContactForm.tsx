@@ -155,7 +155,7 @@ export function ContextualContactForm({
           )}
         </dl>
         <div className={styles.confirmationLinks}>
-          <Link href={successHref ?? "/models"}>Вернуться в каталог</Link>
+          <Link className="btn-accent" href={successHref ?? "/models"}>Вернуться в каталог</Link>
         </div>
       </div>
     );
