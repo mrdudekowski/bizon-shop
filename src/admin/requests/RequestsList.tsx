@@ -80,7 +80,7 @@ export function RequestsList() {
   const [busyEmailId, setBusyEmailId] = useState<string | null>(null);
   const [busyTelegramId, setBusyTelegramId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("new");
   const [sourceFilter, setSourceFilter] = useState<string>("");
 
   const reload = useCallback(async () => {
