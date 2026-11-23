@@ -53,6 +53,7 @@ export function validateRequest(body: IncomingRequestBody): ValidationResult {
 
   const isQuickOrder = sourceForm === "product_quick_order";
   const isCart = sourceForm === "cart" || sourceForm === "tire_cart" || sourceForm === "shop_cart";
+  const requiresPhone = isQuickOrder || sourceForm === "contact" || sourceForm === "tire_selection" || sourceForm === "wheel_selection";
 
   if (isCart) {
     if (!Array.isArray(body.items) || body.items.length === 0) {
@@ -69,7 +70,7 @@ export function validateRequest(body: IncomingRequestBody): ValidationResult {
         message: "Please provide a phone number",
       };
     }
-  } else if (isQuickOrder) {
+  } else if (requiresPhone) {
     if (!phone) {
       return {
         ok: false,
