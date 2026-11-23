@@ -29,6 +29,19 @@ afterEach(() => {
 });
 
 describe("remote admin client", () => {
+  it("requests the exact new-request count from the admin API", async () => {
+    vi.stubEnv("NEXT_PUBLIC_ADMIN_API_URL", "https://admin.example.test");
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, result: 4 })));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(browserAdminClient().countNewRequests()).resolves.toBe(4);
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
+      method: "countNewRequests",
+      args: [],
+    });
+  });
+
   it("uses the CMS loopback hostname for the local API so session cookies stay same-site", async () => {
     vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("NEXT_PUBLIC_ADMIN_API_URL", "");

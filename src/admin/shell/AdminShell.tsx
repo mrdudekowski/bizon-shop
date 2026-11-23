@@ -122,6 +122,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const [siteDeployExpectedRevision, setSiteDeployExpectedRevision] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [newRequestCount, setNewRequestCount] = useState<number | null>(null);
 
   useEffect(() => {
     try {
@@ -214,6 +215,39 @@ export function AdminShell({ children }: { children: ReactNode }) {
       window.removeEventListener("beforeunload", warnBeforeUnload);
     };
   }, []);
+
+  useEffect(() => {
+    if (!session || !canEditorPerform(session, "view_requests")) {
+      setNewRequestCount(null);
+      return;
+    }
+
+    let active = true;
+    const refreshCount = () => {
+      void browserAdminClient().countNewRequests()
+        .then((count) => {
+          if (active && Number.isFinite(count) && count >= 0) setNewRequestCount(count);
+        })
+        .catch(() => {
+          // Keep the last known count if the API is temporarily unavailable.
+        });
+    };
+    const handleRequestsChanged = () => refreshCount();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") refreshCount();
+    };
+
+    refreshCount();
+    const timer = window.setInterval(refreshCount, 60_000);
+    window.addEventListener("bizon-requests-changed", handleRequestsChanged);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener("bizon-requests-changed", handleRequestsChanged);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [session, pathname]);
 
   useEffect(() => {
     if (!siteDeployId) return;
@@ -394,9 +428,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
             </Link>
           </div>
           {items.map((item) => (
-            <Link key={item.href} href={item.href} title={item.label} aria-label={item.label} aria-current={isNavCurrent(pathname, item.href) ? "page" : undefined}>
+            <Link key={item.href} href={item.href} title={item.label} aria-label={item.href === "/requests" && newRequestCount != null && newRequestCount > 0 ? `${item.label}, ${newRequestCount} новых` : item.label} aria-current={isNavCurrent(pathname, item.href) ? "page" : undefined}>
               <Icon name={item.icon} />
               <span>{item.label}</span>
+              {item.href === "/requests" && newRequestCount != null && newRequestCount > 0 ? <span className={styles.requestBadge} aria-hidden="true">{newRequestCount}</span> : null}
             </Link>
           ))}
           <div className={styles.sidebarBottom}>
@@ -498,10 +533,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
               key={item.href}
               className={styles.tab}
               href={item.href}
+              aria-label={item.href === "/requests" && newRequestCount != null && newRequestCount > 0 ? `${item.label}, ${newRequestCount} новых` : item.label}
               aria-current={isNavCurrent(pathname, item.href) ? "page" : undefined}
             >
               <Icon name={item.icon} />
               <span>{item.label}</span>
+              {item.href === "/requests" && newRequestCount != null && newRequestCount > 0 ? <span className={styles.requestBadge} aria-hidden="true">{newRequestCount}</span> : null}
             </Link>
           ))}
           <button
@@ -532,11 +569,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <Link
               key={item.href}
               href={item.href}
+              aria-label={item.href === "/requests" && newRequestCount != null && newRequestCount > 0 ? `${item.label}, ${newRequestCount} новых` : item.label}
               aria-current={isNavCurrent(pathname, item.href) ? "page" : undefined}
               onClick={() => setMoreOpen(false)}
             >
               <Icon name={item.icon} />
               <span>{item.label}</span>
+              {item.href === "/requests" && newRequestCount != null && newRequestCount > 0 ? <span className={styles.requestBadge} aria-hidden="true">{newRequestCount}</span> : null}
             </Link>
           ))}
         </div>

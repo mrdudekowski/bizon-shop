@@ -45,10 +45,12 @@ const SOURCE_LABELS: Record<string, string> = {
 const SOURCE_FILTER_OPTIONS: readonly { value: string; label: string }[] = [
   { value: "tire_cart", label: "Корзина шин BIZON" },
   { value: "shop_cart", label: "Корзина BIZON Shop" },
+  { value: "cart", label: "Корзина" },
   { value: "contact", label: "Форма контактов" },
   { value: "branding", label: "Брендирование" },
   { value: "wheel_selection", label: "Подбор дисков" },
   { value: "tire_selection", label: "Подбор шин" },
+  { value: "selection", label: "Подбор шин / дисков" },
   { value: "procurement", label: "Запрос по спецификации" },
   { value: "supplier", label: "Стать поставщиком" },
   { value: "warranty", label: "Гарантия" },
@@ -56,6 +58,10 @@ const SOURCE_FILTER_OPTIONS: readonly { value: string; label: string }[] = [
   { value: "shop_delivery", label: "Доставка BIZON Shop" },
   { value: "shop_warranty", label: "Гарантия BIZON Shop" },
   { value: "shop_supplier", label: "Поставщик BIZON Shop" },
+  { value: "product_quick_order", label: "Быстрый заказ товара" },
+  { value: "hero_cta", label: "Первый экран (Hero)" },
+  { value: "footer_cta", label: "Подвал сайта" },
+  { value: "custom", label: "Другое" },
 ];
 
 function formatSource(sourceForm: string): string {
@@ -93,6 +99,7 @@ export function RequestsList() {
     try {
       const updated = await browserAdminClient().updateRequestStatus(id, nextStatus);
       setRequests((current) => current.map((item) => (item.id === id ? updated : item)));
+      window.dispatchEvent(new Event("bizon-requests-changed"));
     } catch {
       setError("Не удалось обновить статус заявки.");
     } finally {

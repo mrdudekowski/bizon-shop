@@ -559,6 +559,7 @@ export function publishedSnapshotReads(snapshot: unknown): SnapshotReads {
     async listChangeSets() { return []; },
     async listUsers() { return []; },
     async listRequests() { return []; },
+    async countNewRequests() { return 0; },
   };
 }
 

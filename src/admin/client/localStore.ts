@@ -1770,6 +1770,11 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       return [];
     },
 
+    async countNewRequests() {
+      requirePermission(load(), "view_requests");
+      return 0;
+    },
+
     async updateRequestStatus() {
       requirePermission(load(), "manage_requests");
       throw new Error("not_found");
