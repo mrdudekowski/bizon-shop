@@ -6,6 +6,7 @@ import type { LeadRequestRecord, LeadRequestStatus } from "@/admin/domain/types"
 import { canEditorPerform } from "@/admin/domain/editorPermissions";
 import { useAdminSession } from "@/admin/ui/DocumentUI";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
+import { TelegramNotificationStatus } from "./TelegramNotificationStatus";
 import styles from "./RequestsList.module.css";
 
 const STATUS_OPTIONS: readonly { value: LeadRequestStatus; label: string }[] = [
@@ -77,6 +78,7 @@ export function RequestsList() {
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [busyEmailId, setBusyEmailId] = useState<string | null>(null);
+  const [busyTelegramId, setBusyTelegramId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [sourceFilter, setSourceFilter] = useState<string>("");
@@ -117,6 +119,19 @@ export function RequestsList() {
       setError("Не удалось поставить email-уведомление в очередь повторно.");
     } finally {
       setBusyEmailId(null);
+    }
+  }
+
+  async function onRetryTelegram(id: string) {
+    setBusyTelegramId(id);
+    setError("");
+    try {
+      await browserAdminClient().retryRequestTelegramNotification(id);
+      await reload();
+    } catch {
+      setError("Не удалось поставить Telegram-уведомление в очередь повторно.");
+    } finally {
+      setBusyTelegramId(null);
     }
   }
 
@@ -312,6 +327,13 @@ export function RequestsList() {
                   ) : null}
                 </div>
               ) : null}
+
+              <TelegramNotificationStatus
+                status={req.telegramNotificationStatus}
+                canRetry={canManageRequests}
+                busy={busyTelegramId === req.id}
+                onRetry={() => void onRetryTelegram(req.id)}
+              />
 
               {req.items.length > 0 ? (
                 <div className={styles.itemsSection}>

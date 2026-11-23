@@ -193,6 +193,104 @@
   font-size: 13px;
 }
 
+.telegramControls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.telegramStatusIcon,
+.telegramRetryButton {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: 50%;
+}
+
+.telegramStatusIcon {
+  color: var(--action);
+  background: color-mix(in srgb, var(--action) 12%, white);
+  cursor: help;
+}
+
+.telegramStatusIcon[data-state="accepted"] {
+  color: var(--mint-ink);
+  background: var(--mint-wash);
+}
+
+.telegramStatusIcon svg,
+.telegramRetryButton svg {
+  width: 19px;
+  height: 19px;
+}
+
+.telegramStatusIcon::after {
+  position: absolute;
+  z-index: 5;
+  right: auto;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  width: max-content;
+  max-width: min(280px, calc(100vw - 32px));
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: var(--sidebar);
+  color: #fff;
+  content: attr(data-tooltip);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 3px);
+  transition: opacity 120ms ease, transform 120ms ease;
+  white-space: normal;
+}
+
+.telegramStatusIcon:hover::after,
+.telegramStatusIcon:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.telegramStatusIcon:focus-visible,
+.telegramRetryButton:focus-visible {
+  outline: 3px solid var(--mint);
+  outline-offset: 2px;
+}
+
+.telegramRetryButton {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.telegramRetryButton:hover:not(:disabled) {
+  border-color: var(--action);
+  background: color-mix(in srgb, var(--action) 8%, white);
+  color: var(--action);
+}
+
+.telegramRetryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.telegramRetryButton[aria-busy="true"] svg {
+  animation: telegramRetrySpin 800ms linear infinite;
+}
+
+@keyframes telegramRetrySpin {
+  to { transform: rotate(360deg); }
+}
+
 .itemsSection {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

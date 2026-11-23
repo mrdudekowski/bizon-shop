@@ -1785,6 +1785,11 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       throw new Error("not_found");
     },
 
+    async retryRequestTelegramNotification() {
+      requirePermission(load(), "manage_requests");
+      throw new Error("not_found");
+    },
+
     async updateCatalogOrder(entity: OrderableCatalogEntity, orderedIds: string[]) {
       const state = load();
       requirePermission(state, entity === "material" ? "edit_site_pages" : "edit_catalog");
