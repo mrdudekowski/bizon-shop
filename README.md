@@ -12,7 +12,7 @@ npm run dev
 
 Set `NEXT_PUBLIC_ADMIN_API_URL` to the backend origin. The backend must allow the CMS origin through `CMS_ALLOWED_ORIGINS`; public website origins belong in `CORS_ALLOWED_ORIGINS` and do not receive browser access to admin routes.
 
-The CMS production build is a static export and requires `NEXT_PUBLIC_ADMIN_API_URL` at build time. The GitHub workflow sets a local placeholder for build validation; the deployed artifact must be built with the intended backend origin.
+The CMS production build is a static export and requires `NEXT_PUBLIC_ADMIN_API_URL` at build time. The GitHub workflow sets a local placeholder for build validation; the deployed artifact must be built with the intended backend origin. For container platforms that run `npm start`, the start script serves the generated `out/` directory on `0.0.0.0:$PORT`; it does not start the Next.js SSR server. The `PORT` value is used at runtime, while `NEXT_PUBLIC_ADMIN_API_URL` is baked into the client bundle during build.
 
 ## Checks
 
