@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { insertRequest } from "../insertRequest";
-import { answersFromFields, loadPageForm, pageFormFieldsAreValid, readPageFormDraft, requestFromAnswers, trustedAttachmentUrl, writePageForm } from "./pageForm";
+import { answersFromFields, loadPageForm, pageFormFieldsAreValid, readPageFormDraft, requestFromAnswers, resolveRequestFormContract, trustedAttachmentUrl, writePageForm } from "./pageForm";
 
 const fields = [
   { id: "companyName", label: "Название компании", type: "text" as const, required: true },
@@ -25,6 +25,26 @@ describe("answersFromFields", () => {
     expect(answers).toEqual({ companySite: "https://mill.ru" });
     expect(answers).not.toHaveProperty("website");
     expect(missing).toEqual(["companyName"]);
+  });
+});
+
+describe("resolveRequestFormContract", () => {
+  it.each(["branding", "supplier", "warranty"])("routes contextual %s requests through standard validation", (sourceForm) => {
+    expect(resolveRequestFormContract("standard", sourceForm)).toBe("standard");
+  });
+
+  it("keeps configured CMS forms on their saved field contract", () => {
+    expect(resolveRequestFormContract("configured", "branding")).toBe("configured");
+  });
+
+  it("preserves legacy routing when older clients omit the contract", () => {
+    expect(resolveRequestFormContract(undefined, "branding")).toBe("configured");
+    expect(resolveRequestFormContract(undefined, "contact")).toBe("standard");
+  });
+
+  it("rejects unknown contracts and configured forms without a configured source", () => {
+    expect(resolveRequestFormContract("unexpected", "branding")).toBe("invalid");
+    expect(resolveRequestFormContract("configured", "contact")).toBe("invalid");
   });
 });
 

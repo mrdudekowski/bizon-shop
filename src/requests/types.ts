@@ -20,6 +20,8 @@ export type IncomingRequestBody = {
   items?: RequestItemInput[] | null;
   sourcePage?: string | null;
   sourceForm?: string | null;
+  /** Selects fixed request validation or the CMS page-form field contract. */
+  formContract?: unknown;
   utmSource?: string | null;
   utmMedium?: string | null;
   utmCampaign?: string | null;

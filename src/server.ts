@@ -31,6 +31,7 @@ import {
   PAGE_KEY_BY_SOURCE_FORM,
   answersFromFields,
   isConfiguredSourceForm,
+  resolveRequestFormContract,
   loadPageForm,
   requestFromAnswers,
   stringValues,
@@ -659,7 +660,12 @@ async function handleRequest(
         return;
       }
       const configuredSource = parsed.body.sourceForm;
-      if (isConfiguredSourceForm(configuredSource)) {
+      const formContract = resolveRequestFormContract(parsed.body.formContract, configuredSource);
+      if (formContract === "invalid") {
+        sendJson(res, 400, { ok: false, error: "invalid_form_contract", message: "Invalid form contract" });
+        return;
+      }
+      if (formContract === "configured" && isConfiguredSourceForm(configuredSource)) {
         // Configured forms have no fixed `name` field, so they must not pass through validateRequest.
         if (isHoneypotFilled(parsed.body)) {
           sendJson(res, 400, { ok: false, error: "honeypot_triggered", message: "Request rejected" });

@@ -76,6 +76,21 @@ export const PAGE_KEY_BY_SOURCE_FORM = {
 
 export type ConfiguredSourceForm = keyof typeof PAGE_KEY_BY_SOURCE_FORM;
 
+export type RequestFormContract = "standard" | "configured";
+export type ResolvedRequestFormContract = RequestFormContract | "invalid";
+
+/** Explicitly distinguishes CMS forms from contextual contact forms that share a sourceForm value. */
+export function resolveRequestFormContract(
+  contract: unknown,
+  sourceForm: unknown,
+): ResolvedRequestFormContract {
+  if (contract === "standard") return "standard";
+  if (contract === "configured") return isConfiguredSourceForm(sourceForm) ? "configured" : "invalid";
+  if (contract !== undefined && contract !== null) return "invalid";
+  // Preserve the legacy API behavior for clients that do not send a contract.
+  return isConfiguredSourceForm(sourceForm) ? "configured" : "standard";
+}
+
 export function isConfiguredSourceForm(value: unknown): value is ConfiguredSourceForm {
   return typeof value === "string" && Object.hasOwn(PAGE_KEY_BY_SOURCE_FORM, value);
 }
