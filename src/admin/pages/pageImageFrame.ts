@@ -1,3 +1,15 @@
+import type { FocalViewport } from "@/admin/domain/types";
+import { pageHeroPreviewGeometry, pageHeroReferenceViewport } from "./pageHeroPreviewGeometry";
+
+export type PageHeroPreview = {
+  pageKey: string;
+};
+
+export function pageHeroFrameGeometry({ pageKey }: PageHeroPreview, viewport: FocalViewport) {
+  const { width: viewportWidth, height: viewportHeight } = pageHeroReferenceViewport(viewport);
+  return pageHeroPreviewGeometry({ pageKey, viewportWidth, viewportHeight });
+}
+
 /** Guest-site crop for a page-editor preview. Product editors do not use this. */
 export type PageImageFrame = {
   id:
@@ -32,6 +44,7 @@ export function previewAspectRatio(frameId: PageImageFrame["id"] | undefined, vi
   if (frameId === "expertise") return viewport === "desktop" ? 23 / 10 : 4 / 3;
   if (frameId === "branding") return viewport === "mobile" ? 4 / 3 : viewport === "tablet" ? 2 : 23 / 10;
   if (frameId === "shop-campaign") return viewport === "mobile" ? 2 / 3 : 16 / 9;
+  // Legacy frame callers do not yet pass the page key for contract sizing.
   if (frameId === "page-hero") return viewport === "desktop" ? 5 / 4 : 5 / 2;
   if (frameId === "proof") return viewport === "mobile" ? 5 / 4 : 4 / 3;
   if (frameId === "shop-category-carousel") {

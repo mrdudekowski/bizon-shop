@@ -19,6 +19,7 @@ import {
   pageShowsRequestForm,
   twinPageKey,
 } from "./textPageDraft";
+import { PageHeroImageFields } from "./PageHeroImageFields";
 import { PAGE_IMAGE_FRAMES, focalObjectPosition, type PageImageFrame } from "./pageImageFrame";
 import frameStyles from "./pageImageFrame.module.css";
 import styles from "./TextPageCanvas.module.css";
@@ -542,10 +543,10 @@ export function TextPageCanvas({
           <div className={styles.lead}>
             <EditableText label="Лид" value={draft.hero.lead} multiline onChange={(lead) => onChange({ ...draft, hero: { ...draft.hero, lead } })} />
           </div>
-          <ImageSlot
-            image={draft.hero.image}
-            label="Изображение шапки"
-            frame={PAGE_IMAGE_FRAMES.pageHero}
+          <PageHeroImageFields
+            pageKey={draft.id}
+            value={draft.hero.image}
+            uploadMode="new-asset"
             onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image } })}
           />
         </header>

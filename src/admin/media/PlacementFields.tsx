@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
-import type { FocalViewport, ImagePlacement, MediaListItem } from "@/admin/domain/types";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent, type DragEvent, type ReactNode } from "react";
+import type { FocalPoint, FocalViewport, ImagePlacement, MediaListItem } from "@/admin/domain/types";
 import { FOCAL_VIEWPORTS } from "@/admin/domain/types";
 import { resolveFocalPoint, setFocalPoint } from "@/admin/domain/focalPosition";
 import { resolveMediaPreviewUrl } from "@/admin/domain/catalogPreviewUrl";
@@ -9,8 +9,10 @@ import { MediaPicker } from "./MediaPicker";
 import { uploadErrorText } from "./uploadError";
 import { AdminClientError } from "@/admin/client/errors";
 import { mediaMimeFromFile } from "./mediaMime";
-import { IMAGE_UPLOAD_TYPES, acceptAttribute, uploadLibraryFile } from "./uploadLibraryFile";
-import { focalObjectPosition, previewAspectRatio, type PageImageFrame } from "@/admin/pages/pageImageFrame";
+import { IMAGE_UPLOAD_TYPES, acceptAttribute, firstAllowedFile, uploadLibraryFile } from "./uploadLibraryFile";
+import { focalObjectPosition, pageHeroFrameGeometry, previewAspectRatio, type PageHeroPreview, type PageImageFrame } from "@/admin/pages/pageImageFrame";
+import { pageHeroReferenceViewport } from "@/admin/pages/pageHeroPreviewGeometry";
+import { pageHeroImageDragPosition } from "@/admin/pages/pageHeroImageDrag";
 import frameStyles from "@/admin/pages/pageImageFrame.module.css";
 import styles from "./PlacementFields.module.css";
 function emptyPlacement(assetId: string): ImagePlacement { return { assetId, alt: "", focalX: .5, focalY: .5, crop: { x: 0, y: 0, width: 1, height: 1 } }; }
@@ -48,18 +50,37 @@ type Props = {
   previewSrc?: string | null;
   previewSurface?: "default" | "dark";
   uploadMode?: "replace" | "new-asset";
+  allowFileDrop?: boolean;
+  manageReplacement?: boolean;
   allowedMimeTypes?: readonly string[];
   showFocus?: boolean;
   /** Guest crop. Absent on product, tire, wheel, and file editors, which stay square. */
   frame?: PageImageFrame;
+  /** Enables the public geometry and direct dragging for the page-hero frame. */
+  pageHeroPreview?: PageHeroPreview;
 };
-export function PlacementFields({ value, onChange, label = "Фото", thumbs, previewSrc, previewSurface = "default", uploadMode = "replace", allowedMimeTypes = IMAGE_UPLOAD_TYPES, showFocus = true, frame }: Props) {
+
+type ImageDrag = {
+  pointerId: number;
+  clientX: number;
+  clientY: number;
+  viewport: FocalViewport;
+  image: HTMLImageElement;
+  src: string;
+  current: FocalPoint;
+};
+
+export function PlacementFields({ value, onChange, label = "Фото", thumbs, previewSrc, previewSurface = "default", uploadMode = "replace", allowFileDrop = false, manageReplacement = true, allowedMimeTypes = IMAGE_UPLOAD_TYPES, showFocus = true, frame, pageHeroPreview }: Props) {
   const [viewport, setViewport] = useState<FocalViewport>("desktop");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const uploadInProgress = useRef(false);
   const [replacementPending, setReplacementPending] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const imageDrag = useRef<ImageDrag | null>(null);
+  const dragInstructionsId = useId();
   const assetId = value?.assetId;
   useEffect(() => {
     return () => {
@@ -98,7 +119,8 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
     };
   }, [previewUrl]);
   async function onFile(file?: File) {
-    if (!file) return;
+    if (!file || uploadInProgress.current) return;
+    uploadInProgress.current = true;
     setUploadError("");
     setUploading(true);
     try {
@@ -110,7 +132,22 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
     } catch (error) {
       setUploadError(uploadErrorText(error));
     } finally {
+      uploadInProgress.current = false;
       setUploading(false);
+    }
+  }
+  function acceptFileDrag(event: DragEvent<HTMLFieldSetElement>) {
+    if (event.dataTransfer.types.includes("Files")) event.preventDefault();
+  }
+  function uploadDroppedFile(event: DragEvent<HTMLFieldSetElement>) {
+    if (!event.dataTransfer.files.length) return;
+    event.preventDefault();
+    if (uploading || uploadInProgress.current) return;
+    const file = firstAllowedFile(event.dataTransfer.files, allowedMimeTypes);
+    if (file) {
+      void onFile(file);
+    } else {
+      setUploadError(uploadErrorText(new AdminClientError("publish_blocked")));
     }
   }
   async function cancelReplacement() {
@@ -132,7 +169,7 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
     }
   }
   async function chooseAsset(asset: MediaListItem) {
-    if (replacementPending && assetId) await browserAdminClient().cancelAssetReplacement(assetId);
+    if (manageReplacement && replacementPending && assetId) await browserAdminClient().cancelAssetReplacement(assetId);
     const next = value ? { ...value, assetId: asset.id } : emptyPlacement(asset.id);
     delete next.replacementAssetId;
     setReplacementPending(false);
@@ -156,12 +193,63 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
     if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
     pointAt(event);
   }
+  function startImageDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    const image = imageRef.current;
+    if (!value || !image?.naturalWidth || !image.naturalHeight || event.button !== 0) return;
+    const drag = imageDrag.current;
+    if (drag && event.currentTarget.hasPointerCapture(drag.pointerId)) return;
+
+    event.preventDefault();
+    event.currentTarget.focus({ preventScroll: true });
+    event.currentTarget.setPointerCapture(event.pointerId);
+    imageDrag.current = {
+      pointerId: event.pointerId,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      viewport,
+      image,
+      src: image.src,
+      current: activePoint,
+    };
+  }
+  function moveImageDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    const drag = imageDrag.current;
+    if (!value || !drag || drag.pointerId !== event.pointerId || drag.viewport !== viewport
+      || drag.image !== imageRef.current || drag.src !== drag.image.src
+      || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
+
+    const { width, height } = drag.image.getBoundingClientRect();
+    const next = pageHeroImageDragPosition({
+      current: drag.current,
+      deltaX: event.clientX - drag.clientX,
+      deltaY: event.clientY - drag.clientY,
+      frameWidth: width,
+      frameHeight: height,
+      naturalWidth: drag.image.naturalWidth,
+      naturalHeight: drag.image.naturalHeight,
+    });
+    imageDrag.current = { ...drag, current: next, clientX: event.clientX, clientY: event.clientY };
+    if (next.x !== drag.current.x || next.y !== drag.current.y) {
+      onChange(setFocalPoint(value, viewport, next));
+    }
+  }
+  function endImageDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (imageDrag.current?.pointerId === event.pointerId) imageDrag.current = null;
+  }
   function moveFocus(event: ReactKeyboardEvent<HTMLButtonElement>) {
     if (!value) return;
-    const step = event.shiftKey ? .05 : .01;
+    const step = (event.shiftKey ? .05 : .01) * (pageHeroGeometry ? -1 : 1);
     const delta = ({ ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] } as const)[event.key as "ArrowLeft" | "ArrowRight" | "ArrowUp" | "ArrowDown"];
     if (delta) {
       event.preventDefault();
+      if (pageHeroGeometry) {
+        const image = imageRef.current;
+        const { width, height } = previewRef.current?.getBoundingClientRect() ?? { width: 0, height: 0 };
+        const imageRatio = image?.naturalWidth && image.naturalHeight ? image.naturalWidth / image.naturalHeight : 0;
+        const frameRatio = width > 0 && height > 0 ? width / height : 0;
+        const hasOverflowOnAxis = delta[0] !== 0 ? imageRatio > frameRatio : imageRatio < frameRatio;
+        if (imageRatio > 0 && frameRatio > 0 && !hasOverflowOnAxis) return;
+      }
       const current = resolveFocalPoint(value, viewport);
       onChange(setFocalPoint(value, viewport, { x: clamp(current.x + delta[0]), y: clamp(current.y + delta[1]) }));
     }
@@ -169,8 +257,19 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
   const focusEnabled = showFocus && frame?.usesFocal !== false;
   const activePoint = value ? resolveFocalPoint(value, viewport) : { x: 0.5, y: 0.5 };
   const placementStyle = value ? ({ "--focus-x": `${activePoint.x * 100}%`, "--focus-y": `${activePoint.y * 100}%` } as React.CSSProperties) : undefined;
-  const aspectRatio = previewAspectRatio(frame?.id, viewport);
-  const previewSizeStyle = { aspectRatio, width: `${Math.min(320, Math.round(240 * aspectRatio))}px` } as React.CSSProperties;
+  const pageHeroGeometry = frame?.id === "page-hero" && pageHeroPreview
+    ? pageHeroFrameGeometry(pageHeroPreview, viewport)
+    : undefined;
+  const aspectRatio = pageHeroGeometry
+    ? pageHeroGeometry.width / pageHeroGeometry.height
+    : previewAspectRatio(frame?.id, viewport);
+  const previewSizeStyle = {
+    aspectRatio,
+    width: pageHeroGeometry
+      ? `min(100%, ${pageHeroGeometry.width}px, calc(var(--cms-preview-max, 22rem) * ${aspectRatio}))`
+      : `${Math.min(320, Math.round(240 * aspectRatio))}px`,
+  };
+  const referenceViewport = pageHeroPreview ? pageHeroReferenceViewport(viewport) : undefined;
   const focalStyle = frame?.usesFocal
     ? ({ "--frame-position": focalObjectPosition(activePoint.x, activePoint.y) } as React.CSSProperties)
     : undefined;
@@ -194,7 +293,13 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
     {replaceLabel}
     <MediaPicker disabled={uploading} excludeIds={assetId ? [assetId] : []} filterMimeTypes={[...allowedMimeTypes]} onSelect={chooseAsset} />
   </div>;
-  return <fieldset className={styles.fields} data-cms-image-fields><legend>{label}</legend>
+  return <fieldset
+    className={styles.fields}
+    data-cms-image-fields
+    onDragOver={allowFileDrop ? acceptFileDrag : undefined}
+    onDrop={allowFileDrop ? uploadDroppedFile : undefined}
+  >
+    <legend>{label}</legend>
     {displayUrl ? null : mediaActions}
     {uploadError ? <p role="alert">{uploadError}</p> : null}
     {displayUrl ? (
@@ -203,26 +308,60 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
         <div className={styles.stage}>
           <div className={styles.previewColumn}>
             <div className={`${styles.previewFrame} ${frame ? frameStyles.host : ""}`}>
-              <div ref={previewRef} className={`${styles.previewShot} ${frame ? frameStyles.shot : ""} ${previewSurface === "dark" ? styles.previewShotDark : ""}`} data-page-frame={frame?.id} data-preview-viewport={viewport} style={{ ...previewSizeStyle, ...(focusEnabled ? placementStyle : {}) }} aria-label="Предпросмотр фото и точки фокуса">
-                <img className={frame ? `${styles.preview} ${frameStyles.image}` : styles.preview} style={focalStyle} src={displayUrl} alt={value?.alt || label} />
-                {focusEnabled && value ? <button className={styles.focusPoint} style={placementStyle} type="button" aria-label={`Точка фокуса (${viewport}): перетащите кружок; стрелки на клавиатуре`} onPointerDown={dragFocus} onPointerMove={moveDrag} onKeyDown={moveFocus} /> : null}
+              <div
+                ref={previewRef}
+                className={`${styles.previewShot} ${frame ? frameStyles.shot : ""} ${previewSurface === "dark" ? styles.previewShotDark : ""}`}
+                data-page-frame={frame?.id}
+                data-page-hero-preview={pageHeroGeometry?.layout}
+                data-preview-viewport={viewport}
+                style={{ ...previewSizeStyle, ...(focusEnabled ? placementStyle : {}) }}
+                aria-label="Предпросмотр фото и точки фокуса"
+              >
+                <img
+                  ref={imageRef}
+                  draggable={pageHeroGeometry ? false : undefined}
+                  className={frame ? `${styles.preview} ${frameStyles.image}` : styles.preview}
+                  style={focalStyle}
+                  src={displayUrl}
+                  alt={value?.alt || label}
+                />
+                {focusEnabled && value && (pageHeroGeometry ? (
+                  <button
+                    className={styles.imageDrag}
+                    type="button"
+                    aria-label={`Положение изображения (${viewport})`}
+                    aria-describedby={dragInstructionsId}
+                    onPointerDown={startImageDrag}
+                    onPointerMove={moveImageDrag}
+                    onPointerUp={endImageDrag}
+                    onPointerCancel={endImageDrag}
+                    onLostPointerCapture={endImageDrag}
+                    onKeyDown={moveFocus}
+                  />
+                ) : (
+                  <button className={styles.focusPoint} style={placementStyle} type="button" aria-label={`Точка фокуса (${viewport}): перетащите кружок; стрелки на клавиатуре`} onPointerDown={dragFocus} onPointerMove={moveDrag} onKeyDown={moveFocus} />
+                ))}
               </div>
             </div>
           </div>
           {value ? (
             <div className={styles.controls}>
               {mediaActions}
-              {replacementPending ? <>
+              {replacementPending && manageReplacement ? <>
                 <p className={styles.caption}>Новое фото появится на сайте после публикации.</p>
                 <button type="button" className="ghost" disabled={uploading} onClick={() => void cancelReplacement()}>
                   Отменить замену
                 </button>
               </> : null}
-              {focusEnabled ? <p className={styles.caption}>Перетащите кружок, чтобы сдвинуть кадр на карточке.</p> : null}
+              {focusEnabled && (pageHeroGeometry
+                ? <p className={styles.caption} id={dragInstructionsId}>Перетащите изображение или используйте стрелки на клавиатуре.</p>
+                : <p className={styles.caption}>Перетащите кружок, чтобы сдвинуть кадр на карточке.</p>
+              )}
               {focusEnabled ? <div className={styles.viewportControls} role="group" aria-label="Устройство для настройки кадра">
                 {FOCAL_VIEWPORTS.map((mode) => <button key={mode} type="button" className={viewport === mode ? styles.viewportActive : styles.viewportButton} aria-label={mode === "desktop" ? "Desktop" : mode === "tablet" ? "Планшет" : "Мобильный"} aria-pressed={viewport === mode} onClick={() => setViewport(mode)}>
                   <ViewportIcon viewport={mode} />
                 </button>)}
+                {referenceViewport ? <span className={styles.viewportDimensions} aria-live="polite">{referenceViewport.width} × {referenceViewport.height} px</span> : null}
               </div> : null}
               <label>Подпись к фото<input value={value.alt} onChange={(event) => patch({ alt: event.target.value })} /></label>
               <button type="button" className="ghost" onClick={() => { onChange(undefined); setPreviewUrl(null); }}>Убрать фото</button>
@@ -230,7 +369,7 @@ export function PlacementFields({ value, onChange, label = "Фото", thumbs, p
           ) : null}
         </div>
       </>
-    ) : null}
+    ) : pageHeroPreview && value ? <button type="button" className="ghost" onClick={() => onChange(undefined)}>Убрать фото</button> : null}
   </fieldset>;
 }
 

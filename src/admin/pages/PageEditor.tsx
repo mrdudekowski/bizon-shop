@@ -31,6 +31,7 @@ import { DocumentFields } from "@/admin/media/DocumentFields";
 
 import { editorialSaveBlockReason } from "./editorialSaveBlock";
 import { PAGE_LABELS } from "./pageLabels";
+import { PageHeroImageFields } from "./PageHeroImageFields";
 import { TextPageCanvas } from "./TextPageCanvas";
 import { PAGE_IMAGE_FRAMES } from "./pageImageFrame";
 import { dropClearedCanvasBlocks, isTextCanvasPage } from "./textPageDraft";
@@ -177,9 +178,8 @@ function StubFields({
         value={draft.hero}
         onChange={(hero) => onChange({ ...draft, hero: { ...draft.hero, ...hero } })}
       />
-      <PlacementFields
-        label="Картинка шапки"
-        frame={PAGE_IMAGE_FRAMES.pageHero}
+      <PageHeroImageFields
+        pageKey={draft.id}
         value={draft.hero.image}
         onChange={(image) => onChange({ ...draft, hero: { ...draft.hero, image: image ?? null } })}
       />
