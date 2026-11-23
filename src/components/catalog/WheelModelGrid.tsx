@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-
 import { BrandModelName } from "@/components/BrandModelName/BrandModelName";
 import { CatalogCard } from "@/components/catalog/CatalogCard";
 import { MobileFilterSheet } from "@/components/catalog/MobileFilterSheet";
+import { CatalogSelectionFeedback } from "@/components/catalog/CatalogSelectionFeedback";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import type { CmsWheelModel, CmsWheelVariant } from "@/lib/content/types";
 import {
@@ -15,6 +14,7 @@ import {
   parseWheelFilters,
   type WheelFilters,
 } from "@/lib/catalog/wheelFilters";
+import { patchFilterSearchParams } from "@/lib/catalog/filterUrlState";
 
 import styles from "./TireCatalog.module.css";
 
@@ -35,6 +35,10 @@ const FILTER_FIELDS = [
   { key: "color", label: "Цвет", empty: "Любой цвет" },
 ] as const;
 
+const WHEEL_FILTER_KEYS = [
+  "designStyle", "series", "diameter", "width", "pcd", "offsetET", "centerBore", "color", "priceOnRequest",
+] as const;
+
 export function WheelModelGrid({
   models,
   variants,
@@ -48,11 +52,30 @@ export function WheelModelGrid({
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   useEffect(() => {
-    setFilters(parseWheelFilters(new URLSearchParams(window.location.search), models, variants));
+    const readFiltersFromUrl = () => {
+      setFilters(parseWheelFilters(new URLSearchParams(window.location.search), models, variants));
+    };
+    readFiltersFromUrl();
+    window.addEventListener("popstate", readFiltersFromUrl);
+    return () => window.removeEventListener("popstate", readFiltersFromUrl);
   }, [models, variants]);
 
+  function replaceFilterUrl(next: WheelFilters) {
+    const values: Record<string, string | undefined> = { ...next };
+    const query = patchFilterSearchParams(new URLSearchParams(window.location.search), WHEEL_FILTER_KEYS, values);
+    const search = query ? `?${query}` : "";
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${search}${window.location.hash}`);
+  }
+
   function setFilter(key: keyof WheelFilters, value: string) {
-    setFilters((current) => ({ ...current, [key]: value || undefined }));
+    const next = { ...filters, [key]: value || undefined };
+    setFilters(next);
+    replaceFilterUrl(next);
+  }
+
+  function resetFilters() {
+    setFilters({});
+    replaceFilterUrl({});
   }
 
   function renderFields() {
@@ -85,18 +108,16 @@ export function WheelModelGrid({
     <div className="w-full max-w-full min-w-0">
       {hasFilters ? (
         <>
-          <form className={styles.filters} method="get" aria-label="Фильтры каталога дисков">
+          <div className={styles.filters} role="group" aria-label="Фильтры каталога дисков">
             {renderFields()}
-            <button className="btn-accent" type="submit">Показать модели</button>
-            <Link className={styles.reset} href={typeBasePath} onClick={() => setFilters({})}>Сбросить фильтры</Link>
-          </form>
+            <button className={styles.reset} type="button" onClick={resetFilters}>Сбросить фильтры</button>
+          </div>
           <MobileFilterSheet
             title="Параметры диска"
             triggerLabel="Фильтры"
             activeCount={activeFilterCount}
-            applyLabel={`Показать ${formatWheelModelCount(visibleModels.length)}`}
-            resetHref={typeBasePath}
-            onReset={() => setFilters({})}
+            resultCount={formatWheelModelCount(visibleModels.length)}
+            onReset={resetFilters}
             formLabel="Параметры диска"
           >
             {renderFields()}
@@ -132,10 +153,26 @@ export function WheelModelGrid({
       ) : (
         <div className={styles.emptyState}>
           <p className={styles.eyebrow}>Результаты фильтрации</p>
-          <h2>По заданным параметрам диски не найдены</h2>
-          <p>Измените параметры фильтров или сбросьте их, чтобы посмотреть другие модели.</p>
+          {activeFilterCount > 0 ? (
+            <CatalogSelectionFeedback kind="wheel" returnHref={typeBasePath} filters={[
+              { label: "Стиль", value: filters.designStyle },
+              { label: "Серия / исполнение", value: filters.series },
+              { label: "Диаметр", value: filters.diameter },
+              { label: "Ширина", value: filters.width },
+              { label: "PCD", value: filters.pcd },
+              { label: "ET", value: filters.offsetET },
+              { label: "DIA", value: filters.centerBore },
+              { label: "Цвет", value: filters.color },
+              { label: "Цена", value: filters.priceOnRequest === "yes" ? "По запросу" : filters.priceOnRequest === "no" ? "Указана" : undefined },
+            ]} />
+          ) : (
+            <>
+              <h2>Модели дисков пока не опубликованы</h2>
+              <p>Каталог пополняется. Попробуйте вернуться позже или свяжитесь с BIZON.</p>
+            </>
+          )}
           <div className={styles.emptyActions}>
-            <Link className="btn-secondary" href={typeBasePath} onClick={() => setFilters({})}>Очистить фильтры</Link>
+            <button className="btn-secondary" type="button" onClick={resetFilters}>Очистить фильтры</button>
           </div>
         </div>
       )}

@@ -36,8 +36,21 @@ describe("validateRequest cart sources", () => {
     });
   });
 
-  it("keeps the existing contact validation contract", () => {
-    expect(validateRequest(body("contact", { phone: null, email: "a@example.com", items: [] })).ok).toBe(true);
-    expect(validateRequest(body("contact", { phone: null, email: null, items: [] })).ok).toBe(false);
+  it("requires a phone number for the general contact form even when email is provided", () => {
+    expect(validateRequest(body("contact", { phone: null, email: "a@example.com", items: [] }))).toMatchObject({
+      ok: false,
+      error: "missing_required_fields",
+      message: "Please provide a phone number",
+    });
+    expect(validateRequest(body("contact", { phone: "+79990000000", email: null, items: [] })).ok).toBe(true);
+  });
+
+  it.each(["tire_selection", "wheel_selection"]) ("requires a phone number for %s", (sourceForm) => {
+    expect(validateRequest(body(sourceForm, { phone: null, email: "a@example.com" }))).toMatchObject({
+      ok: false,
+      error: "missing_required_fields",
+      message: "Please provide a phone number",
+    });
+    expect(validateRequest(body(sourceForm, { phone: "+79990000000", email: null })).ok).toBe(true);
   });
 });

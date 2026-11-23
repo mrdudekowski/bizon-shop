@@ -50,9 +50,10 @@ export function validateRequest(body: IncomingRequestBody): ValidationResult {
 
   const isQuickOrder = sourceForm === "product_quick_order";
   const isCart = sourceForm === "cart" || sourceForm === "tire_cart" || sourceForm === "shop_cart";
+  const isSelection = sourceForm === "tire_selection" || sourceForm === "wheel_selection";
 
-  if (isCart) {
-    if (!Array.isArray(body.items) || body.items.length === 0) {
+  if (isCart || sourceForm === "contact" || isSelection) {
+    if (isCart && (!Array.isArray(body.items) || body.items.length === 0)) {
       return {
         ok: false,
         error: "missing_required_fields",

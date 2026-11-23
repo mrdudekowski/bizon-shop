@@ -104,7 +104,7 @@
   position: sticky;
   bottom: 0;
   display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.75rem;
   border-top: 1px solid var(--color-border);
@@ -117,13 +117,18 @@
   min-height: 48px;
   align-items: center;
   justify-content: center;
+  border: 0;
+  background: transparent;
   color: var(--color-link);
+  font: inherit;
   font-weight: 650;
-  text-decoration: none;
+  cursor: pointer;
 }
 
-.actions :global(.btn-accent) {
-  min-height: 48px;
+.resultCount {
+  min-width: 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
 }
 
 @media (max-width: 767px) {

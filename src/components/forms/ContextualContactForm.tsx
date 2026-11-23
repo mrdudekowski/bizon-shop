@@ -38,15 +38,21 @@ const EMPTY_VALUES: FormValues = {
 const DEFAULT_INTENT: ContactIntent = {
   sourceForm: "contact",
   title: "Контакты",
-  description: "Расчёт, консультация по шинам и вопросы для fleet-операторов.",
+  description: "Расчёт и консультация по шинам.",
   formEyebrow: "Связаться с BIZON",
   formHeading: "Обсудим вашу задачу",
 };
 
 export function ContextualContactForm({
   intent = DEFAULT_INTENT,
+  introCopy,
+  selectionDetails,
+  successHref,
 }: {
   intent?: ContactIntent;
+  introCopy?: { heading: string; description: string };
+  selectionDetails?: string;
+  successHref?: string;
 }) {
   const pathname = usePathname();
   const isProcurement = intent.subject === "procurement";
@@ -83,7 +89,9 @@ export function ContextualContactForm({
           phone: values.phone,
           email: values.email,
           companyName: values.company,
-          message: values.comment,
+          message: selectionDetails?.trim()
+            ? [selectionDetails.trim(), values.comment.trim()].filter(Boolean).join("\n\n")
+            : values.comment,
           ...(isProcurement
             ? {
                 message: [
@@ -147,7 +155,7 @@ export function ContextualContactForm({
           )}
         </dl>
         <div className={styles.confirmationLinks}>
-          <Link href="/models">Вернуться в каталог</Link>
+          <Link href={successHref ?? "/models"}>Вернуться в каталог</Link>
         </div>
       </div>
     );
@@ -174,8 +182,8 @@ export function ContextualContactForm({
         />
         <div className={styles.formIntro}>
           <p className={styles.eyebrow}>{intent.formEyebrow}</p>
-          <h2>{intent.formHeading}</h2>
-          <p>Телефон или Email — достаточно одного способа связи.</p>
+          <h2>{introCopy?.heading ?? intent.formHeading}</h2>
+          <p>{introCopy?.description ?? "Укажите номер телефона — менеджер свяжется с вами."}</p>
         </div>
         <div className={styles.fieldGrid}>
           {isProcurement ? (
@@ -211,7 +219,7 @@ export function ContextualContactForm({
               type="tel"
               autoComplete="tel"
               inputMode="tel"
-              required={!values.email.trim()}
+              required
               value={values.phone}
               onChange={(event) => setValue("phone", event.target.value)}
             />
@@ -222,7 +230,6 @@ export function ContextualContactForm({
               name="email"
               type="email"
               autoComplete="email"
-              required={!values.phone.trim()}
               value={values.email}
               onChange={(event) => setValue("email", event.target.value)}
             />

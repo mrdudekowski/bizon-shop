@@ -1,10 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-
 import { TIRE_CATEGORIES } from "@/lib/catalog/tireCategories";
-import { filterTireModels, formatTireModelCount, parseTireFilters, type TireFilters } from "@/lib/catalog/tireFilters";
+import { filterTireModels, formatTireModelCount, type TireFilters } from "@/lib/catalog/tireFilters";
 import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
 import { AXLE_OPTIONS } from "@/lib/selection/options";
 import { MobileFilterSheet } from "@/components/catalog/MobileFilterSheet";
@@ -14,33 +11,33 @@ import styles from "./TireCatalog.module.css";
 
 type TireCatalogFiltersProps = {
   filters: TireFilters;
-  resetHref: string;
   sizes: string[];
   models: TireCatalogModel[];
   lockApplication?: string;
+  onChange: (next: TireFilters) => void;
+  onReset: () => void;
 };
 
 export function TireCatalogFilters({
   filters,
-  resetHref,
   sizes,
   models,
   lockApplication,
+  onChange,
+  onReset,
 }: TireCatalogFiltersProps) {
-  const [draft, setDraft] = useState<TireFilters>(filters);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const parsed = parseTireFilters(params);
-    setDraft({ ...parsed, application: lockApplication ?? parsed.application ?? filters.application });
-  }, [filters, lockApplication]);
-
   const appliedModels = filterTireModels(models, {
-    ...draft,
-    application: lockApplication ?? draft.application,
+    ...filters,
+    application: lockApplication ?? filters.application,
   });
-  const activeCount = [!lockApplication && draft.application, draft.axle, draft.size]
+  const activeCount = [!lockApplication && filters.application, filters.axle, filters.size]
     .filter(Boolean).length;
+
+  function patchFilters(patch: Partial<TireFilters>) {
+    const next = { ...filters, ...patch };
+    if (lockApplication) next.application = lockApplication;
+    onChange(next);
+  }
 
   function renderFields(formKey: string) {
     return (
@@ -50,8 +47,8 @@ export function TireCatalogFilters({
             <span>Применение</span>
             <CustomSelect
               name="application"
-              value={draft.application ?? ""}
-              onValueChange={(application) => setDraft((current) => ({ ...current, application: application || undefined }))}
+              value={filters.application ?? ""}
+              onValueChange={(application) => patchFilters({ application: application || undefined })}
               options={[{ value: "", label: "Все условия" }, ...TIRE_CATEGORIES.map((category) => ({ value: category.value, label: category.name }))]}
             />
           </label>
@@ -61,11 +58,8 @@ export function TireCatalogFilters({
           <span>Ось</span>
           <CustomSelect
             name="axle"
-            value={draft.axle ?? ""}
-            onValueChange={(axle) => setDraft((current) => ({
-              ...current,
-              axle: (axle || undefined) as TireFilters["axle"],
-            }))}
+            value={filters.axle ?? ""}
+            onValueChange={(axle) => patchFilters({ axle: (axle || undefined) as TireFilters["axle"] })}
             options={[{ value: "", label: "Любая ось" }, ...AXLE_OPTIONS.map((option) => ({ value: option.value, label: option.label }))]}
           />
         </label>
@@ -76,10 +70,10 @@ export function TireCatalogFilters({
             name="size"
             type="text"
             list={`tire-size-options-${formKey}`}
-            value={draft.size ?? ""}
+            value={filters.size ?? ""}
             placeholder="Например, 315/80R22.5"
             autoComplete="off"
-            onChange={(event) => setDraft((current) => ({ ...current, size: event.target.value || undefined }))}
+            onChange={(event) => patchFilters({ size: event.target.value || undefined })}
           />
           <datalist id={`tire-size-options-${formKey}`}>
             {sizes.map((size) => <option key={size} value={size} />)}
@@ -91,17 +85,16 @@ export function TireCatalogFilters({
 
   return (
     <>
-      <form className={styles.filters} method="get" aria-label="Фильтры каталога">
+      <div className={styles.filters} role="group" aria-label="Фильтры каталога">
         {renderFields("desktop")}
-        <button className="btn-accent" type="submit">Показать модели</button>
-        <Link className={styles.reset} href={resetHref}>Сбросить фильтры</Link>
-      </form>
+        <button className={styles.reset} type="button" onClick={onReset}>Сбросить фильтры</button>
+      </div>
       <MobileFilterSheet
         title="Фильтры каталога шин"
         triggerLabel="Фильтры"
         activeCount={activeCount}
-        applyLabel={`Показать ${formatTireModelCount(appliedModels.length)}`}
-        resetHref={resetHref}
+        resultCount={formatTireModelCount(appliedModels.length)}
+        onReset={onReset}
         formLabel="Фильтры каталога шин"
       >
         {renderFields("mobile")}

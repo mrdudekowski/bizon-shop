@@ -225,7 +225,7 @@
 
 .filters {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -281,6 +281,11 @@
   align-items: center;
   color: var(--color-link);
   font-size: 0.875rem;
+  font: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
 }
 
 .resultHeader {

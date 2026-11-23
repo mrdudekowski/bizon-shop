@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
 
 import styles from "./MobileFilterSheet.module.css";
 
@@ -9,9 +8,8 @@ type MobileFilterSheetProps = {
   title: string;
   triggerLabel: string;
   activeCount: number;
-  applyLabel: string;
-  resetHref: string;
-  onReset?: () => void;
+  resultCount: string;
+  onReset: () => void;
   formLabel: string;
   children: ReactNode;
 };
@@ -20,9 +18,8 @@ export function MobileFilterSheet({
   title,
   triggerLabel,
   activeCount,
-  applyLabel,
-  resetHref,
   onReset,
+  resultCount,
   formLabel,
   children,
 }: MobileFilterSheetProps) {
@@ -111,13 +108,13 @@ export function MobileFilterSheet({
                 ×
               </button>
             </header>
-            <form className={styles.form} method="get" aria-label={formLabel}>
+            <div className={styles.form} role="group" aria-label={formLabel}>
               <div className={styles.fields}>{children}</div>
               <footer className={styles.actions}>
-                <Link href={resetHref} className={styles.reset} onClick={onReset}>Сбросить</Link>
-                <button type="submit" className="btn-accent">{applyLabel}</button>
+                <span className={styles.resultCount} aria-live="polite">Найдено: {resultCount}</span>
+                <button type="button" className={styles.reset} onClick={onReset}>Сбросить</button>
               </footer>
-            </form>
+            </div>
           </section>
         </>
       ) : null}

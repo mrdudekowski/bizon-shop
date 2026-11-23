@@ -1,17 +1,18 @@
 "use client";
 
-import { Suspense } from "react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { TireCatalogFilters } from "@/components/catalog/TireCatalogFilters";
-import { TireCatalogFilterController } from "@/components/catalog/TireCatalogFilterController";
+import { CatalogSelectionFeedback } from "@/components/catalog/CatalogSelectionFeedback";
 import { TireModelCard } from "@/components/catalog/TireModelCard";
 import { PageHeader } from "@/components/catalog/PageHeader";
-import { getTireCategoryBySlug } from "@/lib/catalog/tireCategories";
-import { filterTireModels, formatTireModelCount, type TireFilters } from "@/lib/catalog/tireFilters";
+import { getTireCategoryBySlug, getTireCategoryByValue } from "@/lib/catalog/tireCategories";
+import { filterTireModels, formatTireModelCount, parseTireFilters, type TireFilters } from "@/lib/catalog/tireFilters";
 import type { TireCatalogDirection } from "@/lib/catalog/tireReadModel";
 import { fetchBrowserTireDirection } from "@/lib/catalog/browserTireCatalog";
+import { patchFilterSearchParams } from "@/lib/catalog/filterUrlState";
+import { AXLE_OPTIONS } from "@/lib/selection/options";
 
 import styles from "./TireCatalog.module.css";
 
@@ -27,6 +28,32 @@ export function TireDirectionPage({
   categorySlug,
 }: TireDirectionPageProps) {
   const [direction, setDirection] = useState(initialDirection);
+  const [activeFilters, setActiveFilters] = useState<TireFilters>(filters);
+  const category = categorySlug ? getTireCategoryBySlug(categorySlug) : undefined;
+  const categoryValue = category?.value;
+
+  useEffect(() => {
+    const readFiltersFromUrl = () => {
+      const parsed = parseTireFilters(new URLSearchParams(window.location.search));
+      setActiveFilters({ ...filters, ...parsed, ...(categoryValue ? { application: categoryValue } : {}) });
+    };
+    readFiltersFromUrl();
+    window.addEventListener("popstate", readFiltersFromUrl);
+    return () => window.removeEventListener("popstate", readFiltersFromUrl);
+  }, [categoryValue, filters]);
+
+  function updateFilters(next: TireFilters) {
+    const normalized = { ...next, ...(category ? { application: category.value } : {}) };
+    setActiveFilters(normalized);
+    const query = patchFilterSearchParams(
+      new URLSearchParams(window.location.search),
+      ["application", "axle", "size"],
+      normalized,
+    );
+    const search = query ? `?${query}` : "";
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${search}${window.location.hash}`);
+  }
+
   useEffect(() => {
     const controller = new AbortController();
     void fetchBrowserTireDirection(initialDirection.slug, controller.signal)
@@ -47,10 +74,9 @@ export function TireDirectionPage({
     return () => controller.abort();
   }, [initialDirection]);
 
-  const category = categorySlug ? getTireCategoryBySlug(categorySlug) : undefined;
   const effectiveFilters = category
-    ? { ...filters, application: category.value }
-    : filters;
+    ? { ...activeFilters, application: category.value }
+    : activeFilters;
   const models = filterTireModels(direction.models, effectiveFilters);
   const typePath = `/models/${direction.slug}`;
   const pagePath = category ? `${typePath}/${category.slug}` : typePath;
@@ -58,7 +84,7 @@ export function TireDirectionPage({
 
   return (
     <div className={styles.catalogPage} data-main-chrome-tone="light">
-      <div className={styles.pageInner} data-tire-filter-results>
+      <div className={styles.pageInner}>
         <PageHeader
           title={category ? `${category.name} — ${direction.name}` : direction.name}
           description={category?.description ?? direction.description}
@@ -74,18 +100,17 @@ export function TireDirectionPage({
           <>
             <TireCatalogFilters
               filters={effectiveFilters}
-              resetHref={pagePath}
               sizes={sizes}
               models={direction.models}
               lockApplication={category?.value}
+              onChange={updateFilters}
+              onReset={() => updateFilters(category ? { application: category.value } : {})}
             />
 
             <div className={styles.resultHeader} aria-live="polite">
               <p data-tire-result-count>{formatTireModelCount(models.length)}</p>
               <p>Отобраны по задаче, оси и типоразмеру</p>
-              <p hidden data-tire-no-results>По выбранным параметрам моделей не найдено.</p>
             </div>
-            <Suspense fallback={null}><TireCatalogFilterController /></Suspense>
           </>
         ) : null}
 
@@ -103,11 +128,13 @@ export function TireDirectionPage({
         ) : (
           <div className={styles.emptyState}>
             <p className={styles.eyebrow}>Нужна проверка специалиста</p>
-            <h2>Точного совпадения по фильтрам пока нет</h2>
-            <p>Передайте параметры команде BIZON — мы проверим ближайшее решение без обещания неподтверждённой совместимости.</p>
+            <CatalogSelectionFeedback kind="tire" returnHref={pagePath} filters={[
+              { label: "Применение", value: getTireCategoryByValue(effectiveFilters.application ?? "")?.name },
+              { label: "Ось", value: AXLE_OPTIONS.find((option) => option.value === effectiveFilters.axle)?.label },
+              { label: "Типоразмер", value: effectiveFilters.size },
+            ]} />
             <div className={styles.emptyActions}>
-              <Link className="btn-accent" href="/contact?subject=tire-selection">Запросить наличие и предложение</Link>
-              <Link className="btn-secondary" href={pagePath}>Очистить фильтры</Link>
+              <button className="btn-secondary" type="button" onClick={() => updateFilters(category ? { application: category.value } : {})}>Очистить фильтры</button>
             </div>
           </div>
         )}
