@@ -50,16 +50,16 @@ h6 .bizon-word-emphasis {
   --bizon-coral-900: #421309;
 
   /* Mint — digital accent, focus, links, kickers */
-  --bizon-mint-50: #d1fef6;
-  --bizon-mint-100: #b8fdf2;
-  --bizon-mint-200: #86fce8;
-  --bizon-mint-300: #55fadf;
-  --bizon-mint-400: #23f9d5;
+  --bizon-mint-50: #f3fefc;
+  --bizon-mint-100: #dafbf5;
+  --bizon-mint-200: #b4f7ec;
+  --bizon-mint-300: #83f1df;
+  --bizon-mint-400: #44eace;
   --bizon-mint-500: #06e3be;
-  --bizon-mint-600: #05b194;
-  --bizon-mint-700: #03806b;
-  --bizon-mint-800: #024e41;
-  --bizon-mint-900: #011c18;
+  --bizon-mint-600: #05c1a2;
+  --bizon-mint-700: #04947c;
+  --bizon-mint-800: #036655;
+  --bizon-mint-900: #023930;
 
   /* Neutral — industrial base */
   --bizon-neutral-50: #f5f5f5;
@@ -78,6 +78,7 @@ h6 .bizon-word-emphasis {
   /* Legacy aliases — map to new palette */
   --bizon-black: #000000;
   --bizon-white: #ffffff;
+  --bizon-polar: #fafafa;
   --bizon-light: var(--bizon-neutral-50);
   --bizon-light-2: var(--bizon-neutral-100);
   --bizon-gray: var(--bizon-neutral-500);
@@ -90,7 +91,6 @@ h6 .bizon-word-emphasis {
   --color-accent-coral: var(--bizon-coral-500);
   --color-accent-coral-dark: var(--bizon-coral-600);
   --color-accent-mint: var(--bizon-mint-500);
-  --color-accent-mint-dark: var(--bizon-mint-600);
   --color-kicker: var(--bizon-coral-500);
   --color-link: var(--bizon-coral-600);
   --color-link-hover: var(--bizon-coral-500);
@@ -106,14 +106,11 @@ h6 .bizon-word-emphasis {
   --type-lead: clamp(1rem, 1.5vw, 1.25rem);
   --type-body: 1.0625rem;
   --type-kicker: 0.75rem;
-  --type-meta: 0.8125rem;
-  --type-caption: 0.75rem;
   --leading-display: 1.08;
   --leading-title: 1.16;
   --leading-body: 1.6;
   --leading-kicker: 1.3;
   --weight-display: 520;
-  --weight-title: 600;
   --weight-kicker: 700;
   --weight-ui: 650;
   --tracking-display: 0.02em;
@@ -146,7 +143,6 @@ h6 .bizon-word-emphasis {
   --type-index: clamp(2rem, 3vw, 2.75rem);
   --header-height: calc(var(--chrome-inset-top) + var(--chrome-bar-height));
   --container-max: clamp(1600px, 88vw, 2400px);
-  --content-max: 1180px;
   --page-gutter: 20px;
   --home-feature-inset: 24px;
   --section-space: 72px;
@@ -183,19 +179,18 @@ h6 .bizon-word-emphasis {
   --color-on-dark-muted: color-mix(in srgb, var(--bizon-white) 72%, transparent);
   --color-on-dark-subtle: color-mix(in srgb, var(--bizon-white) 62%, transparent);
   --color-on-dark-faint: color-mix(in srgb, var(--bizon-white) 45%, transparent);
-  --color-border-on-dark: color-mix(in srgb, var(--bizon-white) 14%, transparent);
   --color-surface-inverse: #0a0a0a;
   --color-surface-inverse-muted: #101010;
 
   /* Единая светлая тема для основного сайта и магазина */
   color-scheme: light;
-  --color-background: var(--bizon-white);
+  --color-background: var(--bizon-polar);
   --color-foreground: var(--bizon-neutral-900);
   --color-primary: var(--color-accent-coral);
   --color-on-primary: var(--bizon-white);
   --color-secondary: var(--bizon-light);
   --color-muted: var(--bizon-neutral-600);
-  --color-surface: var(--bizon-white);
+  --color-surface: var(--bizon-polar);
   --color-surface-muted: var(--bizon-light);
   --color-surface-strong: var(--bizon-neutral-900);
   --color-on-surface-strong: var(--bizon-white);
