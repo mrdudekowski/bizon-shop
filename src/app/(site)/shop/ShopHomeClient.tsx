@@ -72,7 +72,7 @@ export function ShopHomeClient({ initialPage, initialModels, initialCategories }
   const categoryCards = shopHomeCategoryCards(categories, page.catalog.tiles);
 
   return (
-    <div className={styles.page} data-canvas-page="">
+    <div className={styles.page} data-canvas-page="" data-shop-home-canvas="">
       <section className={styles.hero} data-shop-chrome-tone="dark" data-canvas-tone="dark">
         <div className={styles.heroMedia}>
           {page.hero.imageUrl ? <Image src={page.hero.imageUrl} alt={page.hero.imageAlt} fill priority sizes="100vw" /> : null}
