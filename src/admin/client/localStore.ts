@@ -39,6 +39,7 @@ import type {
   EntityRecord,
   EditorCapability,
   StatusEntity,
+  PublicationDraftRef,
 } from "@/admin/domain/types";
 
 import type { AdminClient, SiteDeployLookup, SiteDeployResult } from "./adminClient";
@@ -1666,6 +1667,80 @@ export function createLocalAdminClient(storage: AdminStorage): AdminClient {
       return packs.slice().sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
     },
 
+    async listPublicationDrafts() {
+      const state = load();
+      requirePermission(state, "review_queue");
+      const drafts: PublicationDraftRef[] = [];
+      const lockedEntities = new Set(state.changeSets
+        .filter((pack) => pack.status === "open" || pack.status === "returned" || pack.status === "pending_review")
+        .flatMap((pack) => pack.entries.map((entry) => `${entry.entityType}:${entry.entityId}`)));
+      const types: StatusEntity[] = ["tire-direction", "tire-model", "wheel-type", "wheel-model", "shop-category", "shop-product", "page", "material"];
+      for (const entityType of types) {
+        for (const record of recordsFor(state, entityType)) {
+          if (lockedEntities.has(`${entityType}:${record.id}`)) continue;
+          const hasPublishedVersion = record.publishedSnapshot != null;
+          if (hasPublishedVersion && sameJson(record.savedDraft, record.publishedSnapshot)) continue;
+          if (!hasPublishedVersion && entityType === "page") continue;
+          const value = record.savedDraft as { name?: unknown; title?: unknown } | null;
+          drafts.push({
+            entityType,
+            entityId: record.id,
+            title: typeof value?.name === "string" ? value.name : typeof value?.title === "string" ? value.title : record.id,
+            hasPublishedVersion,
+            draftVersion: JSON.stringify(record.savedDraft),
+          });
+        }
+      }
+      return drafts.sort((left, right) => left.title.localeCompare(right.title, "ru"));
+    },
+
+    async publishSavedDrafts(drafts) {
+      const state = load();
+      requirePermission(state, "review_queue");
+      const available = new Map((await this.listPublicationDrafts()).map((draft) => [`${draft.entityType}:${draft.entityId}`, draft.draftVersion]));
+      const selected = [...new Map(drafts.map((draft) => [`${draft.entityType}:${draft.entityId}`, draft])).values()];
+      if (selected.length === 0 || selected.some((draft) => available.get(`${draft.entityType}:${draft.entityId}`) !== draft.draftVersion)) {
+        throw new AdminClientError("conflict");
+      }
+      for (const draft of selected) {
+        if (changeSetBlockers(state, draft.entityType, draft.entityId).length > 0) throw new AdminClientError("publish_blocked");
+      }
+      for (const draft of selected) publishRecord(state, draft.entityType, draft.entityId);
+      save(state);
+    },
+
+    async restoreSavedDrafts(drafts) {
+      const state = load();
+      requirePermission(state, "review_queue");
+      const available = new Map((await this.listPublicationDrafts()).map((draft) => [`${draft.entityType}:${draft.entityId}`, draft.draftVersion]));
+      const selected = [...new Map(drafts.map((draft) => [`${draft.entityType}:${draft.entityId}`, draft])).values()];
+      if (selected.length === 0 || selected.some((draft) => available.get(`${draft.entityType}:${draft.entityId}`) !== draft.draftVersion)) {
+        throw new AdminClientError("conflict");
+      }
+      for (const draft of selected) {
+        const record = recordsFor(state, draft.entityType).find((item) => item.id === draft.entityId);
+        if (!record) throw new AdminClientError("conflict");
+        if (record.publishedSnapshot == null && draft.entityType !== "page") {
+          restoreChangeEntry(state, {
+            id: `${draft.entityType}:${draft.entityId}`,
+            entityType: draft.entityType,
+            entityId: draft.entityId,
+            entityTitle: draft.title,
+            operation: "create",
+            fieldChanges: [],
+            rollbackDraft: null,
+          });
+          continue;
+        }
+        const restored = record.publishedSnapshot == null
+          ? emptyPageDraft(draft.entityId as PageKey)
+          : clampDeep(record.publishedSnapshot);
+        record.draft = restored as typeof record.draft;
+        record.savedDraft = restored as typeof record.savedDraft;
+      }
+      save(state);
+    },
+
     async getChangeSet(id) {
       const state = load();
       const pack = state.changeSets.find((item) => item.id === id);
@@ -1950,6 +2025,7 @@ function remoteAdminClient(): AdminClient {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ method, args: outgoingArgs }),
+      signal: AbortSignal.timeout(method === "listPublicationDrafts" ? 60_000 : method === "publishSavedDrafts" || method === "restoreSavedDrafts" ? 120_000 : 12_000),
     }, method);
     if (result != null && typeof result === "object" && "savedDraft" in result) {
       const record = result as { id: string; savedDraft: unknown };

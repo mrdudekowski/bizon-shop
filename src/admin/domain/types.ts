@@ -147,6 +147,14 @@ export type ChangeSetId = string;
 
 export type ChangeSetStatus = "open" | "pending_review" | "returned" | "published" | "cancelled";
 
+export type PublicationDraftRef = {
+  entityType: StatusEntity;
+  entityId: string;
+  title: string;
+  hasPublishedVersion: boolean;
+  draftVersion: string;
+};
+
 export type FieldValue =
   | { kind: "text"; value: string }
   | { kind: "number"; value: number | null }

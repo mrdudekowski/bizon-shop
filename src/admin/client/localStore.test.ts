@@ -629,6 +629,45 @@ describe("createLocalAdminClient", () => {
     expect(editor.login).toBe("editor");
   });
 
+  it("lists administrator saves as drafts and restores the last published version", async () => {
+    const storage = memory();
+    const admin = createLocalAdminClient(storage);
+    const created = await admin.createTireModel({ name: "LH01", directionId: "dir-long-haul" });
+    const ready = publishable(created.draft);
+    await admin.saveTireModel(created.id, ready);
+    await admin.publishTireModel(created.id);
+    await admin.saveTireModel(created.id, { ...ready, name: "LH01 updated" });
+
+    const drafts = await admin.listPublicationDrafts();
+    expect(drafts).toContainEqual(expect.objectContaining({
+      entityType: "tire-model",
+      entityId: created.id,
+      title: "LH01 updated",
+      hasPublishedVersion: true,
+    }));
+    await admin.restoreSavedDrafts(drafts);
+
+    const restored = await admin.getTireModel(created.id);
+    expect(restored.draft.name).toBe("LH01");
+    expect(restored.publishedSnapshot?.name).toBe("LH01");
+    expect(await admin.listPublicationDrafts()).toHaveLength(0);
+  });
+
+  it("publishes any selected administrator drafts as one operation", async () => {
+    const admin = createLocalAdminClient(memory());
+    const first = await admin.createTireModel({ name: "LH01", directionId: "dir-long-haul" });
+    const second = await admin.createTireModel({ name: "LH02", directionId: "dir-long-haul" });
+    await admin.saveTireModel(first.id, publishable(first.draft));
+    await admin.saveTireModel(second.id, publishable(second.draft));
+    const drafts = await admin.listPublicationDrafts();
+
+    await admin.publishSavedDrafts(drafts);
+
+    expect((await admin.getTireModel(first.id)).publishedSnapshot?.name).toBe("LH01");
+    expect((await admin.getTireModel(second.id)).publishedSnapshot?.name).toBe("LH02");
+    expect(await admin.listPublicationDrafts()).toHaveLength(0);
+  });
+
   it("cancels a pack and restores the previous draft", async () => {
     const storage = memory();
     const admin = createLocalAdminClient(storage);

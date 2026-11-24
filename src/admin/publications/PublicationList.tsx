@@ -4,13 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { browserAdminClient } from "@/admin/client/localStore";
-import type { ChangeSet, ChangeSetStatus } from "@/admin/domain/types";
+import type { ChangeSet, ChangeSetStatus, PublicationDraftRef } from "@/admin/domain/types";
 import { AdminLoading } from "@/admin/ui/AdminLoading";
 import { useAdminSession } from "@/admin/ui/DocumentUI";
 import { SectionAccessNotice } from "@/admin/ui/SectionAccessNotice";
 import styles from "@/admin/ui/catalog.module.css";
 
 import { ChangeSetReviewDialogs } from "./ChangeSetReviewDialogs";
+import { SavedDraftList } from "./SavedDraftList";
 import {
   CHANGESET_STATUS_LABEL,
   formatExactWhen,
@@ -48,18 +49,24 @@ function chipClass(status: ChangeSetStatus): string {
 export function PublicationList() {
   const session = useAdminSession();
   const [packs, setPacks] = useState<ChangeSet[]>([]);
+  const [drafts, setDrafts] = useState<PublicationDraftRef[]>([]);
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<ChangeSetStatus | "all">("pending_review");
+  const [status, setStatus] = useState<ChangeSetStatus | "drafts" | "all">("all");
   const [author, setAuthor] = useState("all");
   const [period, setPeriod] = useState<(typeof PERIODS)[number]["id"]>("all");
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   async function reload() {
     try {
-      setPacks(await browserAdminClient().listChangeSets());
+      const client = browserAdminClient();
+      const [nextPacks, nextDrafts] = await Promise.all([client.listChangeSets(), client.listPublicationDrafts()]);
+      setPacks(nextPacks);
+      setDrafts(nextDrafts);
+      setLoadError("");
     } catch {
-      setPacks([]);
+      setLoadError("Не удалось загрузить публикации. Проверьте соединение с CMS и обновите страницу.");
     } finally {
       setLoading(false);
     }
@@ -75,13 +82,16 @@ export function PublicationList() {
   );
 
   const visible = packs.filter((pack) => {
-    const matchesStatus = status === "all" || pack.status === status;
+    const matchesStatus = status === "all" || (status !== "drafts" && pack.status === status);
     const matchesAuthor = author === "all" || pack.authorLogin === author;
     const matchesPeriod = inPeriod(pack.updatedAt, period, Date.now());
     const haystack = `${pack.authorLogin} ${pack.entries.map((entry) => entry.entityTitle).join(" ")}`.toLocaleLowerCase("ru-RU");
     const matchesQuery = haystack.includes(query.trim().toLocaleLowerCase("ru-RU"));
     return matchesStatus && matchesAuthor && matchesPeriod && matchesQuery;
   });
+  const visibleDrafts = (status === "all" || status === "drafts")
+    ? drafts.filter((draft) => `${draft.title} ${draft.entityType}`.toLocaleLowerCase("ru-RU").includes(query.trim().toLocaleLowerCase("ru-RU")))
+    : [];
 
   if (session == null) return <main className={pub.screen}><AdminLoading label="Проверяем доступ…" /></main>;
   if (session.role !== "admin") return <SectionAccessNotice title="Публикации" icon="publications" />;
@@ -90,9 +100,10 @@ export function PublicationList() {
     <main className={pub.screen}>
       <div>
         <h1>Публикации</h1>
-        <p className="subheading">Очередь пакетов правок. Решение — по пакету целиком.</p>
+        <p className="subheading">Сохранённые черновики и пакеты правок редакторов.</p>
       </div>
       {message ? <p className={pub.status} role="status">{message}</p> : null}
+      {loadError ? <p className={pub.status} role="alert">{loadError}</p> : null}
       <div className={styles.filters}>
         <label>
           Поиск
@@ -101,6 +112,7 @@ export function PublicationList() {
         <label>
           Статус
           <select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}>
+            <option value="drafts">Черновики</option>
             <option value="pending_review">На одобрении</option>
             <option value="all">Все статусы</option>
             <option value="open">Черновик</option>
@@ -123,7 +135,7 @@ export function PublicationList() {
           </select>
         </label>
       </div>
-      {loading ? <AdminLoading label="Загружаем заявки…" /> : visible.length === 0 ? (
+      {loading ? <AdminLoading label="Загружаем публикации…" /> : loadError ? null : visible.length === 0 && visibleDrafts.length === 0 ? (
         <div className={styles.empty}>
           {status === "pending_review" && query.trim() === "" && author === "all" && period === "all" ? (
             <>
@@ -138,8 +150,17 @@ export function PublicationList() {
           )}
         </div>
       ) : (
-        <ul className={pub.list}>
-          {visible.map((pack) => (
+        <>
+          {visibleDrafts.length > 0 ? (
+            <section className={pub.draftSection} aria-labelledby="saved-drafts-heading">
+              <h2 id="saved-drafts-heading" className={pub.sectionTitle}>Черновики ({visibleDrafts.length})</h2>
+              <SavedDraftList drafts={visibleDrafts} onUpdated={(nextMessage) => { setMessage(nextMessage); void reload(); }} />
+            </section>
+          ) : null}
+          {visible.length > 0 ? <section className={pub.draftSection} aria-labelledby="change-sets-heading">
+            <h2 id="change-sets-heading" className={pub.sectionTitle}>Пакеты правок</h2>
+            <ul className={pub.list}>
+            {visible.map((pack) => (
             <li key={pack.id} className={pub.row}>
               <div className={pub.rowHead}>
                 <div className={pub.rowBody}>
@@ -170,7 +191,9 @@ export function PublicationList() {
               </details>
             </li>
           ))}
-        </ul>
+            </ul>
+          </section> : null}
+        </>
       )}
     </main>
   );

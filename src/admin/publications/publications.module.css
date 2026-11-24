@@ -4,6 +4,13 @@
 .comment { margin: 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
 .status { margin: 0; color: var(--ink); font-size: 13px; }
 .list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.draftSection { display: grid; gap: 12px; min-width: 0; }
+.draftToolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.selectAll, .draftSelect { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.selectAll { color: var(--ink-muted); font-size: 13px; }
+.draftSelect { align-self: flex-start; }
+.draftToolbar input, .draftSelect input { width: 18px; height: 18px; margin: 0; accent-color: var(--mint-ink); }
+.sectionTitle { margin: 0; font-size: 18px; }
 .row { display: grid; gap: 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .rowHead { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-width: 0; }
 .rowBody { display: grid; min-width: 0; flex: 1; gap: 2px; }
