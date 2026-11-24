@@ -40,6 +40,11 @@ function displayName(item: RequestItemInput): string {
   return item.variantLabel ? `${name} — ${item.variantLabel}` : name;
 }
 
+type CartItemGroup = {
+  title: string;
+  items: RequestItemInput[];
+};
+
 export function CartDrawer({
   cartKind,
   open,
@@ -49,6 +54,12 @@ export function CartDrawer({
   onQuantityChange,
 }: CartDrawerProps) {
   const drawerRef = useFocusTrap(open);
+  const groups: CartItemGroup[] = cartKind === "bizon"
+    ? [{ title: "Шины", items: items.filter((item) => item.itemType === "tire") }]
+    : [
+        { title: "Диски", items: items.filter((item) => item.itemType === "wheel") },
+        { title: "Товары BIZON Shop", items: items.filter((item) => item.itemType !== "wheel") },
+      ];
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -89,54 +100,61 @@ export function CartDrawer({
               ? "Корзина пуста. Добавьте диски или товары BIZON Shop."
               : "Корзина пуста. Добавьте шины."}</p>
           ) : (
-            <ul className={styles.list}>
-              {items.map((item) => {
-                const key = cartItemKey(item);
-                const quantity = item.quantity ?? 1;
+            <div className={styles.groups}>
+              {groups.filter((group) => group.items.length > 0).map((group) => (
+                <section className={styles.group} key={group.title} aria-labelledby={`cart-drawer-group-${group.title}`}>
+                  <h3 className={styles.groupTitle} id={`cart-drawer-group-${group.title}`}>{group.title}</h3>
+                  <ul className={styles.list}>
+                    {group.items.map((item) => {
+                      const key = cartItemKey(item);
+                      const quantity = item.quantity ?? 1;
 
-                return (
-                  <li key={key} className={styles.line}>
-                    <div className={styles.lineMain}>
-                      {item.url ? (
-                        <Link href={item.url} className={styles.lineName} onClick={onClose}>
-                          {displayName(item)}
-                        </Link>
-                      ) : (
-                        <span className={styles.lineName}>{displayName(item)}</span>
-                      )}
-                      <button
-                        type="button"
-                        className={styles.removeButton}
-                        onClick={() => onRemove(key)}
-                        aria-label={`Удалить ${displayName(item)}`}
-                      >
-                        Удалить
-                      </button>
-                    </div>
-                    {item.notes ? <p className={styles.lineNotes}>{item.notes}</p> : null}
-                    {item.priceOnRequest || item.price != null ? (
-                      <p className={styles.linePrice}>
-                        {item.priceOnRequest
-                          ? "Расчёт после проверки"
-                          : displayPrice(item, quantity)}
-                      </p>
-                    ) : null}
-                    <label className={styles.quantityLabel}>
-                      Кол-во
-                      <QuantityInput
-                        name={`quantity-${key}`}
-                        min={1}
-                        max={99999}
-                        value={quantity}
-                        ariaLabel={`Количество ${displayName(item)}`}
-                        onValueChange={(next) => onQuantityChange(key, next)}
-                        className={styles.quantityInput}
-                      />
-                    </label>
-                  </li>
-                );
-              })}
-            </ul>
+                      return (
+                        <li key={key} className={styles.line}>
+                          <div className={styles.lineMain}>
+                            {item.url ? (
+                              <Link href={item.url} className={styles.lineName} onClick={onClose}>
+                                {displayName(item)}
+                              </Link>
+                            ) : (
+                              <span className={styles.lineName}>{displayName(item)}</span>
+                            )}
+                            <button
+                              type="button"
+                              className={styles.removeButton}
+                              onClick={() => onRemove(key)}
+                              aria-label={`Удалить ${displayName(item)}`}
+                            >
+                              Удалить
+                            </button>
+                          </div>
+                          {item.notes ? <p className={styles.lineNotes}>{item.notes}</p> : null}
+                          {item.priceOnRequest || item.price != null ? (
+                            <p className={styles.linePrice}>
+                              {item.priceOnRequest
+                                ? "Расчёт после проверки"
+                                : displayPrice(item, quantity)}
+                            </p>
+                          ) : null}
+                          <label className={styles.quantityLabel}>
+                            Кол-во
+                            <QuantityInput
+                              name={`quantity-${key}`}
+                              min={1}
+                              max={99999}
+                              value={quantity}
+                              ariaLabel={`Количество ${displayName(item)}`}
+                              onValueChange={(next) => onQuantityChange(key, next)}
+                              className={styles.quantityInput}
+                            />
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              ))}
+            </div>
           )}
 
           {items.length > 0 && (
