@@ -6,7 +6,7 @@ import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { LoopedStrip } from "@/components/catalog/LoopedStrip";
 import { formatAxleLabels } from "@/lib/catalog/featuredAssortment";
 import { getModelApplicationCategories } from "@/lib/catalog/tireCategories";
-import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
+import { getRuntimeModelHref, type TireCatalogModel } from "@/lib/catalog/tireReadModel";
 import Link from "next/link";
 
 import styles from "./MainHome.module.css";
@@ -19,9 +19,10 @@ export function AssortmentCarousel({ models }: { models: TireCatalogModel[] }) {
       {(index) => {
         const model = models[index];
         const applications = getModelApplicationCategories(model);
+        const modelHref = getRuntimeModelHref(model);
 
         return (
-          <Link className={styles.assortmentCard} href={model.href}>
+          <Link className={styles.assortmentCard} href={modelHref}>
             <span className={styles.assortmentMedia}>
               <CatalogImage
                 src={model.imageUrl || model.gallery[0]}

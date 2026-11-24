@@ -37,6 +37,7 @@
     ".git-worktrees",
     "e2e",
     "scripts/e2e",
+    "tmp",
     "playwright.config.ts",
     "playwright.cms-media.config.ts"
   ]

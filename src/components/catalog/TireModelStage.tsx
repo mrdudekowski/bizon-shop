@@ -62,6 +62,7 @@ type TireModelStageProps = {
   variants: CmsTireVariant[];
   modelPath: string;
   breadcrumbs: Breadcrumb[];
+  refreshOnMount?: boolean;
 };
 
 export function TireModelStage({
@@ -69,11 +70,13 @@ export function TireModelStage({
   variants: initialVariants,
   modelPath,
   breadcrumbs,
+  refreshOnMount = true,
 }: TireModelStageProps) {
   const [model, setModel] = useState(initialModel);
   const [variants, setVariants] = useState(initialVariants);
 
   useEffect(() => {
+    if (!refreshOnMount) return;
     const controller = new AbortController();
     void fetchBrowserPublishedJson<CmsTireModel>(
       `/v1/tires/models/${encodeURIComponent(initialModel.tireTypeSlug)}/${encodeURIComponent(initialModel.slug)}`,
@@ -94,7 +97,7 @@ export function TireModelStage({
       }
     });
     return () => controller.abort();
-  }, [initialModel.id, initialModel.slug, initialModel.tireTypeSlug, initialModel.href, initialModel.sizes]);
+  }, [refreshOnMount, initialModel.id, initialModel.slug, initialModel.tireTypeSlug, initialModel.href, initialModel.sizes]);
 
   const applications = getModelApplicationCategories(model);
   const application = getModelApplicationLabels(model).join(" · ");

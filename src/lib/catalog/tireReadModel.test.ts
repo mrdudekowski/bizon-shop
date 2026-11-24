@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { CmsTireModel, CmsTireType } from "@/lib/content/types";
 
-import { buildTireCatalogReadModel } from "./tireReadModel";
+import { buildTireCatalogReadModel, getRuntimeModelHref } from "./tireReadModel";
 
 const tbr = {
   slug: "tbr",
@@ -58,5 +58,16 @@ describe("buildTireCatalogReadModel", () => {
     expect(catalog.directions[0]).not.toHaveProperty("selectionConditions");
     expect(catalog.directions[0].models[0]).not.toHaveProperty("selectionVehicleTypes");
     expect(catalog.directions[0].models[0]).not.toHaveProperty("selectionConditions");
+  });
+});
+
+describe("getRuntimeModelHref", () => {
+  it("encodes the type and model slugs in the stable runtime route", () => {
+    expect(getRuntimeModelHref({ tireTypeSlug: "tbr", slug: "d930" })).toBe(
+      "/models/view/?type=tbr&model=d930",
+    );
+    expect(getRuntimeModelHref({ tireTypeSlug: "otr/special", slug: "model 1" })).toBe(
+      "/models/view/?type=otr%2Fspecial&model=model+1",
+    );
   });
 });

@@ -1,5 +1,5 @@
 import { formatAxleLabels } from "@/lib/catalog/featuredAssortment";
-import type { TireCatalogReadModel } from "@/lib/catalog/tireReadModel";
+import { getRuntimeModelHref, type TireCatalogReadModel } from "@/lib/catalog/tireReadModel";
 
 export type HeroModelSlide = {
   id: string;
@@ -36,7 +36,7 @@ export function getHeroTireSlides(
   return (tbr?.models ?? []).slice(0, HERO_TIRE_SLIDE_LIMIT).map((model, index) => ({
     id: String(model.id),
     name: model.name,
-    href: model.href,
+    href: getRuntimeModelHref(model),
     imageUrl: cutouts[model.slug] || HERO_TIRE_CUTOUTS[index] || "",
     imageAlt: `${model.name} — грузовая шина`,
     axleLabel: formatAxleLabels(model),

@@ -20,6 +20,13 @@ export function getModelHref(model: CmsTireModel): string {
   return `/models/${model.tireTypeSlug}${categoryPath}/${model.slug}`;
 }
 
+export function getRuntimeModelHref(
+  model: Pick<CmsTireModel, "tireTypeSlug" | "slug">,
+): string {
+  const query = new URLSearchParams({ type: model.tireTypeSlug, model: model.slug });
+  return `/models/view/?${query.toString()}`;
+}
+
 export async function buildTireCatalogReadModel(
   types: CmsTireType[],
   loadModels: (slug: string) => Promise<CmsTireModel[]>,

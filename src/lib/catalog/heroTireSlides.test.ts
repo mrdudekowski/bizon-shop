@@ -55,7 +55,7 @@ describe("getHeroTireSlides", () => {
       {
         id: "1",
         name: "DSR158",
-        href: "/models/tbr/regional/dsr158",
+        href: "/models/view/?type=tbr&model=dsr158",
         imageUrl: "/images/hero/dsr158.png",
         imageAlt: "DSR158 — грузовая шина",
         axleLabel: "Уточняется",
@@ -63,7 +63,7 @@ describe("getHeroTireSlides", () => {
       {
         id: "2",
         name: "DSR177",
-        href: "/models/tbr/regional/dsr177",
+        href: "/models/view/?type=tbr&model=dsr177",
         imageUrl: "/images/hero/dsr177.png",
         imageAlt: "DSR177 — грузовая шина",
         axleLabel: "Уточняется",

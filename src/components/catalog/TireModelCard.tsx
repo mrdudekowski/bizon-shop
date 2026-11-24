@@ -4,12 +4,13 @@ import { BrandModelName } from "@/components/BrandModelName/BrandModelName";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { SiteArrow } from "@/components/SiteArrow/SiteArrow";
 import { getModelApplicationLabels, getModelApplicationValues } from "@/lib/catalog/tireCategories";
-import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
+import { getRuntimeModelHref, type TireCatalogModel } from "@/lib/catalog/tireReadModel";
 import { AXLE_OPTIONS } from "@/lib/selection/options";
 
 import styles from "./TireCatalog.module.css";
 
 export function TireModelCard({ model }: { model: TireCatalogModel }) {
+  const runtimeHref = getRuntimeModelHref(model);
   const application = getModelApplicationLabels(model).join(" · ");
   const axles = model.selectionAxles
     .map((value) => AXLE_OPTIONS.find((option) => option.value === value)?.label)
@@ -26,7 +27,7 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
       data-axles={model.selectionAxles.join("|")}
       data-sizes={model.sizes.map((size) => size.trim().toLocaleLowerCase("ru-RU")).join("|")}
     >
-      <Link className={styles.modelMedia} href={model.href} aria-label={`Открыть модель ${model.name}`}>
+      <Link className={styles.modelMedia} href={runtimeHref} aria-label={`Открыть модель ${model.name}`}>
         <CatalogImage
           src={model.imageUrl}
           fallbackKey={model.slug}
@@ -43,7 +44,7 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
         <div>
           <p className={styles.modelBrand}>{model.brand}</p>
           <h2 className={styles.modelTitle}>
-            <Link href={model.href}>
+            <Link href={runtimeHref}>
               <BrandModelName name={model.name} />
             </Link>
           </h2>
@@ -55,7 +56,7 @@ export function TireModelCard({ model }: { model: TireCatalogModel }) {
               ? `${sizeSummary}${additionalSizes ? ` +${additionalSizes}` : ""}`
               : "Размер — по запросу"}
           </span>
-          <Link href={model.href} aria-label={`Открыть параметры ${model.name}`}><SiteArrow direction="ne" /></Link>
+          <Link href={runtimeHref} aria-label={`Открыть параметры ${model.name}`}><SiteArrow direction="ne" /></Link>
         </div>
       </div>
     </article>

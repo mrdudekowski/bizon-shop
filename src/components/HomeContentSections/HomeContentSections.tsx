@@ -5,19 +5,13 @@ import { CatalogCard } from "@/components/catalog/CatalogCard";
 import { BrandModelName } from "@/components/BrandModelName/BrandModelName";
 import { PREMIUM_MEDIA } from "@/constants/images";
 import type { CmsArticle, CmsTireModel } from "@/lib/content/types";
-import { getModelApplicationCategories, getModelApplicationLabels } from "@/lib/catalog/tireCategories";
+import { getModelApplicationLabels } from "@/lib/catalog/tireCategories";
+import { getRuntimeModelHref } from "@/lib/catalog/tireReadModel";
 
 type HomeContentSectionsProps = {
   tbrModels: CmsTireModel[];
   articles: CmsArticle[];
 };
-
-function getModelHref(model: CmsTireModel) {
-  const category = getModelApplicationCategories(model)[0];
-  const typePath = `/models/${model.tireTypeSlug}`;
-
-  return `${typePath}${category ? `/${category.slug}` : ""}/${model.slug}`;
-}
 
 export function HomeContentSections({ tbrModels, articles }: HomeContentSectionsProps) {
   const featuredModels = tbrModels.slice(0, 3);
@@ -46,7 +40,7 @@ export function HomeContentSections({ tbrModels, articles }: HomeContentSections
             {featuredModels.map((model) => (
               <CatalogCard
                 key={model.id}
-                href={getModelHref(model)}
+                href={getRuntimeModelHref(model)}
                 title={<BrandModelName name={model.name} />}
                 description={model.descriptionShort}
                 meta={getModelApplicationLabels(model).join(" · ") || model.tireTypeName}
