@@ -120,6 +120,7 @@ describe("public site rebuild triggers", () => {
       "updateCatalogOrder",
       "saveShopSubcategory",
       "saveSiteProfileSlice",
+      "publishSavedDrafts",
     ]) {
       expect(isSiteAffectingPublicationMethod(method), `${method} should rebuild the static public site`).toBe(true);
     }

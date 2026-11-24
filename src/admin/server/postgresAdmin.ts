@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { Pool, type PoolClient } from "pg";
 import { afterTransactionCommit, getTransactionClient, withTransaction } from "../../databaseTransaction";
 
@@ -37,6 +38,7 @@ import type {
   PageKey,
   MediaDeletionHistoryItem,
   PasswordResetHistoryItem,
+  PublicationDraftRef,
   ShopCategoryDraft,
   ShopProductDraft,
   ShopSubcategoryDraft,
@@ -325,6 +327,41 @@ async function publishEntry(client: AdminClient, entityType: StatusEntity, entit
     case "material":
       await client.publishMaterial(entityId);
   }
+}
+
+async function readPublicationEntry(client: AdminClient, entityType: StatusEntity, entityId: string) {
+  switch (entityType) {
+    case "tire-direction": return client.getTireDirection(entityId);
+    case "tire-model": return client.getTireModel(entityId);
+    case "wheel-type": return client.getWheelType(entityId);
+    case "wheel-model": return client.getWheelModel(entityId);
+    case "shop-category": return client.getShopCategory(entityId);
+    case "shop-product": return client.getShopProduct(entityId);
+    case "page": return client.getPage(entityId as PageKey);
+    case "material": return client.getMaterial(entityId);
+  }
+}
+
+function publicationDraftType(collection: string): StatusEntity | null {
+  switch (collection) {
+    case "tire-directions": return "tire-direction";
+    case "tire-models": return "tire-model";
+    case "wheel-types": return "wheel-type";
+    case "wheel-models": return "wheel-model";
+    case "shop-categories": return "shop-category";
+    case "shop-products": return "shop-product";
+    case "pages": return "page";
+    case "materials": return "material";
+    default: return null;
+  }
+}
+
+function publicationEntryKey(entityType: StatusEntity, entityId: string): string {
+  return `${entityType}:${entityId}`;
+}
+
+function publicationDraftVersion(value: unknown): string {
+  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
 async function restoreEntry(client: AdminClient, entry: { entityType: StatusEntity; entityId: string; operation: string; rollbackDraft: unknown }): Promise<void> {
@@ -2630,6 +2667,117 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       if (filter?.status) visible = visible.filter((pack) => pack.status === filter.status);
       if (filter?.authorUserId) visible = visible.filter((pack) => pack.authorUserId === filter.authorUserId);
       return visible.slice().sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+    },
+    async listPublicationDrafts(): Promise<PublicationDraftRef[]> {
+      requirePermission("review_queue");
+      const candidates = new Map<string, { entityType: StatusEntity; entityId: string }>();
+      const lockedEntities = new Set(
+        (await loadPacks())
+          .filter((pack) => pack.status === "open" || pack.status === "returned" || pack.status === "pending_review")
+          .flatMap((pack) => pack.entries.map((entry) => publicationEntryKey(entry.entityType, entry.entityId))),
+      );
+      const overlays = await query("SELECT collection, doc_id FROM cms_drafts");
+      for (const row of overlays) {
+        const entityType = publicationDraftType(str(row.collection));
+        if (entityType == null) continue;
+        const entityId = str(row.doc_id);
+        candidates.set(publicationEntryKey(entityType, entityId), { entityType, entityId });
+      }
+
+      // Newly created catalog records are stored as draft rows before a draft overlay exists.
+      const draftCollections: { table: string; collection: string; entityType: StatusEntity; prefix?: string }[] = [
+        { table: "tire_types", collection: "tire-directions", entityType: "tire-direction" },
+        { table: "tire_models", collection: "tire-models", entityType: "tire-model" },
+        { table: "wheel_types", collection: "wheel-types", entityType: "wheel-type" },
+        { table: "wheel_models", collection: "wheel-models", entityType: "wheel-model" },
+        { table: "shop_categories", collection: "shop-categories", entityType: "shop-category" },
+        { table: "products", collection: "shop-products", entityType: "shop-product" },
+        { table: "tire_iq_articles", collection: "materials", entityType: "material", prefix: "article-" },
+      ];
+      for (const source of draftCollections) {
+        const rows = await query(`SELECT id FROM ${source.table} WHERE status = 'draft'`);
+        for (const row of rows) {
+          const entityId = `${source.prefix ?? ""}${str(row.id)}`;
+          candidates.set(publicationEntryKey(source.entityType, entityId), { entityType: source.entityType, entityId });
+        }
+      }
+
+      const drafts: PublicationDraftRef[] = [];
+      for (const candidate of candidates.values()) {
+        // Keep editor change sets in their existing submit/review flow; do not expose them as direct admin drafts.
+        if (lockedEntities.has(publicationEntryKey(candidate.entityType, candidate.entityId))) continue;
+        const record = await readPublicationEntry(this, candidate.entityType, candidate.entityId);
+        const saved = record.savedDraft;
+        if (saved == null || (record.publishedSnapshot != null && sameJson(saved, record.publishedSnapshot))) continue;
+        drafts.push({
+          ...candidate,
+          title: entityTitle(saved, candidate.entityId),
+          hasPublishedVersion: record.publishedSnapshot != null,
+          draftVersion: publicationDraftVersion(saved),
+        });
+      }
+      return drafts.sort((left, right) => left.title.localeCompare(right.title, "ru") || left.entityType.localeCompare(right.entityType));
+    },
+    async publishSavedDrafts(drafts) {
+      requirePermission("review_queue");
+      if (!Array.isArray(drafts) || drafts.length === 0) throw new AdminClientError("publish_blocked");
+      const unique = new Map<string, { entityType: StatusEntity; entityId: string; draftVersion: string }>();
+      for (const draft of drafts) {
+        if (draft == null || typeof draft.entityId !== "string" || typeof draft.draftVersion !== "string"
+          || !/^[a-f0-9]{64}$/.test(draft.draftVersion) || publicationDraftType(collectionOf(draft.entityType)) == null) {
+          throw new AdminClientError("publish_blocked");
+        }
+        unique.set(publicationEntryKey(draft.entityType, draft.entityId), { entityType: draft.entityType, entityId: draft.entityId, draftVersion: draft.draftVersion });
+      }
+      await lockChangeSets();
+      const current = await this.listPublicationDrafts();
+      const available = new Map(current.map((draft) => [publicationEntryKey(draft.entityType, draft.entityId), draft.draftVersion]));
+      const selected = [...unique.values()];
+      if (selected.some((draft) => available.get(publicationEntryKey(draft.entityType, draft.entityId)) !== draft.draftVersion)) {
+        throw new AdminClientError("conflict");
+      }
+      await publishPackAtomically(
+        getPool(),
+        selected,
+        (draft) => publishEntry(this, draft.entityType, draft.entityId),
+        async () => undefined,
+      );
+    },
+    async restoreSavedDrafts(drafts) {
+      requirePermission("review_queue");
+      if (!Array.isArray(drafts) || drafts.length === 0) throw new AdminClientError("publish_blocked");
+      const unique = new Map<string, { entityType: StatusEntity; entityId: string; draftVersion: string }>();
+      for (const draft of drafts) {
+        if (draft == null || typeof draft.entityId !== "string" || typeof draft.draftVersion !== "string"
+          || !/^[a-f0-9]{64}$/.test(draft.draftVersion) || publicationDraftType(collectionOf(draft.entityType)) == null) {
+          throw new AdminClientError("publish_blocked");
+        }
+        unique.set(publicationEntryKey(draft.entityType, draft.entityId), { entityType: draft.entityType, entityId: draft.entityId, draftVersion: draft.draftVersion });
+      }
+      await lockChangeSets();
+      const current = await this.listPublicationDrafts();
+      const available = new Map(current.map((draft) => [publicationEntryKey(draft.entityType, draft.entityId), draft.draftVersion]));
+      const selected = [...unique.values()];
+      if (selected.some((draft) => available.get(publicationEntryKey(draft.entityType, draft.entityId)) !== draft.draftVersion)) {
+        throw new AdminClientError("conflict");
+      }
+      for (const draft of selected) {
+        const record = await readPublicationEntry(this, draft.entityType, draft.entityId);
+        if (record.publishedSnapshot == null && draft.entityType !== "page") {
+          switch (draft.entityType) {
+            case "tire-direction": await this.deleteTireDirection(draft.entityId); break;
+            case "tire-model": await this.deleteTireModel(draft.entityId); break;
+            case "wheel-type": await this.deleteWheelType(draft.entityId); break;
+            case "wheel-model": await this.deleteWheelModel(draft.entityId); break;
+            case "shop-category": await this.deleteShopCategory(draft.entityId); break;
+            case "shop-product": await this.deleteShopProduct(draft.entityId); break;
+            case "material": await this.deleteMaterial(draft.entityId); break;
+          }
+        } else {
+          await clearOverlay(collectionOf(draft.entityType), draft.entityId, true);
+          await releaseLocks(draft.entityType, draft.entityId);
+        }
+      }
     },
     async getChangeSet(id) {
       const pack = await requirePack(id);

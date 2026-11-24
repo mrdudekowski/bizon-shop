@@ -4,6 +4,7 @@ import type {
   ArticleDraft,
   ChangeSet,
   ChangeSetStatus,
+  PublicationDraftRef,
   DocumentStatus,
   EditorCapability,
   EntityRecord,
@@ -124,6 +125,9 @@ export type AdminClient = {
   resetUserPassword(userId: string, password: string): Promise<void>;
   listPasswordResetHistory(): Promise<PasswordResetHistoryItem[]>;
   listChangeSets(filter?: { status?: ChangeSetStatus; authorUserId?: string }): Promise<ChangeSet[]>;
+  listPublicationDrafts(): Promise<PublicationDraftRef[]>;
+  publishSavedDrafts(drafts: PublicationDraftRef[]): Promise<void>;
+  restoreSavedDrafts(drafts: PublicationDraftRef[]): Promise<void>;
   getChangeSet(id: string): Promise<ChangeSet>;
   submitChangeSet(id: string): Promise<ChangeSet>;
   publishChangeSet(id: string): Promise<ChangeSet>;
