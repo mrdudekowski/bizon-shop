@@ -1834,6 +1834,8 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       if (children.length > 0) throw new AdminClientError("publish_blocked");
       const row = await requireRow("wheel_types", id);
       if (str(row.status) === "published") throw new AdminClientError("publish_blocked");
+      await clearOverlay("wheel-types", id);
+      await releaseLocks("wheel-type", id);
       await query("DELETE FROM wheel_types WHERE id = $1", [Number(id)]);
     },
     async listWheelModels() {
@@ -2703,10 +2705,21 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
       }
 
       const drafts: PublicationDraftRef[] = [];
+      const orphanedDrafts: { entityType: StatusEntity; entityId: string; reason: string }[] = [];
       for (const candidate of candidates.values()) {
         // Keep editor change sets in their existing submit/review flow; do not expose them as direct admin drafts.
         if (lockedEntities.has(publicationEntryKey(candidate.entityType, candidate.entityId))) continue;
-        const record = await readPublicationEntry(this, candidate.entityType, candidate.entityId);
+        let record: Awaited<ReturnType<typeof readPublicationEntry>>;
+        try {
+          record = await readPublicationEntry(this, candidate.entityType, candidate.entityId);
+        } catch (error) {
+          if (!(error instanceof AdminClientError) || (error.code !== "publish_blocked" && error.code !== "not_found")) {
+            throw error;
+          }
+          // Keep orphan overlay data for recovery, but don't let a deleted entity break the list.
+          orphanedDrafts.push({ ...candidate, reason: error.code });
+          continue;
+        }
         const saved = record.savedDraft;
         if (saved == null || (record.publishedSnapshot != null && sameJson(saved, record.publishedSnapshot))) continue;
         drafts.push({
@@ -2715,6 +2728,9 @@ export function createPostgresAdminClient(account: AuthenticatedAccount): AdminC
           hasPublishedVersion: record.publishedSnapshot != null,
           draftVersion: publicationDraftVersion(saved),
         });
+      }
+      if (orphanedDrafts.length > 0) {
+        console.warn(JSON.stringify({ event: "cms.publication_orphan_drafts_skipped", drafts: orphanedDrafts }));
       }
       return drafts.sort((left, right) => left.title.localeCompare(right.title, "ru") || left.entityType.localeCompare(right.entityType));
     },
