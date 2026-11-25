@@ -73,13 +73,13 @@
   color: var(--color-kicker);
   font-family: var(--font-display);
   font-size: var(--type-index);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .groupHeader h3 {
   margin: 0;
   font-size: 1.15rem;
-  font-weight: 650;
+  font-weight: var(--weight-ui);
 }
 
 .group ul {
@@ -100,7 +100,7 @@
   min-width: 0;
   padding: 0.5rem 0;
   color: var(--color-muted);
-  font-weight: 650;
+  font-weight: var(--weight-ui);
   text-decoration: none;
 }
 

@@ -26,8 +26,8 @@
 
 .taxonomyLabel {
   color: var(--color-muted);
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: var(--type-caption);
+  font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
@@ -35,7 +35,7 @@
 .taxonomyLink {
   color: var(--color-muted);
   font-size: 0.9375rem;
-  font-weight: 650;
+  font-weight: var(--weight-ui);
   text-decoration: none;
 }
 

@@ -27,7 +27,7 @@
 
 .heading h2 {
   font-size: 1.125rem;
-  font-weight: 650;
+  font-weight: var(--weight-ui);
   letter-spacing: var(--tracking-display);
 }
 
@@ -35,8 +35,8 @@
 .vehicleDetails p,
 .hint {
   color: var(--color-muted);
-  font-size: 0.8125rem;
-  line-height: 1.5;
+  font-size: var(--type-label);
+  line-height: var(--leading-compact);
 }
 
 .field,
@@ -52,7 +52,7 @@
 
 .label {
   color: var(--color-muted);
-  font-size: 0.8125rem;
+  font-size: var(--type-label);
 }
 
 .control {
@@ -62,7 +62,7 @@
   box-sizing: border-box;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
-  background: var(--color-surface, #fff);
+  background: var(--color-surface, var(--bizon-white));
   color: inherit;
   font: inherit;
   padding: 0.75rem 0.85rem;
@@ -120,7 +120,7 @@
   width: 50px;
   height: 25px;
   border-radius: 50px;
-  background: linear-gradient(to bottom, #b3b3b3, #e6e6e6);
+  background: var(--gradient-switch-off);
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -133,8 +133,8 @@
   width: 23px;
   height: 23px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: var(--bizon-white);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--bizon-black) 30%, transparent);
   transition: all 0.3s ease;
 }
 
@@ -170,7 +170,7 @@
 
 .priceBlock strong {
   font-size: 1.125rem;
-  font-weight: 650;
+  font-weight: var(--weight-ui);
 }
 
 .vehicleDetails {
@@ -187,8 +187,8 @@
   max-width: 100%;
   color: var(--color-foreground);
   cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: var(--type-small);
+  font-weight: var(--weight-semibold);
 }
 
 .vehicleFields {

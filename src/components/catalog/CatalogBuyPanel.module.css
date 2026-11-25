@@ -21,7 +21,7 @@
 
 .label {
   color: var(--color-muted);
-  font-size: 0.8125rem;
+  font-size: var(--type-label);
 }
 
 .select,
@@ -32,7 +32,7 @@
   box-sizing: border-box;
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;
-  background-color: var(--color-surface, #fff);
+  background-color: var(--color-surface, var(--bizon-white));
   color: inherit;
   font: inherit;
   padding: 0.75rem 0.9rem;
@@ -54,7 +54,7 @@
 
 .price {
   font-size: 1.25rem;
-  font-weight: 650;
+  font-weight: var(--weight-ui);
   letter-spacing: var(--tracking-display);
 }
 
@@ -111,8 +111,8 @@
   min-width: 0;
   margin: 0;
   color: var(--color-muted);
-  font-size: 0.8125rem;
-  line-height: 1.45;
+  font-size: var(--type-label);
+  line-height: var(--leading-tight);
 }
 
 @media (max-width: 639px) {

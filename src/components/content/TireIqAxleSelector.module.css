@@ -95,7 +95,7 @@
   color: var(--color-kicker);
   font-family: var(--font-display);
   font-size: var(--type-index);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .content {
@@ -107,7 +107,7 @@
 .content strong {
   font-family: var(--font-display);
   font-size: clamp(1.25rem, 2vw, 1.75rem);
-  font-weight: 650;
+  font-weight: var(--weight-ui);
   letter-spacing: var(--tracking-display);
   transition: color 180ms ease;
 }
@@ -115,7 +115,7 @@
 .content span {
   max-width: 42ch;
   color: var(--color-muted);
-  line-height: 1.5;
+  line-height: var(--leading-compact);
 }
 
 .arrow {
@@ -129,12 +129,12 @@
   margin: -1rem 0 0;
   color: var(--color-muted);
   font-size: 0.88rem;
-  line-height: 1.5;
+  line-height: var(--leading-compact);
 }
 
 .note a {
   color: var(--color-link);
-  font-weight: 650;
+  font-weight: var(--weight-ui);
 }
 
 @media (max-width: 899px) {

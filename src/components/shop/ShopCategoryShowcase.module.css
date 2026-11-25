@@ -50,9 +50,9 @@
   width: 46px;
   height: 46px;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid color-mix(in srgb, var(--bizon-white) 28%, transparent);
   border-radius: var(--radius-circle);
-  background: rgba(20, 22, 22, 0.34);
+  background: color-mix(in srgb, var(--color-overlay-card) 34%, transparent);
   color: var(--bizon-white);
   padding: 0;
   cursor: pointer;
@@ -64,8 +64,8 @@
 }
 
 .toggle:hover {
-  border-color: rgba(255, 255, 255, 0.55);
-  background: rgba(20, 22, 22, 0.62);
+  border-color: color-mix(in srgb, var(--bizon-white) 55%, transparent);
+  background: color-mix(in srgb, var(--color-overlay-card) 62%, transparent);
   transform: scale(1.08);
 }
 
@@ -138,9 +138,9 @@
   box-sizing: border-box;
   place-items: center;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid color-mix(in srgb, var(--bizon-white) 28%, transparent);
   border-radius: var(--radius-circle);
-  background: rgba(20, 22, 22, 0.42);
+  background: color-mix(in srgb, var(--color-overlay-card) 42%, transparent);
   color: var(--bizon-white);
   backdrop-filter: blur(12px);
   opacity: 0;
@@ -164,8 +164,8 @@
 .iconRail[data-open="true"] .iconLink:nth-child(5) { transition-delay: 190ms; }
 
 .iconLink:hover {
-  border-color: rgba(255, 255, 255, 0.55);
-  background: rgba(20, 22, 22, 0.76);
+  border-color: color-mix(in srgb, var(--bizon-white) 55%, transparent);
+  background: color-mix(in srgb, var(--color-overlay-card) 76%, transparent);
 }
 
 .iconLink:focus-visible {
@@ -182,7 +182,7 @@
 }
 
 .iconFallback {
-  font-size: 1rem;
+  font-size: var(--type-body-compact);
   font-weight: var(--weight-display);
 }
 

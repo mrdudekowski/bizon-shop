@@ -1,6 +1,6 @@
 .chrome {
-  --chrome-bg: rgba(248, 249, 248, 0.88);
-  --chrome-border: rgba(28, 28, 28, 0.14);
+  --chrome-bg: color-mix(in srgb, var(--color-glass-light) 88%, transparent);
+  --chrome-border: color-mix(in srgb, var(--bizon-neutral-900) 14%, transparent);
   --chrome-color: var(--bizon-neutral-900);
   --chrome-hover-color: var(--bizon-coral-500);
   position: sticky;
@@ -15,9 +15,9 @@
 }
 
 .chrome[data-tone="dark"] {
-  --chrome-bg: rgba(16, 19, 19, 0.68);
-  --chrome-border: rgba(255, 255, 255, 0.25);
-  --chrome-color: rgba(255, 255, 255, 0.92);
+  --chrome-bg: color-mix(in srgb, var(--color-surface-home-dark) 68%, transparent);
+  --chrome-border: color-mix(in srgb, var(--bizon-white) 25%, transparent);
+  --chrome-color: color-mix(in srgb, var(--bizon-white) 92%, transparent);
   --chrome-hover-color: var(--bizon-coral-500);
 }
 
@@ -171,7 +171,7 @@
   display: flex;
   justify-content: center;
   gap: 6px 10px;
-  font-size: 0.875rem;
+  font-size: var(--type-small);
   white-space: nowrap;
 }
 
@@ -283,7 +283,7 @@
 @media (min-width: 768px) and (max-width: 1023px) {
   .chrome[data-shop-chrome] .end > .navigation {
     gap: 2px;
-    font-size: 0.75rem;
+    font-size: var(--type-caption);
   }
 
   .chrome[data-shop-chrome] .end > .navigation :global(a) {

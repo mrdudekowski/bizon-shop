@@ -37,7 +37,7 @@ export const metadata: Metadata = {
       { url: "/favicon-dark.png", type: "image/png", media: "(prefers-color-scheme: dark)" },
     ],
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-    other: [{ rel: "mask-icon", url: "/favicon.svg", color: "#222222" }],
+    other: [{ rel: "mask-icon", url: "/favicon.svg", color: "#1c1c1c" }],
   },
 };
 

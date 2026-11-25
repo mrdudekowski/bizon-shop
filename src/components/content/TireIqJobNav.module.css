@@ -59,7 +59,7 @@
   color: var(--color-kicker);
   font-family: var(--font-display);
   font-size: var(--type-index);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-label);
 }
 
@@ -74,7 +74,7 @@
   min-width: 0;
   font-family: var(--font-display);
   font-size: clamp(1.2rem, 1.65vw, 1.5rem);
-  font-weight: 650;
+  font-weight: var(--weight-ui);
   line-height: 1.05;
   letter-spacing: var(--tracking-display);
   text-wrap: balance;
@@ -85,7 +85,7 @@
   max-width: 42ch;
   color: var(--color-muted);
   font-size: 0.95rem;
-  line-height: 1.45;
+  line-height: var(--leading-tight);
 }
 
 .arrow {

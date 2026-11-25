@@ -17,7 +17,7 @@
 .article h3 {
   margin: 0 0 0.65rem;
   font-size: 1.15rem;
-  font-weight: 650;
+  font-weight: var(--weight-ui);
 }
 
 .article p {

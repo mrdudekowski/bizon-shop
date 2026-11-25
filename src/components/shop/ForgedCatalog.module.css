@@ -92,7 +92,7 @@
 
 .hero :global(.breadcrumbs [aria-current="page"]) {
   color: var(--bizon-coral-500);
-  font-weight: 650;
+  font-weight: var(--weight-ui);
 }
 
 .hero :global(.breadcrumbs a:focus-visible) {
@@ -275,7 +275,7 @@
   background: var(--bizon-coral-500);
   color: var(--bizon-white);
   padding: 13px 20px;
-  font-weight: 650;
+  font-weight: var(--weight-ui);
   text-align: center;
   text-decoration: none;
 }

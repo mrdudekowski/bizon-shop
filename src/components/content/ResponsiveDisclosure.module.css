@@ -16,7 +16,7 @@
     gap: .75rem;
     border-bottom: 1px solid var(--color-border);
     color: var(--color-link);
-    font-weight: 650;
+    font-weight: var(--weight-ui);
     cursor: pointer;
     list-style: none;
   }

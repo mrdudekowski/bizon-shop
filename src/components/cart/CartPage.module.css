@@ -10,7 +10,7 @@
 
 .groupTitle {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--type-body-compact);
   color: var(--color-text-subtle);
 }
 
@@ -41,7 +41,7 @@
 
 .lineName {
   color: inherit;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   text-decoration: none;
 }
 
@@ -52,14 +52,14 @@
 .lineMeta {
   margin: 6px 0 0;
   color: var(--color-text-subtle);
-  font-size: 0.875rem;
+  font-size: var(--type-small);
 }
 
 .lineNotes,
 .linePrice {
   margin: 8px 0 0;
   font-size: 0.82rem;
-  line-height: 1.45;
+  line-height: var(--leading-tight);
 }
 
 .lineNotes {
@@ -68,7 +68,7 @@
 
 .linePrice {
   color: var(--bizon-coral-600);
-  font-weight: 650;
+  font-weight: var(--weight-ui);
 }
 
 .emptyActions {
@@ -119,8 +119,8 @@
   min-width: 0;
   margin: 0;
   color: var(--color-muted);
-  font-size: 0.75rem;
-  line-height: 1.45;
+  font-size: var(--type-caption);
+  line-height: var(--leading-tight);
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
@@ -160,8 +160,8 @@
   gap: 10px;
   align-items: flex-start;
   color: var(--color-text-subtle);
-  font-size: 0.875rem;
-  line-height: 1.45;
+  font-size: var(--type-small);
+  line-height: var(--leading-tight);
 }
 
 .consent a {

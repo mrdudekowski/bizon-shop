@@ -53,15 +53,15 @@
 .cardSize {
   margin: 0;
   font-size: 1.125rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-display);
   font-variant-numeric: tabular-nums;
 }
 
 .cardSku {
   color: var(--color-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-body);
 }
 
@@ -85,7 +85,7 @@
 .cardFacts dt {
   color: var(--color-muted);
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-body);
   text-transform: uppercase;
 }
@@ -112,8 +112,8 @@
   min-height: 40px;
   align-items: center;
   color: var(--color-link);
-  font-size: 0.8125rem;
-  font-weight: 650;
+  font-size: var(--type-label);
+  font-weight: var(--weight-ui);
   cursor: pointer;
 }
 
@@ -127,8 +127,8 @@
   color: var(--bizon-coral-500);
   padding: 0;
   font: inherit;
-  font-size: 0.875rem;
-  font-weight: 650;
+  font-size: var(--type-small);
+  font-weight: var(--weight-ui);
   cursor: pointer;
 }
 
@@ -174,16 +174,16 @@
 .specPanel dt {
   color: var(--color-muted);
   font-size: 0.6875rem;
-  font-weight: 650;
+  font-weight: var(--weight-ui);
   letter-spacing: var(--tracking-body);
   text-transform: uppercase;
 }
 
 .specPanel dd {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--type-body-compact);
   font-weight: var(--weight-display);
-  line-height: 1.45;
+  line-height: var(--leading-tight);
   overflow-wrap: anywhere;
 }
 
@@ -213,7 +213,7 @@
   min-width: 0;
   border-collapse: collapse;
   table-layout: auto;
-  font-size: 0.875rem;
+  font-size: var(--type-small);
   font-variant-numeric: tabular-nums;
 }
 
@@ -236,7 +236,7 @@
   background: var(--color-surface-muted);
   color: var(--color-muted);
   font-size: 0.6875rem;
-  font-weight: 650;
+  font-weight: var(--weight-ui);
   line-height: 1.25;
   letter-spacing: var(--tracking-body);
   text-transform: uppercase;
@@ -257,7 +257,7 @@
 }
 
 .colSize {
-  font-weight: 650;
+  font-weight: var(--weight-ui);
   letter-spacing: var(--tracking-display);
   white-space: nowrap;
 }
@@ -265,7 +265,7 @@
 .empty {
   margin: 0;
   color: var(--color-muted);
-  line-height: 1.6;
+  line-height: var(--leading-body);
 }
 
 @media (min-width: 560px) {

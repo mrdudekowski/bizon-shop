@@ -75,8 +75,8 @@
 
 .content > p:first-child {
   color: var(--color-on-dark-muted);
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: var(--type-caption);
+  font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-kicker);
   text-transform: uppercase;
 }
@@ -94,7 +94,7 @@
   max-width: 62ch;
   color: var(--color-on-dark-muted);
   font-size: clamp(1rem, 1.4vw, 1.125rem);
-  line-height: 1.6;
+  line-height: var(--leading-body);
 }
 
 .controls {
@@ -139,7 +139,7 @@
   left: 0;
   height: 3px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.28);
+  background: color-mix(in srgb, var(--bizon-white) 28%, transparent);
   content: "";
 }
 
@@ -148,7 +148,7 @@
 }
 
 .progressActive::before {
-  background: rgba(255, 255, 255, 0.48) !important;
+  background: color-mix(in srgb, var(--bizon-white) 48%, transparent) !important;
 }
 
 .progressFill {
@@ -182,9 +182,9 @@
   padding: 0;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid color-mix(in srgb, var(--bizon-white) 28%, transparent);
   border-radius: var(--radius-circle);
-  background: rgba(20, 22, 22, 0.34);
+  background: color-mix(in srgb, var(--color-overlay-card) 34%, transparent);
   color: var(--bizon-white);
   font-size: 1.15rem;
   cursor: pointer;
@@ -204,8 +204,8 @@
 }
 
 .arrows button:hover {
-  border-color: rgba(255, 255, 255, 0.55);
-  background: rgba(20, 22, 22, 0.62);
+  border-color: color-mix(in srgb, var(--bizon-white) 55%, transparent);
+  background: color-mix(in srgb, var(--color-overlay-card) 62%, transparent);
 }
 
 .controls button:focus-visible {
@@ -236,9 +236,9 @@
   .overlay {
     background: linear-gradient(
       0deg,
-      rgba(10, 12, 12, 0.92) 0%,
-      rgba(10, 12, 12, 0.74) 38%,
-      rgba(10, 12, 12, 0.08) 70%
+      color-mix(in srgb, var(--color-overlay-shop) 92%, transparent) 0%,
+      color-mix(in srgb, var(--color-overlay-shop) 74%, transparent) 38%,
+      color-mix(in srgb, var(--color-overlay-shop) 8%, transparent) 70%
     );
   }
 

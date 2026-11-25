@@ -28,7 +28,7 @@
 .editorialSection h2 {
   margin: 0 0 0.75rem;
   font-size: clamp(1.25rem, 2vw, 1.5rem);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   line-height: 1.3;
   letter-spacing: var(--tracking-normal);
 }
@@ -62,7 +62,7 @@
   max-width: 32ch;
   margin: 0 0 1rem;
   font-size: clamp(1.25rem, 2vw, 1.5rem);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   line-height: 1.3;
   letter-spacing: var(--tracking-normal);
 }
@@ -87,8 +87,8 @@
 
 .featureIndex {
   color: var(--color-muted);
-  font-size: 0.8125rem;
-  font-weight: 650;
+  font-size: var(--type-label);
+  font-weight: var(--weight-ui);
   letter-spacing: var(--tracking-label);
 }
 
@@ -97,13 +97,13 @@
   color: var(--color-kicker);
   font-family: var(--font-display);
   font-size: var(--type-index);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .featureList h3 {
   margin: 0 0 0.35rem;
   font-size: 1.25rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   line-height: 1.3;
   letter-spacing: var(--tracking-normal);
 }
@@ -112,7 +112,7 @@
   margin: 0;
   max-width: 65ch;
   color: var(--color-foreground);
-  line-height: 1.6;
+  line-height: var(--leading-body);
 }
 
 .proof {

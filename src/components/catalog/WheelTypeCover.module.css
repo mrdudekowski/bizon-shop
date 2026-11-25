@@ -7,7 +7,7 @@
   margin: 24px 0 32px;
   overflow: hidden;
   border-radius: 20px;
-  background: #e9ecef;
+  background: var(--bizon-neutral-100);
 }
 
 .cover img {

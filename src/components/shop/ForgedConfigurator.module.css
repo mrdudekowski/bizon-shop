@@ -47,7 +47,7 @@
   max-width: 300px;
   color: var(--color-text-subtle);
   font-size: 0.9rem;
-  line-height: 1.45;
+  line-height: var(--leading-tight);
   text-align: right;
 }
 
@@ -66,7 +66,7 @@
 .grid label > span {
   color: var(--color-text-subtle);
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 .grid input {
@@ -101,7 +101,7 @@
   cursor: pointer;
   padding: 13px 20px;
   font: inherit;
-  font-weight: 650;
+  font-weight: var(--weight-ui);
 }
 
 .submitRow button:hover {
@@ -116,7 +116,7 @@
 .submitRow p {
   color: var(--color-text-subtle);
   font-size: 0.82rem;
-  line-height: 1.45;
+  line-height: var(--leading-tight);
 }
 
 @media (max-width: 700px) {

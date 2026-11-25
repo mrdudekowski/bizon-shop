@@ -50,14 +50,14 @@
 
 .breadcrumbs [aria-current="page"] {
   color: var(--bizon-coral-500);
-  font-weight: 650;
+  font-weight: var(--weight-ui);
 }
 
 .kicker,
 .lightKicker {
   margin: 0;
   color: var(--bizon-coral-500);
-  font-size: 0.75rem;
+  font-size: var(--type-caption);
   font-weight: var(--weight-kicker);
   letter-spacing: var(--tracking-kicker);
   text-transform: uppercase;
@@ -66,7 +66,7 @@
 .hero h1,
 .sectionHead h2 {
   margin: 0;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   letter-spacing: var(--tracking-display);
   line-height: var(--leading-display);
   text-wrap: balance;
@@ -177,7 +177,7 @@
   max-width: 100%;
   min-width: 0;
   font-size: 1.05rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   line-height: 1.25;
   overflow-wrap: anywhere;
 }

@@ -14,7 +14,7 @@
   color: var(--color-foreground);
   padding: 0.7rem 1rem;
   font: inherit;
-  font-weight: 650;
+  font-weight: var(--weight-ui);
 }
 
 .backdrop {
@@ -25,7 +25,7 @@
   max-width: 100%;
   min-width: 0;
   border: 0;
-  background: rgb(10 14 18 / 58%);
+  background: color-mix(in srgb, var(--color-scrim-cool) 58%, transparent);
 }
 
 .sheet {
@@ -45,7 +45,7 @@
   border-radius: 20px 20px 0 0;
   background: var(--color-surface);
   color: var(--color-foreground);
-  box-shadow: 0 -12px 40px rgb(0 0 0 / 18%);
+  box-shadow: 0 -12px 40px color-mix(in srgb, var(--bizon-black) 18%, transparent);
 }
 
 .header {
@@ -121,14 +121,14 @@
   background: transparent;
   color: var(--color-link);
   font: inherit;
-  font-weight: 650;
+  font-weight: var(--weight-ui);
   cursor: pointer;
 }
 
 .resultCount {
   min-width: 0;
   color: var(--color-muted);
-  font-size: 0.875rem;
+  font-size: var(--type-small);
 }
 
 @media (max-width: 767px) {

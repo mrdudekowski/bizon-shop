@@ -9,7 +9,7 @@
 
 .termsLinks a,
 .termsLinks span {
-  font-size: 0.8125rem;
+  font-size: var(--type-label);
   line-height: 1.4;
 }
 

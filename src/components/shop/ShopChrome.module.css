@@ -49,7 +49,7 @@
 }
 
 .homeBrand {
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .categoryIcon,
@@ -228,8 +228,8 @@
     padding: 2px 8px;
     border-radius: 6px;
     content: attr(data-tooltip);
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: var(--type-caption);
+    font-weight: var(--weight-semibold);
     line-height: 1;
     overflow: hidden;
     pointer-events: none;
@@ -248,13 +248,13 @@
   }
 
   :global([data-shop-chrome][data-tone="light"]) .categoryMarks a::after {
-    background: #1c1c1c;
-    color: #fff;
+    background: var(--bizon-neutral-900);
+    color: var(--bizon-white);
   }
 
   :global([data-shop-chrome][data-tone="dark"]) .categoryMarks a::after {
-    background: #fff;
-    color: #1c1c1c;
+    background: var(--bizon-white);
+    color: var(--bizon-neutral-900);
   }
 }
 

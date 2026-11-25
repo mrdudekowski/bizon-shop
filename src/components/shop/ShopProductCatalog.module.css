@@ -19,7 +19,7 @@
   min-width: 0;
   margin: 0 0 20px;
   color: var(--color-text-subtle);
-  font-size: 0.875rem;
+  font-size: var(--type-small);
 }
 
 .filter :global([data-custom-select-trigger]) {

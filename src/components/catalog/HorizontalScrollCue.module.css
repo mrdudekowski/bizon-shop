@@ -23,12 +23,12 @@
   min-width: 0;
   height: 4px;
   border-radius: var(--radius-pill);
-  background: rgba(28, 28, 28, 0.14);
+  background: color-mix(in srgb, var(--bizon-neutral-900) 14%, transparent);
   transition: flex-grow 180ms linear, background-color 180ms linear;
 }
 
 .cue[data-tone="dark"] .segment {
-  background: rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, var(--bizon-white) 18%, transparent);
 }
 
 .segment[data-active="true"],
@@ -52,7 +52,7 @@
   background: transparent;
   color: var(--color-muted);
   font: inherit;
-  font-size: 0.75rem;
+  font-size: var(--type-caption);
   font-weight: var(--weight-kicker);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
@@ -62,7 +62,7 @@
 }
 
 .cue[data-tone="dark"] .hint {
-  border-color: rgba(255, 255, 255, 0.22);
+  border-color: color-mix(in srgb, var(--bizon-white) 22%, transparent);
   color: var(--color-on-dark-muted);
 }
 
