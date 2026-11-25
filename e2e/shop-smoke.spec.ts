@@ -173,7 +173,9 @@ test("shop canvas transitions from black to the existing light shade and back be
   expect(await sampleAtCenter('[data-site-footer="shop"]')).toBe("rgb(0, 0, 0)");
 
   await page.emulateMedia({ reducedMotion: "reduce" });
-  expect(await page.locator('[data-shop-section="vehicles"]').evaluate((element) => getComputedStyle(element).backgroundColor)).toBe("rgb(245, 245, 245)");
+  await expect.poll(() => page.locator('[data-shop-section="vehicles"]').evaluate(
+    (element) => getComputedStyle(element).backgroundColor,
+  )).toBe("rgb(245, 245, 245)");
 
   const widths = await page.evaluate(() => ({
     viewport: window.innerWidth,
