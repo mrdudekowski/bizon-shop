@@ -1211,6 +1211,7 @@ h1.section-title {
   width: 100%;
   max-width: 42rem;
   min-width: 0;
+  margin-inline: 0;
   gap: 1rem;
   border-color: var(--color-border);
   box-shadow: none;
