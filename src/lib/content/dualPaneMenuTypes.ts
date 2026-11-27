@@ -1,3 +1,5 @@
+import type { TireCategory } from "@/lib/catalog/tireCategories";
+
 export type DualPaneItem = {
   id: string;
   title: string;
@@ -7,6 +9,8 @@ export type DualPaneItem = {
   /** Catalog icon for a shop category. Resolved by the catalog, not chosen in the menu. */
   iconUrl?: string | null;
   pills?: string[];
+  /** Tire application categories assigned to this model in the catalog. */
+  applications?: TireCategory[];
   description?: string;
   advantages?: Array<{ key: string; title: string }>;
 };

@@ -1,6 +1,7 @@
 import { ROUTES } from "@/constants/navigation";
 import { HERO_TIRE_CUTOUT_BY_SLUG } from "@/lib/catalog/heroTireSlides";
 import { getRuntimeModelHref } from "@/lib/catalog/tireReadModel";
+import { getModelApplicationCategories } from "@/lib/catalog/tireCategories";
 import { curateMenuItems } from "./curateMenuItems";
 import type { DualPaneSection } from "./dualPaneMenuTypes";
 import { shopCategoryIconUrl } from "./shopCategoryPresentation";
@@ -31,6 +32,7 @@ export function buildMainDualPaneMenuSections(input: {
       href: getRuntimeModelHref(model),
       imageUrl: HERO_TIRE_CUTOUT_BY_SLUG[model.slug] ?? model.imageUrl,
       pills: tireModelPills(model),
+      applications: getModelApplicationCategories(model),
       advantages: model.advantages,
     }));
 

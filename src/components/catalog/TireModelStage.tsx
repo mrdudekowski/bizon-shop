@@ -13,7 +13,8 @@ import { CatalogProductGallery } from "@/components/catalog/CatalogProductGaller
 import { ModelAdvantagesCarousel } from "@/components/catalog/ModelAdvantagesCarousel";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { TireVariantsTable } from "@/components/catalog/TireVariantsTable";
-import { getModelApplicationCategories, getModelApplicationLabels } from "@/lib/catalog/tireCategories";
+import { TireApplicationIcons } from "@/components/catalog/TireApplicationIcons";
+import { getModelApplicationCategories } from "@/lib/catalog/tireCategories";
 import type { TireCatalogModel } from "@/lib/catalog/tireReadModel";
 import type { CmsTireModel, CmsTireVariant } from "@/lib/content/types";
 import { fetchBrowserPublishedJson, fetchBrowserPublishedList } from "@/lib/content/browserPublishedClient";
@@ -100,7 +101,6 @@ export function TireModelStage({
   }, [refreshOnMount, initialModel.id, initialModel.slug, initialModel.tireTypeSlug, initialModel.href, initialModel.sizes]);
 
   const applications = getModelApplicationCategories(model);
-  const application = getModelApplicationLabels(model).join(" · ");
   const axleLabels = model.selectionAxles
     .map((value) => AXLE_OPTIONS.find((option) => option.value === value)?.label)
     .filter(Boolean);
@@ -154,7 +154,11 @@ export function TireModelStage({
             <dl className={styles.productFacts}>
               <div>
                 <dt>Применение</dt>
-                <dd>{application || "Уточняется"}</dd>
+                <dd>
+                  {applications.length > 0 ? (
+                    <TireApplicationIcons applications={applications} variant="labels" />
+                  ) : "Уточняется"}
+                </dd>
               </div>
               <div>
                 <dt>Позиция</dt>

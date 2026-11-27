@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AdvantageIcons } from "@/components/catalog/AdvantageIcons";
+import { TireApplicationIcons } from "@/components/catalog/TireApplicationIcons";
 import { BrandModelName } from "@/components/BrandModelName/BrandModelName";
 import { CatalogImage } from "@/components/catalog/CatalogImage";
 import { ChromeNavIcon } from "@/components/chrome/ChromeNavIcon";
@@ -67,8 +68,13 @@ function GalleryPane({
             >
               {tireCard ? (
                 <span className={styles.galleryMeta}>
-                  <span className={styles.galleryTitle}>
-                    <BrandModelName name={item.title} />
+                  <span className={styles.galleryTitleRow}>
+                    <span className={styles.galleryTitle}>
+                      <BrandModelName name={item.title} />
+                    </span>
+                    {item.applications?.length ? (
+                      <TireApplicationIcons applications={item.applications} />
+                    ) : null}
                   </span>
                   <AdvantageIcons
                     advantages={item.advantages ?? []}

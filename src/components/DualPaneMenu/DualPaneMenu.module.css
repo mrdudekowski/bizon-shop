@@ -359,9 +359,20 @@
 }
 
 .galleryTitle {
+  min-width: 0;
   font-size: 1.25rem;
   font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-display);
+}
+
+.galleryTitleRow {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.3rem 0.45rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .galleryMeta {
@@ -375,6 +386,10 @@
 }
 
 .galleryCard[data-tire] .galleryTitle {
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 0.95rem;
   line-height: 1.2;
   letter-spacing: var(--tracking-body);
