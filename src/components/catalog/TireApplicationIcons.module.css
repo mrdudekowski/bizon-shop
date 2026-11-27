@@ -17,9 +17,50 @@
 
 .iconItem,
 .labelItem {
+  position: relative;
   display: inline-flex;
   align-items: center;
   min-width: 0;
+}
+
+.iconItem::after,
+.labelItem::after {
+  position: absolute;
+  z-index: 20;
+  bottom: calc(100% + 0.45rem);
+  left: 50%;
+  width: max-content;
+  max-width: min(15rem, calc(100vw - 2rem));
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.35rem;
+  background: var(--color-surface-near-black, #171717);
+  box-shadow: 0 0.4rem 1rem rgb(0 0 0 / 18%);
+  color: var(--color-on-dark, #fff);
+  content: attr(data-tooltip);
+  font-size: 0.75rem;
+  font-weight: var(--weight-medium, 500);
+  line-height: 1.35;
+  text-align: center;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 0.15rem);
+  transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
+}
+
+.iconItem:hover::after,
+.labelItem:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iconItem::after,
+  .labelItem::after {
+    transition: none;
+  }
 }
 
 .labelItem {

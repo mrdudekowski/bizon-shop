@@ -18,13 +18,18 @@ export function TireApplicationIcons({
       aria-label="Применение шины"
     >
       {applications.map((application) => (
-        <span className={variant === "labels" ? styles.labelItem : styles.iconItem} key={application.value} role="listitem">
+        <span
+          className={variant === "labels" ? styles.labelItem : styles.iconItem}
+          key={application.value}
+          role="listitem"
+          data-tooltip={application.description}
+        >
           {variant === "labels" ? <span>{application.name}</span> : null}
           <img
             className={styles.icon}
             src={application.icon}
             alt={variant === "icons" ? application.name : ""}
-            title={application.name}
+            title={application.description}
             width={24}
             height={24}
           />
